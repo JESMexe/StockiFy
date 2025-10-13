@@ -1,0 +1,192 @@
+/*
+ * Archivo: public/assets/css/main.css
+ * Descripción: Hoja de estilos principal para GestorStockApp.
+ * Paleta: Tech, Oscuro, Violeta.
+ */
+
+/* Paso 1: Importar una fuente moderna desde Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+/* Paso 2: Definir la paleta de colores y variables globales en la raíz */
+:root {
+    --background-darker: #0B0B0B;
+    --background-panel: #1A1A1A;
+    --primary-purple: #7F5AF0; /* Un violeta tech, vibrante pero no chillón */
+    --primary-purple-hover: #9D86F5;
+    --secondary-purple: #4a3291;
+    --text-primary: #E0E0E0;   /* Blanco suave para no cansar la vista */
+    --text-secondary: #94A3B8; /* Gris claro para texto menos importante */
+    --border-color: #333333;
+    --success-color: #22c55e;
+    --error-color: #ef4444;
+
+    --font-main: 'Inter', sans-serif;
+    --border-radius: 8px;
+    --transition-speed: 0.2s;
+}
+
+/* Paso 3: Reseteo básico y estilos generales del body */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    font-family: var(--font-main);
+    background-color: var(--background-darker);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Paso 4: Estilos para la estructura principal */
+header {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--background-panel);
+}
+
+header h1 {
+    color: var(--primary-purple);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+main {
+    flex-grow: 1; /* Hace que el main ocupe todo el espacio disponible */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+}
+
+hr {
+    border: none;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 1.5rem 0;
+}
+
+/* Paso 5: El contenedor principal de cada "vista" */
+.view-container {
+    background-color: var(--background-panel);
+    padding: 2.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 500px; /* Evita que sea demasiado ancho en pantallas grandes */
+    box-shadow: 0 0 25px rgba(127, 90, 240, 0.1); /* Sutil brillo violeta */
+    text-align: center;
+}
+
+.view-container h2 {
+    color: var(--primary-purple);
+    margin-bottom: 0.5rem;
+}
+
+.view-container p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* Paso 6: Estilos para botones */
+.btn {
+    display: inline-block;
+    width: 100%; /* Ocupan todo el ancho del contenedor */
+    padding: 12px 20px;
+    margin-top: 0.5rem;
+    border: none;
+    border-radius: var(--border-radius);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: all var(--transition-speed) ease;
+}
+
+/* Botón Primario (acciones principales) */
+.btn.btn-primary {
+    background-color: var(--primary-purple);
+    color: #FFFFFF;
+}
+
+.btn.btn-primary:hover {
+    background-color: var(--primary-purple-hover);
+    box-shadow: 0 0 15px rgba(127, 90, 240, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Botón Secundario (acciones alternativas) */
+.btn.btn-secondary {
+    background-color: transparent;
+    color: var(--primary-purple);
+    border: 1px solid var(--primary-purple);
+}
+
+.btn.btn-secondary:hover {
+    background-color: var(--primary-purple);
+    color: #FFFFFF;
+}
+
+/* Contenedor para múltiples botones en el menú */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Paso 7: Estilos para formularios (inputs, labels, etc.) */
+#db-creator-container {
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--background-darker);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 10px rgba(127, 90, 240, 0.5);
+}
+
+textarea {
+    resize: vertical; /* Permite al usuario cambiar la altura */
+    min-height: 80px;
+}
+
+/* Paso 8: Clases utilitarias */
+.hidden {
+    display: none !important;
+}
+
+#status-message {
+    margin-top: 1rem;
+    font-weight: 500;
+}

@@ -1,0 +1,100 @@
+﻿/*
+ * Archivo: public/assets/css/auth.css
+ * Descripción: Estilos para los formularios de Login y Registro.
+ */
+
+/* Contenedor principal para centrar el formulario en la página */
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 100vh; /* Ocupa toda la altura de la pantalla */
+    padding: 2rem 1rem;
+}
+
+
+
+/* El "card" o panel del formulario */
+.auth-form-container {
+    background-color: var(--background-panel);
+    padding: 2.5rem 2rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 0 30px rgba(127, 90, 240, 0.15); /* Brillo violeta más pronunciado */
+    animation: fadeIn 0.5s ease-out; /* Animación de entrada */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Encabezado del formulario */
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+    color: var(--primary-purple);
+    margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+    color: var(--text-secondary);
+}
+
+/* Estructura del formulario */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem; /* Espacio uniforme entre los campos del formulario */
+}
+
+.form-group {
+    text-align: left;
+}
+
+/* El botón ya hereda la mayoría de los estilos de main.css.
+   Solo ajustamos el margen superior para separarlo del último campo. */
+.auth-form .btn {
+    margin-top: 1rem;
+}
+
+/* Mensajes de estado (éxito/error) */
+#message {
+    padding: 10px;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    margin-top: 1rem;
+    text-align: center;
+}
+
+/* Pie de página del formulario (para el enlace a la otra página) */
+.auth-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.auth-footer a {
+    color: var(--primary-purple);
+    font-weight: 500;
+    text-decoration: none;
+    transition: color var(--transition-speed) ease;
+}
+
+.auth-footer a:hover {
+    color: var(--primary-purple-hover);
+    text-decoration: underline;
+}

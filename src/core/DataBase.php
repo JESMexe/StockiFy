@@ -1,0 +1,49 @@
+<?php
+namespace App\Core;
+
+use PDO;
+use PDOException;
+
+class Database
+{
+    private static $instance = null;
+    private $conn;
+
+    private function __construct()
+    {
+        // Cargar las variables de entorno
+        $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
+        $dotenv->load();
+
+        $host = $_ENV['DB_HOST'];
+        $db   = $_ENV['DB_DATABASE'];
+        $user = $_ENV['DB_USERNAME'];
+        $pass = $_ENV['DB_PASSWORD'];
+        $charset = $_ENV['DB_CHARSET'];
+
+        $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ];
+
+        try {
+            $this->conn = new PDO($dsn, $user, $pass, $options);
+        } catch (PDOException $e) {
+            // Nunca mostrar errores detallados en producción
+            throw new PDOException("Error de conexión a la base de datos.", (int)$e->getCode());
+        }
+    }
+
+    /**
+     * Implementa el patrón Singleton para asegurar una única conexión.
+     */
+    public static function getInstance(): PDO
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance->conn;
+    }
+}
