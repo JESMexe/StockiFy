@@ -1,6 +1,6 @@
 /*
  * Archivo: public/assets/css/main.css
- * Descripción: Hoja de estilos principal para GestorStockApp.
+ * Descripción: Hoja de estilos principal para Stocky.
  * Paleta: Tech, Oscuro, Violeta.
  */
 
@@ -32,6 +32,8 @@
     padding: 0;
 }
 
+/* public/assets/css/main.css */
+
 html, body {
     font-family: var(--font-main);
     background-color: var(--background-darker);
@@ -40,14 +42,30 @@ html, body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative; /* <-- AÑADIDO: Necesario para la luz */
+    overflow-x: hidden; /* <-- AÑADIDO: Evita barras de scroll horizontales */
 }
 
-/* Paso 4: Estilos para la estructura principal */
+
 header {
-    text-align: center;
-    padding: 1.5rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    background-color: var(--background-panel);
+    display: flex;
+    justify-content: space-between; /* Título a la izquierda, navegación a la derecha */
+    align-items: center;
+    padding: 1rem 2rem; /* Más espacio horizontal */
+}
+
+/* Contenedor de los botones de navegación */
+#header-nav {
+    display: flex;
+    gap: 1rem; /* Espacio entre los botones */
+}
+
+/* Hacemos los botones del header un poco más pequeños y compactos */
+#header-nav .btn {
+    width: auto; /* Ancho automático según el texto */
+    padding: 8px 16px;
+    margin-top: 0; /* Quitamos el margen superior que tenían los botones generales */
+    font-size: 0.9rem;
 }
 
 header h1 {
@@ -69,6 +87,12 @@ hr {
     height: 1px;
     background-color: var(--border-color);
     margin: 1.5rem 0;
+}
+
+#header-logo img {
+    height: 70px; /* Ajusta esta altura según el tamaño de tu logo */
+    width: auto;  /* Mantiene la proporción */
+    display: block; /* Elimina espacios extra debajo de la imagen */
 }
 
 /* Paso 5: El contenedor principal de cada "vista" */
@@ -189,4 +213,31 @@ textarea {
 #status-message {
     margin-top: 1rem;
     font-weight: 500;
+}
+
+/* ---- NUEVO: Efecto de luz para la página de inicio ---- */
+#page-index::before {
+    content: '';
+    position: absolute;
+    /* Posicionamos la luz arriba a la derecha */
+    top: -30%;
+    right: -30%;
+    width: 900px;
+    height: 900px;
+    background: radial-gradient(circle at center, rgba(127, 90, 240, 0.25), transparent 70%);
+    filter: blur(120px);
+    z-index: 0; /* Detrás de todo el contenido */
+    animation: pulse 12s infinite alternate; /* Animación sutil */
+}
+
+/* Animación opcional para la luz */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.2); }
+}
+
+/* Aseguramos que el contenido principal esté por encima de la luz */
+header, main {
+    position: relative;
+    z-index: 1;
 }

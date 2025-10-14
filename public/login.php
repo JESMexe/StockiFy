@@ -11,8 +11,8 @@
 <div class="auth-wrapper">
     <div class="auth-form-container">
         <div class="auth-header">
-            <h1>Bienvenido de Vuelta</h1>
-            <p>Ingresa tus credenciales para acceder a tu panel.</p>
+            <h1>Bienvenido de vuelta</h1>
+            <p>Ingresá tus credenciales para acceder a tu panel.</p>
         </div>
         <form id="loginForm" class="auth-form">
             <div class="form-group">

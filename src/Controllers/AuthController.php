@@ -37,18 +37,18 @@ class AuthController
     {
         header('Content-Type: application/json');
 
-        // 1. Validación simple (puedes hacerla más robusta)
+        // Validacion simple
         if (empty($data['username']) || empty($data['email']) || empty($data['password'])) {
             http_response_code(400); // Bad Request
             echo json_encode(['success' => false, 'message' => 'Usuario, email y contraseña son obligatorios.']);
             return;
         }
 
-        // 2. Llamar al modelo para crear el usuario
+        // Llamar al modelo para crear el usuario
         $userModel = new UserModel();
         $success = $userModel->createUser($data);
 
-        // 3. Devolver la respuesta
+        // Devolver la respuesta
         if ($success) {
             echo json_encode(['success' => true, 'message' => '¡Usuario registrado con éxito!']);
         } else {

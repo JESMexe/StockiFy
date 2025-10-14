@@ -10,7 +10,7 @@ class UserModel
 
     public function __construct()
     {
-        // Obtenemos la conexión por el Singleton
+        // Obtengo la conexion por el Singleton
         $this->db = Database::getInstance();
     }
 
@@ -33,7 +33,7 @@ class UserModel
     public function createUser(array $data): bool
     {
         // Hashear la contraseña de forma segura
-        // el estándar de PHP.
+        // el estandar de PHP.
         $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
 
         // Preparar la consulta SQL
@@ -43,7 +43,7 @@ class UserModel
         $stmt = $this->db->prepare($sql);
 
         try {
-            // Ejecutar la inserción
+            // Ejecutar la insercion
             $stmt->execute([
                 ':username' => $data['username'],
                 ':email' => $data['email'],
@@ -55,12 +55,25 @@ class UserModel
             ]);
             return true;
         } catch (PDOException $e) {
-            // El código '23000' es un error de violación de integridad (ej: email o username duplicado)
+            // El código '23000' es un error de violacion de integridad, ej: email o username duplicado
             if ($e->getCode() == '23000') {
                 return false;
             }
             // Para otros errores, los relanzamos
             throw $e;
         }
+    }
+
+    /**
+     * Busca un usuario por su ID.
+     *
+     * @param int $id El ID del usuario.
+     * @return array|false Devuelve los datos del usuario o false si no lo encuentra.
+     */
+    public function findById(int $id)
+    {
+        $stmt = $this->db->prepare("SELECT id, username, email, full_name FROM users WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch();
     }
 }

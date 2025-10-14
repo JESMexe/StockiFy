@@ -4,7 +4,7 @@ async function handleResponse(response) {
         const errorMessage = errorData?.message || `Error del servidor: ${response.status}`;
         throw new Error(errorMessage);
     }
-    return response.json(); // Si todo está bien, devolvemos el JSON.
+    return response.json(); // Si todo esta bien, devuelvo el JSON.
 }
 
 export async function loginUser(credentials) {
@@ -37,15 +37,6 @@ export async function checkSessionStatus() {
     }
 }
 
-async function handleResponse(response) {
-    const data = await response.json();
-    if (!response.ok) {
-        const errorMessage = data.message || `Error del servidor: ${response.status}`;
-        throw new Error(errorMessage);
-    }
-    return data;
-}
-
 export async function getDatabases() {
     const response = await fetch('/api/database/list');
     if (!response.ok) throw new Error('Error al conectar con el servidor.');
@@ -57,9 +48,19 @@ export async function selectDatabase(dbName) {
     return handleResponse(response);
 }
 
+
+// --- FUNCIONES DEL PERFIL DE USUARIO ---
+
+export async function getUserProfile() {
+    // Usamos el método GET porque solo estamos solicitando datos
+    const response = await fetch('/api/user/profile.php');
+    return handleResponse(response); // Reutilizamos nuestra genial función handleResponse
+}
+
+
 export async function createDatabase(dbName, columns) {
-    const requestBody = { dbName, columns };
-    const response = await fetch('/api/database/create', {
+    const requestBody = { dbName, columns }; // Enviamos ambos datos
+    const response = await fetch('/api/database/create.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),

@@ -22,7 +22,7 @@ export function showStatus(message, type = 'info') {
     }, 5000);
 }
 
-// Rellena la lista de bases de datos en la vista de selección
+// Rellena la lista de bases de datos en la vista de seleccion
 export function populateDbList(databases, onSelect) {
     elements.dbList.innerHTML = ''; // Limpiar lista
     databases.forEach(dbName => {

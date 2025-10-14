@@ -1,6 +1,6 @@
 ﻿/*
  * Archivo: public/assets/css/auth.css
- * Descripción: Estilos para los formularios de Login y Registro.
+ * Descripción: Estilos para los formularios de Login y Registro con efecto Glassmorphism.
  */
 
 /* Contenedor principal para centrar el formulario en la página */
@@ -9,22 +9,62 @@
     justify-content: center;
     align-items: center;
     width: 100%;
-    min-height: 100vh; /* Ocupa toda la altura de la pantalla */
+    min-height: 100vh;
     padding: 2rem 1rem;
+    position: relative; /* Necesario para posicionar la luz de fondo */
+    overflow: hidden;   /* Evita que la luz se salga de la pantalla */
+}
+
+.auth-wrapper::before {
+    content: '';
+    position: absolute;
+    /* Movemos la luz más hacia la esquina para que se expanda hacia el centro */
+    bottom: -40%;
+    left: -30%;
+    /* Aumentamos drásticamente el tamaño */
+    width: 900px;
+    height: 900px;
+    /* Hacemos el color un poco más intenso y el degradado más amplio */
+    background: radial-gradient(circle at center, rgba(127, 90, 240, 0.4), transparent 70%);
+    /* Aumentamos el desenfoque para que sea aún más suave */
+    filter: blur(120px);
+    z-index: 0;
+    /* Agregamos una animación sutil para que la luz "respire" */
+    animation: pulse 10s infinite alternate;
+}
+
+/* Animación opcional para la luz */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
 }
 
 
-
-/* El "card" o panel del formulario */
+/* ---- MODIFICADO: El panel del formulario con efecto vidrioso ---- */
 .auth-form-container {
-    background-color: var(--background-panel);
+    /* 1. Fondo semi-transparente */
+    background-color: rgba(26, 26, 26, 0.5); /* Color del panel con 50% de opacidad */
+
+    /* 2. El desenfoque del fondo (la magia del glassmorphism) */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); /* Para compatibilidad con Safari */
+
+    /* 3. Borde sutil para definir los bordes del cristal */
+    border: 1px solid rgba(51, 51, 51, 0.75); /* Nuestro --border-color con un toque de transparencia */
+
     padding: 2.5rem 2rem;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
+    border-radius: 12px; /* Un poco más redondeado para el efecto cristal */
     width: 100%;
     max-width: 420px;
-    box-shadow: 0 0 30px rgba(127, 90, 240, 0.15); /* Brillo violeta más pronunciado */
-    animation: fadeIn 0.5s ease-out; /* Animación de entrada */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); /* Sombra suave para darle profundidad */
+    animation: fadeIn 0.5s ease-out;
+    z-index: 1; /* Aseguramos que el formulario esté por encima de la luz de fondo */
 }
 
 @keyframes fadeIn {
@@ -37,6 +77,8 @@
         transform: translateY(0);
     }
 }
+
+/* El resto del CSS se mantiene igual, ya que funciona perfectamente con el nuevo diseño */
 
 /* Encabezado del formulario */
 .auth-header {
@@ -57,15 +99,13 @@
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem; /* Espacio uniforme entre los campos del formulario */
+    gap: 1.25rem;
 }
 
 .form-group {
     text-align: left;
 }
 
-/* El botón ya hereda la mayoría de los estilos de main.css.
-   Solo ajustamos el margen superior para separarlo del último campo. */
 .auth-form .btn {
     margin-top: 1rem;
 }
@@ -79,7 +119,7 @@
     text-align: center;
 }
 
-/* Pie de página del formulario (para el enlace a la otra página) */
+/* Pie de página del formulario */
 .auth-footer {
     text-align: center;
     margin-top: 1.5rem;

@@ -31,7 +31,7 @@ class Database
         try {
             $this->conn = new PDO($dsn, $user, $pass, $options);
         } catch (PDOException $e) {
-            // Nunca mostrar errores detallados en producción
+            // Nunca mostrar errores detallados en produccion
             throw new PDOException("Error de conexión a la base de datos.", (int)$e->getCode());
         }
     }

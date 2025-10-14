@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (result.success) {
                 messageDiv.style.color = 'green';
                 messageDiv.textContent = '¡Inicio de sesión exitoso! Redirigiendo...';
-                window.location.href = '/index.php';
+                window.location.href = 'index.php';
             }
         } catch (error) {
             messageDiv.style.color = 'red';

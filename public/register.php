@@ -19,19 +19,19 @@
         <form id="registerForm" class="auth-form">
             <div class="form-group">
                 <label for="full_name">Nombre Completo</label>
-                <input type="text" id="full_name" name="full_name" placeholder="Ej: Juan Pérez">
+                <input type="text" id="full_name" name="full_name" placeholder="Ej: Joaquín Sosa">
             </div>
             <div class="form-group">
                 <label for="username">Nombre de Usuario</label>
-                <input type="text" id="username" name="username" placeholder="Ej: juanperez" required>
+                <input type="text" id="username" name="username" placeholder="Ej: joakososa" required>
             </div>
             <div class="form-group">
                 <label for="email">Correo Electrónico</label>
-                <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+                <input type="email" id="email" name="email" placeholder="Mail" required>
             </div>
             <div class="form-group">
                 <label for="password">Contraseña</label>
-                <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" required>
+                <input type="password" id="password" name="password" placeholder="Contraseña" required>
             </div>
             <button type="submit" class="btn btn-primary">Crear Cuenta</button>
         </form>
@@ -39,11 +39,11 @@
         <div id="message"></div>
 
         <footer class="auth-footer">
-            <p>¿Ya tienes una cuenta? <a href="/login.php">Inicia sesión aquí</a></p>
+            <p>¿Ya tienes una cuenta? <a href="login.php">Inicia sesión aquí</a></p>
         </footer>
     </div>
 </div>
 
-<script type="module" src="/assets/js/user/register.js"></script>
+<script type="module" src="assets/js/user/register.js"></script>
 </body>
 </html>
