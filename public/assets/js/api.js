@@ -43,14 +43,17 @@ export async function getDatabases() {
     return await response.json();
 }
 
-export async function selectDatabase(dbName) {
-    const response = await fetch(`/api/database/select/${dbName}`, { method: 'POST' });
+export async function selectDatabase(inventoryId) {
+    const response = await fetch('/api/database/select.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inventoryId }),
+    });
     return handleResponse(response);
 }
 
 
 // --- FUNCIONES DEL PERFIL DE USUARIO ---
-
 export async function getUserProfile() {
     // Usamos el método GET porque solo estamos solicitando datos
     const response = await fetch('/api/user/profile.php');

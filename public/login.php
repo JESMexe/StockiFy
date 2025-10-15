@@ -1,13 +1,19 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión</title>
+    <script src="assets/js/theme.js"></script>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/auth.css">
 </head>
 <body>
+<header>
+    <a href="/" id="header-logo">
+        <img src="assets/img/LogoE.png" alt="StockiFy Logo">
+    </a>
+</header>
 <div class="auth-wrapper">
     <div class="auth-form-container">
         <div class="auth-header">

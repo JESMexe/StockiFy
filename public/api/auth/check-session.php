@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 // public/api/auth/check-session.php
 

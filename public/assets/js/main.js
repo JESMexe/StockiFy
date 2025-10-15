@@ -17,39 +17,33 @@ function showView(viewId) {
 }
 
 async function checkInitialState() {
-    showView('loading-view'); // Muestra "Cargando..."
-
     try {
         const profileData = await api.getUserProfile();
+        if (!profileData.success) throw new Error('Sesión inválida.');
+        // Comprobamos si ya hay un inventario activo en la sesión
+        // (Para esto, necesitamos que la API devuelva este dato)
+        // Por ahora, simulo este chequeo
+        const activeInventoryId = profileData.activeInventoryId;
 
-        if (profileData.success) {
-            const user = profileData.user;
-            const databases = profileData.databases;
-
-            // Saluo al usuario
-            console.log(`Bienvenido, ${user.full_name || user.username}!`);
-
-            if (databases && databases.length > 0) {
-                // Si el usuario tiene bases de datos, muestro la lista
-                const dbList = document.getElementById('db-list');
-                dbList.innerHTML = ''; // Limpiamos la lista por si acaso
-                databases.forEach(db => {
-                    const li = document.createElement('li');
-                    li.textContent = db.name; // Asumiendo que cada DB tiene una propiedad "name"
-                    dbList.appendChild(li);
-                });
-                showView('selection-view');
-            } else {
-                // Si no tiene, lo invito a crear la primera
-                showView('first-time-view');
+        if (activeInventoryId) {
+            // Si ya hay una DB seleccionada, muestro el panel de control
+            const activeDbNameEl = document.getElementById('active-db-name');
+            if(activeDbNameEl) {
+                const activeInventory = profileData.databases.find(db => db.id == activeInventoryId);
+                activeDbNameEl.textContent = activeInventory ? activeInventory.name : 'Desconocido';
             }
+            showView('main-app-view');
+        } else if (profileData.databases && profileData.databases.length > 0) {
+            // Si tiene bases de datos, pero ninguna está activa, lo redirijo a la página de selección
+            window.location.href = '/select-db.php';
         } else {
-            // Si por alguna razon la API falla, muestro un error
-            showView('welcome-view'); // O una vista de error específica
+            // Si no tiene ninguna base de datos, muestro la invitacion para crear la primera
+            showView('empty-state-view');
         }
     } catch (error) {
-        console.error("Error al cargar el perfil del usuario:", error);
-        window.location.href = 'login.php';
+        console.error("Error al cargar el estado inicial:", error);
+        alert("Hubo un error al cargar tus datos. Serás redirigido.");
+        window.location.href = 'logout.php';
     }
 }
 
@@ -119,3 +113,4 @@ async function init() {
 
 // Iniciar todo cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', init);
+

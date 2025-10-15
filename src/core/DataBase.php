@@ -1,10 +1,10 @@
 <?php
-namespace App\Core;
+namespace App\core;
 
 use PDO;
 use PDOException;
 
-class Database
+class DataBase
 {
     private static $instance = null;
     private $conn;

@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\UserModel;
+use App\Models\InventoryModel;
 
 class UserController
 {
@@ -11,7 +12,6 @@ class UserController
     public function getProfile(): void
     {
         header('Content-Type: application/json');
-
         $user = getCurrentUser();
 
         if (!$user) {
@@ -20,15 +20,18 @@ class UserController
             return;
         }
 
-        // Aquí es donde también consultarías las bases de datos del usuario
-        // Por ahora, lo dejamos pendiente para el siguiente paso.
-        $databases = []; // Simulación
+        $inventoryModel = new InventoryModel();
+        // Uso findByUserId para obtener los inventarios del usuario.
+        $inventories = $inventoryModel->findByUserId($user['id']);
 
-        // Devolvemos una respuesta exitosa con los datos del usuario
+        $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+
+        // Devuelvo una respuesta exitosa con los datos del usuario
         echo json_encode([
             'success' => true,
             'user' => $user,
-            'databases' => $databases
+            'databases' => $inventories,
+            'activeInventoryId' => $activeInventoryId
         ]);
     }
 }

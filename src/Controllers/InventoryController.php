@@ -1,11 +1,12 @@
 <?php
+// src/Controllers/InventoryController.php
 namespace App\Controllers;
 
 use App\Models\InventoryModel;
+use Exception;
 
 class InventoryController
 {
-    // src/Controllers/InventoryController.php
     public function create(): void
     {
         header('Content-Type: application/json');
@@ -25,35 +26,87 @@ class InventoryController
             return;
         }
 
-        $inventoryModel = new InventoryModel();
-        $this->db->beginTransaction(); // ¡Importante para transacciones!
-
         try {
-            // 1. Crear el registro del "inventario"
-            $inventoryId = $inventoryModel->create($data['dbName'], $user['id']);
-            if (!$inventoryId) {
-                throw new Exception("No se pudo crear el registro del inventario.");
+            $inventoryModel = new InventoryModel();
+
+            $existingInventories = $inventoryModel->findByUserId($user['id']);
+            foreach ($existingInventories as $inv) {
+                if (strtolower($inv['name']) === strtolower($data['dbName'])) {
+                    http_response_code(409); // 409 Conflict
+                    echo json_encode(['success' => false, 'message' => 'Ya tenés una Base de Datos con ese nombre.']);
+                    return;
+                }
             }
 
-            // 2. Crear la tabla física
+
             $columnsArray = explode(',', $data['columns']);
-            $tableName = $inventoryModel->createTableForInventory($user['id'], $inventoryId, $data['dbName'], $columnsArray);
-            if (!$tableName) {
-                throw new Exception("No se pudo crear la tabla física en la base de datos.");
-            }
 
-            // 3. Si todo salió bien, confirmamos los cambios
-            $this->db->commit();
+            // El modelo se encarga de la transacción internamente
+            $tableName = $inventoryModel->createInventoryAndTable(
+                $data['dbName'],
+                $user['id'],
+                $data['dbName'],
+                $columnsArray
+            );
+
+            // Si todo va bien, devuelvo éxito
             echo json_encode([
                 'success' => true,
-                'message' => "¡Tabla '{$tableName}' creada con éxito!"
+                'message' => "¡Tabla \"{$tableName}\" creada con éxito!"
             ]);
 
         } catch (Exception $e) {
-            // 4. Si algo falló, revertimos todo
-            $this->db->rollBack();
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            if (str_contains($e->getMessage(), '42S01')) {
+                http_response_code(409); // 409 Conflict
+                echo json_encode(['success' => false, 'message' => 'Ya existe una base de datos con ese nombre.']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Ocurrió un error inesperado en el servidor.']);
+                // registro el error real
+                error_log($e->getMessage());
+            }
         }
+    }
+
+    public function select(): void
+    {
+        header('Content-Type: application/json');
+        $user = getCurrentUser();
+
+        if (!$user) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'No autorizado.']);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $inventoryId = $data['inventoryId'] ?? null;
+
+        if (!$inventoryId) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID de inventario no proporcionado.']);
+            return;
+        }
+
+        // Verificación de propiedad :: crucial para la seguridad
+        $inventoryModel = new InventoryModel();
+        $inventories = $inventoryModel->findByUserId($user['id']);
+        $isOwner = false;
+        foreach ($inventories as $inv) {
+            if ($inv['id'] == $inventoryId) {
+                $isOwner = true;
+                break;
+            }
+        }
+
+        if (!$isOwner) {
+            http_response_code(403); // Forbidden
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para acceder a este recurso.']);
+            return;
+        }
+
+        // Si todo es correcto, guardo la selección en la sesión
+        $_SESSION['active_inventory_id'] = $inventoryId;
+        echo json_encode(['success' => true, 'message' => 'Inventario seleccionado.']);
     }
 }
