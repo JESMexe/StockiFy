@@ -3,13 +3,13 @@ import * as api from '../api.js';
 
 // ---- MANEJADORES ----
 async function handleSelectDatabase(event) {
-    const target = event.target.closest('.db-list-item');
+    const target = event.target.closest('button.db-list-item');
     if (!target) return;
 
     const inventoryId = target.dataset.dbId;
     try {
         await api.selectDatabase(inventoryId);
-        window.location.href = '/index.php';
+        window.location.href = '/dashboard.php';
     } catch (error) {
         alert(`Error al seleccionar la base de datos: ${error.message}`);
     }
@@ -17,13 +17,16 @@ async function handleSelectDatabase(event) {
 
 function populateDbList(databases, dbListElement) {
     dbListElement.innerHTML = ''; // Limpiamos la lista
+    const container = document.createElement('div');
+    container.classList.add('menu-buttons');
     databases.forEach(db => {
-        const li = document.createElement('li');
-        li.textContent = db.name;
-        li.dataset.dbId = db.id;
-        li.classList.add('db-list-item');
-        dbListElement.appendChild(li);
+        const button = document.createElement('button');
+        button.textContent = db.name;
+        button.dataset.dbId = db.id;
+        button.classList.add('btn', 'btn-secondary', 'db-list-item');
+        dbListElement.appendChild(button);
     });
+    dbListElement.appendChild(container);
 }
 
 // ---- INICIALIZACIÓN ----

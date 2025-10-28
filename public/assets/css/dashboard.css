@@ -1,0 +1,271 @@
+﻿/* public/assets/css/dashboard.css (Versión Limpia y Única) */
+
+/* Layout General del Dashboard */
+.dashboard-container {
+    display: flex;
+    flex-grow: 1; /* Ocupa el resto de la altura después del header */
+}
+
+/* Sidebar (Menú Lateral) */
+.dashboard-sidebar {
+    width: 250px;
+    background-color: var(--color-white);
+    border-right: var(--border-strong);
+    padding: 1.5rem;
+    flex-shrink: 0; /* Evita que se encoja */
+    height: calc(100vh - 62px); /* Ajusta altura (100% viewport - altura del header aprox) */
+    overflow-y: auto; /* Scroll si el menú es muy largo */
+}
+
+#view-db {
+    width: 100%;
+    max-width: none; /* Quitamos cualquier max-width heredado */
+    padding: 0; /* Quitamos padding si no lo necesitamos directamente aquí */
+    border: none; /* Quitamos bordes si no los necesitamos */
+    box-shadow: none; /* Quitamos sombra si no la necesitamos */
+    background: none; /* Quitamos fondo si no lo necesitamos */
+}
+
+.main-menu h3 {
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+}
+
+.main-menu ul { list-style: none; padding: 0; margin: 0; }
+.main-menu li { margin-bottom: 0.75rem; }
+
+/* Botones y Enlaces del Menú */
+.menu-btn, .menu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    border: none;
+    background: none;
+    text-align: left;
+    line-height: 1.3;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--color-black);
+    text-decoration: none;
+    transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+}
+.menu-btn:hover, .menu-link:hover { background-color: rgba(0, 0, 0, 0.05); }
+.menu-btn.active { background-color: var(--accent-color); color: var(--color-white); }
+.main-menu hr { margin: 1rem 0; border: none; height: 2px; background-color: #eee; }
+
+/* Iconos del menú */
+.menu-btn i, .menu-link i {
+    font-size: 1.2em;
+    line-height: 1;
+}
+
+/* Contenido Principal */
+.dashboard-main {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    background-color: #f9f9f9;
+    height: calc(100vh - 62px);
+}
+
+/* Vistas dentro del contenido principal */
+.dashboard-view { /* Ocultas por defecto con .hidden */ }
+
+/* Contenedor de la Tabla */
+.table-container {
+    width: 100%;
+    background-color: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 10px 10px 0px var(--color-black);
+    overflow: hidden;
+    margin: 0;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: var(--border-strong);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.table-header h2 { font-size: 1.5rem; margin: 0; }
+.table-controls { display: flex; align-items: center; gap: 1rem; }
+.table-controls input { max-width: 250px; }
+
+/* --- BOTÓN AÑADIR --- */
+#add-row-btn {
+    width: auto;      /* Hago que el ancho se ajuste al texto */
+    padding: 8px 16px; /* Uso el padding más chico, como los del header */
+    margin-top: 0;    /* Quito el margen superior */
+    white-space: nowrap; /* Evito que el texto se parta en dos líneas */
+}
+
+/* Wrapper y Tabla */
+.table-wrapper {
+    max-height: calc(100vh - 280px); /* Ajusta según altura del header, padding, etc. */
+    overflow: auto;
+}
+#data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+#data-table th, #data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    color: var(--color-black);
+    white-space: nowrap;
+}
+#data-table thead th {
+    background-color: #f2f2f2;
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: #333;
+}
+#data-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
+#data-table tbody tr:hover { background-color: #f1f1f1; }
+
+/* Placeholder para Vistas no implementadas */
+.dashboard-view.hidden { display: none; }
+.dashboard-view:not(#view-db) {
+    background-color: var(--color-white);
+    padding: 2rem;
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+}
+
+/* --- ESTILOS PARA TABLA VACÍA --- */
+.empty-table-message {
+    text-align: center;
+    padding: 3rem 1rem !important; /* Más padding vertical, !important para sobreescribir */
+    color: var(--color-gray);
+    font-size: 1.1rem;
+}
+
+/* Botón inline dentro del mensaje */
+.btn-inline {
+    display: inline-block; /* Hacemos que sea inline */
+    width: auto; /* Ancho automático */
+    margin-left: 1rem; /* Espacio a la izquierda */
+    padding: 8px 16px; /* Más chico */
+    vertical-align: middle; /* Alineamos con el texto */
+    box-shadow: none; /* Quitamos sombra base (aparece al hover) */
+    margin-top: -5px; /* Ajuste vertical fino */
+}
+.btn-inline:hover { /* Hereda la sombra del .btn:hover */ }
+.btn-inline:active { /* Hereda la animación del .btn:active */ }
+
+/* --- ESTILOS PARA EDICIÓN DE STOCK EN TABLA --- */
+.stock-cell {
+    display: flex;
+    /* Volvemos a 'center' para un centrado vertical más simple */
+    align-items: center; /* <-- CAMBIO CLAVE */
+    gap: 0.5rem;
+}
+
+.stock-btn {
+    flex-shrink: 0; /* Evita que los botones se achiquen */
+    font-size: 1rem;
+    line-height: 1;
+    min-width: 25px; /* Ancho mínimo */
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    background-color: #eee;
+    transition: background-color var(--transition-speed);
+    padding-left: 8px; /* Mantenemos horizontal */
+    padding-right: 8px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+.stock-btn:hover { background-color: #ddd; }
+.stock-btn.minus { color: var(--accent-red); }
+.stock-btn.plus { color: var(--accent-green); }
+
+.stock-input {
+    flex-grow: 0; /* Ocupa el espacio restante */
+    width: 60px; /* Ancho base pequeño */
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+    text-align: center;
+    border: 1px solid #ccc; /* Borde más suave para el input */
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    /* Quitar flechas por defecto del input number */
+    -moz-appearance: textfield;
+}
+.stock-input::-webkit-outer-spin-button,
+.stock-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* public/assets/css/dashboard.css */
+
+/* ... (todos tus estilos anteriores) ... */
+
+/* --- ESTILOS PARA LA FILA DE EDICIÓN --- */
+.editing-row td {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}
+
+.editing-row input[type="text"],
+.editing-row input[type="number"] { /* Input general para la fila de edición */
+    width: 50%;
+    padding: 6px 8px;
+    border: 1px solid var(--accent-color); /* Resaltado */
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+}
+
+.editing-row .action-buttons { /* Contenedor para botones Guardar/Cancelar */
+    display: flex;
+    gap: 0.5rem;
+    white-space: nowrap; /* Evita que los botones se partan */
+}
+
+.editing-row .action-buttons .btn {
+    width: auto;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    margin: 0;
+    line-height: 1;
+}
+
+/* Estilo específico para el botón de eliminar final */
+#confirm-delete-btn {
+    background-color: var(--accent-red);
+    border-color: var(--accent-red);
+    color: var(--color-white);
+}
+#confirm-delete-btn:disabled {
+    background-color: var(--color-gray);
+    border-color: var(--color-gray);
+    cursor: not-allowed;
+    box-shadow: none; /* Quitamos sombra si está deshabilitado */
+    transform: none;
+}
+#confirm-delete-btn:hover:not(:disabled) {
+    filter: brightness(1.1); /* Hacemos más brillante al pasar el mouse */
+    box-shadow: 4px 4px 0px var(--color-black); /* Mantenemos el pop */
+    transform: translate(-2px, -2px);
+}
+#confirm-delete-btn:active:not(:disabled) {
+    filter: brightness(0.9); /* Un poco más oscuro al hacer clic */
+    box-shadow: 1px 1px 0px var(--color-black);
+    transform: translate(3px, 3px);
+}

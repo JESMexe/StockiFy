@@ -52,6 +52,12 @@ export async function selectDatabase(inventoryId) {
     return handleResponse(response);
 }
 
+// public/assets/js/api.js
+export async function getTableData() {
+    const response = await fetch('/api/table/get.php');
+    return handleResponse(response);
+}
+
 
 // --- FUNCIONES DEL PERFIL DE USUARIO ---
 export async function getUserProfile() {
@@ -69,4 +75,80 @@ export async function createDatabase(dbName, columns) {
         body: JSON.stringify(requestBody),
     });
     return handleResponse(response);
+}
+
+/**
+ * Uploads a CSV file to get its headers and the target StockiFy columns.
+ * @param {FormData} formData - The FormData object containing the 'csvFile'.
+ * @returns {Promise<object>} Object with { success: bool, csvHeaders: [], stockifyColumns: [] }
+ */
+export async function getCsvHeaders(formData) {
+    const response = await fetch('/api/import/get-csv-headers.php', {
+        method: 'POST',
+        body: formData, // No 'Content-Type' header needed for FormData; browser sets it
+    });
+    // We reuse handleResponse, which now needs to handle potential JSON errors too
+    return handleResponse(response);
+}
+
+/**
+ * Envía el archivo CSV y el mapeo para ser procesados y guardados en sesión.
+ * @param {FormData} formData - FormData con 'csvFile', 'mapping' (JSON string), 'overwrite' (string 'true'/'false').
+ * @returns {Promise<object>} Resultado de la preparación.
+ */
+export async function prepareCsvImport(formData) {
+    const response = await fetch('/api/import/prepare-csv.php', {
+        method: 'POST',
+        body: formData,
+    });
+    return handleResponse(response);
+}
+
+// --- FUNCIONES DE STOCK ---
+
+/**
+ * Actualiza el stock de un item específico.
+ * @param {number} itemId El ID del item a actualizar.
+ * @param {string} action La acción a realizar: 'set', 'add', 'remove'.
+ * @param {number} value El valor para 'set' o la cantidad para 'add'/'remove'.
+ * @returns {Promise<object>} Objeto con { success: bool, newStock: number } o un error.
+ */
+export async function updateStock(itemId, action, value) {
+    const response = await fetch('/api/stock/update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, action, value }),
+    });
+    return handleResponse(response);
+}
+
+/**
+ * Añade una nueva fila de datos a la tabla activa.
+ * @param {object} itemData - Objeto con { columna: valor, ... } para la nueva fila.
+ * @returns {Promise<object>} Objeto con { success: bool, newItem: object } o un error.
+ */
+export async function addItemToTable(itemData) {
+    const response = await fetch('/api/table/add.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemData),
+    });
+    return handleResponse(response);
+}
+
+// public/assets/js/api.js
+
+// ... (después de selectDatabase o addItemToTable) ...
+
+/**
+ * Elimina la base de datos (inventario) activa actualmente en la sesión.
+ * @returns {Promise<object>} Objeto con { success: bool, message: string }
+ */
+export async function deleteDatabase() {
+    // No necesita body, el backend usa la sesión
+    const response = await fetch('/api/database/delete.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    return handleResponse(response); // Reutilizamos el manejador
 }

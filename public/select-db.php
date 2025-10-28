@@ -21,9 +21,9 @@
     <div id="selection-view" class="view-container">
         <h2>Selecciona una Base de Datos</h2>
         <p>Elige con qué base de datos quieres trabajar.</p>
-        <ul id="db-list">
+        <div id="db-list">
             <li>Cargando...</li>
-        </ul>
+        </div>
         <hr>
         <a href="create-db.php" class="btn btn-secondary">O crear una nueva</a>
     </div>

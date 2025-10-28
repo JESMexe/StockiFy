@@ -7,7 +7,6 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
  * Obtiene los datos del usuario que tiene la sesión activa.
- * Es la "llave maestra" para saber quién está logueado.
  *
  * @return array|null Devuelve un array con los datos del usuario si está logueado, o null si no.
  */

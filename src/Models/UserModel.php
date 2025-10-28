@@ -1,7 +1,7 @@
 <?php
 namespace App\Models;
 
-use App\Core\DataBase;
+use App\Core\Database;
 use PDO;
 use PDOException;
 
@@ -12,7 +12,7 @@ class UserModel
     public function __construct()
     {
         // Obtengo la conexion por el Singleton
-        $this->db = DataBase::getInstance();
+        $this->db = Database::getInstance();
     }
 
     /**

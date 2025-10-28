@@ -31,6 +31,7 @@ async function checkInitialState() {
             if(activeDbNameEl) {
                 const activeInventory = profileData.databases.find(db => db.id == activeInventoryId);
                 activeDbNameEl.textContent = activeInventory ? activeInventory.name : 'Desconocido';
+                window.location.href = '/dashboard.php';
             }
             showView('main-app-view');
         } else if (profileData.databases && profileData.databases.length > 0) {
@@ -54,14 +55,20 @@ function setupHeader(isLoggedIn) {
     if (!nav) return;
 
     if (isLoggedIn) {
-        nav.innerHTML = `<a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>`;
+        // Si está logueado, botones "Ir al Panel" y "Cerrar Sesión"
+        nav.innerHTML = `
+            <a href="/dashboard.php" class="btn btn-primary">Ir al Panel</a> 
+            <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
+        `;
     } else {
+        // Si no, botones "Iniciar Sesión" y "Registrarse"
         nav.innerHTML = `
             <a href="/login.php" class="btn btn-secondary">Iniciar Sesión</a>
             <a href="/register.php" class="btn btn-primary">Registrarse</a>
         `;
     }
 }
+// ... (el resto de main.js) ...
 
 
 // ---- LÓGICA DE LA APP (PARA USUARIOS LOGUEADOS) ----

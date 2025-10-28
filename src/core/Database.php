@@ -3,8 +3,9 @@ namespace App\core;
 
 use PDO;
 use PDOException;
+use Dotenv\Dotenv;
 
-class DataBase
+class Database
 {
     private static $instance = null;
     private $conn;
@@ -37,7 +38,7 @@ class DataBase
     }
 
     /**
-     * Implementa el patrón Singleton para asegurar una única conexión.
+     * falta implementar el patrón singleton para asegurar una única conexión.
      */
     public static function getInstance(): PDO
     {
