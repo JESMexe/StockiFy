@@ -1,28 +1,32 @@
 ﻿// public/assets/js/database/create-db.js
 import * as api from '../api.js';
-// Importamos funciones específicas del modal
-import { openImportModal, initializeImportModal } from '../import.js';
+import { openImportModal, initializeImportModal, setStockifyColumns } from '../import.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializa el modal (busca sus elementos)
     initializeImportModal();
 
     const createDbForm = document.getElementById('createDbForm');
     const messageDiv = document.getElementById('message');
     const prepareImportBtn = document.getElementById('prepare-import-btn');
-    const importStatusDiv = document.getElementById('import-prepared-status'); // Para mostrar si los datos están listos
+    const importStatusDiv = document.getElementById('import-prepared-status');
 
     if (!createDbForm || !prepareImportBtn) return;
 
-    // --- Event Listener para ABRIR EL MODAL ---
     prepareImportBtn.addEventListener('click', () => {
-        // Antes de abrir, podríamos pasarle las columnas actuales al modal si es necesario
+        const columnsInputValue = document.getElementById('columnsInput')?.value.trim();
+        const cols = columnsInputValue ? columnsInputValue.split(',').map(s => s.trim()).filter(s => s) : [];
+
+        if (cols.length === 0) {
+            alert("Por favor, primero definí las columnas (separadas por coma) antes de importar.");
+            return; // No abro el modal
+        }
+
+        setStockifyColumns(cols);
         openImportModal();
     });
 
-    // --- Event Listener para el ENVÍO FINAL ---
     createDbForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Detenemos el envío normal
+        event.preventDefault();
 
         const dbName = document.getElementById('dbNameInput').value.trim();
         const columns = document.getElementById('columnsInput').value.trim();
@@ -42,12 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.success) {
                 messageDiv.textContent = result.message + "\nSerás redirigido al panel.";
-                window.location.href = '/dashboard.php';
+                setTimeout(() => {
+                    window.location.href = '/dashboard.php';
+                }, 2000); // Le doy 2 segs para leer
             } else {
                 messageDiv.textContent = `Error: ${result.message}`;
             }
         } catch (error) {
-            // Si hay un error de red o un 500
             messageDiv.textContent = `Error: ${error.message}`;
         } finally {
             submitButton.disabled = false;
@@ -55,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Función global para que import.js pueda actualizar el estado
     window.updateImportStatus = (message) => {
         if(importStatusDiv) {
             importStatusDiv.textContent = message;

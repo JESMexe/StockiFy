@@ -15,22 +15,18 @@ class ImportModel
      */
     public function parseCsvHeaders(string $filePath): array
     {
-        // Open the uploaded file for reading
         $handle = fopen($filePath, 'r');
         if ($handle === false) {
             throw new Exception("No se pudo abrir el archivo CSV subido.");
         }
 
-        // Read the first line (headers) using fgetcsv for proper CSV parsing
         $headers = fgetcsv($handle, 0, ','); // 0 = max length (no limit), ',' = delimiter
         fclose($handle);
 
-        // Check if headers were read successfully and are not empty
         if ($headers === false || count($headers) === 0 || (count($headers) === 1 && empty($headers[0]))) {
             throw new Exception("El archivo CSV está vacío o la fila de cabeceras no es válida.");
         }
 
-        // Trim whitespace from headers
         return array_map('trim', $headers);
     }
 
@@ -49,23 +45,21 @@ class ImportModel
             throw new Exception("No se pudo abrir el archivo CSV para procesar.");
         }
 
-        $headers = fgetcsv($handle, 0, ','); // Leer y descartar la fila de cabeceras
+        $headers = fgetcsv($handle, 0, ',');
         if ($headers === false) {
             fclose($handle);
             throw new Exception("Error al leer la cabecera del archivo CSV.");
         }
 
         $parsedData = [];
-        $rowNumber = 1; // Empezamos a contar desde la primera fila de datos
+        $rowNumber = 1;
 
         while (($rowData = fgetcsv($handle, 0, ',')) !== false) {
             $rowNumber++;
             $newRow = [];
-            $isEmptyRow = true; // Para ignorar filas completamente vacías
+            $isEmptyRow = true;
 
-            // Construimos la nueva fila usando el mapeo
             foreach ($mapping as $stockifyColumn => $csvIndex) {
-                // Verificamos si el índice del CSV existe en la fila actual
                 if (isset($rowData[$csvIndex])) {
                     $value = trim($rowData[$csvIndex]);
                     $newRow[$stockifyColumn] = $value;
@@ -73,14 +67,11 @@ class ImportModel
                         $isEmptyRow = false;
                     }
                 } else {
-                    // Si el índice mapeado no existe (raro), asignamos null
                     $newRow[$stockifyColumn] = null;
-                    // Podrías lanzar un warning aquí si quieres ser estricto
                     // error_log("Advertencia: Índice CSV {$csvIndex} no encontrado en la fila {$rowNumber}");
                 }
             }
 
-            // Solo añadimos la fila si no estaba completamente vacía
             if (!$isEmptyRow) {
                 $parsedData[] = $newRow;
             }
@@ -89,7 +80,6 @@ class ImportModel
         fclose($handle);
 
         if (empty($parsedData)) {
-            // Podría ser un archivo solo con cabeceras o filas vacías
             error_log("Advertencia: No se encontraron datos válidos en el archivo CSV después de la cabecera.");
         }
 

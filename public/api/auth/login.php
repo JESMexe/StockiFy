@@ -10,8 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// *** CAMBIO CLAVE ***
-// Lee el cuerpo de la petición raw y lo decodifica de JSON a un array de PHP
 $data = json_decode(file_get_contents('php://input'), true);
 
 $authController = new AuthController();

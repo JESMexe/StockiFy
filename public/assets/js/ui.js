@@ -1,6 +1,5 @@
 import { views, elements } from './state.js';
 
-// Muestra una vista específica y oculta todas las demás
 export function showView(viewName) {
     for (const key in views) {
         if (views[key]) {
@@ -12,7 +11,6 @@ export function showView(viewName) {
     }
 }
 
-// Muestra un mensaje de estado temporal en la pantalla
 export function showStatus(message, type = 'info') {
     elements.statusMessage.textContent = message;
     elements.statusMessage.className = `status-${type}`;
@@ -22,7 +20,6 @@ export function showStatus(message, type = 'info') {
     }, 5000);
 }
 
-// Rellena la lista de bases de datos en la vista de seleccion
 export function populateDbList(databases, onSelect) {
     elements.dbList.innerHTML = ''; // Limpiar lista
     databases.forEach(dbName => {

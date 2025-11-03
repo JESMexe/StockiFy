@@ -1,8 +1,8 @@
 ﻿<?php
 // models/StockModel.php
 
-require_once '../AppState.php'; // Ajusta la ruta según tu proyecto
-require_once '../DB_Utilities.php'; // Asumimos que SeleccionarElemento está aquí
+require_once '../AppState.php';
+require_once '../DB_Utilities.php';
 
 class StockModel
 {
@@ -14,7 +14,6 @@ class StockModel
             $this->pdo = new PDO("sqlite:" . AppState::$dbRuta);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
-            // En una app real, esto debería loguearse, no imprimirse.
             die("Error de conexión a la BD: " . $e->getMessage());
         }
     }
@@ -70,14 +69,9 @@ class StockModel
      */
     public function findElementoId(string $columnaBuscada, string $palabraBuscada): ?int
     {
-        // Aquí iría la lógica de tu DB_Utilities::SeleccionarElemento
-        // Esto es un ejemplo, deberías adaptar tu lógica de selección.
         $stmt = $this->pdo->prepare("SELECT `ID` FROM DynamicTable WHERE `{$columnaBuscada}` LIKE :valor LIMIT 1");
         $stmt->execute([':valor' => "%" . $palabraBuscada . "%"]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        // Si hay múltiples resultados, deberías manejar esa lógica
-        // (tal vez devolver un array o manejar el error).
 
         return $row ? (int)$row['ID'] : null;
     }
@@ -98,7 +92,6 @@ class StockModel
 
         $this->pdo->exec("ALTER TABLE DynamicTable ADD COLUMN `stock` INTEGER DEFAULT 0");
 
-        // Actualizar AppState (si es necesario)
         if (method_exists('AppState', 'InicializarColumnas')) {
             AppState::InicializarColumnas();
         }

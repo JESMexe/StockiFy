@@ -1,4 +1,5 @@
 <?php
+// public/api/table/update-row.php
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use App\Controllers\TableController;
@@ -9,4 +10,4 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $controller = new TableController();
-$controller->addItem();
+$controller->updateItem();

@@ -27,58 +27,48 @@ class InventoryModel
      */
     public function createInventoryAndTable(string $inventoryName, int $userId, string $baseTableName, array $columns): array
     {
-        // Iniciamos la transacción fuera del try para asegurar que el rollback funcione si begin falla
         if (!$this->db->inTransaction()) {
             $this->db->beginTransaction();
         }
 
         try {
-            // --- 1. Crear el registro del "inventario" ---
             $stmt = $this->db->prepare("INSERT INTO inventories (name, user_id) VALUES (:name, :user_id)");
             $stmt->execute([':name' => $inventoryName, ':user_id' => $userId]);
             $inventoryId = (int)$this->db->lastInsertId();
             if (!$inventoryId) {
-                throw new \PDOException("No se pudo crear el registro del inventorio principal."); // Usamos PDOException
+                throw new \PDOException("No se pudo crear el registro del inventorio principal.");
             }
 
-            // --- 2. Seguridad: Sanitizar Nombres ---
             $safeBaseName = preg_replace('/[^a-zA-Z0-9_]/', '', $baseTableName);
-            if (empty($safeBaseName)) { // Añadimos validación por si el nombre queda vacío
+            if (empty($safeBaseName)) {
                 throw new \InvalidArgumentException("El nombre base de la tabla es inválido después de sanitizar.");
             }
             $tableName = "user_{$userId}_{$safeBaseName}";
 
-            // --- 3. Construir la Definición de Columnas ---
             $columnDefinitions = [];
             foreach ($columns as $columnName) {
                 $trimmedName = trim($columnName);
-                if (empty($trimmedName)) continue; // Ignora columnas vacías
+                if (empty($trimmedName)) continue;
                 $safeColumnName = preg_replace('/[^a-zA-Z0-9_]/', '', $trimmedName);
-                if (empty($safeColumnName)) continue; // Ignora columnas con solo caracteres inválidos
-                if (strtolower($safeColumnName) === 'id' || strtolower($safeColumnName) === 'created_at') continue; // Evita duplicados
+                if (empty($safeColumnName)) continue;
+                if (strtolower($safeColumnName) === 'id' || strtolower($safeColumnName) === 'created_at') continue;
                 $columnDefinitions[] = "`{$safeColumnName}` TEXT";
             }
             if (empty($columnDefinitions)) {
                 throw new \InvalidArgumentException("No se proporcionaron nombres de columna válidos.");
             }
 
-            // --- 4. Construir y Ejecutar la Consulta CREATE TABLE (CON IF NOT EXISTS) ---
-            // Añadimos IF NOT EXISTS para prevenir el error si ya existe
             $sql = "CREATE TABLE IF NOT EXISTS `{$tableName}` (
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
                 " . implode(', ', $columnDefinitions) . ",
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )";
-            // Usamos prepare/execute que es ligeramente más seguro que exec para DDL si hay dudas
             $createStmt = $this->db->prepare($sql);
             if (!$createStmt->execute()) {
-                // Si falla aquí (a pesar de IF NOT EXISTS), es un error grave
                 $errorInfo = $createStmt->errorInfo();
                 throw new \PDOException("Error al crear la tabla física: " . ($errorInfo[2] ?? 'Error desconocido'));
             }
 
-            // --- 5. Guardar Metadatos en user_tables ---
-            // Verificamos si ya existe una entrada para evitar duplicados en metadatos
             $checkMeta = $this->db->prepare("SELECT id FROM user_tables WHERE inventory_id = ?");
             $checkMeta->execute([$inventoryId]);
             if ($checkMeta->fetchColumn() === false) {
@@ -89,7 +79,6 @@ class InventoryModel
                 }
             }
 
-            // --- 6. Si todo salió bien, confirmamos los cambios ---
             if ($this->db->inTransaction()) {
                 if (!$this->db->commit()) {
                     throw new \PDOException("Fallo al confirmar la transacción (commit).");
@@ -97,7 +86,7 @@ class InventoryModel
             }
             return ['id' => $inventoryId, 'tableName' => $tableName];
 
-        } catch (\PDOException | \InvalidArgumentException $e) { // Capturamos excepciones más específicas
+        } catch (\PDOException | \InvalidArgumentException $e) {
             if ($this->db->inTransaction()) {
                 try {
                     $this->db->rollBack();
@@ -134,7 +123,6 @@ class InventoryModel
      */
     public function deleteInventoryAndData(int $inventoryId, int $userId): bool
     {
-        // Inicio transacción fuera del try principal
         try {
             if (!$this->db->inTransaction()) {
                 if (!$this->db->beginTransaction()) {
@@ -143,12 +131,11 @@ class InventoryModel
             }
         } catch (\PDOException $e) {
             error_log("Error fatal al iniciar transacción para eliminar: " . $e->getMessage());
-            throw $e; // Relanzo el error grave
+            throw $e;
         }
 
-        // Bloque try principal para las operaciones
         try {
-            // 1. Verifico propiedad y obtengo metadata
+
             $stmtMeta = $this->db->prepare(
                 "SELECT i.name, ut.table_name
                  FROM inventories i
@@ -161,12 +148,10 @@ class InventoryModel
             if (!$meta) {
                 throw new Exception("Inventario no encontrado o no tenés permiso para eliminarlo.");
             }
-            $tableName = $meta['table_name'] ?? null; // Uso ?? null por si no hay tabla en user_tables
+            $tableName = $meta['table_name'] ?? null;
 
-            // 2. Elimino la tabla física (si existe en metadatos)
             if ($tableName) {
                 $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
-                // Usamos prepare/execute que puede ser más seguro
                 $dropStmt = $this->db->prepare("DROP TABLE IF EXISTS {$safeTableName}");
                 if (!$dropStmt->execute()) {
                     $errorInfo = $dropStmt->errorInfo();
@@ -174,22 +159,18 @@ class InventoryModel
                 }
             }
 
-            // 3. Elimino la entrada de metadatos (user_tables) - IMPORTANTE: Hacer ANTES de eliminar inventories por FK
             $stmtDeleteMeta = $this->db->prepare("DELETE FROM user_tables WHERE inventory_id = :inventory_id");
             if (!$stmtDeleteMeta->execute([':inventory_id' => $inventoryId])) {
                 $errorInfo = $stmtDeleteMeta->errorInfo();
                 throw new \PDOException("Error al eliminar metadatos: " . ($errorInfo[2] ?? 'Error desconocido'));
             }
 
-
-            // 4. Elimino la entrada del inventario (Ahora sí, después de borrar la FK)
             $stmtDeleteInv = $this->db->prepare("DELETE FROM inventories WHERE id = :inventory_id");
             if (!$stmtDeleteInv->execute([':inventory_id' => $inventoryId])) {
                 $errorInfo = $stmtDeleteInv->errorInfo();
                 throw new \PDOException("Error al eliminar registro de inventario: " . ($errorInfo[2] ?? 'Error desconocido'));
             }
 
-            // 5. Confirmo la transacción (SOLO SI SIGUE ACTIVA)
             if ($this->db->inTransaction()) {
                 if (!$this->db->commit()) {
                     throw new \PDOException("Fallo al confirmar la transacción de eliminación.");
@@ -198,7 +179,6 @@ class InventoryModel
             return true;
 
         } catch (Exception $e) {
-            // 6. Revierto (SOLO SI SIGUE ACTIVA)
             if ($this->db->inTransaction()) {
                 try {
                     $this->db->rollBack();
@@ -207,7 +187,7 @@ class InventoryModel
                 }
             }
             error_log("Error en deleteInventoryAndData: " . $e->getMessage());
-            throw $e; // Relanzo para que el controlador lo maneje
+            throw $e;
         }
     }
 }

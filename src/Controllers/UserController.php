@@ -21,12 +21,10 @@ class UserController
         }
 
         $inventoryModel = new InventoryModel();
-        // Uso findByUserId para obtener los inventarios del usuario.
         $inventories = $inventoryModel->findByUserId($user['id']);
 
         $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
 
-        // Devuelvo una respuesta exitosa con los datos del usuario
         echo json_encode([
             'success' => true,
             'user' => $user,

@@ -11,7 +11,6 @@ class UserModel
 
     public function __construct()
     {
-        // Obtengo la conexion por el Singleton
         $this->db = Database::getInstance();
     }
 
@@ -33,18 +32,14 @@ class UserModel
      */
     public function createUser(array $data): bool
     {
-        // Hashear la contraseña de forma segura
-        // el estandar de PHP.
         $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
 
-        // Preparar la consulta SQL
         $sql = "INSERT INTO users (username, email, password_hash, full_name, cell, dni, is_admin)
                 VALUES (:username, :email, :password_hash, :full_name, :cell, :dni, :is_admin)";
 
         $stmt = $this->db->prepare($sql);
 
         try {
-            // Ejecutar la insercion
             $stmt->execute([
                 ':username' => $data['username'],
                 ':email' => $data['email'],
@@ -56,11 +51,9 @@ class UserModel
             ]);
             return true;
         } catch (PDOException $e) {
-            // El código '23000' es un error de violacion de integridad, ej: email o username duplicado
             if ($e->getCode() == '23000') {
                 return false;
             }
-            // Para otros errores, lo relanzamos
             throw $e;
         }
     }

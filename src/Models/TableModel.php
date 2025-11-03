@@ -52,19 +52,15 @@ class TableModel
             return 0;
         }
 
-        // Seguridad: Sanitizar nombre de tabla
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
 
-        $this->db->beginTransaction(); // Usamos transacción para inserción masiva
+        $this->db->beginTransaction();
 
         try {
             if ($overwrite) {
-                // Usamos TRUNCATE que es más rápido que DELETE para vaciar
                 $this->db->exec("TRUNCATE TABLE {$safeTableName}");
             }
 
-            // Preparamos la consulta INSERT una sola vez
-            // Obtenemos las columnas del primer registro (asumimos que todas las filas tienen las mismas)
             $columns = array_keys($data[0]);
             $safeColumns = array_map(fn($col) => "`" . str_replace("`", "``", $col) . "`", $columns);
             $placeholders = implode(',', array_fill(0, count($columns), '?'));
@@ -74,15 +70,13 @@ class TableModel
 
             $insertedCount = 0;
             foreach ($data as $row) {
-                // Aseguramos que los valores estén en el mismo orden que las columnas
                 $values = [];
                 foreach($columns as $col) {
-                    $values[] = $row[$col] ?? null; // Usamos null si falta un valor
+                    $values[] = $row[$col] ?? null;
                 }
                 if ($stmt->execute($values)) {
                     $insertedCount++;
                 } else {
-                    // Podríamos loggear el error específico de esta fila si quisiéramos
                     error_log("Error al insertar fila en {$tableName}: " . implode(', ', $stmt->errorInfo()));
                 }
             }
@@ -92,101 +86,69 @@ class TableModel
 
         } catch (\PDOException $e) {
             $this->db->rollBack();
-            throw $e; // Relanzamos para que el controlador lo maneje
+            throw $e;
         }
     }
 
-    // src/Models/TableModel.php
-
-// ... (después de bulkInsertData) ...
-
     /**
-     * Actualiza el valor de una columna específica para una fila (item) dado.
-     * ¡Función genérica útil para editar cualquier celda!
-     *
+     * Actualiza una fila completa en una tabla dinámica.
      * @param string $tableName El nombre real de la tabla (user_X_...).
      * @param int $itemId El ID de la fila a actualizar.
-     * @param string $columnName El nombre de la columna a actualizar.
-     * @param mixed $newValue El nuevo valor para la celda.
-     * @return bool True si la actualización fue exitosa, false si no.
+     * @param array $dataToUpdate Un array asociativo ['columna' => 'valor', ...].
+     * @return array|false La fila actualizada o false si falla.
      */
-    public function updateItemValue(string $tableName, int $itemId, string $columnName, mixed $newValue): bool
+    public function updateItemRow(string $tableName, int $itemId, array $dataToUpdate): array|false
     {
-        // Seguridad: Sanitizar nombres
+        // Seguridad: Sanitizo el nombre de la tabla
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
-        // Asumimos que $columnName ya viene sanitizado o lo sanitizamos acá si es necesario
-        $safeColumnName = "`" . str_replace("`", "``", $columnName) . "`";
 
-        $sql = "UPDATE {$safeTableName} SET {$safeColumnName} = :newValue WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
+        $setClauses = []; // Acá armo la parte SET de la consulta
+        $bindings = [':id' => $itemId]; // Acá van los valores a bindear
 
-        return $stmt->execute([
-            ':newValue' => $newValue,
-            ':id' => $itemId
-        ]);
-    }
+        // Construyo la consulta dinámicamente
+        foreach ($dataToUpdate as $column => $value) {
+            // Me aseguro de no intentar actualizar las columnas automáticas
+            if (strcasecmp($column, 'id') === 0 || strcasecmp($column, 'created_at') === 0) {
+                continue; // Salto esta columna
+            }
 
-    /**
-     * Ajusta (suma o resta) el valor numérico de una columna (ej: Stock).
-     *
-     * @param string $tableName Nombre real de la tabla.
-     * @param int $itemId ID de la fila.
-     * @param string $stockColumnName Nombre de la columna de stock.
-     * @param int $amountToAddOrSubtract Cantidad a sumar (positivo) o restar (negativo).
-     * @return int|false El nuevo valor del stock o false si falló.
-     */
-    public function adjustStock(string $tableName, int $itemId, string $stockColumnName, int $amountToAddOrSubtract): int|false
-    {
-        // Seguridad
-        $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
-        $safeStockColumn = "`" . str_replace("`", "``", $stockColumnName) . "`";
+            // Sanitizo el nombre de la columna
+            $safeColumn = "`" . str_replace("`", "``", trim($column)) . "`";
+            $placeholder = ":" . preg_replace('/[^a-zA-Z0-9_]/', '', trim($column)); // ej: :Nombre
 
-        $this->db->beginTransaction(); // Usamos transacción para seguridad concurrente
+            $setClauses[] = "{$safeColumn} = {$placeholder}";
+            $bindings[$placeholder] = $value;
+        }
 
+        if (empty($setClauses)) {
+            // No se envió nada válido para actualizar
+            throw new \InvalidArgumentException("No hay datos válidos para actualizar.");
+        }
+
+        $sql = "UPDATE {$safeTableName} SET " . implode(', ', $setClauses) . " WHERE id = :id";
+
+        $this->db->beginTransaction();
         try {
-            // 1. Obtenemos el valor actual y bloqueamos la fila (FOR UPDATE)
-            $sqlSelect = "SELECT {$safeStockColumn} FROM {$safeTableName} WHERE id = :id FOR UPDATE";
-            $stmtSelect = $this->db->prepare($sqlSelect);
-            $stmtSelect->execute([':id' => $itemId]);
-            $currentStock = $stmtSelect->fetchColumn();
-
-            if ($currentStock === false) {
-                throw new Exception("Item no encontrado."); // No encontró el item
+            $stmt = $this->db->prepare($sql);
+            if (!$stmt->execute($bindings)) {
+                $errorInfo = $stmt->errorInfo();
+                throw new \PDOException("Error al ejecutar UPDATE: " . ($errorInfo[2] ?? 'Error desconocido'));
             }
 
-            // Calculamos el nuevo stock
-            $newStock = (int)$currentStock + $amountToAddOrSubtract;
+            // Si el UPDATE funcionó, busco la fila actualizada para devolverla
+            $selectStmt = $this->db->prepare("SELECT * FROM {$safeTableName} WHERE id = ?");
+            $selectStmt->execute([$itemId]);
+            $updatedRow = $selectStmt->fetch(PDO::FETCH_ASSOC);
 
-            // Validación: No permitir stock negativo (podrías hacerlo opcional)
-            if ($newStock < 0) {
-                throw new Exception("Stock insuficiente. Stock actual: {$currentStock}, se intentó quitar: " . abs($amountToAddOrSubtract));
-            }
+            $this->db->commit();
+            return $updatedRow;
 
-            // 2. Actualizamos al nuevo valor
-            $sqlUpdate = "UPDATE {$safeTableName} SET {$safeStockColumn} = :newStock WHERE id = :id";
-            $stmtUpdate = $this->db->prepare($sqlUpdate);
-            $success = $stmtUpdate->execute([
-                ':newStock' => $newStock,
-                ':id' => $itemId
-            ]);
-
-            if ($success) {
-                $this->db->commit();
-                return $newStock; // Devolvemos el nuevo stock
-            } else {
-                throw new Exception("Error al actualizar el stock en la base de datos.");
-            }
-
-        } catch (Exception $e) {
+        } catch (\PDOException | \InvalidArgumentException $e) {
             $this->db->rollBack();
-            error_log("Error en adjustStock: " . $e->getMessage()); // Logueo el error
-            return false; // Indicamos que falló
+            error_log("Error en TableModel::updateItemRow: " . $e->getMessage());
+            throw $e; // Relanzo para que el controlador lo maneje
         }
     }
-
-    // src/Models/TableModel.php
-
-// ... (después de adjustStock o al final de la clase) ...
 
     /**
      * Inserta una nueva fila de datos en una tabla dinámica.
@@ -197,18 +159,14 @@ class TableModel
      */
     public function insertItem(string $tableName, array $data): array|false
     {
-        // Seguridad: Sanitizar nombre de tabla
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
 
-        // Filtro columnas válidas (ignoro 'id' y 'created_at' si vienen del front)
         $columns = [];
         $values = [];
         $placeholders = [];
         foreach ($data as $key => $value) {
             $trimmedKey = trim($key);
-            // Solo incluyo columnas que no sean 'id' o 'created_at' (case-insensitive)
             if (strcasecmp($trimmedKey, 'id') !== 0 && strcasecmp($trimmedKey, 'created_at') !== 0) {
-                // Sanitizo nombre de columna por seguridad
                 $safeColumn = "`" . str_replace("`", "``", $trimmedKey) . "`";
                 $columns[] = $safeColumn;
                 $values[] = $value; // Guardo el valor
@@ -218,23 +176,22 @@ class TableModel
 
         if (empty($columns)) {
             error_log("Intento de insertar fila vacía o solo con columnas automáticas en {$tableName}");
-            return false; // No hay nada que insertar
+            return false;
         }
 
         $sql = "INSERT INTO {$safeTableName} (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
 
-        $this->db->beginTransaction(); // Transacción por si hay triggers o pasos futuros
+        $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare($sql);
             if ($stmt->execute($values)) {
                 $newId = $this->db->lastInsertId();
-                // Ahora recupero la fila completa recién insertada
                 $selectStmt = $this->db->prepare("SELECT * FROM {$safeTableName} WHERE id = ?");
                 $selectStmt->execute([$newId]);
                 $newRow = $selectStmt->fetch(PDO::FETCH_ASSOC);
 
                 $this->db->commit();
-                return $newRow ?: false; // Devuelvo la fila completa o false si no la encontró
+                return $newRow ?: false;
             } else {
                 throw new \PDOException("Error al ejecutar la inserción: " . implode(', ', $stmt->errorInfo()));
             }

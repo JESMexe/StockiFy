@@ -44,11 +44,11 @@ class AuthController
             return;
         }
 
-        // Llamar al modelo para crear el usuario
+        // Llamp al modelo para crear el usuario
         $userModel = new UserModel();
         $success = $userModel->createUser($data);
 
-        // Devolver la respuesta
+        // Devuelvo la respuesta
         if ($success) {
             echo json_encode(['success' => true, 'message' => '¡Usuario registrado con éxito!']);
         } else {

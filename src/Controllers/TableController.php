@@ -75,10 +75,8 @@ class TableController
         $user = getCurrentUser();
         $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
 
-        // 1. Verificaciones (Usuario, Inventario Activo)
         if (!$user || !$activeInventoryId) { /* ... error 403 ... */ return; }
 
-        // 2. Obtener datos enviados por el frontend
         $newItemData = json_decode(file_get_contents('php://input'), true);
         if (empty($newItemData) || !is_array($newItemData)) {
             http_response_code(400);
@@ -89,19 +87,17 @@ class TableController
         try {
             $tableModel = new TableModel();
 
-            // 3. Obtener metadatos para saber el nombre real de la tabla
             $metadata = $tableModel->getTableMetadata($activeInventoryId);
             if (!$metadata) { throw new Exception("Metadatos de tabla no encontrados."); }
             $tableName = $metadata['table_name'];
 
-            // 4. Llamar al modelo para insertar los datos
             $insertedRow = $tableModel->insertItem($tableName, $newItemData);
 
             if ($insertedRow) {
                 echo json_encode([
                     'success' => true,
                     'message' => 'Fila añadida con éxito.',
-                    'newItem' => $insertedRow // Devuelvo la fila completa con el ID
+                    'newItem' => $insertedRow
                 ]);
             } else {
                 throw new Exception("No se pudo añadir la fila a la base de datos.");
@@ -111,6 +107,47 @@ class TableController
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Error interno al añadir fila: ' . $e->getMessage()]);
             error_log("Error en TableController::addItem: " . $e->getMessage());
+        }
+    }
+
+    public function updateItem(): void
+    {
+        header('Content-Type: application/json');
+        $user = getCurrentUser();
+        $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+
+        if (!$user || !$activeInventoryId) { /* ... error 403 ... */ return; }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $itemId = $data['itemId'] ?? null;
+        $dataToUpdate = $data['dataToUpdate'] ?? null;
+
+        if (!$itemId || !is_array($dataToUpdate) || empty($dataToUpdate)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Datos inválidos. Se requiere "itemId" y "dataToUpdate".']);
+            return;
+        }
+
+        try {
+            $tableModel = new TableModel();
+
+            // Busco el nombre real de la tabla
+            $metadata = $tableModel->getTableMetadata($activeInventoryId);
+            if (!$metadata) { throw new Exception("Metadatos de tabla no encontrados."); }
+            $tableName = $metadata['table_name'];
+
+            // Llamo al modelo para actualizar
+            $updatedItem = $tableModel->updateItemRow($tableName, $itemId, $dataToUpdate);
+
+            if ($updatedItem) {
+                echo json_encode(['success' => true, 'updatedItem' => $updatedItem]);
+            } else {
+                throw new Exception("No se pudo actualizar la fila.");
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()]);
         }
     }
 }

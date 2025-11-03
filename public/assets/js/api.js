@@ -1,3 +1,4 @@
+// public/assets/js/api.js
 async function handleResponse(response) {
     if (!response.ok) {
         const errorData = await response.json().catch(() => null);
@@ -52,7 +53,7 @@ export async function selectDatabase(inventoryId) {
     return handleResponse(response);
 }
 
-// public/assets/js/api.js
+
 export async function getTableData() {
     const response = await fetch('/api/table/get.php');
     return handleResponse(response);
@@ -61,14 +62,13 @@ export async function getTableData() {
 
 // --- FUNCIONES DEL PERFIL DE USUARIO ---
 export async function getUserProfile() {
-    // Usamos el método GET porque solo estamos solicitando datos
     const response = await fetch('/api/user/profile.php');
-    return handleResponse(response); // Reutilizamos nuestra genial función handleResponse
+    return handleResponse(response);
 }
 
 
 export async function createDatabase(dbName, columns) {
-    const requestBody = { dbName, columns }; // Enviamos ambos datos
+    const requestBody = { dbName, columns };
     const response = await fetch('/api/database/create.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,9 +85,8 @@ export async function createDatabase(dbName, columns) {
 export async function getCsvHeaders(formData) {
     const response = await fetch('/api/import/get-csv-headers.php', {
         method: 'POST',
-        body: formData, // No 'Content-Type' header needed for FormData; browser sets it
+        body: formData, // No 'Content-Type' header needed for FormData;
     });
-    // We reuse handleResponse, which now needs to handle potential JSON errors too
     return handleResponse(response);
 }
 
@@ -105,7 +104,6 @@ export async function prepareCsvImport(formData) {
 }
 
 // --- FUNCIONES DE STOCK ---
-
 /**
  * Actualiza el stock de un item específico.
  * @param {number} itemId El ID del item a actualizar.
@@ -136,9 +134,7 @@ export async function addItemToTable(itemData) {
     return handleResponse(response);
 }
 
-// public/assets/js/api.js
 
-// ... (después de selectDatabase o addItemToTable) ...
 
 /**
  * Elimina la base de datos (inventario) activa actualmente en la sesión.
@@ -150,5 +146,31 @@ export async function deleteDatabase() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
     });
-    return handleResponse(response); // Reutilizamos el manejador
+    return handleResponse(response);
+}
+
+/**
+ * Le pide al backend que inserte los datos que ya están en la sesión.
+ */
+export async function executeImport() {
+    const response = await fetch('/api/import/execute-import.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    return handleResponse(response);
+}
+
+/**
+ * Actualiza una fila completa en una tabla dinámica.
+ * @param {number} itemId El ID del item (fila) a actualizar.
+ * @param {object} dataToUpdate Un objeto con las { columna: valor } a actualizar.
+ * @returns {Promise<object>} Objeto con { success: bool, updatedItem: object }
+ */
+export async function updateTableRow(itemId, dataToUpdate) {
+    const response = await fetch('/api/table/update-row.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, dataToUpdate }),
+    });
+    return handleResponse(response);
 }

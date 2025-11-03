@@ -1,7 +1,6 @@
 ﻿// public/assets/js/import.js
 import * as api from './api.js';
 
-// --- Variables Globales ---
 let modalElement, closeModalBtn, importCancelBtn, dropZone, fileInput, importStatus;
 let step1, step2, mappingForm, validatePrepareBtn; // Cambio nombre de botones
 let uploadedFile = null;
@@ -12,7 +11,6 @@ function setStockifyColumns(columns) {
     console.log("Columnas de StockiFy actualizadas en import.js:", currentStockifyColumns);
 }
 
-// --- Funciones del Modal ---
 function openImportModal() {
     console.log("Función openImportModal FUE LLAMADA.");
     if (!modalElement) return;
@@ -31,7 +29,6 @@ function closeImportModal() {
         console.error("Error: modalElement no encontrado al intentar cerrar."); // DEBUG Error
         return;
     }
-    // Añado la clase 'hidden'
     modalElement.classList.add('hidden');
     console.log("Clase 'hidden' añadida al modal. Clases actuales:", modalElement.className); // DEBUG 2
 }
@@ -40,7 +37,6 @@ function showStep(stepNumber) {
     if (!step1 || !step2 || !validatePrepareBtn) return;
     step1.classList.toggle('hidden', stepNumber !== 1);
     step2.classList.toggle('hidden', stepNumber !== 2);
-    // Cambiamos nextButton por validatePrepareBtn
     validatePrepareBtn.classList.toggle('hidden', stepNumber !== 2);
 
     if (mappingForm) {
@@ -49,7 +45,7 @@ function showStep(stepNumber) {
 }
 
 // --- Manejo de Archivo ---
-function handleFileSelect(file) { /* ... (sin cambios, PERO ahora llama a fetchHeaders directamente) ... */
+function handleFileSelect(file) {
     if (!file || !file.type.match('text/csv')) { /* ... (mensaje error) ... */ return; }
     uploadedFile = file;
     importStatus.textContent = `Archivo seleccionado: ${file.name}`;
@@ -59,17 +55,16 @@ function handleFileSelect(file) { /* ... (sin cambios, PERO ahora llama a fetchH
 }
 
 async function fetchHeaders() {
-    if (!uploadedFile) return; // Ya no muestro alerta, handleFileSelect valida
+    if (!uploadedFile) return;
 
     importStatus.textContent = 'Leyendo cabeceras...';
-    // Podríamos deshabilitar dropZone aquí
 
     const formData = new FormData();
     formData.append('csvFile', uploadedFile);
 
     try {
         // Llamo a la API para obtener cabeceras CSV
-        const result = await api.getCsvHeaders(formData); // Asumimos que getCsvHeaders existe
+        const result = await api.getCsvHeaders(formData);
 
         if (result.success) {
             console.log("Cabeceras CSV:", result.csvHeaders);
@@ -77,7 +72,7 @@ async function fetchHeaders() {
 
             // Uso las columnas del input como destino
             populateMappingUI(result.csvHeaders, currentStockifyColumns);
-            showStep(2); // Paso al mapeo
+            showStep(2);
             importStatus.textContent = '';
         } else {
             throw new Error(result.message || 'Error desconocido del servidor.');
@@ -107,7 +102,7 @@ function populateMappingUI(csvHeaders, stockifyColumns) {
         <div></div> <div style="text-align: left; font-weight: bold;">Columna StockiFy</div>
     `);
 
-    // Por cada columna de StockiFy, creamos una fila de mapeo
+    // Por cada columna de StockiFy, creo una fila de mapeo
     stockifyColumns.forEach(stockifyCol => {
         // Ignoro 'id' y 'created_at' ya que son automáticas
         if (stockifyCol.toLowerCase() === 'id' || stockifyCol.toLowerCase() === 'created_at') {
@@ -164,81 +159,73 @@ async function handleValidateAndPrepare(event) {
     event.preventDefault();
 
     if (!uploadedFile || !mappingForm) {
-        console.error("Falta archivo subido o formulario de mapeo."); // DEBUG
+        console.error("Falta archivo subido o formulario de mapeo.");
         return;
     }
 
     validatePrepareBtn.disabled = true;
     validatePrepareBtn.textContent = 'Procesando...';
     importStatus.textContent = 'Validando y preparando datos...';
-    console.log("Estado inicial seteado, procesando formulario..."); // DEBUG 2
 
-    let mappingData, mapping, formData;
-    try {
-        mappingData = new FormData(mappingForm);
-        console.log("FormData del mapeo creado:", mappingData); // DEBUG 3
-        mapping = {};
-        mappingData.forEach((value, key) => {
-            if (key !== 'overwrite' && value !== "") {
-                mapping[key] = parseInt(value, 10);
-            }
-        });
-        console.log("Objeto de mapeo creado:", mapping); // DEBUG 4
-
-        formData = new FormData();
-        formData.append('csvFile', uploadedFile);
-        formData.append('mapping', JSON.stringify(mapping));
-        formData.append('overwrite', mappingData.has('overwrite') ? 'true' : 'false');
-        console.log("FormData final creado, listo para enviar."); // DEBUG 5
-
-    } catch (formError) {
-        // Si hay un error al procesar el formulario ANTES de la llamada API
-        console.error("Error al procesar datos del formulario:", formError);
-        importStatus.textContent = `Error al procesar el mapeo: ${formError.message}`;
-        importStatus.style.color = 'var(--accent-red)';
-        validatePrepareBtn.disabled = false;
-        validatePrepareBtn.textContent = 'Validar y Preparar Datos';
-        return; // Detengo aquí si falla el form
-    }
+    // Preparo el FormData como antes
+    const mappingData = new FormData(mappingForm);
+    const mapping = {};
+    mappingData.forEach((value, key) => {
+        if (key !== 'overwrite' && value !== "") {
+            mapping[key] = parseInt(value, 10);
+        }
+    });
+    const formData = new FormData();
+    formData.append('csvFile', uploadedFile);
+    formData.append('mapping', JSON.stringify(mapping));
+    formData.append('overwrite', mappingData.has('overwrite') ? 'true' : 'false');
 
     try {
-        console.log("Intentando llamar a api.prepareCsvImport..."); // DEBUG 6
-        const result = await api.prepareCsvImport(formData);
-        console.log("Respuesta de prepareCsvImport:", result); // DEBUG 7
+        console.log("Intentando llamar a api.prepareCsvImport..."); // DEBUG 1
+        // 1. Solo llamo a PREPARAR
+        const resultPrepare = await api.prepareCsvImport(formData);
+        console.log("Respuesta de prepareCsvImport:", resultPrepare); // DEBUG 2
 
-        if (result.success) {
-            console.log("API prepare fue exitosa. Actualizando estado y cerrando modal..."); // DEBUG Success
+        if (resultPrepare.success) {
+            console.log("API prepare fue exitosa."); // DEBUG 3
 
-            // Verifico si la función global existe antes de llamarla
+            // Verifico si estoy en create-db.php (donde existe window.updateImportStatus)
             if (typeof window.updateImportStatus === 'function') {
-                window.updateImportStatus(`✔️ ${result.rowCount} filas preparadas para importar.`);
-                console.log("Estado de importación actualizado."); // DEBUG Status Update
+                console.log("Estoy en create-db.php. Actualizando estado."); // DEBUG 4
+                window.updateImportStatus(`✔️ ${resultPrepare.rowCount} filas preparadas para importar.`);
             } else {
-                console.error("La función window.updateImportStatus no está definida."); // DEBUG Error
+                // Estoy en dashboard.php, acá SÍ llamo a executeImport
+                console.log("Estoy en dashboard.php. Llamando a executeImport..."); // DEBUG 4b
+                const resultExecute = await api.executeImport();
+                console.log("Respuesta de executeImport:", resultExecute);
+                if (resultExecute.success) {
+                    alert(`${resultExecute.insertedRows} filas importadas con éxito.`);
+                    location.reload(); // Recargo el dashboard
+                } else {
+                    throw new Error(resultExecute.message); // Error en execute
+                }
             }
 
-            // Llamo a la función para cerrar
-            closeImportModal();
-            console.log("Modal cerrado."); // DEBUG Modal Close
+            closeImportModal(); // Cierro el modal
+            console.log("Modal cerrado."); // DEBUG 5
 
         } else {
-            // Esto no debería ejecutarse si success es true
-            console.error("Resultado de API prepare fue false:", result.message); // DEBUG API False
-            throw new Error(result.message);
+            // Si resultPrepare.success es false
+            console.error("Resultado de API prepare fue false:", resultPrepare.message);
+            throw new Error(resultPrepare.message);
         }
     } catch (apiError) {
-        console.error("Error en la llamada API o procesamiento:", apiError); // DEBUG
-        importStatus.textContent = `Error al preparar datos: ${apiError.message}`;
+        console.error("Error en la llamada API o procesamiento:", apiError);
+        importStatus.textContent = `Error: ${apiError.message}`;
         importStatus.style.color = 'var(--accent-red)';
     } finally {
         validatePrepareBtn.disabled = false;
         validatePrepareBtn.textContent = 'Validar y Preparar Datos';
-        console.log("Bloque finally ejecutado."); // DEBUG 8
+        console.log("Bloque finally ejecutado.");
     }
 }
 
 
-// --- Inicialización ---
 // --- Inicialización ---
 function initializeImportModal() {
     modalElement = document.getElementById('import-modal');
@@ -253,14 +240,13 @@ function initializeImportModal() {
     validatePrepareBtn = document.getElementById('validate-prepare-btn');
 
     if (!modalElement) {
-        console.error("Error: Elemento #import-modal no encontrado."); // Aviso si falta el modal
+        console.error("Error: Elemento #import-modal no encontrado.");
         return;
     }
 
     modalElement.classList.add('hidden');
     showStep(1);
 
-    // --- Listeners (UNA SOLA VEZ) ---
 
     // Cerrar con X o Cancelar
     closeModalBtn?.addEventListener('click', closeImportModal);
@@ -282,7 +268,7 @@ function initializeImportModal() {
     dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
     dropZone?.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]); });
 
-    // Botón principal del modal (Paso 2)
+    // Botón principal del modal
     validatePrepareBtn?.addEventListener('click', handleValidateAndPrepare);
 
     console.log("Modal de importación inicializado."); // Confirmación

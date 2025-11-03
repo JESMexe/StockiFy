@@ -2,9 +2,9 @@
 namespace App\Controllers;
 
 use App\Models\ImportModel;
+use App\Models\TableModel;
 use Exception;
 
-// Make sure to import Exception
 
 class ImportController
 {
@@ -22,7 +22,6 @@ class ImportController
             return;
         }
 
-        // --- File Upload Validation ---
         if (empty($_FILES['csvFile']) || $_FILES['csvFile']['error'] !== UPLOAD_ERR_OK) {
             http_response_code(400);
             $errorMessage = $this->getUploadErrorMessage($_FILES['csvFile']['error'] ?? UPLOAD_ERR_NO_FILE);
@@ -33,13 +32,11 @@ class ImportController
         $fileTmpPath = $_FILES['csvFile']['tmp_name'];
         $fileType = mime_content_type($fileTmpPath);
 
-        // Basic MIME type check (more robust checks can be added)
         if ($fileType !== 'text/csv' && $fileType !== 'text/plain' && $fileType !== 'application/csv') {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Tipo de archivo inválido. Sube un archivo CSV. (' . $fileType . ')']);
             return;
         }
-        // --- End File Validation ---
 
 
         try {
@@ -96,7 +93,6 @@ class ImportController
 
         if (!$user) { /* ... error 401 ... */ return; }
 
-        // Validación básica de archivo y POST data
         if (empty($_FILES['csvFile']) || $_FILES['csvFile']['error'] !== UPLOAD_ERR_OK) { /* ... error 400 archivo ... */ return; }
         if (empty($_POST['mapping'])) {
             http_response_code(400);
@@ -106,9 +102,8 @@ class ImportController
 
         $fileTmpPath = $_FILES['csvFile']['tmp_name'];
         $mappingJson = $_POST['mapping'];
-        $overwrite = isset($_POST['overwrite']) && $_POST['overwrite'] === 'true'; // Leemos la opción
+        $overwrite = isset($_POST['overwrite']) && $_POST['overwrite'] === 'true';
 
-        // Decodificamos el mapeo JSON
         $mapping = json_decode($mappingJson, true);
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($mapping)) {
             http_response_code(400);
@@ -121,23 +116,69 @@ class ImportController
             // Parseamos TODO el archivo según el mapeo
             $parsedData = $importModel->parseCsvDataWithMapping($fileTmpPath, $mapping);
 
-            // Guardamos los datos parseados y el flag de overwrite en la sesión
-            // ¡Importante! session_start() debe haberse llamado antes (getCurrentUser lo hace).
             $_SESSION['pending_import_data'] = $parsedData;
-            $_SESSION['pending_import_overwrite'] = $overwrite; // Guardamos si se debe sobrescribir
+            $_SESSION['pending_import_overwrite'] = $overwrite;
+
+            session_write_close();
 
             echo json_encode([
                 'success' => true,
                 'message' => 'Archivo validado y datos preparados para importar.',
-                'rowCount' => count($parsedData) // Informamos cuántas filas se prepararon
+                'rowCount' => count($parsedData)
             ]);
 
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Error al procesar el archivo CSV: ' . $e->getMessage()]);
-            // Limpiamos la sesión por si acaso
             unset($_SESSION['pending_import_data']);
             unset($_SESSION['pending_import_overwrite']);
         }
+    }
+
+    /**
+     * Inserta los datos que estaban pendientes en la sesión
+     * en la base de datos activa.
+     */
+    public function executeImport(): void
+    {
+        header('Content-Type: application/json');
+        $user = getCurrentUser();
+        $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+        $preparedData = $_SESSION['pending_import_data'] ?? null;
+        $overwrite = $_SESSION['pending_import_overwrite'] ?? false;
+
+        // Verifico que todo esté en orden
+        if (!$user || !$activeInventoryId) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Acceso denegado o no hay inventario seleccionado.']);
+            return;
+        }
+        if (empty($preparedData) || !is_array($preparedData)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'No hay datos preparados para importar.']);
+            return;
+        }
+
+        try {
+            $tableModel = new TableModel();
+
+            $metadata = $tableModel->getTableMetadata($activeInventoryId);
+            if (!$metadata) { throw new Exception("Metadatos de tabla no encontrados."); }
+            $tableName = $metadata['table_name'];
+
+            $insertedRows = $tableModel->bulkInsertData($tableName, $preparedData, $overwrite);
+
+            $importMessage = "Se importaron {$insertedRows} filas con éxito.";
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return;
+        } finally {
+            unset($_SESSION['pending_import_data']);
+            unset($_SESSION['pending_import_overwrite']);
+        }
+
+        echo json_encode(['success' => true, 'message' => $importMessage, 'insertedRows' => $insertedRows]);
     }
 }

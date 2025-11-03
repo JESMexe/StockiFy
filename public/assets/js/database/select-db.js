@@ -16,7 +16,7 @@ async function handleSelectDatabase(event) {
 }
 
 function populateDbList(databases, dbListElement) {
-    dbListElement.innerHTML = ''; // Limpiamos la lista
+    dbListElement.innerHTML = '';
     const container = document.createElement('div');
     container.classList.add('menu-buttons');
     databases.forEach(db => {
@@ -43,12 +43,10 @@ async function init() {
             populateDbList(profileData.databases, dbList);
             dbList.addEventListener('click', handleSelectDatabase);
         } else {
-            // Si por alguna razón llega aquí sin DBs, lo mando a crear una
             window.location.href = '/create-db.php';
         }
     } catch (error) {
         console.error("Error:", error);
-        // Si hay un error de sesión, lo mando al login
         window.location.href = '/login.php';
     }
 }

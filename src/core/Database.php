@@ -12,7 +12,6 @@ class Database
 
     private function __construct()
     {
-        // Cargar las variables de entorno
         $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
         $dotenv->load();
 

@@ -269,3 +269,36 @@
     box-shadow: 1px 1px 0px var(--color-black);
     transform: translate(3px, 3px);
 }
+
+/* --- ESTILOS PARA EDICIÓN DE FILA --- */
+
+/* Celda de Acciones */
+.action-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+.action-cell .btn {
+    width: auto;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    margin: 0 0 0 0.5rem; /* Espacio solo a la izquierda */
+    line-height: 1;
+}
+
+/* Inputs dentro de una fila en modo edición */
+.editing-row td {
+    /* Doy un padding más chico a las celdas en edición */
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}
+.editing-row input[type="text"],
+.editing-row input[type="number"] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--accent-color);
+    border-radius: var(--border-radius);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    box-shadow: 0 0 0 2px var(--accent-color); /* Resaltado */
+    outline: none;
+}
