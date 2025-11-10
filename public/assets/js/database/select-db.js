@@ -1,5 +1,6 @@
 ﻿// public/assets/js/database/select-db.js
 import * as api from '../api.js';
+import {pop_ups} from "../notifications/pop-up.js";
 
 // ---- MANEJADORES ----
 async function handleSelectDatabase(event) {
@@ -11,7 +12,7 @@ async function handleSelectDatabase(event) {
         await api.selectDatabase(inventoryId);
         window.location.href = '/dashboard.php';
     } catch (error) {
-        alert(`Error al seleccionar la base de datos: ${error.message}`);
+        pop_ups.warning(`Error al seleccionar la base de datos: ${error.message}`);
     }
 }
 
@@ -46,7 +47,7 @@ async function init() {
             window.location.href = '/create-db.php';
         }
     } catch (error) {
-        console.error("Error:", error);
+        pop_ups.error(`Error: ${error}`);
         window.location.href = '/login.php';
     }
 }

@@ -1,4 +1,6 @@
 // public/assets/js/api.js
+import {pop_ups} from "./notifications/pop-up.js";
+
 async function handleResponse(response) {
     if (!response.ok) {
         const errorData = await response.json().catch(() => null);
@@ -33,7 +35,7 @@ export async function checkSessionStatus() {
         const data = await response.json();
         return data.isLoggedIn;
     } catch (error) {
-        console.error("Error al verificar la sesión:", error);
+        pop_ups.error("Error al verificar la sesión: ${error.message}");
         return false;
     }
 }
@@ -104,13 +106,6 @@ export async function prepareCsvImport(formData) {
 }
 
 // --- FUNCIONES DE STOCK ---
-/**
- * Actualiza el stock de un item específico.
- * @param {number} itemId El ID del item a actualizar.
- * @param {string} action La acción a realizar: 'set', 'add', 'remove'.
- * @param {number} value El valor para 'set' o la cantidad para 'add'/'remove'.
- * @returns {Promise<object>} Objeto con { success: bool, newStock: number } o un error.
- */
 export async function updateStock(itemId, action, value) {
     const response = await fetch('/api/stock/update.php', {
         method: 'POST',
@@ -120,11 +115,7 @@ export async function updateStock(itemId, action, value) {
     return handleResponse(response);
 }
 
-/**
- * Añade una nueva fila de datos a la tabla activa.
- * @param {object} itemData - Objeto con { columna: valor, ... } para la nueva fila.
- * @returns {Promise<object>} Objeto con { success: bool, newItem: object } o un error.
- */
+
 export async function addItemToTable(itemData) {
     const response = await fetch('/api/table/add.php', {
         method: 'POST',
@@ -134,12 +125,6 @@ export async function addItemToTable(itemData) {
     return handleResponse(response);
 }
 
-
-
-/**
- * Elimina la base de datos (inventario) activa actualmente en la sesión.
- * @returns {Promise<object>} Objeto con { success: bool, message: string }
- */
 export async function deleteDatabase() {
     // No necesita body, el backend usa la sesión
     const response = await fetch('/api/database/delete.php', {
@@ -149,9 +134,6 @@ export async function deleteDatabase() {
     return handleResponse(response);
 }
 
-/**
- * Le pide al backend que inserte los datos que ya están en la sesión.
- */
 export async function executeImport() {
     const response = await fetch('/api/import/execute-import.php', {
         method: 'POST',
@@ -160,17 +142,23 @@ export async function executeImport() {
     return handleResponse(response);
 }
 
-/**
- * Actualiza una fila completa en una tabla dinámica.
- * @param {number} itemId El ID del item (fila) a actualizar.
- * @param {object} dataToUpdate Un objeto con las { columna: valor } a actualizar.
- * @returns {Promise<object>} Objeto con { success: bool, updatedItem: object }
- */
 export async function updateTableRow(itemId, dataToUpdate) {
     const response = await fetch('/api/table/update-row.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, dataToUpdate }),
     });
+    return handleResponse(response);
+}
+
+export async function manageTableColumn(action, data) {
+    const payload = { action, ...data };
+
+    const response = await fetch('/api/table/manage-column.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
     return handleResponse(response);
 }

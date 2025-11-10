@@ -2,16 +2,19 @@
 
 // --- 1. IMPORTACIONES ---
 import * as api from './api.js';
+import {pop_ups} from './notifications/pop-up.js';
 import { openImportModal, initializeImportModal, setStockifyColumns } from './import.js';
 
 // --- 2. VARIABLES GLOBALES ---
 let allData = []; // Guardo todos los datos para filtrar
 let currentTableColumns = []; // Guardo las columnas de la tabla actual
 let editingRowId = null; // Para saber qué fila estoy editando
+const protectedColumns = ['id', 'created_at'];
 
 // Variables para el Modal de Eliminación
 let deleteModal, deleteConfirmInput, confirmDeleteBtn, deleteDbNameConfirmSpan, deleteErrorMsg;
 let currentDbNameToDelete = '';
+let columnListContainer, addColumnForm, columnListStatus;
 
 // --- 3. DEFINICIONES DE FUNCIONES ---
 
@@ -167,7 +170,7 @@ async function handleSaveClick(button) {
     });
 
     if (!allInputsValid) {
-        alert("Verificá que todos los campos numéricos tengan un número válido.");
+        pop_ups.warning("Verificá que todos los campos numéricos tengan un número válido.");
         return;
     }
     button.disabled = true;
@@ -185,7 +188,7 @@ async function handleSaveClick(button) {
             throw new Error(result.message);
         }
     } catch (error) {
-        alert(`Error al guardar: ${error.message}`);
+        pop_ups.warning(`Error al guardar: ${error.message}`);
         button.disabled = false;
     }
 }
@@ -245,7 +248,7 @@ async function handleSaveNewRow(event) {
             throw new Error(result.message || "Error al guardar la fila.");
         }
     } catch (error) {
-        alert(`Error al guardar: ${error.message}`);
+        pop_ups.warning(`Error al guardar: ${error.message}`);
         // No borro la fila, dejo que el usuario corrija
         saveButton.disabled = false;
         saveButton.textContent = 'Guardar';
@@ -291,13 +294,14 @@ async function handleConfirmDelete() {
     try {
         const result = await api.deleteDatabase();
         if (result.success) {
-            alert(result.message);
+            pop_ups.warning(result.message);
             window.location.href = '/select-db.php';
         } else {
             throw new Error(result.message);
         }
     } catch (error) {
-        deleteErrorMsg.textContent = `Error: ${error.message}`;
+        //deleteErrorMsg.textContent = `Error: ${error.message}`;
+        pop_ups.error(`Error: ${error.message}`);
         confirmDeleteBtn.disabled = false;
         confirmDeleteBtn.textContent = 'Eliminar Permanentemente';
     }
@@ -319,6 +323,9 @@ async function init() {
     confirmDeleteBtn = document.getElementById('confirm-delete-btn');
     deleteDbNameConfirmSpan = document.getElementById('delete-db-name-confirm');
     deleteErrorMsg = document.getElementById('delete-error-message');
+    columnListContainer = document.getElementById('column-list-container');
+    addColumnForm = document.getElementById('add-column-form');
+    columnListStatus = document.getElementById('column-list-status');
     const closeDeleteBtn = document.getElementById('close-delete-modal-btn');
     const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
     const deleteDbBtn = document.getElementById('delete-db-btn');
@@ -333,38 +340,134 @@ async function init() {
         deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
     }
     console.log("[INIT] Modal de Eliminación inicializado.");
+    addColumnForm?.addEventListener('submit', handleAddColumn);
+    columnListContainer?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('drop-col-btn')) {
+            handleDropColumn(e);
+        } else if (e.target.classList.contains('rename-col-btn')) {
+            handleRenameColumn(e);
+        }
+    });
 
-    // ---- Carga de Datos Principal ----
+    await loadTableData();
+
+    document.getElementById('search-input')?.addEventListener('input', filterTable);
+
+    document.getElementById('add-row-btn')?.addEventListener('click', handleAddRowClick);
+
+    setupMenuNavigation();
+    showDashboardView('view-db');
+}
+
+function renderColumnList() {
+    if (!columnListContainer) return;
+
+    // Filtramos las columnas que NO son protegidas para la lista de gestión
+    const manageableColumns = currentTableColumns.filter(
+        col => !protectedColumns.includes(col.toLowerCase())
+    );
+
+    if (manageableColumns.length === 0) {
+        columnListStatus.textContent = 'No hay columnas personalizadas para gestionar.';
+        columnListContainer.innerHTML = '';
+        return;
+    }
+
+    columnListStatus.textContent = '';
+    columnListContainer.innerHTML = manageableColumns.map(colName => `
+        <div class="column-item" data-column-name="${colName}">
+            <span>${colName}</span>
+            <div class="column-actions">
+                <button class="btn btn-secondary btn-sm rename-col-btn">Renombrar</button>
+                <button class="btn btn-danger-secondary btn-sm drop-col-btn">Eliminar</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function handleAddColumn(e) {
+    e.preventDefault();
+    const input = document.getElementById('new-column-name');
+    const columnName = input.value.trim();
+    if (!columnName) return;
+
     try {
-        console.log("[INIT] Llamando a api.getTableData...");
+        const result = await api.manageTableColumn('add_column', { columnName });
+        if (result.success) {
+            pop_ups.warning(result.message);
+            await loadTableData();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        pop_ups.error(`Error al añadir columna: ${error.message}`);
+    }
+}
+
+async function handleDropColumn(e) {
+    const colItem = e.target.closest('.column-item');
+    const columnName = colItem.dataset.columnName;
+
+    if (!confirm(`¿Estás seguro de que querés eliminar la columna "${columnName}"? Esta acción no se puede deshacer y borrará todos los datos de esa columna.`)) {
+        return;
+    }
+
+    try {
+        const result = await api.manageTableColumn('drop_column', { columnName });
+        if (result.success) {
+            pop_ups.info(result.message);
+            await loadTableData();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        pop_ups.warning(`Error al eliminar columna: ${error.message}`);
+    }
+}
+
+async function handleRenameColumn(e) {
+    const colItem = e.target.closest('.column-item');
+    const oldName = colItem.dataset.columnName;
+    const newName = prompt(`Ingresá el nuevo nombre para la columna "${oldName}":`, oldName);
+
+    if (!newName || newName.trim() === '' || newName === oldName) {
+        return;
+    }
+
+    try {
+        const result = await api.manageTableColumn('rename_column', { oldName, newName });
+        if (result.success) {
+            await loadTableData();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        pop_ups.warning(`Error al renombrar columna: ${error.message}`);
+    }
+}
+
+async function loadTableData() {
+    try {
+        console.log("[loadTableData] Llamando a api.getTableData...");
         const result = await api.getTableData();
-        console.log("[INIT] Respuesta de getTableData:", result);
 
         if (result && result.success === true) {
             allData = result.data || [];
             currentTableColumns = result.columns || [];
 
-            if (tableTitleElement) {
-                tableTitleElement.textContent = result.inventoryName || 'Inventario';
-            }
+            document.getElementById('table-title').textContent = result.inventoryName || 'Inventario';
 
-            console.log("[INIT] Llamando a renderTable...");
+            console.log("[loadTableData] Llamando a renderTable y renderColumnList...");
             renderTable(currentTableColumns, allData);
-            console.log("[INIT] renderTable completado.");
-
-            document.getElementById('search-input')?.addEventListener('input', filterTable);
-            document.getElementById('add-row-btn')?.addEventListener('click', handleAddRowClick);
-
-            setupMenuNavigation();
-            showDashboardView('view-db');
+            renderColumnList(); // Asegúrate de que la lista de config. también se actualice
 
         } else {
-            console.error("[INIT] getTableData devolvió success: false o respuesta inválida.");
+            pop_ups.error("[loadTableData] getTableData devolvió success: false.");
             throw new Error(result?.message || 'Error al obtener datos de tabla.');
         }
     } catch (error) {
-        console.error("[INIT] Error CATCH:", error);
-        alert(`Error al cargar el panel: ${error.message}. Serás redirigido.`);
+        pop_ups.error("[loadTableData] Error CATCH:", error);
+        pop_ups.warning(`Error al cargar datos: ${error.message}. Serás redirigido.`);
         if (error.message.includes('No autorizado')) {
             window.location.href = '/login.php';
         } else {

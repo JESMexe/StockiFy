@@ -57,6 +57,25 @@
         <div id="config-db" class="dashboard-view hidden">
             <h2>⚙️ Configurar Tabla</h2>
             <p>Acá vas a poder agregar/eliminar columnas, gestionar stock bajo, códigos de barras, importar/exportar, etc.</p>
+
+            <div class="config-section" style="margin-top: 2rem;">
+                <h3>Gestionar Columnas</h3>
+
+                <form id="add-column-form" class="form-inline" style="margin-bottom: 1.5rem;">
+                    <div class="form-group" style="flex-grow: 1;">
+                        <label for="new-column-name">Nombre de la Nueva Columna</label>
+                        <input type="text" id="new-column-name" placeholder="Ej: PrecioCompra" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Añadir Columna</button>
+                </form>
+
+                <h4>Columnas Actuales</h4>
+                <div id="column-list-container">
+                </div>
+                <p id="column-list-status">Cargando columnas...</p>
+            </div>
+            <hr style="margin: 2rem 0;">
+
             <div class="danger-zone" style="margin-top: 2rem; padding: 1rem; border: 2px solid var(--accent-red); border-radius: var(--border-radius);">
                 <h3 style="color: var(--accent-red);">Zona de Peligro</h3>
                 <p style="color: var(--color-gray);">Estas acciones son permanentes.</p>

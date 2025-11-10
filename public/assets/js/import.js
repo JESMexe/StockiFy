@@ -1,5 +1,6 @@
 ﻿// public/assets/js/import.js
 import * as api from './api.js';
+import {pop_ups} from "./notifications/pop-up.js";
 
 let modalElement, closeModalBtn, importCancelBtn, dropZone, fileInput, importStatus;
 let step1, step2, mappingForm, validatePrepareBtn; // Cambio nombre de botones
@@ -211,11 +212,11 @@ async function handleValidateAndPrepare(event) {
 
         } else {
             // Si resultPrepare.success es false
-            console.error("Resultado de API prepare fue false:", resultPrepare.message);
+            console.error(`Resultado de API prepare fue false: ${resultPrepare.message}`);
             throw new Error(resultPrepare.message);
         }
     } catch (apiError) {
-        console.error("Error en la llamada API o procesamiento:", apiError);
+        pop_ups.error(`Error en la llamada API o procesamiento: ${apiError}`);
         importStatus.textContent = `Error: ${apiError.message}`;
         importStatus.style.color = 'var(--accent-red)';
     } finally {

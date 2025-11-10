@@ -113,7 +113,6 @@ class InventoryModel
     }
 
 
-
     /**
      * Elimina un inventario, su tabla física y sus metadatos.
      * @param int $inventoryId ID del inventario a eliminar.
@@ -189,5 +188,182 @@ class InventoryModel
             error_log("Error en deleteInventoryAndData: " . $e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Sanitiza un nombre de columna para prevenir inyección SQL.
+     * Permite solo alfanuméricos y guión bajo.
+     */
+    private function sanitizeColumnName(string $columnName): string
+    {
+        $safeName = preg_replace('/[^a-zA-Z0-9_]/', '', $columnName);
+        if (empty($safeName) || is_numeric(substr($safeName, 0, 1))) {
+            throw new \InvalidArgumentException("El nombre de la columna es inválido.");
+        }
+        return $safeName;
+    }
+
+    /**
+     * Obtiene la información clave de la tabla de un inventario.
+     * Verifica la propiedad del usuario.
+     */
+    private function getInventoryTableInfo(int $inventoryId, int $userId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT ut.table_name, ut.columns_json
+             FROM user_tables ut
+             JOIN inventories i ON ut.inventory_id = i.id
+             WHERE ut.inventory_id = :inventory_id AND i.user_id = :user_id"
+        );
+        $stmt->execute([':inventory_id' => $inventoryId, ':user_id' => $userId]);
+        $info = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$info) {
+            throw new Exception("Inventario no encontrado o no tienes permiso.");
+        }
+
+        $info['columns'] = json_decode($info['columns_json'], true) ?? [];
+        return $info;
+    }
+
+    /**
+     * Actualiza la lista de columnas (metadatos) en la tabla user_tables.
+     */
+    private function updateInventoryColumns(int $inventoryId, array $columns): bool
+    {
+        $stmt = $this->db->prepare("UPDATE user_tables SET columns_json = ? WHERE inventory_id = ?");
+        return $stmt->execute([json_encode($columns), $inventoryId]);
+    }
+
+    /**
+     * Añade una nueva columna a una tabla de inventario.
+     */
+    public function addColumn(int $inventoryId, int $userId, string $columnName): void
+    {
+        $safeColumnName = $this->sanitizeColumnName($columnName);
+        if (in_array(strtolower($safeColumnName), ['id', 'created_at'])) {
+            throw new \InvalidArgumentException("No se puede añadir una columna con ese nombre.");
+        }
+
+        $this->db->beginTransaction(); // Inicia transacción
+        try {
+            $tableInfo = $this->getInventoryTableInfo($inventoryId, $userId);
+            $tableName = $tableInfo['table_name'];
+            $columns = $tableInfo['columns'];
+
+            if (in_array($safeColumnName, $columns)) {
+                throw new \InvalidArgumentException("La columna '{$safeColumnName}' ya existe.");
+            }
+
+            // 1. Actualizar los metadatos (Transaccional)
+            $columns[] = $safeColumnName;
+            $this->updateInventoryColumns($inventoryId, $columns);
+
+            // 2. Modificar la tabla física (Provoca "commit implícito")
+            $sql = "ALTER TABLE `{$tableName}` ADD COLUMN `{$safeColumnName}` TEXT";
+            $this->db->exec($sql);
+
+        } catch (Exception $e) {
+            // Si algo falló (Paso 1 o 2), intentamos revertir.
+            // Solo hacemos rollback SI la transacción sigue activa
+            // (lo que significa que el ALTER nunca se ejecutó).
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e; // Re-lanza la excepción (ej. "La columna ya existe")
+        }
+    }
+
+    /**
+     * Elimina una columna de una tabla de inventario.
+     */
+    public function dropColumn(int $inventoryId, int $userId, string $columnName): void
+    {
+        $safeColumnName = $this->sanitizeColumnName($columnName);
+        if (in_array(strtolower($safeColumnName), ['id', 'created_at'])) {
+            throw new \InvalidArgumentException("No se pueden eliminar las columnas protegidas.");
+        }
+
+        $this->db->beginTransaction(); // Inicia transacción
+        try {
+            $tableInfo = $this->getInventoryTableInfo($inventoryId, $userId);
+            $tableName = $tableInfo['table_name'];
+            $columns = $tableInfo['columns'];
+
+            // 1. Actualizar los metadatos (Transaccional)
+            $newColumns = array_filter($columns, fn($col) => $col !== $safeColumnName);
+            $this->updateInventoryColumns($inventoryId, array_values($newColumns));
+
+            // 2. Modificar la tabla física (Provoca "commit implícito")
+            $sql = "ALTER TABLE `{$tableName}` DROP COLUMN `{$safeColumnName}`";
+            $this->db->exec($sql);
+
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Renombra una columna de una tabla de inventario.
+     */
+    public function renameColumn(int $inventoryId, int $userId, string $oldName, string $newName): void
+    {
+        $safeOldName = $this->sanitizeColumnName($oldName);
+        $safeNewName = $this->sanitizeColumnName($newName);
+
+        if (in_array(strtolower($safeOldName), ['id', 'created_at'])) {
+            throw new \InvalidArgumentException("No se pueden renombrar las columnas protegidas.");
+        }
+        if (in_array(strtolower($safeNewName), ['id', 'created_at'])) {
+            throw new \InvalidArgumentException("No se puede usar ese nuevo nombre.");
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $tableInfo = $this->getInventoryTableInfo($inventoryId, $userId);
+            $tableName = $tableInfo['table_name'];
+            $columns = $tableInfo['columns'];
+
+            // 1. Actualizar los metadatos - ELIMINAR ESPACIOS en la comparación
+            $newColumns = [];
+            $found = false;
+
+            foreach ($columns as $col) {
+                // Comparar SIN espacios
+                if (trim($col) === trim($oldName)) {
+                    $newColumns[] = $newName; // Usar el nuevo nombre
+                    $found = true;
+                } else {
+                    $newColumns[] = $col; // Mantener el original (incluso con espacios)
+                }
+            }
+
+            if (!$found) {
+                throw new Exception("No se encontró la columna '$oldName' en la configuración");
+            }
+
+
+            // 2. Actualizar JSON
+            $this->updateInventoryColumns($inventoryId, $newColumns);
+
+            // 3. Modificar la tabla física
+            $sql = "ALTER TABLE `{$tableName}` CHANGE COLUMN `{$safeOldName}` `{$safeNewName}` TEXT";
+            $this->db->exec($sql);
+
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    private function cleanColumnSpaces(array $columns): array
+    {
+        return array_map('trim', $columns);
+        // $columns = $this->cleanColumnSpaces($tableInfo['columns']);
     }
 }

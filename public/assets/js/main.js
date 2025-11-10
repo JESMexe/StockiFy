@@ -1,6 +1,7 @@
 // public/assets/js/main.js
 
 import * as api from './api.js';
+import {pop_ups} from "./notifications/pop-up.js";
 
 function showView(viewId) {
     document.querySelectorAll('.view-container').forEach(view => {
@@ -32,7 +33,7 @@ async function checkInitialState() {
             showView('empty-state-view');
         }
     } catch (error) {
-        console.error("Error al cargar el estado inicial:", error);
+        pop_ups.error(`Error al cargar el estado inicial: ${error.message}`);
         alert("Hubo un error al cargar tus datos. Serás redirigido.");
         window.location.href = 'logout.php';
     }
@@ -65,18 +66,18 @@ async function handleCreateDatabase() {
     const columns = columnsInput.value.trim();
 
     if (!dbName || !columns) {
-        alert('Por favor, completa el nombre y las columnas.');
+        pop_ups.warning('Por favor, completa el nombre y las columnas.');
         return;
     }
 
     try {
         const result = await api.createDatabase(dbName, columns);
         if (result.success) {
-            alert(result.message);
+            pop_ups.warning(result.message);
             await checkInitialState();
         }
     } catch (error) {
-        alert(`Error: ${error.message}`);
+        pop_ups.warning(`Error: ${error.message}`);
     }
 }
 
