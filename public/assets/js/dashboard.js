@@ -2,14 +2,17 @@
 
 // --- 1. IMPORTACIONES ---
 import * as api from './api.js';
-import {pop_ups} from './notifications/pop-up.js';
+import { pop_ups, notificationConfig } from './notifications/pop-up.js';
 import { openImportModal, initializeImportModal, setStockifyColumns } from './import.js';
 
 // --- 2. VARIABLES GLOBALES ---
 let allData = []; // Guardo todos los datos para filtrar
 let currentTableColumns = []; // Guardo las columnas de la tabla actual
 let editingRowId = null; // Para saber qué fila estoy editando
+let selectedSearchColumn = 'all'; // 'all' es el valor por defecto
+let searchColumnBtn, searchColumnBtnText, searchColumnDropdown;
 const protectedColumns = ['id', 'created_at'];
+
 
 // Variables para el Modal de Eliminación
 let deleteModal, deleteConfirmInput, confirmDeleteBtn, deleteDbNameConfirmSpan, deleteErrorMsg;
@@ -94,12 +97,30 @@ function filterTable() {
     const searchInput = document.getElementById('search-input');
     if (!searchInput) return;
     const searchTerm = searchInput.value.toLowerCase();
-    const filteredData = allData.filter(row =>
-        Object.values(row).some(value =>
-            String(value).toLowerCase().includes(searchTerm)
-        )
-    );
-    renderTable(currentTableColumns, filteredData); // Renderizo con datos filtrados
+
+    const filteredData = allData.filter(row => {
+        if (searchTerm === '') return true; // Si no hay búsqueda, mostrar todo
+
+        // Si buscamos en "Todas"
+        if (selectedSearchColumn === 'all') {
+            return Object.values(row).some(value =>
+                String(value).toLowerCase().includes(searchTerm)
+            );
+        }
+        // Si buscamos en una columna específica
+        else {
+            const rowKeys = Object.keys(row);
+            const matchingKey = rowKeys.find(key => key.toLowerCase() === selectedSearchColumn.toLowerCase());
+
+            if (matchingKey) {
+                return String(row[matchingKey]).toLowerCase().includes(searchTerm);
+            }
+            return false;
+        }
+    });
+
+    // ¡OJO! Usamos allData filtrada, no la global
+    renderTable(currentTableColumns, filteredData);
 }
 
 function showDashboardView(viewId) {
@@ -116,11 +137,42 @@ function setupMenuNavigation() {
     menuButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetView = button.dataset.targetView;
+            if (targetView === 'notifications') {
+                loadNotifications(); // Carga el historial
+            }
             if (targetView) { showDashboardView(targetView); }
             else { alert("Funcionalidad aún no implementada."); }
         });
     });
     console.log("Navegación del menú lateral configurada.");
+}
+
+/**
+ * Configura la interactividad para todos los acordeones.
+ */
+function setupAccordion() {
+    console.log("[INIT] Configurando acordeones...");
+
+    const headers = document.querySelectorAll('.accordion-header');
+
+    headers.forEach(header => {
+        if (header.dataset.accordionAttached) return;
+        header.dataset.accordionAttached = 'true';
+
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+
+            header.classList.toggle('active');
+
+            if (header.classList.contains('active')) {
+                header.setAttribute('aria-expanded', 'true');
+                content.style.maxHeight = content.scrollHeight + "px";
+            } else {
+                header.setAttribute('aria-expanded', 'false');
+                content.style.maxHeight = null;
+            }
+        });
+    });
 }
 
 // == MANEJADORES DE CLICS DE LA TABLA ==
@@ -170,7 +222,7 @@ async function handleSaveClick(button) {
     });
 
     if (!allInputsValid) {
-        pop_ups.warning("Verificá que todos los campos numéricos tengan un número válido.");
+        pop_ups.warning("Verificá que todos los campos numéricos tengan un número válido.", "¡Cuidado!");
         return;
     }
     button.disabled = true;
@@ -188,7 +240,7 @@ async function handleSaveClick(button) {
             throw new Error(result.message);
         }
     } catch (error) {
-        pop_ups.warning(`Error al guardar: ${error.message}`);
+        pop_ups.error(`Error al guardar: ${error.message}`);
         button.disabled = false;
     }
 }
@@ -248,7 +300,7 @@ async function handleSaveNewRow(event) {
             throw new Error(result.message || "Error al guardar la fila.");
         }
     } catch (error) {
-        pop_ups.warning(`Error al guardar: ${error.message}`);
+        pop_ups.error(`Error al guardar: ${error.message}`);
         // No borro la fila, dejo que el usuario corrija
         saveButton.disabled = false;
         saveButton.textContent = 'Guardar';
@@ -326,6 +378,9 @@ async function init() {
     columnListContainer = document.getElementById('column-list-container');
     addColumnForm = document.getElementById('add-column-form');
     columnListStatus = document.getElementById('column-list-status');
+    searchColumnBtn = document.getElementById('search-column-btn');
+    searchColumnBtnText = searchColumnBtn?.querySelector('span');
+    searchColumnDropdown = document.getElementById('search-column-dropdown');
     const closeDeleteBtn = document.getElementById('close-delete-modal-btn');
     const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
     const deleteDbBtn = document.getElementById('delete-db-btn');
@@ -355,14 +410,94 @@ async function init() {
 
     document.getElementById('add-row-btn')?.addEventListener('click', handleAddRowClick);
 
+    searchColumnBtn?.addEventListener('click', () => {
+        searchColumnDropdown.classList.toggle('hidden');
+    });
+
+    searchColumnDropdown?.addEventListener('click', (e) => {
+        const item = e.target.closest('.search-dropdown-item');
+        if (!item) return;
+
+        selectedSearchColumn = item.dataset.column;
+
+        searchColumnBtnText.textContent = (selectedSearchColumn === 'all') ? 'Todas' : selectedSearchColumn;
+
+        searchColumnDropdown.querySelectorAll('.search-dropdown-item').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.column === selectedSearchColumn);
+        });
+
+        // Oculto el dropdown
+        searchColumnDropdown.classList.add('hidden');
+
+        filterTable();
+    });
+
+    // Oculto dropdown si se hace clic fuera
+    document.addEventListener('click', (e) => {
+        if (!searchColumnBtn?.contains(e.target) && !searchColumnDropdown?.contains(e.target)) {
+            searchColumnDropdown?.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('debug-toast-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const type = document.getElementById('debug-toast-type').value;
+        const title = document.getElementById('debug-toast-title').value;
+        const message = document.getElementById('debug-toast-message').value;
+
+        pop_ups[type](message || 'Este es un mensaje de prueba.', title);
+
+        // Limpio el form
+        document.getElementById('debug-toast-title').value = '';
+        document.getElementById('debug-toast-message').value = '';
+    });
+
+
+    // --- Listener para Eliminar Notificaciones del Historial ---
+    document.getElementById('notifications-list')?.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.toast-close-btn');
+        const notificationDiv = e.target.closest('.toast-notification');
+
+        if (deleteBtn && notificationDiv) {
+            const notificationId = notificationDiv.dataset.notificationId;
+            if (!notificationId) return;
+
+            // Hago que se vea "ocupado"
+            notificationDiv.style.opacity = '0.5';
+
+            try {
+                const response = await fetch('/api/notifications/delete.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: notificationId })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Animación de salida y eliminación
+                    notificationDiv.style.transition = "all 0.3s ease";
+                    notificationDiv.style.transform = "translateX(100%)";
+                    notificationDiv.style.opacity = "0";
+                    setTimeout(() => notificationDiv.remove(), 300);
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                console.error('Error al eliminar notificación:', error);
+                notificationDiv.style.opacity = '1';
+                pop_ups.error('No se pudo eliminar la notificación.');
+            }
+        }
+    });
+
     setupMenuNavigation();
+    setupAccordion();
     showDashboardView('view-db');
 }
 
 function renderColumnList() {
     if (!columnListContainer) return;
 
-    // Filtramos las columnas que NO son protegidas para la lista de gestión
     const manageableColumns = currentTableColumns.filter(
         col => !protectedColumns.includes(col.toLowerCase())
     );
@@ -394,13 +529,13 @@ async function handleAddColumn(e) {
     try {
         const result = await api.manageTableColumn('add_column', { columnName });
         if (result.success) {
-            pop_ups.warning(result.message);
+            pop_ups.success(`${result.message}`, "Columna añadida con éxito.");
             await loadTableData();
         } else {
             throw new Error(result.message);
         }
     } catch (error) {
-        pop_ups.error(`Error al añadir columna: ${error.message}`);
+        pop_ups.error(`Error al añadir columna: ${error.message}`, "Error al añadir la columna.");
     }
 }
 
@@ -408,33 +543,32 @@ async function handleDropColumn(e) {
     const colItem = e.target.closest('.column-item');
     const columnName = colItem.dataset.columnName;
 
-    if (!confirm(`¿Estás seguro de que querés eliminar la columna "${columnName}"? Esta acción no se puede deshacer y borrará todos los datos de esa columna.`)) {
-        return;
-    }
+    //pop_ups.success(`La columna se eliminó con éxito.`, "Columna Eliminada.");
 
     try {
         const result = await api.manageTableColumn('drop_column', { columnName });
         if (result.success) {
-            pop_ups.info(result.message);
+            pop_ups.info(`Columna eliminada: ${result.message}`, "Columna eliminada con éxito.");
             await loadTableData();
         } else {
             throw new Error(result.message);
         }
     } catch (error) {
-        pop_ups.warning(`Error al eliminar columna: ${error.message}`);
+        pop_ups.error(`Error al eliminar columna: ${error.message}`, "Error al eliminar la columna.");
     }
 }
 
 async function handleRenameColumn(e) {
     const colItem = e.target.closest('.column-item');
     const oldName = colItem.dataset.columnName;
-    const newName = prompt(`Ingresá el nuevo nombre para la columna "${oldName}":`, oldName);
+    const newName = await pop_ups.prompt('Renombrar Columna', `Ingresá el nuevo nombre para "${oldName}":`, 'Nuevo nombre', oldName);
 
     if (!newName || newName.trim() === '' || newName === oldName) {
         return;
     }
 
     try {
+
         const result = await api.manageTableColumn('rename_column', { oldName, newName });
         if (result.success) {
             await loadTableData();
@@ -442,7 +576,7 @@ async function handleRenameColumn(e) {
             throw new Error(result.message);
         }
     } catch (error) {
-        pop_ups.warning(`Error al renombrar columna: ${error.message}`);
+        pop_ups.info('La operación fue cancelada.', 'Cancelado.');
     }
 }
 
@@ -460,6 +594,25 @@ async function loadTableData() {
             console.log("[loadTableData] Llamando a renderTable y renderColumnList...");
             renderTable(currentTableColumns, allData);
             renderColumnList(); // Asegúrate de que la lista de config. también se actualice
+            if (searchColumnDropdown) {
+                // Limpiamos (menos la opción "Todas")
+                searchColumnDropdown.innerHTML = `
+                <button class="search-dropdown-item ${selectedSearchColumn === 'all' ? 'active' : ''}" data-column="all">
+                    <i class="ph ph-check"></i> Todas las Columnas
+                </button>`;
+
+                // Añadimos cada columna
+                currentTableColumns.forEach(col => {
+                    const item = document.createElement('button');
+                    item.className = 'search-dropdown-item';
+                    if (selectedSearchColumn === col) {
+                        item.classList.add('active');
+                    }
+                    item.dataset.column = col;
+                    item.innerHTML = `<i class="ph ph-check"></i> ${col}`;
+                    searchColumnDropdown.appendChild(item);
+                });
+            }
 
         } else {
             pop_ups.error("[loadTableData] getTableData devolvió success: false.");
@@ -474,6 +627,100 @@ async function loadTableData() {
             window.location.href = '/select-db.php';
         }
     }
+}
+
+/**
+ * Carga el historial de notificaciones desde la API
+ * y las muestra en la pestaña "Notificaciones".
+ */
+async function loadNotifications() {
+    const listContainer = document.getElementById('notifications-list');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '<p>Cargando historial...</p>';
+
+    try {
+        const response = await fetch('/api/notifications/get.php');
+        const data = await response.json();
+
+        if (!data.success) throw new Error(data.message);
+
+        if (data.notifications.length === 0) {
+            listContainer.innerHTML = '<p>No tenés notificaciones guardadas.</p>';
+            return;
+        }
+
+        // --- ¡NUEVA LÓGICA DE GRUPOS! ---
+        let html = '';
+        let currentGroup = '';
+
+        data.notifications.forEach(n => {
+            const dateGroup = getRelativeDateGroup(n.created_at);
+
+            // Si el grupo de fecha es nuevo, inyectamos un header
+            if (dateGroup !== currentGroup) {
+                html += `<h3 class="notification-date-header">${dateGroup}</h3>`;
+                currentGroup = dateGroup;
+            }
+
+            // Template de la notificación (¡con el botón "X"!)
+            const config = notificationConfig[n.type] || notificationConfig.info;
+            html += `
+            <div class="toast-notification show" 
+                 style="--toast-color: ${config.color}; position: relative; opacity: 1; transform: none; transition: none; margin-bottom: 1rem; max-width: 100%;"
+                 data-notification-id="${n.id}">
+
+                <i class="toast-icon ph ${config.icon}"></i>
+
+                <div class="toast-content">
+                    <strong class="toast-title">${n.title}</strong>
+                    <p class="toast-message">${n.message || ''}</p>
+                    <small style="color: var(--color-gray); font-size: 0.8rem; margin-top: 5px; display: block;">
+                        ${new Date(n.created_at).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                    </small>
+                </div>
+
+                <button class="toast-close-btn" title="Eliminar notificación">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            `;
+        });
+
+        listContainer.innerHTML = html;
+
+    } catch (error) {
+        listContainer.innerHTML = `<p style="color: var(--accent-red);">Error al cargar notificaciones: ${error.message}</p>`;
+    }
+}
+
+/**
+ * Compara una fecha con hoy y devuelve un string ("Hoy", "Ayer" o la fecha).
+ */
+function getRelativeDateGroup(dateString) {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    today.setHours(0, 0, 0, 0);
+    yesterday.setHours(0, 0, 0, 0);
+    const compDate = new Date(date);
+    compDate.setHours(0, 0, 0, 0);
+
+    if (compDate.getTime() === today.getTime()) {
+        return 'Hoy';
+    }
+    if (compDate.getTime() === yesterday.getTime()) {
+        return 'Ayer';
+    }
+
+    // Formato para fechas más antiguas
+    return date.toLocaleDateString('es-AR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
 }
 
 // --- 5. Ejecución ---

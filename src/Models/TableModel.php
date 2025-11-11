@@ -54,12 +54,13 @@ class TableModel
 
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
 
+        if ($overwrite) {
+            $this->db->exec("TRUNCATE TABLE {$safeTableName}");
+        }
+
         $this->db->beginTransaction();
 
         try {
-            if ($overwrite) {
-                $this->db->exec("TRUNCATE TABLE {$safeTableName}");
-            }
 
             $columns = array_keys($data[0]);
             $safeColumns = array_map(fn($col) => "`" . str_replace("`", "``", $col) . "`", $columns);
@@ -85,7 +86,9 @@ class TableModel
             return $insertedCount;
 
         } catch (\PDOException $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }
@@ -144,7 +147,9 @@ class TableModel
             return $updatedRow;
 
         } catch (\PDOException | \InvalidArgumentException $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Error en TableModel::updateItemRow: " . $e->getMessage());
             throw $e; // Relanzo para que el controlador lo maneje
         }
@@ -196,7 +201,9 @@ class TableModel
                 throw new \PDOException("Error al ejecutar la inserción: " . implode(', ', $stmt->errorInfo()));
             }
         } catch (\PDOException $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Error en TableModel::insertItem: " . $e->getMessage());
             return false;
         }

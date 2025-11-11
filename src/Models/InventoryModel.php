@@ -264,9 +264,6 @@ class InventoryModel
             $this->db->exec($sql);
 
         } catch (Exception $e) {
-            // Si algo falló (Paso 1 o 2), intentamos revertir.
-            // Solo hacemos rollback SI la transacción sigue activa
-            // (lo que significa que el ALTER nunca se ejecutó).
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }

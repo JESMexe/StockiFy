@@ -22,7 +22,18 @@
     --color-white: #FFFFFF;
     --color-black: #1A1A1A;
     --color-gray: #8A8A8A;
-    --accent-color: #5E81AC; /* Azul por defecto */
+    --accent-color: #A3BE8C; /* Verde por defecto */
+    --accent-red: #BF616A;
+    --accent-green: #A3BE8C;
+    --accent-yellow: #EBCB8B;
+
+    --accent-color: #A3BE8C;
+    --accent-red: #BF616A;
+    --accent-green: #A3BE8C;
+    --accent-yellow: #EBCB8B;
+    --accent-blue: #88C0D0;
+    --accent-purple: #B48EAD;
+
     --font-title: 'Satoshi', sans-serif;
     --font-body: 'Satoshi', sans-serif;
     --border-strong: 2px solid var(--color-black);
@@ -48,6 +59,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ---- Encabezado (Header) ---- */
+/* EN: main.css */
 header {
     display: flex;
     justify-content: space-between;
@@ -55,7 +67,8 @@ header {
     padding: 1rem 2rem;
     border-bottom: var(--border-strong);
     background-color: var(--color-white);
-    position: relative;
+    position: sticky; /* <-- CAMBIO */
+    top: 0;             /* <-- AÑADIDO */
     z-index: 10;
 }
 #header-logo img { height: 40px; width: auto; display: block; }
@@ -264,4 +277,31 @@ hr { border: none; height: 2px; background-color: var(--color-black); margin: 1.
 }
 .modal-footer .btn {
     width: auto; /* Ancho automático para botones del footer */
+}
+
+/* Estilos para Inputs de Formulario (general) */
+.form-input-stylish {
+    width: 100%; /* Ocupa todo el ancho disponible */
+    padding: 12px 15px; /* Relleno interno para que el texto no toque los bordes */
+    margin-bottom: 20px; /* Espacio debajo del input */
+    border: 1px solid var(--color-gray-light); /* Borde sutil */
+    border-radius: 8px; /* Bordes redondeados, como en tu ejemplo */
+    font-size: 1rem; /* Tamaño de fuente legible */
+    color: var(--color-black); /* Color del texto */
+    background-color: var(--color-white); /* Fondo blanco */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Sombra suave para profundidad */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* Transiciones para interactividad */
+}
+
+/* Estilos al enfocar el input */
+.form-input-stylish:focus {
+    border-color: var(--color-primary); /* Borde de color al enfocar */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra un poco más pronunciada */
+    outline: none; /* Eliminar el contorno por defecto del navegador */
+}
+
+/* Estilo para el placeholder */
+.form-input-stylish::placeholder {
+    color: var(--color-gray); /* Color más suave para el texto del placeholder */
+    font-style: italic; /* Opcional: placeholder en cursiva */
 }

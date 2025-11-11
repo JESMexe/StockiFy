@@ -1,60 +1,130 @@
-// assets/js/notifications/pop-up.js
-export class PopUpSystem {
-    constructor() {
-        this.container = this.createContainer();
-    }
+export const notificationConfig = {
+    success: { icon: 'ph-check-circle', color: 'var(--accent-green)' },
+    error: { icon: 'ph-warning-circle', color: 'var(--accent-red)' },
+    warning: { icon: 'ph-warning', color: 'var(--accent-yellow)' },
+    info: { icon: 'ph-info', color: 'var(--accent-blue)' },
+    system: { icon: 'ph-hard-drives', color: 'var(--accent-purple)' },
+    dev: { icon: 'ph ph-code', color: 'var(--accent-purple)' }
+};
 
-    createContainer() {
-        const existing = document.getElementById('notification-container');
-        if (existing) return existing;
+function _showToast(type, title, message, duration = 5000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
 
-        const container = document.createElement('div');
-        container.id = 'notification-container';
-        container.className = 'notification-container';
-        document.body.appendChild(container);
-        return container;
-    }
+    const config = notificationConfig[type] || notificationConfig.info;
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.style.setProperty('--toast-color', config.color);
+
+    toast.innerHTML = `
+        <i class="toast-icon ph ${config.icon}"></i>
+        <div class="toast-content">
+            <strong class="toast-title">${title}</strong>
+            <p class="toast-message">${message || ''}</p>
+        </div>
+        <button class="toast-close-btn"><i class="ph ph-x"></i></button>
+        <div class="toast-timer" style="animation-duration: ${duration}ms"></div>
+    `;
+
+    fetch('/api/notifications/create.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, title, message })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) console.error('Error al guardar la notificación en la DB.');
+        })
+        .catch(err => console.error('Error de red guardando notificación:', err));
 
 
-    show(message, type = 'info', duration = 5000) {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
+    container.appendChild(toast);
 
-        notification.innerHTML = `
-            <span>${message}</span>
-            <button class="notification-close" onclick="this.parentElement.remove()">×</button>
-        `;
+    // Animación de entrada
+    setTimeout(() => toast.classList.add('show'), 100);
 
-        this.container.appendChild(notification);
+    // Lógica de cierre
+    const closeBtn = toast.querySelector('.toast-close-btn');
+    const timer = setTimeout(() => _close(toast), duration);
 
-        if (duration > 0) {
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.classList.add('fade-out');
-                    setTimeout(() => notification.remove(), 300);
-                }
-            }, duration);
-        }
-
-        return notification;
-    }
-
-    success(message, duration = 5000) {
-        return this.show(message, 'success', duration);
-    }
-
-    error(message, duration = 5000) {
-        return this.show(message, 'error', duration);
-    }
-
-    warning(message, duration = 5000) {
-        return this.show(message, 'warning', duration);
-    }
-
-    info(message, duration = 5000) {
-        return this.show(message, 'info', duration);
-    }
+    closeBtn.addEventListener('click', () => {
+        clearTimeout(timer);
+        _close(toast);
+    });
 }
 
-// Instancia global
-export const pop_ups = new PopUpSystem();
+function _close(toast) {
+    toast.classList.remove('show');
+    toast.classList.add('hide');
+    setTimeout(() => toast.remove(), 500);
+}
+
+function _showPrompt(title, message, placeholder = '', initialValue = '') {
+    return new Promise((resolve, reject) => {
+        const modal = document.getElementById('custom-prompt-modal');
+        const titleEl = document.getElementById('prompt-title');
+        const messageEl = document.getElementById('prompt-message');
+        const inputEl = document.getElementById('prompt-input');
+        const form = document.getElementById('prompt-form');
+
+        if(!modal || !titleEl || !messageEl || !inputEl || !form) {
+            console.error("Faltan elementos del DOM para el prompt personalizado.");
+            return reject(new Error('Componente de UI no encontrado.'));
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        inputEl.placeholder = placeholder;
+        inputEl.value = initialValue;
+
+        modal.classList.remove('hidden');
+        inputEl.focus();
+
+        // --- ¡ARREGLO DEL BUG DE CLONACIÓN! ---
+
+        // 1. Clonamos el formulario (esto también clona los botones de adentro)
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+
+        // 2. Buscamos el botón cancelar DENTRO del NUEVO formulario
+        const newCancelBtn = newForm.querySelector('#prompt-cancel-btn');
+
+        // 3. Añadimos el listener de submit al NUEVO formulario
+        newForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            modal.classList.add('hidden');
+            resolve(newForm.querySelector('#prompt-input').value.trim());
+        });
+
+        // 4. Añadimos el listener de click al NUEVO botón cancelar
+        newCancelBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            reject(new Error('Acción cancelada por el usuario.'));
+        });
+    });
+}
+
+
+export const pop_ups = {
+    success: (message, title = 'Éxito') => {
+        _showToast('success', title, message);
+    },
+    error: (message, title = 'Error') => {
+        _showToast('error', title, message);
+    },
+    warning: (message, title = 'Advertencia') => {
+        _showToast('warning', title, message);
+    },
+    info: (message, title = 'Información') => {
+        _showToast('info', title, message);
+    },
+    system: (message, title = 'Sistema') => {
+        _showToast('system', title, message);
+    },
+    dev: (message, title = 'Desarrolladores') => {
+        _showToast('system', title, message);
+    },
+
+    prompt: _showPrompt
+};
+

@@ -73,11 +73,11 @@ async function handleCreateDatabase() {
     try {
         const result = await api.createDatabase(dbName, columns);
         if (result.success) {
-            pop_ups.warning(result.message);
+            pop_ups.success(result.message, "¡Creación exitosa!");
             await checkInitialState();
         }
     } catch (error) {
-        pop_ups.warning(`Error: ${error.message}`);
+        pop_ups.error(`Error: ${error.message}`, "Error");
     }
 }
 

@@ -35,7 +35,7 @@ export async function checkSessionStatus() {
         const data = await response.json();
         return data.isLoggedIn;
     } catch (error) {
-        pop_ups.error("Error al verificar la sesión: ${error.message}");
+        pop_ups.error("Error al verificar la sesión: ${error.message}", "Error en la Sesión");
         return false;
     }
 }

@@ -15,6 +15,30 @@
     flex-shrink: 0; /* Evita que se encoja */
     height: calc(100vh - 62px); /* Ajusta altura (100% viewport - altura del header aprox) */
     overflow-y: auto; /* Scroll si el menú es muy largo */
+    position: sticky;       /* <-- AÑADIDO */
+    top: 62px;              /* <-- AÑADIDO (Asume 62px de header) */
+    align-self: flex-start;
+}
+
+/* 1. Color del texto que escribís */
+#delete-confirm-modal #delete-confirm-input {
+    color: var(--accent-red) !important;
+    font-weight: 600;
+}
+
+/* 2. Color del placeholder */
+#delete-confirm-modal #delete-confirm-input::placeholder {
+    color: var(--accent-red) !important;
+    opacity: 0.6;
+}
+
+/* 3. Color del "glow" al hacer focus */
+#delete-confirm-modal #delete-confirm-input:focus {
+    /* Anulamos el box-shadow azul de main.css */
+    box-shadow: 0 0 0 3px var(--accent-red) !important;
+    /* Forzamos el borde rojo también */
+    border-color: var(--accent-red) !important;
+    outline: none;
 }
 
 #view-db {
@@ -69,9 +93,8 @@
 .dashboard-main {
     flex-grow: 1;
     padding: 2rem;
-    overflow-y: auto;
     background-color: #f9f9f9;
-    height: calc(100vh - 62px);
+    min-height: calc(100vh - 62px);
 }
 
 /* Vistas dentro del contenido principal */
@@ -138,11 +161,27 @@
 
 /* Placeholder para Vistas no implementadas */
 .dashboard-view.hidden { display: none; }
-.dashboard-view:not(#view-db) {
+.dashboard-view:not(#view-db):not(#config-db):not(#notifications) {
     background-color: var(--color-white);
     padding: 2rem;
     border: var(--border-strong);
     border-radius: var(--border-radius);
+}
+
+#config-db,
+#notifications {
+    width: 70%;
+    background-color: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 10px 10px 0px var(--color-black);
+    overflow: hidden;
+    padding: 2rem; /* Mantenemos el padding interno */
+    transition: box-shadow var(--transition-speed) ease;
+}
+
+#config-db:hover {
+    box-shadow: 10px 10px 0px var(--accent-color);
 }
 
 /* --- ESTILOS PARA TABLA VACÍA --- */
@@ -301,4 +340,236 @@
     font-size: 0.9rem;
     box-shadow: 0 0 0 2px var(--accent-color); /* Resaltado */
     outline: none;
+}
+
+/* --- ESTILOS DE ACORDEÓN PARA CONFIGURACIÓN --- */
+
+/* Contenedor principal del acordeón */
+.accordion {
+    width: 100%;
+    /* Lo muevo un poco a la izquierda para que no se sienta "centrado" */
+    margin: 0;
+}
+
+.accordion-item {
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    background-color: var(--color-white);
+    /* box-shadow: 4px 4px 0px var(--color-black); */
+    overflow: hidden;
+}
+
+/* Cabecera clickeable (¡la queja de "presencia"!) */
+.accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 1rem 1.5rem;
+
+    background-color: var(--color-white);
+    border: none;
+    /* Borde inferior por defecto (desaparece en el último item) */
+    border-bottom: var(--border-strong);
+
+    font-family: var(--font-title);
+    font-size: 1.3rem; /* <-- Más presencia */
+    font-weight: 700;
+    color: var(--color-black);
+    cursor: pointer;
+
+    transition: background-color var(--transition-speed) ease;
+}
+
+.accordion-item:last-child .accordion-header {
+    /* El último item no necesita borde inferior si está cerrado */
+    border-bottom: none;
+}
+
+.accordion-header:hover {
+    background-color: #f9f9f9;
+}
+
+/* Estilo del icono de flecha */
+.accordion-header i {
+    font-size: 1.2rem;
+    transition: transform var(--transition-speed) ease;
+}
+
+/* Contenido desplegable */
+.accordion-content {
+    /* Mantenemos los paddings horizontales */
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    text-align: left;
+
+    /* ¡LA MAGIA DE LA ANIMACIÓN! */
+    max-height: 0; /* Por defecto, altura 0 */
+    overflow: hidden; /* Oculta el contenido que se pasa */
+    transition: max-height 0.3s ease-out; /* La animación fluida */
+}
+
+.accordion-header.active + .accordion-content {
+    max-height: 1000px; /* Un valor alto para que entre el contenido */
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-top: var(--border-strong);
+}
+
+/* --- ESTADOS ACTIVOS (CUANDO SE ABRE) --- */
+
+.accordion-header.active {
+    background-color: #f5f5f5;
+}
+
+/* Rotación de la flecha */
+.accordion-header.active i {
+    transform: rotate(180deg);
+}
+
+.accordion-item:last-child .accordion-header.active {
+    /* Si está activo, el último item no necesita borde */
+    border-bottom: none;
+}
+
+
+/* --- ARREGLOS DE BOTONES Y FORMULARIOS --- */
+
+/* Botón de peligro (para el de "Eliminar") */
+.btn-danger {
+    background-color: #ffdee1; /* (puedes usar var(--accent-red) si existe) */
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+}
+.btn-danger:hover:not(:disabled) {
+    background-color: var(--accent-red);
+    border-color: var(--accent-red);
+    color: #ffdee1;
+    box-shadow: 4px 4px 0px #9b2c2c;
+    transform: translate(-2px, -2px);
+}
+.btn-danger:active:not(:disabled) {
+    background-color: #9b2c2c;
+    box-shadow: 1px 1px 0px var(--color-black);
+    transform: translate(3px, 3px);
+}
+
+/* Hacemos que los botones DENTRO del acordeón sean de tamaño automático */
+.accordion-content .btn {
+    width: auto; /* <-- ARREGLA EL ANCHO */
+    max-width: 350px;
+    padding: 8px 16px; /* <-- ARREGLA EL ALTO */
+    font-size: 0.9rem;
+    margin-top: 0; /* Quitamos margen superior por defecto */
+}
+
+/* Hacemos que el form de añadir columna se vea bien */
+.accordion-content #add-column-form {
+    display: flex;
+    flex-wrap: wrap; /* Para celulares */
+    gap: 1rem;
+    margin-bottom: 0;
+}
+.accordion-content #add-column-form .form-group {
+    flex-grow: 1; /* El input toma el espacio */
+}
+
+
+
+/* --- ESTILOS BUSCADOR POR COLUMNA --- */
+
+.table-controls .search-wrapper {
+    position: relative; /* Clave para el dropdown */
+    display: flex;
+}
+
+/* Ajustamos el input para que encaje con el botón */
+.table-controls .search-wrapper input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none; /* El botón pondrá el borde */
+}
+
+/* Estilo del botón de filtro */
+#search-column-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto; /* Ancho automático */
+    margin-top: 0;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    line-height: 1;
+
+    /* Hacemos que "pegue" con el input */
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+
+    /* Quitamos el "pop" de los botones secundarios */
+    box-shadow: none;
+    transform: none;
+    background-color: #f9f9f9;
+}
+#search-column-btn:hover {
+    background-color: #f1f1f1;
+    box-shadow: none;
+    transform: none;
+}
+#search-column-btn span {
+    font-weight: 600;
+    max-width: 100px; /* Evita que crezca mucho */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.column-item{
+    padding: 0.5rem;
+}
+
+/* El menú dropdown "flotante" */
+.search-dropdown {
+    position: absolute;
+    top: 110%; /* Justo debajo del botón */
+    right: 0; /* Alineado a la derecha del wrapper */
+    width: 250px;
+    background-color: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 4px 4px 0px var(--color-black);
+    z-index: 10;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Ítems dentro del dropdown */
+.search-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.search-dropdown-item:last-child {
+    border-bottom: none;
+}
+.search-dropdown-item:hover {
+    background-color: #f9f9f9;
+}
+
+/* Estilo del "check" (activo) */
+.search-dropdown-item i {
+    font-size: 1.1rem;
+    color: transparent; /* Oculto por defecto */
+}
+.search-dropdown-item.active i {
+    color: var(--accent-color); /* Visible si está activo */
 }

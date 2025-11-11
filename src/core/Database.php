@@ -46,4 +46,8 @@ class Database
         }
         return self::$instance->conn;
     }
+
+    public function inTransaction() {
+        return $this->pdo->inTransaction();
+    }
 }

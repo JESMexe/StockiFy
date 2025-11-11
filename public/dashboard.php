@@ -1,11 +1,12 @@
 ﻿<!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:type="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Control - StockiFy</title>
-    <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/main.css?v=1.2">
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=1.2">
+    <link rel="stylesheet" href="assets/css/notifications.css?v=1.0">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
     <script src="assets/js/theme.js"></script>
@@ -39,8 +40,23 @@
                 <div class="table-header">
                     <h2 id="table-title">Cargando...</h2>
                     <div class="table-controls">
-                        <input type="text" id="search-input" placeholder="Buscar en la tabla...">
-                        <button id="add-row-btn" class="btn btn-primary" style="width: auto; margin-top: 0; margin-left: 1rem;">+ Añadir Fila</button>
+                        <div class="search-wrapper">
+                            <input type="text" id="search-input" placeholder="Buscar en la tabla...">
+
+                            <button id="search-column-btn" class="btn btn-secondary">
+                                <i class="ph ph-funnel"></i>
+                                <span>Todas</span>
+                                <i class="ph ph-caret-down"></i>
+                            </button>
+
+                            <div id="search-column-dropdown" class="search-dropdown hidden">
+                                <button class="search-dropdown-item active" data-column="all">
+                                    <i class="ph ph-check"></i> Todas las Columnas
+                                </button>
+                            </div>
+                        </div>
+
+                        <button id="add-row-btn" class="btn btn-primary" style="width: auto; margin-top: 0;">+ Añadir Fila</button>
                     </div>
                 </div>
                 <div class="table-wrapper">
@@ -55,42 +71,82 @@
         </div>
 
         <div id="config-db" class="dashboard-view hidden">
-            <h2>⚙️ Configurar Tabla</h2>
-            <p>Acá vas a poder agregar/eliminar columnas, gestionar stock bajo, códigos de barras, importar/exportar, etc.</p>
+            <h2><i class="ph ph-gear"></i> Configurar Tabla</h2>
+            <p>Gestioná las secciones de tu tabla y otras configuraciones.</p>
 
-            <div class="config-section" style="margin-top: 2rem;">
-                <h3>Gestionar Columnas</h3>
+            <div class="accordion" style="margin-top: 2rem;">
 
-                <form id="add-column-form" class="form-inline" style="margin-bottom: 1.5rem;">
-                    <div class="form-group" style="flex-grow: 1;">
-                        <label for="new-column-name">Nombre de la Nueva Columna</label>
-                        <input type="text" id="new-column-name" placeholder="Ej: PrecioCompra" required>
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span>Gestionar Columnas</span>
+                        <i class="ph ph-caret-down"></i>
+                    </button>
+                    <div class="accordion-content">
+                        <form id="add-column-form" class="form-inline">
+                            <div class="form-group" style="flex-grow: 1;">
+                                <label for="new-column-name">Nombre de la Nueva Columna</label>
+                                <input type="text" id="new-column-name" placeholder="Ej: PrecioCompra" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Añadir Columna</button>
+                        </form>
+
+                        <h4 style="margin-top: 1.5rem;">Columnas Actuales</h4>
+                        <div id="column-list-container"></div>
+                        <p id="column-list-status">Cargando columnas...</p>
                     </div>
-                    <button type="submit" class="btn btn-primary">Añadir Columna</button>
-                </form>
-
-                <h4>Columnas Actuales</h4>
-                <div id="column-list-container">
                 </div>
-                <p id="column-list-status">Cargando columnas...</p>
-            </div>
-            <hr style="margin: 2rem 0;">
 
-            <div class="danger-zone" style="margin-top: 2rem; padding: 1rem; border: 2px solid var(--accent-red); border-radius: var(--border-radius);">
-                <h3 style="color: var(--accent-red);">Zona de Peligro</h3>
-                <p style="color: var(--color-gray);">Estas acciones son permanentes.</p>
-                <button id="delete-db-btn" class="btn btn-secondary" style="border-color: var(--accent-red); color: var(--accent-red);">Eliminar esta Base de Datos</button>
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span style="color: var(--accent-red)">Zona de Peligro</span>
+                        <i class="ph ph-caret-down"></i>
+                    </button>
+                    <div class="accordion-content">
+                        <p style="color: var(--accent-red); margin-bottom: 1rem;">
+                            Eliminar tu base de datos borrará permanentemente todas las tablas y datos.
+                            <strong>Esta acción no se puede deshacer.</strong>
+                        </p>
+                        <button id="delete-db-btn" class="btn btn-danger">Eliminar esta Base de Datos</button>
+                    </div>
+                </div>
+
             </div>
         </div>
 
         <div id="analysis" class="dashboard-view hidden">
-            <h2>📈 Análisis Económico</h2>
+            <h2><i class="ph ph-chart-line"></i> Análisis Económico</h2>
             <p>Acá vas a poder ver balances y registrar movimientos.</p>
         </div>
 
         <div id="notifications" class="dashboard-view hidden">
-            <h2>🔔 Notificaciones</h2>
-            <p>Acá vas a poder ver avisos importantes.</p>
+            <h2><i class="ph ph-bell"></i>Notificaciones</h2>
+            <p>Historial de todos los avisos importantes de tu cuenta.</p>
+
+            <div class="accordion" style="margin-top: 2rem;">
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span><i class="ph ph-bug"></i> Herramienta de Debug</span>
+                        <i class="ph ph-caret-down"></i>
+                    </button>
+                    <div class="accordion-content">
+                        <form id="debug-toast-form" style="display: grid; gap: 1rem;">
+                            <select id="debug-toast-type" class="btn" style="width: 100%; border-radius: 4px; padding: 12px; border: 2px solid black; background: white;">
+                                <option value="success">Success (Éxito)</option>
+                                <option value="error">Error (Rojo)</option>
+                                <option value="warning">Warning (Amarillo)</option>
+                                <option value="info">Info (Azul)</option>
+                                <option value="system">System (Violeta)</option>
+                            </select>
+                            <input type="text" id="debug-toast-title" placeholder="Título de la Notificación" required>
+                            <textarea id="debug-toast-message" placeholder="Mensaje de la Notificación..." style="min-height: 80px;"></textarea>
+                            <button type="submit" class="btn btn-primary" style="width: auto;">Lanzar Notificación de Prueba</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div id="notifications-list" style="margin-top: 2rem;">
+                <p>Cargando historial...</p>
+            </div>
         </div>
     </main>
 </div>
@@ -127,7 +183,7 @@
 </div>
 
 <div id="delete-confirm-modal" class="modal-overlay hidden">
-    <div class="modal-content view-container" style="max-width: 450px;">
+    <div class="modal-content view-container" style="max-width: 450px; --accent-color-hover: var(--accent-red = '#BF616A') !important;">
         <button id="close-delete-modal-btn" class="modal-close-btn">&times;</button>
 
         <div class="modal-header">
@@ -137,14 +193,34 @@
 
         <div class="modal-body">
             <p style="text-align: left; color: var(--color-gray);">Para confirmar, escribí el nombre exacto de la base de datos:</p>
-            <input type="text" id="delete-confirm-input" placeholder="Nombre de la Base de Datos" style="margin-bottom: 1rem;">
+            <input type="text" id="delete-confirm-input" placeholder="Nombre de la Base de Datos" style="margin-bottom: 1rem; border-color: var(--accent-red);">
             <div id="delete-error-message" style="color: var(--accent-red); font-weight: 500;"></div>
         </div>
 
         <div class="modal-footer">
             <button id="cancel-delete-btn" class="btn btn-secondary">Cancelar</button>
-            <button id="confirm-delete-btn" class="btn btn-primary" disabled style="background-color: var(--accent-red); border-color: var(--accent-red);">Eliminar Permanentemente</button>
+            <button id="confirm-delete-btn" class="btn btn-danger" disabled>Eliminar Permanentemente</button>
         </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<div id="custom-prompt-modal" class="modal-overlay hidden">
+    <div class="modal-content view-container" style="max-width: 450px;">
+        <div class="modal-header">
+            <h2 id="prompt-title">Título del Prompt</h2>
+            <p id="prompt-message" style="text-align: left;">Mensaje de ayuda.</p>
+        </div>
+        <form id="prompt-form">
+            <div class="modal-body">
+                <input type="text" id="prompt-input" placeholder="Escribí acá..." required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="prompt-cancel-btn" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" id="prompt-confirm-btn" class="btn btn-primary">Confirmar</button>
+            </div>
+        </form>
     </div>
 </div>
 
