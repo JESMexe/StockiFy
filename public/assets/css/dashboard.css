@@ -125,7 +125,7 @@
 .table-controls input { max-width: 250px; }
 
 /* --- BOTÓN AÑADIR --- */
-#add-row-btn {
+#add-row-btn, .new-transaction-btn {
     width: auto;      /* Hago que el ancho se ajuste al texto */
     padding: 8px 16px; /* Uso el padding más chico, como los del header */
     margin-top: 0;    /* Quito el margen superior */
@@ -161,7 +161,7 @@
 
 /* Placeholder para Vistas no implementadas */
 .dashboard-view.hidden { display: none; }
-.dashboard-view:not(#view-db):not(#config-db):not(#notifications) {
+.dashboard-view:not(#view-db):not(#config-db):not(#notifications):not(#providers):not(#customers):not(#receipts):not(#sales):not(#analysis) {
     background-color: var(--color-white);
     padding: 2rem;
     border: var(--border-strong);
@@ -169,7 +169,7 @@
 }
 
 #config-db,
-#notifications {
+#notifications, #providers, #customers, #receipts, #sales, #analysis {
     width: 70%;
     background-color: var(--color-white);
     border: var(--border-strong);
@@ -212,6 +212,167 @@
     align-items: center; /* <-- CAMBIO CLAVE */
     gap: 0.5rem;
 }
+
+/* -------- ESTILOS DE ESTADÍSTICAS DIARIAS -------- */
+
+.daily-stats-wrapper {
+    width: fit-content;
+    padding: 3rem;
+    justify-content: left;
+    gap: 3rem;
+}
+
+.stat-group-container {
+    padding: 1rem;
+    gap: 0.5rem;
+    border-radius: var(--border-radius);
+    border-width: 2px;
+    transition: all 0.5s ease;
+    background-color: var(--color-white);
+    border-color: var(--color-white);
+    border-style: solid;
+}
+.stat-group-container:hover {
+    background-color: var(--accent-color);
+    border-color: var(--color-black);
+}
+.stat-group-container h3 {
+    font-size: 2rem;
+}
+.daily-stat-item {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    transition: all 0.5s ease;
+}
+.daily-stat-item:hover {
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+.daily-stat-item h4 {
+    font-size: 1.2rem;
+}
+
+/* Selector de inventario en estadísticas */
+.select-inventory-btn {
+    width: fit-content;
+    height: fit-content;
+    padding: 0.5rem;
+    margin-left: 10px;
+    background-color: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+}
+.select-inventory-btn.clicked {
+    border-width: 2px 2px 0 2px;
+    border-radius: 5px 5px 0 0;
+    background-color: var(--accent-color);
+    color: var(--color-white);
+}
+.select-inventory-btn:hover {
+    background-color: var(--accent-color);
+    color: var(--color-white);
+}
+.inventory-select-container { position: relative; }
+.inventories-dropdown {
+    z-index: 1000;
+    position: absolute;
+    align-items: end;
+    background-color: var(--color-white);
+    top: 100%;
+    right: 0;
+    border-radius: 5px 0 5px 5px;
+    border: var(--border-strong);
+}
+.inventory-btn {
+    width: 100%;
+    white-space: nowrap;
+    display: flex;
+    justify-content: right;
+    padding: 10px 15px;
+    transition: all var(--transition-speed) ease;
+    cursor: pointer;
+    border-width: 2px 0 0;
+    border-style: solid;
+    border-color: var(--color-black);
+}
+.inventory-btn:hover {
+    background-color: var(--accent-color);
+    color: var(--color-white);
+}
+
+.estadisticas-graph-wrapper { width: 100%; }
+
+/* -------- MODALES DE NUEVAS TRANSACCIONES -------- */
+#new-transaction-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--color-white);
+    border-radius: 5px 0 5px 5px;
+    border: var(--border-strong);
+    z-index: 100;
+    padding: 2rem;
+}
+
+#transaction-picker-modal,
+#transaction-success-modal {
+    background-color: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 5px 5px 0 var(--color-black);
+    position: absolute;
+    z-index: 101;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+#transaction-picker-modal {
+    width: 400px;
+    height: 700px;
+    padding: 0.5rem;
+}
+#transaction-success-modal {
+    padding: 2rem;
+    max-width: 500px;
+    min-width: 300px;
+}
+
+/* -------- ESTILOS PARA VENTAS / COMPRAS -------- */
+.order-by-container {
+    position: relative;
+    padding: 5px 0 5px 5px;
+    border-radius: var(--border-radius);
+    border: var(--border-strong);
+}
+.order-by-container.clicked {
+    border-width: 2px 2px 0 2px;
+    border-radius: 5px 5px 0 0;
+}
+.order-by-dropdown {
+    position: absolute;
+    align-items: start;
+    background-color: var(--color-white);
+    top: 100%;
+    left: -2px;
+    right: -2px;
+    border-radius: 0 0 5px 5px;
+    border-width: 0 2px 2px 2px;
+    border-style: solid;
+    border-color: var(--color-black);
+}
+.order-by-dropdown p {
+    width: 100%;
+    height: fit-content;
+    padding: 10px 0 10px 10px;
+}
+.order-by-dropdown p:hover {
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
 
 .stock-btn {
     flex-shrink: 0; /* Evita que los botones se achiquen */
@@ -573,3 +734,4 @@
 .search-dropdown-item.active i {
     color: var(--accent-color); /* Visible si está activo */
 }
+

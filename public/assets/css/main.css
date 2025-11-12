@@ -1,3 +1,5 @@
+/* main_FINAL.css — Unificación visual entre tus estilos y los del compañero */
+
 /* Archivo: public/assets/css/main.css */
 
 /* ---- Carga de Fuentes Auto-hospedadas ---- */
@@ -105,17 +107,15 @@ main {
 }
 
 /* ---- Contenedores de Vistas ---- */
-.view-container {
-    background-color: var(--color-white);
-    padding: 2.5rem;
+main .view-container:not(#welcome-view):not(#empty-state-view):not(#select-db-view):not(#dashboard-view) {
+    background: var(--color-white);
     border: var(--border-strong);
     border-radius: var(--border-radius);
-    width: 100%;
-    max-width: 550px;
+    box-shadow: 8px 8px 0 var(--color-black);
+    padding: 2rem;
     text-align: center;
-    box-shadow: 10px 10px 0px var(--color-black);
-    transition: box-shadow var(--transition-speed) ease;
 }
+
 .view-container:hover {
     box-shadow: 12px 12px 0px var(--accent-color);
 }
@@ -304,4 +304,413 @@ hr { border: none; height: 2px; background-color: var(--color-black); margin: 1.
 .form-input-stylish::placeholder {
     color: var(--color-gray); /* Color más suave para el texto del placeholder */
     font-style: italic; /* Opcional: placeholder en cursiva */
+}
+
+/* --- HERO PRINCIPAL --- */
+#cycling-text-container {
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    height: 1.2em;
+}
+
+#cycling-text {
+    display: inline-block;
+    transition: opacity 0.6s ease-in-out;
+}
+
+/* --- POPUPS --- */
+.popup {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 4px 4px 0 var(--color-black);
+    background-color: var(--color-white);
+    border: 2px solid var(--color-black);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+    z-index: 9999;
+}
+.popup.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+.popup.success { border-color: var(--accent-green); background: #e9ffe9; }
+.popup.error { border-color: var(--accent-red); background: #ffeaea; }
+.popup.warning { border-color: #f1c40f; background: #fffbe5; }
+.popup.info { border-color: #3498db; background: #e8f4ff; }
+
+/* --- INDEX VIEWS --- */
+.view-container {
+    background: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 8px 8px 0 var(--color-black);
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.view-container:hover {
+    box-shadow: 8px 8px 0 var(--accent-color);
+}
+.view-container h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+.view-container p {
+    font-size: 1rem;
+    color: #444;
+}
+
+/* --- BOTONES DE LA PORTADA --- */
+.menu-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+.menu-buttons .btn {
+    padding: 10px 20px;
+    font-weight: 600;
+}
+
+/* --- TARJETAS DE FEATURES --- */
+.view-card {
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 6px 6px 0 var(--color-black);
+    background-color: var(--color-white);
+    padding: 1.5rem;
+    text-align: left;
+    transition: all 0.25s ease;
+}
+.view-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 6px 6px 0 var(--accent-color);
+}
+.view-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+}
+.view-card p {
+    font-size: 0.95rem;
+    color: #444;
+    margin-bottom: 1rem;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+    .flex-row { flex-direction: column; text-align: center; }
+    .menu-buttons { flex-direction: column; }
+    .view-card { text-align: center; }
+}
+
+/* ==== Ajustes visuales generales ==== */
+.page {
+    max-width: 1400px;
+    margin: 70px auto;
+    padding: 0 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 100px;
+}
+
+/* HERO */
+.hero {
+    display: grid;
+    grid-template-columns: minmax(400px, 1fr) minmax(400px, 1fr);
+    align-items: center;
+    gap: 60px; /* más espacio */
+    margin-bottom: 40px;
+}
+.hero__text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.hero__text h1 {
+    font-weight: 800;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.2;
+    margin-bottom: 10px;
+}
+.hero__text h2 {
+    font-weight: 600;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+#cycling-text-container {
+    display: inline-flex;
+    align-items: baseline;       /* mantiene línea base */
+    height: auto;                /* deja crecer según el texto */
+    line-height: 1.1;            /* altura óptica balanceada */
+    overflow: visible;           /* 🔥 evita recortar letras descendentes */
+}
+#cycling-text {
+    display: inline-block;
+    font-weight: 800;            /* negrita */
+    font-size: 1.2em;            /* un poco más grande */
+    line-height: 1.1;
+    color: var(--accent-color);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform-origin: bottom;
+    vertical-align: baseline;
+}
+
+/* STATUS */
+.status {
+    justify-content: center;
+    margin-top: 30px;
+}
+.status .view-container {
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 8px 8px 0 var(--color-black);
+    text-align: center;
+}
+.status .actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+
+/* FEATURES */
+.features {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 40px;
+    margin-top: 60px;
+    margin-bottom: 120px;
+}
+.features .view-card {
+    flex: 1 1 300px;
+    max-width: 350px;
+    background: var(--color-white);
+    border: var(--border-strong);
+    border-radius: 12px;
+    box-shadow: 8px 8px 0 var(--color-black);
+    padding: 24px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.features .view-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 8px 8px 0 var(--accent-color);
+}
+.features .view-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* VIEW-CARD y STATUS-CARD */
+.view-card, .status .view-container {
+    border-radius: 10px;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.9);
+    padding: 24px;
+}
+
+/* ABOUT */
+.about {
+    text-align: center;
+    color: var(--color-gray);
+    border-top: var(--border-strong);
+    padding-top: 20px;
+    margin-top: 30px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ANIMACIONES */
+.fade-in-up {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-in-up.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* RESPONSIVE */
+@media (max-width: 960px) {
+    .hero { grid-template-columns: 1fr; }
+    .features { grid-template-columns: 1fr; }
+}
+
+/* FOOTER */
+footer {
+    border-top: var(--border-strong);
+    color: var(--color-gray);
+    text-align: center;
+    font-size: 15px;
+    padding: 28px 20px;
+    margin-top: 80px;
+    max-width: 100%;
+    background: var(--color-white);
+}
+footer p {
+    max-width: 900px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* =======================
+   Import Modal – mejoras
+   ======================= */
+
+.modal-content {
+    overflow: visible;              /* evita que se “corte” el radio/checkbox */
+    padding: 1.25rem 1.25rem 1rem;  /* respiro interno coherente */
+}
+
+.modal-note {
+    margin: .5rem 0 1rem;
+    font-size: .95rem;
+    color: #333;
+}
+
+.modal-option {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-top: 1rem;
+    padding-left: .2rem;            /* separa del borde izquierdo para que no “toque” */
+}
+
+/* Alineación y tamaño del input dentro del modal
+   (respeta tu estilo redondeado pero asegura que no se mueva ni se recorte) */
+.modal-option input[type="checkbox"],
+.modal-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin: 0;
+}
+
+.modal-option label {
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.3;
+}
+
+/* ============================================
+   MODAL DE IMPORTACIÓN CSV – estilo mejorado
+   ============================================ */
+
+.modal-content {
+    overflow: visible;
+    padding: 1.75rem 2rem;
+    border-radius: 12px;
+    box-shadow: 6px 6px 0 #1b1b1b;
+}
+
+/* Encabezado */
+.modal-header h2 {
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+    text-align: center;
+}
+
+.modal-header p {
+    text-align: center;
+    color: #444;
+    font-size: 0.95rem;
+}
+
+/* Nota alineada a la izquierda */
+.modal-note {
+    text-align: left;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.95rem;
+    color: #222;
+    background: #f7f7f7;
+    border-left: 4px solid var(--accent-color);
+    padding: 0.7rem 1rem;
+    border-radius: 6px;
+    line-height: 1.5;
+}
+
+/* Separadores */
+.modal-section {
+    border-top: 1.5px solid #ccc;
+    margin: 1.5rem 0;
+    opacity: 0.7;
+}
+
+/* Cuerpo del modal */
+#mapping-form {
+    margin-top: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+/* Alineación de inputs y labels */
+.modal-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+    padding-left: 0.25rem;
+}
+
+/* Input del checkbox/radio */
+.modal-option input[type="checkbox"],
+.modal-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin: 0;
+    border: 2px solid #1b1b1b;
+    border-radius: 50%;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.modal-option input[type="checkbox"]:checked::after,
+.modal-option input[type="radio"]:checked::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-color);
+}
+
+/* Label alineado correctamente */
+.modal-option label {
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    color: #222;
+}
+
+/* Footer del modal */
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    border-top: 1.5px solid #ccc;
+    padding-top: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* Botones */
+.modal-footer .btn {
+    flex: 1;
+    text-align: center;
 }

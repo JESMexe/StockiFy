@@ -19,7 +19,7 @@ class UserModel
      */
     public function findByEmail(string $email)
     {
-        $stmt = $this->db->prepare("SELECT id, email, username, password_hash FROM users WHERE email = :email");
+        $stmt = $this->db->prepare("SELECT id, email, username, full_name, cell, password_hash FROM users WHERE email = :email");
         $stmt->execute([':email' => $email]);
         return $stmt->fetch();
     }
@@ -70,4 +70,22 @@ class UserModel
         $stmt->execute([':id' => $id]);
         return $stmt->fetch();
     }
+
+    public function updateUser(int $id, array $data): bool
+    {
+        $set = [];
+        foreach ($data as $key => $value) {
+            $set[] = "$key = :$key";
+        }
+
+        if (empty($set)) return false;
+
+        $sql = "UPDATE users SET " . implode(', ', $set) . " WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $data['id'] = $id;
+
+        return $stmt->execute($data);
+    }
+
 }
+

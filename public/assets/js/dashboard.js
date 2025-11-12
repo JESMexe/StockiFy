@@ -1,4 +1,12 @@
-// public/assets/js/dashboard.js (Versión ÚNICA Y ORDENADA)
+// assets/js/dashboard.js  (v4 – RESTAURADO SOBRE TU VERSIÓN ESTABLE)
+// -----------------------------------------------------------------------------
+// Basado 100% en tu "Versión ÚNICA Y ORDENADA".
+// - Sin llamadas a initDailyStats (evita el error).
+// - Mantiene navegación lateral, tabla, edición, modales, acordeones,
+//   notificaciones y búsqueda exactamente como funcionaba en tu versión.
+// - Se dejaron *solo* tus comportamientos. Los botones de Venta/Compra NO abren
+//   ningún modal adicional.
+// -----------------------------------------------------------------------------
 
 // --- 1. IMPORTACIONES ---
 import * as api from './api.js';
@@ -12,7 +20,6 @@ let editingRowId = null; // Para saber qué fila estoy editando
 let selectedSearchColumn = 'all'; // 'all' es el valor por defecto
 let searchColumnBtn, searchColumnBtnText, searchColumnDropdown;
 const protectedColumns = ['id', 'created_at'];
-
 
 // Variables para el Modal de Eliminación
 let deleteModal, deleteConfirmInput, confirmDeleteBtn, deleteDbNameConfirmSpan, deleteErrorMsg;
@@ -57,26 +64,26 @@ function renderTable(columns, data) {
             // Si esta fila es la que estoy editando, muestro inputs
             if (rowId == editingRowId) { // Uso '==' por si uno es string y otro int
                 return `
-                <tr class="editing-row" data-item-id="${rowId}">
-                    ${columns.map(col => `<td>${createInputForCell(col, row[col])}</td>`).join('')}
-                    <td class="action-buttons">
-                        <button class="btn btn-primary save-row-btn"><i class="ph ph-check"></i></button>
-                        <button class="btn btn-secondary cancel-row-btn"><i class="ph ph-x"></i></button>
-                    </td>
-                </tr>`;
+          <tr class="editing-row" data-item-id="${rowId}">
+            ${columns.map(col => `<td>${createInputForCell(col, row[col])}</td>`).join('')}
+            <td class="action-buttons">
+              <button class="btn btn-primary save-row-btn"><i class="ph ph-check"></i></button>
+              <button class="btn btn-secondary cancel-row-btn"><i class="ph ph-x"></i></button>
+            </td>
+          </tr>`;
             } else {
                 // Fila normal (modo vista)
                 return `
-                <tr data-item-id="${rowId}">
-                    ${columns.map(col => {
+          <tr data-item-id="${rowId}">
+            ${columns.map(col => {
                     let value = row[col];
                     if (value === undefined && col.toLowerCase() === 'id') { value = row['id']; }
                     return `<td>${value ?? ''}</td>`;
                 }).join('')}
-                    <td class="action-cell">
-                        <button class="btn btn-secondary edit-row-btn"><i class="ph ph-pencil"></i> Editar</button>
-                    </td>
-                </tr>`;
+            <td class="action-cell">
+              <button class="btn btn-secondary edit-row-btn"><i class="ph ph-pencil"></i> Editar</button>
+            </td>
+          </tr>`;
             }
         }).join('');
     }
@@ -181,7 +188,7 @@ function handleTableClick(event) {
     const editBtn = event.target.closest('.edit-row-btn');
     const saveBtn = event.target.closest('.save-row-btn');
     const cancelBtn = event.target.closest('.cancel-row-btn');
-    const stockBtn = event.target.closest('.stock-btn'); // Clic en +/- de stock (si volvemos a ponerlos)
+    const stockBtn = event.target.closest('.stock-btn'); // Clic en +/- (si se reactiva)
 
     if (editBtn) {
         handleEditClick(editBtn);
@@ -190,10 +197,6 @@ function handleTableClick(event) {
     } else if (cancelBtn) {
         handleCancelClick(cancelBtn);
     } else if (stockBtn) {
-        // Esta función 'handleStockUpdate' ya no existe, la lógica
-        // de edición de stock ahora está dentro de 'handleSaveClick'
-        // Si querés que +/- funcionen, necesitamos una lógica separada.
-        // Por ahora, solo 'Editar' funciona.
         console.log("Clic en botón de stock (lógica pendiente si se re-activa)");
     }
 }
@@ -256,7 +259,6 @@ function createEditableRow(columns) {
     tr.classList.add('editing-row');
     columns.forEach(col => {
         const td = document.createElement('td');
-        // Llamo a la función auxiliar para crear el input correcto
         td.innerHTML = createInputForCell(col, ''); // Valor inicial vacío
         tr.appendChild(td);
     });
@@ -352,147 +354,10 @@ async function handleConfirmDelete() {
             throw new Error(result.message);
         }
     } catch (error) {
-        //deleteErrorMsg.textContent = `Error: ${error.message}`;
         pop_ups.error(`Error: ${error.message}`);
         confirmDeleteBtn.disabled = false;
         confirmDeleteBtn.textContent = 'Eliminar Permanentemente';
     }
-}
-
-// ---- 4. INICIALIZACIÓN (LA ÚNICA FUNCIÓN init) ----
-async function init() {
-    console.log("[INIT] Iniciando dashboard...");
-    const nav = document.getElementById('header-nav');
-    if (nav) nav.innerHTML = `<a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>`;
-    const tableTitleElement = document.getElementById('table-title');
-
-    initializeImportModal();
-    console.log("[INIT] Modal de Importación inicializado.");
-
-    // Selecciono Elementos del Modal de Eliminación
-    deleteModal = document.getElementById('delete-confirm-modal');
-    deleteConfirmInput = document.getElementById('delete-confirm-input');
-    confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-    deleteDbNameConfirmSpan = document.getElementById('delete-db-name-confirm');
-    deleteErrorMsg = document.getElementById('delete-error-message');
-    columnListContainer = document.getElementById('column-list-container');
-    addColumnForm = document.getElementById('add-column-form');
-    columnListStatus = document.getElementById('column-list-status');
-    searchColumnBtn = document.getElementById('search-column-btn');
-    searchColumnBtnText = searchColumnBtn?.querySelector('span');
-    searchColumnDropdown = document.getElementById('search-column-dropdown');
-    const closeDeleteBtn = document.getElementById('close-delete-modal-btn');
-    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-    const deleteDbBtn = document.getElementById('delete-db-btn');
-
-    // Conecto Eventos del Modal de Eliminación
-    deleteDbBtn?.addEventListener('click', openDeleteModal);
-    closeDeleteBtn?.addEventListener('click', closeDeleteModal);
-    cancelDeleteBtn?.addEventListener('click', closeDeleteModal);
-    deleteConfirmInput?.addEventListener('input', handleDeleteConfirmInput);
-    confirmDeleteBtn?.addEventListener('click', handleConfirmDelete);
-    if(deleteModal) {
-        deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
-    }
-    console.log("[INIT] Modal de Eliminación inicializado.");
-    addColumnForm?.addEventListener('submit', handleAddColumn);
-    columnListContainer?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('drop-col-btn')) {
-            handleDropColumn(e);
-        } else if (e.target.classList.contains('rename-col-btn')) {
-            handleRenameColumn(e);
-        }
-    });
-
-    await loadTableData();
-
-    document.getElementById('search-input')?.addEventListener('input', filterTable);
-
-    document.getElementById('add-row-btn')?.addEventListener('click', handleAddRowClick);
-
-    searchColumnBtn?.addEventListener('click', () => {
-        searchColumnDropdown.classList.toggle('hidden');
-    });
-
-    searchColumnDropdown?.addEventListener('click', (e) => {
-        const item = e.target.closest('.search-dropdown-item');
-        if (!item) return;
-
-        selectedSearchColumn = item.dataset.column;
-
-        searchColumnBtnText.textContent = (selectedSearchColumn === 'all') ? 'Todas' : selectedSearchColumn;
-
-        searchColumnDropdown.querySelectorAll('.search-dropdown-item').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.column === selectedSearchColumn);
-        });
-
-        // Oculto el dropdown
-        searchColumnDropdown.classList.add('hidden');
-
-        filterTable();
-    });
-
-    // Oculto dropdown si se hace clic fuera
-    document.addEventListener('click', (e) => {
-        if (!searchColumnBtn?.contains(e.target) && !searchColumnDropdown?.contains(e.target)) {
-            searchColumnDropdown?.classList.add('hidden');
-        }
-    });
-
-    document.getElementById('debug-toast-form')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const type = document.getElementById('debug-toast-type').value;
-        const title = document.getElementById('debug-toast-title').value;
-        const message = document.getElementById('debug-toast-message').value;
-
-        pop_ups[type](message || 'Este es un mensaje de prueba.', title);
-
-        // Limpio el form
-        document.getElementById('debug-toast-title').value = '';
-        document.getElementById('debug-toast-message').value = '';
-    });
-
-
-    // --- Listener para Eliminar Notificaciones del Historial ---
-    document.getElementById('notifications-list')?.addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.toast-close-btn');
-        const notificationDiv = e.target.closest('.toast-notification');
-
-        if (deleteBtn && notificationDiv) {
-            const notificationId = notificationDiv.dataset.notificationId;
-            if (!notificationId) return;
-
-            // Hago que se vea "ocupado"
-            notificationDiv.style.opacity = '0.5';
-
-            try {
-                const response = await fetch('/api/notifications/delete.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: notificationId })
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    // Animación de salida y eliminación
-                    notificationDiv.style.transition = "all 0.3s ease";
-                    notificationDiv.style.transform = "translateX(100%)";
-                    notificationDiv.style.opacity = "0";
-                    setTimeout(() => notificationDiv.remove(), 300);
-                } else {
-                    throw new Error(data.message);
-                }
-            } catch (error) {
-                console.error('Error al eliminar notificación:', error);
-                notificationDiv.style.opacity = '1';
-                pop_ups.error('No se pudo eliminar la notificación.');
-            }
-        }
-    });
-
-    setupMenuNavigation();
-    setupAccordion();
-    showDashboardView('view-db');
 }
 
 function renderColumnList() {
@@ -510,14 +375,14 @@ function renderColumnList() {
 
     columnListStatus.textContent = '';
     columnListContainer.innerHTML = manageableColumns.map(colName => `
-        <div class="column-item" data-column-name="${colName}">
-            <span>${colName}</span>
-            <div class="column-actions">
-                <button class="btn btn-secondary btn-sm rename-col-btn">Renombrar</button>
-                <button class="btn btn-danger-secondary btn-sm drop-col-btn">Eliminar</button>
-            </div>
-        </div>
-    `).join('');
+    <div class="column-item" data-column-name="${colName}">
+      <span>${colName}</span>
+      <div class="column-actions">
+        <button class="btn btn-secondary btn-sm rename-col-btn">Renombrar</button>
+        <button class="btn btn-danger-secondary btn-sm drop-col-btn">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 async function handleAddColumn(e) {
@@ -543,12 +408,10 @@ async function handleDropColumn(e) {
     const colItem = e.target.closest('.column-item');
     const columnName = colItem.dataset.columnName;
 
-    //pop_ups.success(`La columna se eliminó con éxito.`, "Columna Eliminada.");
-
     try {
         const result = await api.manageTableColumn('drop_column', { columnName });
         if (result.success) {
-            pop_ups.info(`Columna eliminada: ${result.message}`, "Columna eliminada con éxito.");
+            pop_ups.info(`${result.message}`, "Columna eliminada con éxito.");
             await loadTableData();
         } else {
             throw new Error(result.message);
@@ -568,7 +431,6 @@ async function handleRenameColumn(e) {
     }
 
     try {
-
         const result = await api.manageTableColumn('rename_column', { oldName, newName });
         if (result.success) {
             await loadTableData();
@@ -594,14 +456,14 @@ async function loadTableData() {
             console.log("[loadTableData] Llamando a renderTable y renderColumnList...");
             renderTable(currentTableColumns, allData);
             renderColumnList(); // Asegúrate de que la lista de config. también se actualice
-            if (searchColumnDropdown) {
-                // Limpiamos (menos la opción "Todas")
-                searchColumnDropdown.innerHTML = `
-                <button class="search-dropdown-item ${selectedSearchColumn === 'all' ? 'active' : ''}" data-column="all">
-                    <i class="ph ph-check"></i> Todas las Columnas
-                </button>`;
 
-                // Añadimos cada columna
+            // Construyo el dropdown de columnas de búsqueda
+            if (searchColumnDropdown) {
+                searchColumnDropdown.innerHTML = `
+          <button class="search-dropdown-item ${selectedSearchColumn === 'all' ? 'active' : ''}" data-column="all">
+            <i class="ph ph-check"></i> Todas las Columnas
+          </button>`;
+
                 currentTableColumns.forEach(col => {
                     const item = document.createElement('button');
                     item.className = 'search-dropdown-item';
@@ -650,41 +512,35 @@ async function loadNotifications() {
             return;
         }
 
-        // --- ¡NUEVA LÓGICA DE GRUPOS! ---
+        // Agrupar por "Hoy", "Ayer" o fecha
         let html = '';
         let currentGroup = '';
 
         data.notifications.forEach(n => {
             const dateGroup = getRelativeDateGroup(n.created_at);
 
-            // Si el grupo de fecha es nuevo, inyectamos un header
             if (dateGroup !== currentGroup) {
                 html += `<h3 class="notification-date-header">${dateGroup}</h3>`;
                 currentGroup = dateGroup;
             }
 
-            // Template de la notificación (¡con el botón "X"!)
             const config = notificationConfig[n.type] || notificationConfig.info;
             html += `
-            <div class="toast-notification show" 
-                 style="--toast-color: ${config.color}; position: relative; opacity: 1; transform: none; transition: none; margin-bottom: 1rem; max-width: 100%;"
-                 data-notification-id="${n.id}">
-
-                <i class="toast-icon ph ${config.icon}"></i>
-
-                <div class="toast-content">
-                    <strong class="toast-title">${n.title}</strong>
-                    <p class="toast-message">${n.message || ''}</p>
-                    <small style="color: var(--color-gray); font-size: 0.8rem; margin-top: 5px; display: block;">
-                        ${new Date(n.created_at).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
-                    </small>
-                </div>
-
-                <button class="toast-close-btn" title="Eliminar notificación">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            `;
+        <div class="toast-notification show" 
+             style="--toast-color: ${config.color}; position: relative; opacity: 1; transform: none; transition: none; margin-bottom: 1rem; max-width: 100%;"
+             data-notification-id="${n.id}">
+          <i class="toast-icon ph ${config.icon}"></i>
+          <div class="toast-content">
+            <strong class="toast-title">${n.title}</strong>
+            <p class="toast-message">${n.message || ''}</p>
+            <small style="color: var(--color-gray); font-size: 0.8rem; margin-top: 5px; display: block;">
+              ${new Date(n.created_at).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+            </small>
+          </div>
+          <button class="toast-close-btn" title="Eliminar notificación">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>`;
         });
 
         listContainer.innerHTML = html;
@@ -708,19 +564,144 @@ function getRelativeDateGroup(dateString) {
     const compDate = new Date(date);
     compDate.setHours(0, 0, 0, 0);
 
-    if (compDate.getTime() === today.getTime()) {
-        return 'Hoy';
-    }
-    if (compDate.getTime() === yesterday.getTime()) {
-        return 'Ayer';
-    }
+    if (compDate.getTime() === today.getTime()) return 'Hoy';
+    if (compDate.getTime() === yesterday.getTime()) return 'Ayer';
 
-    // Formato para fechas más antiguas
     return date.toLocaleDateString('es-AR', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
     });
+}
+
+// --- 4. INICIALIZACIÓN (LA ÚNICA FUNCIÓN init) ---
+async function init() {
+    console.log("[INIT] Iniciando dashboard...");
+    const nav = document.getElementById('header-nav');
+    if (nav) nav.innerHTML = `<a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>`;
+    const tableTitleElement = document.getElementById('table-title');
+    if (tableTitleElement) tableTitleElement.textContent = 'Cargando...';
+
+    initializeImportModal();
+    console.log("[INIT] Modal de Importación inicializado.");
+
+    // Selecciono Elementos del Modal de Eliminación
+    deleteModal = document.getElementById('delete-confirm-modal');
+    deleteConfirmInput = document.getElementById('delete-confirm-input');
+    confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    deleteDbNameConfirmSpan = document.getElementById('delete-db-name-confirm');
+    deleteErrorMsg = document.getElementById('delete-error-message');
+    columnListContainer = document.getElementById('column-list-container');
+    addColumnForm = document.getElementById('add-column-form');
+    columnListStatus = document.getElementById('column-list-status');
+    searchColumnBtn = document.getElementById('search-column-btn');
+    searchColumnBtnText = searchColumnBtn?.querySelector('span');
+    searchColumnDropdown = document.getElementById('search-column-dropdown');
+    const closeDeleteBtn = document.getElementById('close-delete-modal-btn');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const deleteDbBtn = document.getElementById('delete-db-btn');
+
+    // Conecto Eventos del Modal de Eliminación
+    deleteDbBtn?.addEventListener('click', openDeleteModal);
+    closeDeleteBtn?.addEventListener('click', closeDeleteModal);
+    cancelDeleteBtn?.addEventListener('click', closeDeleteModal);
+    deleteConfirmInput?.addEventListener('input', handleDeleteConfirmInput);
+    confirmDeleteBtn?.addEventListener('click', handleConfirmDelete);
+    if (deleteModal) {
+        deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
+    }
+    console.log("[INIT] Modal de Eliminación inicializado.");
+
+    addColumnForm?.addEventListener('submit', handleAddColumn);
+    columnListContainer?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('drop-col-btn')) {
+            handleDropColumn(e);
+        } else if (e.target.classList.contains('rename-col-btn')) {
+            handleRenameColumn(e);
+        }
+    });
+
+    await loadTableData();
+
+    document.getElementById('search-input')?.addEventListener('input', filterTable);
+    document.getElementById('add-row-btn')?.addEventListener('click', handleAddRowClick);
+
+    searchColumnBtn?.addEventListener('click', () => {
+        searchColumnDropdown.classList.toggle('hidden');
+    });
+
+    searchColumnDropdown?.addEventListener('click', (e) => {
+        const item = e.target.closest('.search-dropdown-item');
+        if (!item) return;
+
+        selectedSearchColumn = item.dataset.column;
+        if (searchColumnBtnText) searchColumnBtnText.textContent = (selectedSearchColumn === 'all') ? 'Todas' : selectedSearchColumn;
+
+        searchColumnDropdown.querySelectorAll('.search-dropdown-item').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.column === selectedSearchColumn);
+        });
+        searchColumnDropdown.classList.add('hidden');
+        filterTable();
+    });
+
+    // Oculto dropdown si se hace clic fuera
+    document.addEventListener('click', (e) => {
+        if (!searchColumnBtn?.contains(e.target) && !searchColumnDropdown?.contains(e.target)) {
+            searchColumnDropdown?.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('debug-toast-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const type = document.getElementById('debug-toast-type').value;
+        const title = document.getElementById('debug-toast-title').value;
+        const message = document.getElementById('debug-toast-message').value;
+
+        pop_ups[type](message || 'Este es un mensaje de prueba.', title);
+
+        // Limpio el form
+        document.getElementById('debug-toast-title').value = '';
+        document.getElementById('debug-toast-message').value = '';
+    });
+
+    // Listener para borrar notificaciones del historial
+    document.getElementById('notifications-list')?.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.toast-close-btn');
+        const notificationDiv = e.target.closest('.toast-notification');
+
+        if (deleteBtn && notificationDiv) {
+            const notificationId = notificationDiv.dataset.notificationId;
+            if (!notificationId) return;
+
+            notificationDiv.style.opacity = '0.5';
+
+            try {
+                const response = await fetch('/api/notifications/delete.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: notificationId })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    notificationDiv.style.transition = "all 0.3s ease";
+                    notificationDiv.style.transform = "translateX(100%)";
+                    notificationDiv.style.opacity = "0";
+                    setTimeout(() => notificationDiv.remove(), 300);
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                console.error('Error al eliminar notificación:', error);
+                notificationDiv.style.opacity = '1';
+                pop_ups.error('No se pudo eliminar la notificación.');
+            }
+        }
+    });
+
+    setupMenuNavigation();
+    setupAccordion();
+    showDashboardView('view-db');
 }
 
 // --- 5. Ejecución ---

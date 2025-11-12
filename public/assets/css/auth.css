@@ -53,3 +53,466 @@
 .auth-footer a:hover {
     text-decoration: underline;
 }
+
+/* =========================================================
+   Columnas Recomendadas (acordeón)
+   ========================================================= */
+.rc-accordion {
+    background: #fff;
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 6px 6px 0 var(--color-black);
+    overflow: hidden;
+}
+
+/* Cabecera del acordeón */
+.rc-header {
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    background: var(--color-white);
+    border-bottom: var(--border-strong);
+    padding: .9rem 1rem;
+    cursor: pointer;
+    transition: background .25s ease;
+}
+
+.rc-header:hover {
+    background: rgba(var(--accent-color-rgb), .08);
+}
+
+.rc-header h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.rc-header .rc-arrow {
+    width: 18px;
+    height: 18px;
+    transition: transform .25s ease, filter .2s ease;
+    filter: grayscale(100%);
+}
+
+.rc-header[aria-expanded="true"] .rc-arrow {
+    transform: rotate(180deg);
+    filter: none;
+}
+
+/* Contenido colapsable */
+.rc-content {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    padding: 0 1rem;
+    transition: max-height .4s ease, opacity .3s ease, padding .25s ease;
+    background: #fff;
+}
+
+.rc-content.open {
+    max-height: 2000px; /* suficiente para todo el bloque */
+    opacity: 1;
+    padding: 1rem;
+}
+
+/* Grupos internos */
+.recomended-column-group {
+    border: 2px solid #1b1b1b;
+    border-radius: 10px;
+    padding: .9rem;
+    margin-bottom: 1rem;
+    background: #fff;
+    box-shadow: 3px 3px 0 #1b1b1b;
+}
+
+/* Ocultamos el checkbox original y usamos el label como “toggle” */
+.hidden-checkbox {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Botón/label estilo compacto */
+.btn-checkbox-toggle {
+    width: fit-content;
+    margin: 0 0 .6rem 0;
+    user-select: none;
+}
+
+/* tamaños opcionales */
+.btn-checkbox-toggle.sm { font-size: .9rem; padding: .45rem .8rem; }
+.btn-checkbox-toggle.xs { font-size: .8rem; padding: .35rem .65rem; }
+
+/* Input de valor por defecto */
+.default-value-input {
+    width: 220px;
+    max-width: 100%;
+    padding: .55rem .7rem;
+    border: 2px solid #1b1b1b;
+    border-radius: 8px;
+    background: #fff;
+    font-size: .95rem;
+}
+
+/* Filas de radios */
+.rc-radios {
+    gap: .35rem;
+    margin-top: .6rem;
+}
+
+.rc-radio-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    line-height: 1.2;
+    font-size: .95rem;
+}
+
+/* Fila especial de “margen de ganancia” (input + radios) */
+.rc-gain-row {
+    gap: 1rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.rc-gain-row .default-value-input {
+    min-width: 220px;
+}
+
+/* Mejoramos el foco */
+.default-value-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), .25);
+    border-color: var(--accent-color);
+}
+
+/* Radios/checkbox con el color del tema */
+.rc-radio-row input[type="radio"],
+.recomended-column-group input[type="checkbox"] {
+    accent-color: var(--accent-color);
+    transform: scale(1.15);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .rc-header h5 { font-size: .95rem; }
+    .rc-radio-row span { font-size: .92rem; }
+}
+
+/* === Acordeón general === */
+.rc-accordion {
+    border: 2px solid #1b1b1b;
+    border-radius: 12px;
+    box-shadow: 5px 5px 0 #1b1b1b;
+    background: #fff;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.rc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .9rem 1.25rem;
+    background: var(--accent-color);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.rc-header:hover { filter: brightness(1.05); }
+
+.rc-arrow {
+    font-size: 1.2rem;
+    transition: transform .25s ease;
+}
+.rc-header.open .rc-arrow { transform: rotate(180deg); }
+
+/* === Contenido colapsable === */
+.rc-content {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all .4s ease;
+    padding: 0 1.25rem;
+}
+.rc-content.open {
+    max-height: 1000px;
+    opacity: 1;
+    padding: 1rem 1.25rem 1.5rem;
+}
+
+.rc-description, .rc-note {
+    font-size: 0.9rem;
+    color: #444;
+    margin: 0 0 1rem;
+}
+
+/* === Ítems === */
+.rc-item {
+    margin-bottom: 1rem;
+}
+.rc-btn {
+    width: 100%;
+    background: #fff;
+    border: 2px solid #bbb;
+    border-radius: 10px;
+    font-weight: 700;
+    color: #999;
+    padding: .7rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all .25s ease;
+}
+.rc-btn.active {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+.rc-btn:hover { background: #fafafa; }
+
+/* === Extra visible al activar === */
+.rc-extra {
+    margin-top: .6rem;
+    padding-left: .5rem;
+    animation: fadeIn .25s ease;
+}
+.rc-inline {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .9rem;
+}
+.rc-input {
+    width: 200px;
+    padding: .5rem .7rem;
+    border: 2px solid #1b1b1b;
+    border-radius: 8px;
+    margin-top: .5rem;
+}
+.hidden { display: none !important; }
+
+/* === Radios === */
+.rc-radio {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    margin-top: .4rem;
+}
+.rc-radio input { accent-color: var(--accent-color); }
+
+/* === Tooltip === */
+.rc-help {
+    font-size: 1.2rem;
+    color: #777;
+    cursor: pointer;
+    position: relative;
+}
+.rc-help:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -5px;
+    left: 130%;
+    transform: translateY(-50%);
+    background: #1b1b1b;
+    color: #fff;
+    font-size: .8rem;
+    padding: .5rem .6rem;
+    border-radius: 6px;
+    width: 220px;
+    line-height: 1.2;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === BOTONES DE COLUMNAS (nuevo diseño tipo StockiFy) === */
+.rc-btn {
+    width: 100%;
+    background: #f2f2f2;
+    border: 2px solid #1b1b1b;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #333;
+    padding: 0.8rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 5px 5px 0 #1b1b1b;
+    transition: all 0.15s ease-in-out;
+}
+
+.rc-btn:hover {
+    background: #e9e9e9;
+    transform: translate(-1px, -1px);
+    box-shadow: 6px 6px 0 var(--accent-color);
+}
+
+.rc-btn.active {
+    background: var(--accent-color);
+    color: #fff;
+    border-color: #1b1b1b;
+    transform: translate(3px, 3px);
+    box-shadow: none;
+}
+
+/* === CHECKBOXES Y RADIOS MODERNOS === */
+input[type="checkbox"],
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #1b1b1b;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+input[type="checkbox"]:hover,
+input[type="radio"]:hover {
+    border-color: var(--accent-color);
+}
+
+input[type="checkbox"]:checked::after,
+input[type="radio"]:checked::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-color);
+}
+
+/* Ajuste visual para checkboxes cuadrados si los querés diferentes */
+input[type="checkbox"].square {
+    border-radius: 6px;
+}
+input[type="checkbox"].square:checked::after {
+    border-radius: 3px;
+}
+
+/* === INPUTS y extras coherentes con el diseño === */
+.rc-input {
+    width: 220px;
+    padding: .55rem .75rem;
+    border: 2px solid #1b1b1b;
+    border-radius: 10px;
+    background: #fff;
+    font-size: .95rem;
+    margin-top: .5rem;
+    box-shadow: 3px 3px 0 #1b1b1b;
+    transition: all 0.2s ease;
+}
+
+.rc-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 4px 4px 0 var(--accent-color);
+}
+
+/* Corrige el radio del modal (alineado y sin recorte) */
+.modal-option input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin: 0;
+    border: 2px solid #1b1b1b;
+    border-radius: 50%;
+    background-color: #fff;
+    cursor: pointer;
+    box-shadow: none;
+    transition: all 0.2s ease-in-out;
+}
+
+/* ===== FIX DEFINITIVO PARA RADIOS DENTRO DEL MODAL ===== */
+.modal-content .modal-option input[type="radio"] {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    position: relative;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin: 0;
+    border: 2px solid #1b1b1b;
+    border-radius: 50%;
+    background-color: #fff;
+    cursor: pointer;
+    box-shadow: none;
+    transition: all 0.2s ease-in-out;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Hover y estado activo */
+.modal-content .modal-option input[type="radio"]:hover {
+    border-color: var(--accent-color);
+}
+
+/* Checked: centrado perfecto */
+.modal-content .modal-option input[type="radio"]:checked::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    transform: translate(-50%, -50%);
+}
+
+/* Ajuste de contenedor para evitar recorte */
+.modal-content .modal-option {
+    padding-left: 6px;
+    align-items: center;
+}
+
+/* Asegura que no herede el border-radius global de checkboxes cuadrados */
+.modal-content input[type="radio"].square {
+    border-radius: 50% !important;
+}
+
+/* === Fix visual para centrar el check circular con el texto === */
+.modal-option {
+    display: flex;
+    align-items: center;        /* ✅ Alinea perfectamente en altura */
+    gap: 0.55rem;               /* Espacio entre el check y el texto */
+    margin-top: 0.8rem;
+    line-height: 1.2;
+}
+
+.modal-option input[type="radio"],
+.modal-option input[type="checkbox"] {
+    position: relative;
+    top: 0;                     /* resetea offsets */
+    transform: translateY(1px); /* ✅ pequeña corrección óptica */
+    flex-shrink: 0;
+    margin: 0;
+}
+
+/* Pequeña mejora óptica del label */
+.modal-option label {
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+    color: #1b1b1b;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+

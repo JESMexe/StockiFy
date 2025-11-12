@@ -1,104 +1,83 @@
-// public/assets/js/main.js
-
 import * as api from './api.js';
-import {pop_ups} from "./notifications/pop-up.js";
+import { pop_ups } from './notifications/pop-up.js';
 
 function showView(viewId) {
-    document.querySelectorAll('.view-container').forEach(view => {
-        view.classList.add('hidden');
+    document.querySelectorAll('.view-container').forEach(v => v.classList.add('hidden'));
+    const target = document.getElementById(viewId);
+    if (target) target.classList.remove('hidden');
+}
+
+function initCyclingText() {
+    const words = ['Clientes.', 'Proveedores.', 'Compras.', 'Ventas.', 'Estadísticas.'];
+    const textEl = document.getElementById('cycling-text');
+    if (!textEl) return;
+
+    let i = 0;
+    textEl.textContent = words[0];
+    setInterval(() => {
+        textEl.style.opacity = 0;
+        textEl.style.transform = 'translateY(-0.3em)';
+        setTimeout(() => {
+            i = (i + 1) % words.length;
+            textEl.textContent = words[i];
+            textEl.style.transform = 'translateY(0.3em)';
+            textEl.style.opacity = 1;
+            setTimeout(() => {
+                textEl.style.transform = 'translateY(0)';
+            }, 200);
+        }, 250);
+    }, 2200);
+}
+
+
+function initEntranceAnimations() {
+    const els = document.querySelectorAll('.fade-in-up');
+    els.forEach((el, i) => {
+        setTimeout(() => el.classList.add('is-visible'), 100 + i * 100);
     });
-    const viewToShow = document.getElementById(viewId);
-    if (viewToShow) {
-        viewToShow.classList.remove('hidden');
-    }
 }
-
-async function checkInitialState() {
-    try {
-        const profileData = await api.getUserProfile();
-        if (!profileData.success) throw new Error('Sesión inválida.');
-        const activeInventoryId = profileData.activeInventoryId;
-
-        if (activeInventoryId) {
-            const activeDbNameEl = document.getElementById('active-db-name');
-            if(activeDbNameEl) {
-                const activeInventory = profileData.databases.find(db => db.id == activeInventoryId);
-                activeDbNameEl.textContent = activeInventory ? activeInventory.name : 'Desconocido';
-                window.location.href = '/dashboard.php';
-            }
-            showView('main-app-view');
-        } else if (profileData.databases && profileData.databases.length > 0) {
-            window.location.href = '/select-db.php';
-        } else {
-            showView('empty-state-view');
-        }
-    } catch (error) {
-        pop_ups.error(`Error al cargar el estado inicial: ${error.message}`);
-        alert("Hubo un error al cargar tus datos. Serás redirigido.");
-        window.location.href = 'logout.php';
-    }
-}
-
 
 function setupHeader(isLoggedIn) {
     const nav = document.getElementById('header-nav');
     if (!nav) return;
-
-    if (isLoggedIn) {
-        nav.innerHTML = `
-            <a href="/dashboard.php" class="btn btn-primary">Ir al Panel</a> 
-            <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
-        `;
-    } else {
-        nav.innerHTML = `
-            <a href="/login.php" class="btn btn-secondary">Iniciar Sesión</a>
-            <a href="/register.php" class="btn btn-primary">Registrarse</a>
-        `;
-    }
+    nav.innerHTML = isLoggedIn
+        ? `<a href="/dashboard.php" class="btn btn-primary">Ir al Panel</a>
+       <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>`
+        : `<a href="/login.php" class="btn btn-secondary">Iniciar Sesión</a>
+       <a href="/register.php" class="btn btn-primary">Crear Cuenta</a>`;
 }
 
-async function handleCreateDatabase() {
-    const dbNameInput = document.getElementById('dbNameInput');
-    const columnsInput = document.getElementById('columnsInput');
-    if (!dbNameInput || !columnsInput) return;
-
-    const dbName = dbNameInput.value.trim();
-    const columns = columnsInput.value.trim();
-
-    if (!dbName || !columns) {
-        pop_ups.warning('Por favor, completa el nombre y las columnas.');
-        return;
-    }
-
+async function checkInitialState() {
     try {
-        const result = await api.createDatabase(dbName, columns);
-        if (result.success) {
-            pop_ups.success(result.message, "¡Creación exitosa!");
-            await checkInitialState();
+        const profile = await api.getUserProfile();
+        if (!profile?.success) throw new Error('Sesión inválida.');
+
+        const { name, activeInventoryId, databases } = profile;
+        const title = document.querySelector('#dashboard-view h2, #welcome-view h2');
+        if (title && name) title.textContent = `¡Bienvenido, ${name}!`;
+
+        // Mostrar siempre index; sin redirigir
+        if (activeInventoryId) {
+            showView('dashboard-view');
+            return;
         }
-    } catch (error) {
-        pop_ups.error(`Error: ${error.message}`, "Error");
-    }
-}
-
-function initializeEventListeners() {
-    const createDbBtn = document.getElementById('createDbBtn');
-    if (createDbBtn) {
-        createDbBtn.addEventListener('click', handleCreateDatabase);
-    }
-}
-
-async function init() {
-    const isLoggedIn = await api.checkSessionStatus();
-    setupHeader(isLoggedIn);
-
-    if (isLoggedIn) {
-        initializeEventListeners();
-        await checkInitialState();
-    } else {
+        if (databases?.length > 0) {
+            showView('select-db-view');
+        } else {
+            showView('empty-state-view');
+        }
+    } catch (err) {
+        pop_ups.error(`Error al verificar sesión: ${err.message}`, 'Error');
         showView('welcome-view');
     }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', async () => {
+    initCyclingText();
+    initEntranceAnimations();
 
+    const isLoggedIn = await api.checkSessionStatus();
+    setupHeader(isLoggedIn);
+    if (isLoggedIn) await checkInitialState();
+    else showView('welcome-view');
+});

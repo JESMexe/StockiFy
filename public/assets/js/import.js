@@ -149,9 +149,9 @@ function populateMappingUI(csvHeaders, stockifyColumns) {
 
     // Añado la opción de sobrescribir
     mappingForm.insertAdjacentHTML('beforeend', `
-        <div style="grid-column: 1 / -1; margin-top: 1rem; text-align: left;">
-            <input type="checkbox" id="overwrite-data" name="overwrite" value="true">
-            <label for="overwrite-data"> Reemplazar todos los datos existentes en esta tabla</label>
+        <div class="modal-option right-check" style="grid-column: 1 / -1; margin-top: 1rem; text-align: left; margin-bottom: 0.2rem;">
+            <input type="checkbox" id="replace-all">
+            <label for="replace-all">Reemplazar todos los datos existentes en esta tabla</label>
         </div>
     `);
 }
@@ -193,14 +193,14 @@ async function handleValidateAndPrepare(event) {
             // Verifico si estoy en create-db.php (donde existe window.updateImportStatus)
             if (typeof window.updateImportStatus === 'function') {
                 console.log("Estoy en create-db.php. Actualizando estado."); // DEBUG 4
-                window.updateImportStatus(`✔️ ${resultPrepare.rowCount} filas preparadas para importar.`);
+                window.updateImportStatus(`${resultPrepare.rowCount} filas preparadas para importar.`);
             } else {
                 // Estoy en dashboard.php, acá SÍ llamo a executeImport
                 console.log("Estoy en dashboard.php. Llamando a executeImport..."); // DEBUG 4b
                 const resultExecute = await api.executeImport();
                 console.log("Respuesta de executeImport:", resultExecute);
                 if (resultExecute.success) {
-                    alert(`${resultExecute.insertedRows} filas importadas con éxito.`);
+                    pop_ups.success(`${resultExecute.insertedRows} filas importadas con éxito.`, "Importación Exitosa.");
                     location.reload(); // Recargo el dashboard
                 } else {
                     throw new Error(resultExecute.message); // Error en execute
