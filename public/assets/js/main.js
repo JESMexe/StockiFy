@@ -1,35 +1,30 @@
 import * as api from './api.js';
 import { pop_ups } from './notifications/pop-up.js';
 
-function showView(viewId) {
-    document.querySelectorAll('.view-container').forEach(v => v.classList.add('hidden'));
-    const target = document.getElementById(viewId);
-    if (target) target.classList.remove('hidden');
+/* ===============================
+   Texto animado de portada
+================================ */
+const words = ["Ventas.", "Compras.", "Estadísticas.", "Clientes."];
+let currentIndex = 0;
+
+function cycleText() {
+    const el = document.getElementById("cycling-text");
+    if (!el) return;
+
+    el.style.opacity = "0";
+    el.style.transform = "translateY(8px)";
+
+    setTimeout(() => {
+        currentIndex = (currentIndex + 1) % words.length;
+        el.textContent = words[currentIndex];
+        el.style.opacity = "1";
+        el.style.transform = "translateY(0)";
+    }, 250);
 }
 
-function initCyclingText() {
-    const words = ['Clientes.', 'Proveedores.', 'Compras.', 'Ventas.', 'Estadísticas.'];
-    const textEl = document.getElementById('cycling-text');
-    if (!textEl) return;
-
-    let i = 0;
-    textEl.textContent = words[0];
-    setInterval(() => {
-        textEl.style.opacity = 0;
-        textEl.style.transform = 'translateY(-0.3em)';
-        setTimeout(() => {
-            i = (i + 1) % words.length;
-            textEl.textContent = words[i];
-            textEl.style.transform = 'translateY(0.3em)';
-            textEl.style.opacity = 1;
-            setTimeout(() => {
-                textEl.style.transform = 'translateY(0)';
-            }, 200);
-        }, 250);
-    }, 2200);
-}
-
-
+/* ===============================
+   Animaciones de entrada
+================================ */
 function initEntranceAnimations() {
     const els = document.querySelectorAll('.fade-in-up');
     els.forEach((el, i) => {
@@ -37,47 +32,66 @@ function initEntranceAnimations() {
     });
 }
 
-function setupHeader(isLoggedIn) {
-    const nav = document.getElementById('header-nav');
-    if (!nav) return;
-    nav.innerHTML = isLoggedIn
-        ? `<a href="/dashboard.php" class="btn btn-primary">Ir al Panel</a>
-       <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>`
-        : `<a href="/login.php" class="btn btn-secondary">Iniciar Sesión</a>
-       <a href="/register.php" class="btn btn-primary">Crear Cuenta</a>`;
+/* ===============================
+   Mostrar vistas
+================================ */
+function showView(viewId) {
+    document.querySelectorAll('.view-container').forEach(v => v.classList.add('hidden'));
+    const target = document.getElementById(viewId);
+    if (target) target.classList.remove('hidden');
 }
 
+/* ===============================
+   checkInitialState()
+================================ */
 async function checkInitialState() {
     try {
         const profile = await api.getUserProfile();
-        if (!profile?.success) throw new Error('Sesión inválida.');
+        console.log("PROFILE DESDE API:", profile);
 
-        const { name, activeInventoryId, databases } = profile;
-        const title = document.querySelector('#dashboard-view h2, #welcome-view h2');
-        if (title && name) title.textContent = `¡Bienvenido, ${name}!`;
-
-        // Mostrar siempre index; sin redirigir
-        if (activeInventoryId) {
-            showView('dashboard-view');
+        if (!profile?.success) {
+            showView("welcome-view");
             return;
         }
-        if (databases?.length > 0) {
-            showView('select-db-view');
-        } else {
-            showView('empty-state-view');
+
+        const { user, databases, activeInventoryId } = profile;
+
+        // Actualizar saludo
+        const name = user?.name ?? "Usuario";
+        document.querySelectorAll('#welcome-view h2, #empty-state-view h2, #select-db-view h2, #dashboard-view h2')
+            .forEach(el => el.textContent = `¡Bienvenido, ${name}!`);
+
+        // Lógica principal
+        if (activeInventoryId) {
+            showView("dashboard-view");
+            return;
         }
+
+        if (databases && databases.length > 0) {
+            showView("select-db-view");
+            return;
+        }
+
+        showView("empty-state-view");
+
     } catch (err) {
         pop_ups.error(`Error al verificar sesión: ${err.message}`, 'Error');
-        showView('welcome-view');
+        showView("welcome-view");
     }
 }
 
+/* ===============================
+   INICIO
+================================ */
 document.addEventListener('DOMContentLoaded', async () => {
-    initCyclingText();
+    setInterval(cycleText, 2200);
     initEntranceAnimations();
 
     const isLoggedIn = await api.checkSessionStatus();
-    setupHeader(isLoggedIn);
-    if (isLoggedIn) await checkInitialState();
-    else showView('welcome-view');
+
+    if (isLoggedIn) {
+        await checkInitialState();
+    } else {
+        showView('welcome-view');
+    }
 });

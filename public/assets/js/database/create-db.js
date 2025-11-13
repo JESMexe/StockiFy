@@ -1,4 +1,4 @@
-﻿// public/assets/js/database/create-db.js (versión unificada)
+﻿// public/assets/js/database/create-db.js
 import * as api from '../api.js';
 import { openImportModal, initializeImportModal, setStockifyColumns } from '../import.js';
 import * as setup from "../setupMiCuentaDropdown.js";

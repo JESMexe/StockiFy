@@ -1,11 +1,8 @@
 <?php
 session_start();
 
-$loggedIn         = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
-$nombre           = $_SESSION['user_name'] ?? 'Usuario';
-$currentDb        = $_SESSION['current_db'] ?? $_SESSION['db_actual'] ?? null;
-$hasDatabasesFlag = $_SESSION['has_databases'] ?? $_SESSION['tiene_bases'] ?? null;
-$hasAnyDatabase   = is_bool($hasDatabasesFlag) ? $hasDatabasesFlag : true;
+$loggedIn = isset($_SESSION['user_id']);
+$nombre   = $_SESSION['username'] ?? 'Usuario';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -27,10 +24,10 @@ $hasAnyDatabase   = is_bool($hasDatabasesFlag) ? $hasDatabasesFlag : true;
     </a>
     <nav id="header-nav">
         <?php if ($loggedIn): ?>
-            <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
+            <a href="logout.php" class="btn btn-secondary">Cerrar Sesión</a>
         <?php else: ?>
-            <a href="/login.php" class="btn btn-secondary">Iniciar Sesión</a>
-            <a href="/register.php" class="btn btn-primary">Crear Cuenta</a>
+            <a href="login.php" class="btn btn-secondary">Iniciar Sesión</a>
+            <a href="register.php" class="btn btn-primary">Crear Cuenta</a>
         <?php endif; ?>
     </nav>
 </header>
@@ -43,45 +40,47 @@ $hasAnyDatabase   = is_bool($hasDatabasesFlag) ? $hasDatabasesFlag : true;
         </div>
 
         <div class="status">
-            <?php if (!$loggedIn): ?>
-                <div id="welcome-view" class="view-container fade-in-up">
-                    <h2>¡Bienvenido!</h2>
-                    <p>Iniciá sesión o registrate para empezar a organizar tu inventario.</p>
-                    <div class="actions">
-                        <a href="/login.php" class="btn btn-secondary">Iniciar Sesión</a>
-                        <a href="/register.php" class="btn btn-primary">Crear una Cuenta</a>
-                    </div>
-                </div>
 
-            <?php elseif ($loggedIn && !$hasAnyDatabase): ?>
-                <div id="empty-state-view" class="view-container fade-in-up">
-                    <h2>¡Hola, <?= htmlspecialchars($nombre) ?>!</h2>
-                    <p>Aún no creaste ninguna base de datos. ¡Arranquemos con la primera!</p>
-                    <div class="actions">
-                        <a href="/create-db.php" class="btn btn-primary">Crear mi Primera Base</a>
-                    </div>
+            <!-- Vista 1: NO LOGUEADO -->
+            <div id="welcome-view" class="view-container fade-in-up hidden">
+                <h2>¡Bienvenido!</h2>
+                <p>Iniciá sesión o registrate para empezar a organizar tu inventario.</p>
+                <div class="actions">
+                    <a href="login.php" class="btn btn-secondary">Iniciar Sesión</a>
+                    <a href="register.php" class="btn btn-primary">Crear una Cuenta</a>
                 </div>
+            </div>
 
-            <?php elseif ($loggedIn && !$currentDb): ?>
-                <div id="select-db-view" class="view-container fade-in-up">
-                    <h2>¡Bienvenido, <?= htmlspecialchars($nombre) ?>!</h2>
-                    <p>Seleccioná una base de datos y comenzá a trabajar.</p>
-                    <div class="actions">
-                        <a href="/select-db.php" class="btn btn-primary">Seleccionar Base de Datos</a>
-                        <a href="/create-db.php" class="btn btn-secondary">Crear Nueva Base</a>
-                    </div>
+            <!-- Vista 2: LOGUEADO PERO SIN BASES -->
+            <div id="empty-state-view" class="view-container fade-in-up hidden">
+                <h2></h2>
+                <p>Aún no creaste ninguna base de datos. ¡Arranquemos con la primera!</p>
+                <div class="actions">
+                    <a href="create-db.php" class="btn btn-primary">Crear mi Primera Base</a>
                 </div>
+            </div>
 
-            <?php else: ?>
-                <div id="dashboard-view" class="view-container fade-in-up">
-                    <h2>¡Bienvenido de nuevo, <?= htmlspecialchars($nombre) ?>!</h2>
-                    <p>Tenés una base activa. ¡Hora de trabajar!</p>
-                    <div class="actions">
-                        <a href="/dashboard.php" class="btn btn-primary">Ir al Panel</a>
-                    </div>
+            <!-- Vista 3: LOGUEADO CON BASES PERO SIN SELECCIONAR UNA -->
+            <div id="select-db-view" class="view-container fade-in-up hidden">
+                <h2></h2>
+                <p>Seleccioná una base de datos y comenzá a trabajar.</p>
+                <div class="actions">
+                    <a href="select-db.php" class="btn btn-primary">Seleccionar Base de Datos</a>
+                    <a href="create-db.php" class="btn btn-secondary">Crear Nueva Base</a>
                 </div>
-            <?php endif; ?>
+            </div>
+
+            <!-- Vista 4: LOGUEADO + BASE ACTIVA -->
+            <div id="dashboard-view" class="view-container fade-in-up hidden">
+                <h2></h2>
+                <p>Tenés una base activa. ¡Hora de trabajar!</p>
+                <div class="actions">
+                    <a href="dashboard.php" class="btn btn-primary">Ir al Panel</a>
+                </div>
+            </div>
+
         </div>
+
     </section>
 
     <section class="features fade-in-up">

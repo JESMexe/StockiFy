@@ -1,5 +1,5 @@
 <?php
-require_once 'config/DataBase.php';
+require_once 'src/core/Database.php';
 
 /**
  * Crea un nuevo cliente en la base de datos

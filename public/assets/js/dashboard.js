@@ -482,7 +482,7 @@ async function loadTableData() {
         }
     } catch (error) {
         pop_ups.error("[loadTableData] Error CATCH:", error);
-        pop_ups.warning(`Error al cargar datos: ${error.message}. Serás redirigido.`);
+        pop_ups.warning(`Error al cargar datos: ${error.message} Serás redirigido.`);
         if (error.message.includes('No autorizado')) {
             window.location.href = '/login.php';
         } else {

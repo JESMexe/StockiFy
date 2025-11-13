@@ -2,6 +2,7 @@
 // Fusión entre api.js (tuyo) y api_COMPAÑERO.js — versión unificada y robusta
 
 import { pop_ups } from "./notifications/pop-up.js";
+//import { isLoggedIn } from "./main.js";
 
 /* ------------------- FUNCIONES INTERNAS ------------------- */
 async function handleResponse(response) {

@@ -208,4 +208,11 @@ class TableModel
             return false;
         }
     }
+
+    public function getUserDatabases(int $userId): array
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM inventories WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

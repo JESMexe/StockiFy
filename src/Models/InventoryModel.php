@@ -99,17 +99,24 @@ class InventoryModel
     }
 
     /**
-     * Busca todos los inventarios que pertenecen a un usuario.
-     * @param int $userId El ID del usuario.
-     * @return array Una lista de los inventarios.
+     * Devuelve todas las bases de inventario de un usuario.
+     *
+     * @param int $userId
+     * @return array
      */
     public function findByUserId(int $userId): array
     {
-        $stmt = $this->db->prepare(
-            "SELECT id, name FROM inventories WHERE user_id = :user_id ORDER BY name ASC"
-        );
+        $sql = "SELECT id, name, user_id, created_at
+                    FROM inventories
+                    WHERE user_id = :user_id
+                    ORDER BY created_at ASC";
+
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([':user_id' => $userId]);
-        return $stmt->fetchAll();
+
+        // Siempre devolvemos array (aunque esté vacío)
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ?: [];
     }
 
 

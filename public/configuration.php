@@ -17,12 +17,12 @@
 
 <?php
 
-    require_once __DIR__ . '/vendor/autoload.php';
-    require_once __DIR__ . '/auth_helper.php';
+    require_once __DIR__ . '/../vendor/autoload.php';
+    require_once __DIR__ . '/../src/helpers/auth_helper.php';
     $currentUser = getCurrentUser();
 
     if (!isset($_SESSION['user_id'])) {
-        header('Location: /StockiFy/index.php');
+        header('Location: index.php');
     }
 ?>
 
@@ -31,7 +31,7 @@
         <p id="msj-bubble" class="view-container"></p>
     </div>
     <header>
-        <a href="/StockiFy/index.php" id="header-logo">
+        <a href="index.php" id="header-logo">
             <img src="assets/img/LogoE.png" alt="Stocky Logo">
         </a>
         <nav id="header-nav">

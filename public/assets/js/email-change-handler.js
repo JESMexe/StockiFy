@@ -1,5 +1,5 @@
 import { mostrarMensaje } from './universal-functions.js'
-import * as setup from "../../../../../Downloads/UProj-Compañeros/Nano/js/setupMiCuentaDropdown.js";
+import * as setup from "/../js/setupMiCuentaDropdown.js";
 
 document.addEventListener('DOMContentLoaded', () =>{
 
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () =>{
         }
         else
         {
-            fetch('./assets/php/send-email-change.php', {
+            fetch('/../send-email-change.php', {
                 method: 'POST',
                 body: formData
             })
@@ -88,15 +88,15 @@ function setupHeader(){
     const nav = document.getElementById('header-nav');
 
     nav.innerHTML = `
-            <a href="/StockiFy/dashboard.php" class="btn btn-primary">Ir al Panel</a> 
-            <a href="/StockiFy/estadisticas.php" class="btn btn-secondary">Estadisticas</a>
+            <a href="/dashboard.php" class="btn btn-primary">Ir al Panel</a> 
+            <a href="/statistics.php" class="btn btn-secondary">Estadisticas</a>
             <div id="dropdown-container">
                 <div class="btn btn-secondary" id="mi-cuenta-btn">Mi Cuenta</div>
                 <div class="flex-column hidden" id="mi-cuenta-dropdown">
-                    <a href="/StockiFy/configuracion.php" class="btn btn-secondary">Configuración</a>
-                    <a href="/StockiFy/configuracion.php" class="btn btn-secondary">Modificaciones de Stock</a>
-                    <a href="/StockiFy/configuracion.php" class="btn btn-secondary">Soporte</a>
-                    <a href="/StockiFy/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
+                    <a href="/configuration.php" class="btn btn-secondary">Configuración</a>
+                    <a href="/configuration.php" class="btn btn-secondary">Modificaciones de Stock</a>
+                    <a href="/configuration.php" class="btn btn-secondary">Soporte</a>
+                    <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
                 </div>
             </div>            
         `;

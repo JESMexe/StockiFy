@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
-require_once __DIR__ . '/../../../auth_helper.php';
+require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 
 use App\core\Database;
 

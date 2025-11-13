@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockiFy</title>
-    <base href="/StockiFy/">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="assets/css/main.css">
     <script src="assets/js/theme.js"></script>
@@ -17,7 +16,7 @@
     <p id="msj-bubble" class="view-container"></p>
 </div>
 <header>
-    <a href="/StockiFy/index.php" id="header-logo">
+    <a href="index.php" id="header-logo">
         <img src="assets/img/LogoE.png" alt="Stocky Logo">
     </a>
     <nav id="header-nav">
