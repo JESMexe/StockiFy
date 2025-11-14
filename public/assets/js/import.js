@@ -47,7 +47,7 @@ function showStep(stepNumber) {
 
 // --- Manejo de Archivo ---
 function handleFileSelect(file) {
-    if (!file || !file.type.match('text/csv')) { /* ... (mensaje error) ... */ return; }
+    if (!file || !file.type.match('text/csv')) { pop_ups.error("Error en el manejo del archivo a importar."); return; }
     uploadedFile = file;
     importStatus.textContent = `Archivo seleccionado: ${file.name}`;
     importStatus.style.color = 'var(--accent-green)';

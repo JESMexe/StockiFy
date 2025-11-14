@@ -1,0 +1,86 @@
+/* Estilos para la página de Registros */
+
+.registros-container { 
+    max-width: 1400px; 
+    margin: 2rem auto;
+    border-radius: var(--border-radius);
+    border: var(--border-strong);
+    box-shadow: 4px 4px 0 var(--color-black);
+    padding: 2rem; 
+}
+
+@media (max-width: 1200px) {
+    .registros-container {
+        padding: 1rem;
+        width: 90%;
+    }
+}
+
+.registros-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 1rem; 
+    margin-bottom: 1.5rem; 
+    flex-wrap: wrap; 
+}
+
+.registros-header label { 
+    font-weight: bold;
+}
+
+.registros-header select { 
+    padding: 0.5rem; 
+    border-radius: 4px; 
+    border: var(--border-strong);
+}
+
+.tabla-wrapper { 
+    overflow-x: auto; 
+    margin-top: 1rem; 
+}
+
+#tabla-registros { 
+    width: 100%; 
+    border-collapse: collapse; 
+    font-size: 0.9rem; 
+}
+
+#tabla-registros th, 
+#tabla-registros td { 
+    border: 1px solid var(--color-black);
+    padding: 0.6rem 0.4rem; 
+    text-align: left; 
+}
+
+#tabla-registros th { 
+    background: var(--accent-color);
+    font-weight: 600; 
+    position: sticky; 
+    top: 0; 
+}
+
+#tabla-registros tbody tr:hover { 
+    background: var(--accent-color);
+}
+
+#error-msg { 
+    color: var(--accent-red);
+    margin-top: 1rem; 
+    padding: 0.8rem; 
+    background: #fee; 
+    border-radius: 4px; 
+}
+
+.back-btn { 
+    display: inline-block; 
+    margin-bottom: 1rem; 
+    padding: 0.5rem 1rem; 
+    background: var(--accent-color); 
+    color: #fff; 
+    text-decoration: none; 
+    border-radius: 4px; 
+}
+
+.back-btn:hover { 
+    opacity: 0.9; 
+}

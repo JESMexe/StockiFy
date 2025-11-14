@@ -1,14 +1,134 @@
-﻿// public/assets/js/database/create-db.js
+﻿// public/assets/js/database/create-db.js (Versión Corregida y Unificada)
 import * as api from '../api.js';
 import { openImportModal, initializeImportModal, setStockifyColumns } from '../import.js';
 import * as setup from "../setupMiCuentaDropdown.js";
 
+/**
+ * Función auxiliar para leer valores numéricos de inputs.
+ */
+function getNum(id) {
+    const el = document.getElementById(id);
+    if (!el || el.classList.contains('hidden')) {
+        return 0; // Si el input está oculto o no existe, su valor por defecto es 0
+    }
+    const value = el.value.trim();
+    return (value === '' || isNaN(parseFloat(value))) ? 0 : parseFloat(value);
+}
+
+/**
+ * LÓGICA CLAVE: Lee la configuración de tu HTML estético.
+ */
+function getUserPreferences() {
+
+    // 1. Función auxiliar para leer el estado de los botones (si tienen la clase 'active')
+    const getActiveState = (selector) => {
+        const btn = document.querySelector(`.rc-btn[data-toggle="${selector}"]`);
+        return btn?.classList.contains('active') ? 1 : 0;
+    };
+
+    // 2. Leer el estado de los botones
+    const isGainActive = getActiveState('gain');
+    const isStockActive = getActiveState('stock');
+
+    // 3. Leer los radio buttons de "Margen de Ganancia"
+    const gainTypeRadios = document.querySelectorAll('input[name="gain-type"]');
+    let gainType = 'Porcentaje'; // Default
+    gainTypeRadios.forEach(radio => {
+        if (radio.checked) {
+            gainType = radio.closest('label').textContent.trim();
+        }
+    });
+
+    // 4. Leer el estado del checkbox "Establecer ahora" para el stock
+    const setStockNow = document.getElementById('set-stock-now')?.checked;
+
+    const preferences = {
+        min_stock: {
+            active: isStockActive,
+            // Solo toma el valor si "Establecer ahora" está marcado
+            default: (isStockActive && setStockNow) ? getNum('stock-value') : 0
+        },
+        sale_price: {
+            active: getActiveState('sale'),
+            default: 0 // Tu HTML no tiene input para esto, así que es 0
+        },
+        receipt_price: {
+            active: getActiveState('buy'),
+            default: 0 // Tu HTML no tiene input para esto, así que es 0
+        },
+        percentage_gain: {
+            active: isGainActive && gainType === 'Porcentaje' ? 1 : 0,
+            default: 0 // Tu HTML no tiene input para esto, así que es 0
+        },
+        hard_gain: {
+            active: isGainActive && gainType === 'Valor fijo' ? 1 : 0,
+            default: 0 // Tu HTML no tiene input para esto, así que es 0
+        },
+        // Tu HTML actual no tiene la sección de "Auto-Precio", así que la seteamos en 0
+        auto_price: 0,
+        auto_price_type: null
+    };
+
+    return preferences;
+}
+
+/**
+ * Maneja los listeners de los botones del acordeón y los toggles.
+ * (Esta función reemplaza a la antigua prepareRecomendedColumns)
+ */
+function setupAccordionToggles() {
+    // 1. Lógica del Acordeón Principal
+    const rcToggleHeader = document.getElementById('rc-toggle-header');
+    const columnsContainer = document.getElementById('recomended-columns-form');
+
+    rcToggleHeader.addEventListener('click', () => {
+        rcToggleHeader.classList.toggle('open');
+        columnsContainer.classList.toggle('open');
+    });
+
+    // 2. Lógica de los botones internos (Stock, Ganancia, etc.)
+    document.querySelectorAll('.rc-btn[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const active = btn.classList.toggle('active');
+            const col = btn.dataset.toggle;
+            const extra = document.getElementById(`${col}-extra`);
+            if (extra) {
+                extra.classList.toggle('hidden', !active);
+            }
+        });
+    });
+
+    // 3. Lógica del checkbox "Establecer ahora" (para Stock Mínimo)
+    const setNow = document.getElementById('set-stock-now');
+    const stockInput = document.getElementById('stock-value');
+    if (setNow && stockInput) {
+        setNow.addEventListener('change', () => {
+            stockInput.classList.toggle('hidden', !setNow.checked);
+        });
+    }
+}
+
+async function checkUserStatus() {
+    try {
+        const profileData = await api.getUserProfile();
+        if (!profileData.success) {
+            window.location.href = '/login.php'; // RUTA LIMPIA
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        window.location.href = '/login.php'; // RUTA LIMPIA
+    }
+}
+
+
+// --- INICIO DE EJECUCIÓN ---
 document.addEventListener('DOMContentLoaded', async () => {
+
     // === Inicialización base ===
     initializeImportModal();
     await checkUserStatus();
 
-    // === Header y menú “Mi cuenta” ===
+    // === Header y menú “Mi cuenta” (RUTAS CORREGIDAS) ===
     const nav = document.getElementById('header-nav');
     if (nav) {
         nav.innerHTML = `
@@ -26,43 +146,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         setup.setupMiCuenta();
     }
 
-    prepareRecomendedColumns();
+    // === Llamada al preparador de Columnas ===
+    setupAccordionToggles(); // <-- Llama la nueva función que SÍ funciona
 
     // === Formularios y botones ===
     const createDbForm = document.getElementById('createDbForm');
     const messageDiv = document.getElementById('message');
-    const prepareImportBtn = document.getElementById('prepare-import-btn');
-    const importStatusDiv = document.getElementById('import-prepared-status');
+    const columnsInput = document.getElementById('columnsInput'); // <-- Tu Textarea
 
-    if (!createDbForm || !prepareImportBtn) return;
+    if (!createDbForm) return;
 
-    // === Botón para abrir el modal de importación ===
-    prepareImportBtn.addEventListener('click', () => {
-        const columnsInputValue = document.getElementById('columnsInput')?.value.trim();
-        const cols = columnsInputValue
-            ? columnsInputValue.split(',').map(s => s.trim()).filter(Boolean)
-            : [];
-
-        if (cols.length === 0) {
-            alert("Por favor, primero definí las columnas (separadas por coma) antes de importar.");
-            return;
-        }
-
-        setStockifyColumns(cols);
-        openImportModal();
-    });
-
-    // === Envío del formulario principal ===
+    // --- Event Listener para el ENVÍO FINAL ---
     createDbForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
+        const preferences = getUserPreferences(); // <-- Llama la nueva función que SÍ funciona
         const dbName = document.getElementById('dbNameInput').value.trim();
-        const columns = document.getElementById('columnsInput').value.trim();
         const submitButton = createDbForm.querySelector('button[type="submit"]');
-        const preferences = getUserPreferences();
 
-        if (!dbName || !columns) {
-            messageDiv.textContent = 'Por favor, completa el nombre y las columnas.';
+        // Lógica de columnas (de tu HTML/JS)
+        let columnList = columnsInput.value.split(',')
+            .map(col => col.trim().toLowerCase().replace(/ /g, ''))
+            .filter(col => col.length > 0); // Filtra vacíos
+
+        // Evitar duplicados (Nano)
+        columnList = [...new Set(columnList)];
+
+        // === LÓGICA DE FUSIÓN DE COLUMNAS ===
+        // 1. Columnas obligatorias (de Nano)
+        if (!columnList.includes('stock')) columnList.unshift('stock');
+        const hasNameCol = columnList.includes('name') || columnList.includes('nombre');
+        if (!hasNameCol) {
+            columnList.unshift('name');
+        }
+
+        // 2. Columnas recomendadas (basadas en los botones 'active')
+        if (preferences.min_stock.active && !columnList.includes('min_stock')) columnList.push('min_stock');
+        if (preferences.sale_price.active && !columnList.includes('sale_price')) columnList.push('sale_price');
+        if (preferences.receipt_price.active && !columnList.includes('receipt_price')) columnList.push('receipt_price');
+
+        if (preferences.percentage_gain.active && !columnList.includes('percentage_gain')) {
+            columnList.push('percentage_gain');
+        }
+        if (preferences.hard_gain.active && !columnList.includes('hard_gain')) {
+            columnList.push('hard_gain');
+        }
+
+        const finalColumns = columnList.join(',');
+
+        if (!dbName || !finalColumns || finalColumns === "stock,name") {
+            messageDiv.textContent = 'Por favor, completa el nombre y al menos una columna personalizada.';
             return;
         }
 
@@ -71,12 +204,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageDiv.textContent = '';
 
         try {
-            const result = await api.createDatabase(dbName, columns, preferences);
+            // Enviamos el payload que el Controller de Nano espera
+            const result = await api.createDatabase({
+                dbName: dbName,
+                columns: finalColumns,
+                preferences: preferences
+            });
+
             if (result.success) {
                 messageDiv.textContent = result.message + "\nSerás redirigido al panel.";
-                setTimeout(() => {
-                    window.location.href = '/dashboard.php';
-                }, 2000);
+                window.location.href = '/dashboard.php'; // RUTA LIMPIA
             } else {
                 messageDiv.textContent = `Error: ${result.message}`;
             }
@@ -88,220 +225,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // === Integración con import.js ===
+    // --- Lógica del botón de Importación Opcional ---
+    const prepareImportBtn = document.getElementById('prepare-import-btn');
+    const importStatusDiv = document.getElementById('import-prepared-status');
+
+    prepareImportBtn.addEventListener('click', () => {
+        // Le pasamos las columnas que el usuario ya escribió
+        const currentCols = columnsInput.value.split(',').map(c => c.trim()).filter(c => c);
+        // Le pasamos las columnas recomendadas (si están activas)
+        const prefs = getUserPreferences();
+        if(prefs.min_stock.active) currentCols.push('min_stock');
+        if(prefs.sale_price.active) currentCols.push('sale_price');
+        if(prefs.receipt_price.active) currentCols.push('receipt_price');
+        if(prefs.hard_gain.active) currentCols.push('hard_gain');
+        if(prefs.percentage_gain.active) currentCols.push('percentage_gain');
+
+        setStockifyColumns(['name', 'stock', ...currentCols]);
+        openImportModal();
+    });
+
+    // Función global para que import.js pueda actualizar el estado
     window.updateImportStatus = (message) => {
-        if (importStatusDiv) {
+        if(importStatusDiv) {
             importStatusDiv.textContent = message;
             prepareImportBtn.textContent = "Modificar Importación CSV";
         }
-    };
-});
-
-// ======================================================
-// ================ Funciones auxiliares ================
-// ======================================================
-
-async function checkUserStatus() {
-    try {
-        const profileData = await api.getUserProfile();
-        if (!profileData.success) {
-            window.location.href = '/index.php';
-        }
-    } catch (error) {
-        console.error("Error:", error);
-        window.location.href = '/index.php';
-    }
-}
-
-// === Funciones de configuración de columnas ===
-function prepareRecomendedColumns() {
-    const columnsContainer = document.getElementById('recomended-columns-form');
-    const openColumnasRecomendadasBtn = document.getElementById('open-columnas-recomendadas-btn');
-
-    if (!columnsContainer || !openColumnasRecomendadasBtn) return;
-
-    openColumnasRecomendadasBtn.addEventListener('click', () => {
-        columnsContainer.classList.toggle('visible');
-        openColumnasRecomendadasBtn.classList.toggle('is-rotated');
-    });
-
-    const gainCheckbox = document.getElementById('gain-input');
-    const minStockCheckbox = document.getElementById('min-stock-input');
-    const salePriceCheckbox = document.getElementById('sale-price-input');
-    const receiptPriceCheckbox = document.getElementById('receipt-price-input');
-    const autoPriceCheckbox = document.getElementById('auto-price-input');
-    const autoIvaRadio = document.getElementById('auto-iva-input');
-    const autoGainRadio = document.getElementById('auto-gain-input');
-    const autoIvaGainRadio = document.getElementById('auto-iva-gain-input');
-    const autoPriceTypeContainer = document.getElementById('auto-price-type-container');
-    const autoPriceLabel = document.getElementById('auto-price-checkbox');
-
-    function updateMinStockInput() {
-        const defaultInput = document.getElementById('min-stock-default-input');
-        defaultInput.disabled = !minStockCheckbox.checked;
-        defaultInput.classList.toggle('visible', minStockCheckbox.checked);
-        if (!minStockCheckbox.checked) defaultInput.value = "";
-    }
-
-    function updateSalePriceInput() {
-        const defaultInput = document.getElementById('sale-price-default-input');
-        defaultInput.disabled = !salePriceCheckbox.checked;
-        defaultInput.classList.toggle('visible', salePriceCheckbox.checked);
-
-        if (!salePriceCheckbox.checked) {
-            autoPriceCheckbox.checked = false;
-            autoIvaRadio.checked = false;
-            autoGainRadio.checked = false;
-            autoIvaGainRadio.checked = false;
-            autoPriceLabel.classList.remove('visible');
-            autoPriceTypeContainer.classList.remove('visible');
-        } else if (receiptPriceCheckbox.checked) {
-            autoPriceLabel.classList.add('visible');
-        }
-        updateReceiptPriceInput();
-    }
-
-    function updateReceiptPriceInput() {
-        const defaultInput = document.getElementById('receipt-price-default-input');
-        defaultInput.disabled = !receiptPriceCheckbox.checked;
-        defaultInput.classList.toggle('visible', receiptPriceCheckbox.checked);
-
-        if (!receiptPriceCheckbox.checked) {
-            autoPriceLabel.classList.remove('visible');
-            autoPriceCheckbox.checked = false;
-            autoPriceTypeContainer.classList.remove('visible');
-        } else if (salePriceCheckbox.checked) {
-            autoPriceLabel.classList.add('visible');
-        }
-        updateAutoPrice();
-    }
-
-    function updateGainInput() {
-        const defaultInput = document.getElementById('gain-default-input');
-        const percentageRadio = document.getElementById('percentage-gain-input');
-        const hardRadio = document.getElementById('hard-gain-input');
-        const gainTypeContainer = document.getElementById('gain-type-container');
-
-        const active = gainCheckbox.checked;
-        defaultInput.disabled = !active;
-        percentageRadio.disabled = !active;
-        hardRadio.disabled = !active;
-
-        defaultInput.classList.toggle('visible', active);
-        gainTypeContainer.classList.toggle('visible', active);
-
-        if (!active) {
-            percentageRadio.checked = false;
-            hardRadio.checked = false;
-            defaultInput.value = "";
-        } else {
-            percentageRadio.checked = true;
-            autoIvaRadio.checked = true;
-        }
-        updateAutoPrice();
-    }
-
-    function updateAutoPrice() {
-        const active = autoPriceCheckbox.checked;
-        autoPriceTypeContainer.classList.toggle('visible', active);
-
-        if (active) {
-            autoIvaRadio.checked = true;
-            autoGainRadio.disabled = !gainCheckbox.checked;
-            autoIvaGainRadio.disabled = !gainCheckbox.checked;
-        } else {
-            autoIvaRadio.checked = false;
-            autoGainRadio.checked = false;
-            autoIvaGainRadio.checked = false;
-        }
-    }
-
-    // === Listeners ===
-    [gainCheckbox, minStockCheckbox, salePriceCheckbox, receiptPriceCheckbox, autoPriceCheckbox]
-        .forEach(cb => cb?.addEventListener('change', () => {
-            updateGainInput();
-            updateMinStockInput();
-            updateSalePriceInput();
-            updateReceiptPriceInput();
-            updateAutoPrice();
-        }));
-
-    // === Inicialización inicial ===
-    updateGainInput();
-    updateMinStockInput();
-    updateSalePriceInput();
-    updateReceiptPriceInput();
-    updateAutoPrice();
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('recomended-columns-form');
-        const btn = document.getElementById('open-columnas-recomendadas-btn');
-
-        if (form && btn) {
-            btn.addEventListener('click', () => {
-                form.classList.toggle('visible');
-                btn.classList.toggle('is-rotated');
-            });
-        }
-    });
-
-}
-
-// === Obtiene las preferencias del usuario ===
-function getUserPreferences() {
-    const getNum = id => parseFloat(document.getElementById(id)?.value) || 0;
-
-    return {
-        min_stock: {
-            active: document.getElementById('min-stock-input')?.checked ? 1 : 0,
-            default: getNum('min-stock-default-input')
-        },
-        sale_price: {
-            active: document.getElementById('sale-price-input')?.checked ? 1 : 0,
-            default: getNum('sale-price-default-input')
-        },
-        receipt_price: {
-            active: document.getElementById('receipt-price-input')?.checked ? 1 : 0,
-            default: getNum('receipt-price-default-input')
-        },
-        percentage_gain: {
-            active: document.getElementById('percentage-gain-input')?.checked ? 1 : 0,
-            default: getNum('gain-default-input')
-        },
-        hard_gain: {
-            active: document.getElementById('hard-gain-input')?.checked ? 1 : 0,
-            default: getNum('gain-default-input')
-        },
-        auto_price: document.getElementById('auto-price-input')?.checked ? 1 : 0,
-        auto_price_type: document.querySelector('input[name="price-type"]:checked')?.value || null
-    };
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Acordeón
-    const header = document.getElementById('rc-toggle-header');
-    const content = document.querySelector('.rc-content');
-    header.addEventListener('click', () => {
-        header.classList.toggle('open');
-        content.classList.toggle('open');
-    });
-
-    // Botones de columnas
-    document.querySelectorAll('.rc-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const active = btn.classList.toggle('active');
-            const col = btn.dataset.toggle;
-            const extra = document.getElementById(`${col}-extra`);
-            if (extra) extra.classList.toggle('hidden', !active);
-        });
-    });
-
-    // Stock mínimo -> mostrar input si marca “establecer ahora”
-    const setNow = document.getElementById('set-stock-now');
-    const stockInput = document.getElementById('stock-value');
-    if (setNow && stockInput) {
-        setNow.addEventListener('change', () => {
-            stockInput.classList.toggle('hidden', !setNow.checked);
-        });
     }
 });
-

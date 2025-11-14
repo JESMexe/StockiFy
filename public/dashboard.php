@@ -30,27 +30,53 @@
 </header>
 
 <!-- ===================== FONDO GRIS Y MODALES DE TRANSACCIONES (del compañero) ===================== -->
-<div id="grey-background" class="hidden">
-    <div id="new-transaction-container">
+<div id="grey-background" class="hidden" style="z-index: 21">
+    <div id="new-transaction-container" class="hidden">
         <div id="return-btn" class="return-btn" style="top: 0; left: 0">Volver</div>
-        <div id="transaction-form-container"></div>
-    </div>
-
-    <div id="transaction-picker-modal" class="hidden">
-        <div id="modal-return-btn" class="return-btn" style="top: 0; left: 0">Volver</div>
-
-        <div id="item-picker-modal" class="picker-modal flex-column">
-            <div id="item-picker-header" class="flex-row"></div>
-            <div id="item-list" class="flex-column"></div>
+        <div id="transaction-form-container">
         </div>
-
-        <div id="client-picker-modal" class="picker-modal"></div>
-        <div id="provider-picker-modal" class="picker-modal"></div>
     </div>
+    <div id="transaction-picker-modal" class="hidden">
+        <div class="flex-row" style="justify-content: space-between; align-items: center; padding: 0.5rem;">
 
+            <div id="modal-return-btn" class="return-btn" style="top: 0; left: 0">Volver</div>
+            <div class="flex-row" style="padding: 0.5rem; align-items: center; justify-content: right;">
+                <div class="flex-column" id="inventory-picker-container">
+                    <div id="inventory-picker-name" class="btn"><p>Todos los Inventarios</p></div>
+                    <p style="position: absolute; bottom: 90%; right: 0; font-size: 11px; min-width: 100px" class="inventory-info-btn">¿Donde están mis inventarios?</p>
+                    <div id="item-picker-header" class="flex-row"></div>
+                </div>
+            </div>
+
+        </div>
+        <hr>
+        <div id="item-picker-modal" class="picker-modal flex-column">
+            <div id="item-list" class="flex-column picker-list"></div>
+            <button class="btn btn-primary picker-confirm-btn" data-type="item" disabled>Selecccionar</button>
+        </div>
+        <div id="client-picker-modal" class="picker-modal">
+            <div id="client-list" class="flex-column picker-list"></div>
+            <button class="btn btn-primary picker-confirm-btn" data-type="client" disabled>Selecccionar</button>
+        </div>
+        <div id="provider-picker-modal" class="picker-modal">
+            <div id="provider-list" class="flex-column picker-list"></div>
+            <button class="btn btn-primary picker-confirm-btn" data-type="provider" disabled>Selecccionar</button>
+        </div>
+    </div>
     <div id="transaction-success-modal" class="flex-column hidden">
         <h2 style="color: var(--accent-green)" class="flex-row all-center">¡Exito!</h2>
-        <div id="success-modal-body"></div>
+        <div id="success-modal-body">
+        </div>
+    </div>
+    <div id="transaction-info-modal" class="hidden">
+    </div>
+    <div id="inventory-info-modal" class="hidden">
+        Solo se permite seleccionar los inventarios (y productos) que tienen activadas las columnas recomendadas de "Precio de Compra" y "Precio de Venta".
+        <br>
+        <br>
+        ¡Activalas en la sección de "Configurar Tabla"!
+        <br>
+        <button class="btn btn-primary" id="close-inventory-info-modal">Cerrar</button>
     </div>
 </div>
 <!-- ===================== FIN FONDO GRIS Y MODALES DE TRANSACCIONES ===================== -->
@@ -233,12 +259,7 @@
 
         <!-- ===================== ESTADÍSTICAS DIARIAS (versión AVANZADA del compañero) ===================== -->
         <div id="analysis" class="dashboard-view hidden">
-            <div class="not-available-container hidden">
-                <h2>Para calcular tus Estadísticas Diarias, primero debes activar los siguientes Campos Recomendados para la Base de Datos seleccionada:</h2>
-                <div class="missing-preference-text flex-column"></div>
-                <button class="btn btn-primary got-to-config-btn">Ir a Configuración</button>
-            </div>
-
+            <p style="font-size: 13px; text-align: right;" class="inventory-info-btn">¿Donde están mis inventarios?</p>
             <div class="menu-container">
                 <div class="table-header">
                     <h2>Estadísticas Diarias</h2>
@@ -252,8 +273,7 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="flex-row">
+                <div class="table-wrapper" id="stats-wrapper">
                     <div class="daily-stats-wrapper flex-row" id="general-stats">
                         <div class="flex-column" style="gap: 2rem;">
                             <div class="stat-group-container">
@@ -269,7 +289,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="stat-group-container">
                                 <h3>Monetarias</h3>
                                 <div class="flex-column">
@@ -290,7 +309,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="flex-column" style="gap: 2rem">
                             <div class="stat-group-container">
                                 <h3>Transacciones</h3>
@@ -321,7 +339,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="estadisticas-graph-wrapper all-center">
                         <div class="flex-column stat-graph all-center" id="stock-ingresado-container">
                             <h2>Stock Ingresado por Hora</h2>
@@ -406,44 +423,47 @@
                 <div class="missing-preference-text flex-column"></div>
                 <button class="btn btn-primary got-to-config-btn">Ir a Configuración</button>
             </div>
-
             <div id="ventas-container" class="menu-container" style="overflow: visible;">
                 <div class="table-header">
                     <h2>Ventas</h2>
                     <div class="table-controls">
-                        <div data-direction="descending" data-order="none" class="direction-btn">
+                        <div data-direction="descending" data-order= "none" class="direction-btn">
                             <i class="ph ph-arrow-up hidden" style="margin-right: 5px"></i>
                             <i class="ph ph-arrow-down" style="margin-right: 5px"></i>
                         </div>
-
                         <div class="order-by-container">
                             <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
                                 <i class="ph ph-list-bullets" style="margin-right: 5px"></i>
                                 <h4 class="order-by-btn">Ordenar Por</h4>
                             </div>
                             <div class="order-by-dropdown flex-column hidden">
-                                <p data-order="sales-table-date"  class="order-btn">Fecha</p>
-                                <p data-order="sales-table-id"    class="order-btn">Número</p>
-                                <p data-order="sales-table-client"class="order-btn">Cliente</p>
+                                <p data-order="sales-table-date" class="order-btn">Fecha</p>
+                                <p data-order="sales-table-id" class="order-btn">Número</p>
+                                <p data-order="sales-table-client" class="order-btn">Cliente</p>
                                 <p data-order="sales-table-price" class="order-btn">Precio</p>
                             </div>
                         </div>
-
-                        <input type="text" id="sale-input" placeholder="Buscar una venta...">
                         <button class="btn btn-primary new-transaction-btn" style="margin-top: 0; margin-left: 1rem;" data-transaction="sale">+ Crear una Venta</button>
                     </div>
                 </div>
-
                 <div class="table-wrapper">
                     <div id="sales-table-container">
-                        <div id="sales-table-id-descending"       class="transaction-view hidden"><p>Ventas Ordenadas por ID descendiente</p></div>
-                        <div id="sales-table-id-ascending"        class="transaction-view hidden"><p>Ventas Ordenadas por ID cresciente</p></div>
-                        <div id="sales-table-client-descending"   class="transaction-view hidden"><p>Ventas Ordenadas por Cliente descendiente (Alfabeticamente)</p></div>
-                        <div id="sales-table-client-ascending"    class="transaction-view hidden"><p>Ventas Ordenadas por Cliente cresciente (Alfabeticamente)</p></div>
-                        <div id="sales-table-price-ascending"     class="transaction-view hidden"><p>Ventas Ordenadas por Precio cresciente</p></div>
-                        <div id="sales-table-price-descending"    class="transaction-view hidden"><p>Ventas Ordenadas por Precio descendente</p></div>
-                        <div id="sales-table-date-ascending"      class="transaction-view hidden"><p>Ventas Ordenadas por Fecha cresciente</p></div>
-                        <div id="sales-table-date-descending"     class="transaction-view"><p>Ventas Ordenadas por Fecha descendente</p></div>
+                        <div id="sales-table-id-descending" class="transaction-view hidden">
+                        </div>
+                        <div id="sales-table-id-ascending" class="transaction-view hidden">
+                        </div>
+                        <div id="sales-table-client-descending" class="transaction-view hidden">
+                        </div>
+                        <div id="sales-table-client-ascending" class="transaction-view hidden">
+                        </div>
+                        <div id="sales-table-price-ascending" class="transaction-view hidden">
+                        </div>
+                        <div id="sales-table-price-descending" class="transaction-view hidden">
+                        </div>
+                        <div id="sales-table-date-ascending" class="transaction-view hidden">
+                        </div>
+                        <div id="sales-table-date-descending" class="transaction-view">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -457,44 +477,47 @@
                 <div class="missing-preference-text flex-column"></div>
                 <button class="btn btn-primary got-to-config-btn">Ir a Configuración</button>
             </div>
-
             <div id="receipts-container" class="menu-container" style="overflow: visible;">
                 <div class="table-header">
                     <h2>Compras</h2>
                     <div class="table-controls">
-                        <div data-direction="descending" data-order="none" class="direction-btn">
+                        <div data-direction="descending" data-order= "none" class="direction-btn">
                             <i class="ph ph-arrow-up hidden" style="margin-right: 5px"></i>
                             <i class="ph ph-arrow-down" style="margin-right: 5px"></i>
                         </div>
-
                         <div class="order-by-container">
                             <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
                                 <i class="ph ph-list-bullets" style="margin-right: 5px"></i>
                                 <h4 class="order-by-btn">Ordenar Por</h4>
                             </div>
                             <div class="order-by-dropdown flex-column hidden">
-                                <p data-order="receipts-table-date"      class="order-btn">Fecha</p>
-                                <p data-order="receipts-table-id"        class="order-btn">Número</p>
-                                <p data-order="receipts-table-provider"  class="order-btn">Proveedor</p>
-                                <p data-order="receipts-table-price"     class="order-btn">Precio</p>
+                                <p data-order="receipts-table-date" class="order-btn">Fecha</p>
+                                <p data-order="receipts-table-id" class="order-btn">Número</p>
+                                <p data-order="receipts-table-provider" class="order-btn">Proveedor</p>
+                                <p data-order="receipts-table-price" class="order-btn">Precio</p>
                             </div>
                         </div>
-
-                        <input type="text" id="receipt-input" placeholder="Buscar una compra...">
                         <button class="btn btn-primary new-transaction-btn" style="margin-top: 0; margin-left: 1rem; justify-self: left" data-transaction="receipt">+ Crear una Compra</button>
                     </div>
                 </div>
-
                 <div class="table-wrapper">
                     <div id="receipts-table-container">
-                        <div id="receipts-table-id-descending"         class="transaction-view hidden"><p>Compras Ordenadas por ID descendiente</p></div>
-                        <div id="receipts-table-id-ascending"          class="transaction-view hidden"><p>Compras Ordenadas por ID cresciente</p></div>
-                        <div id="receipts-table-provider-descending"   class="transaction-view hidden"><p>Compras Ordenadas por Proveedor descendiente (Alfabeticamente)</p></div>
-                        <div id="receipts-table-provider-ascending"    class="transaction-view hidden"><p>Compras Ordenadas por Proveedor cresciente (Alfabeticamente)</p></div>
-                        <div id="receipts-table-price-ascending"       class="transaction-view hidden"><p>Compras Ordenadas por Precio cresciente</p></div>
-                        <div id="receipts-table-price-descending"      class="transaction-view hidden"><p>Compras Ordenadas por Precio descendente</p></div>
-                        <div id="receipts-table-date-descending"       class="transaction-view"><p>Compras Ordenadas por Fecha descendente</p></div>
-                        <div id="receipts-table-date-ascending"        class="transaction-view hidden"><p>Compras Ordenadas por Fecha ascendente</p></div>
+                        <div id="receipts-table-id-descending" class="transaction-view hidden">
+                        </div>
+                        <div id="receipts-table-id-ascending" class="transaction-view hidden">
+                        </div>
+                        <div id="receipts-table-provider-descending" class="transaction-view hidden">
+                        </div>
+                        <div id="receipts-table-provider-ascending" class="transaction-view hidden">
+                        </div>
+                        <div id="receipts-table-price-ascending" class="transaction-view hidden">
+                        </div>
+                        <div id="receipts-table-price-descending" class="transaction-view hidden">
+                        </div>
+                        <div id="receipts-table-date-descending" class="transaction-view">
+                        </div>
+                        <div id="receipts-table-date-ascending" class="transaction-view hidden">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -507,45 +530,53 @@
                 <div class="table-header">
                     <h2>Clientes</h2>
                     <div class="table-controls">
-                        <div data-direction="descending" data-order="none" class="direction-btn">
+                        <div data-direction="descending" data-order= "none" class="direction-btn">
                             <i class="ph ph-arrow-up hidden" style="margin-right: 5px"></i>
                             <i class="ph ph-arrow-down" style="margin-right: 5px"></i>
                         </div>
-
                         <div class="order-by-container">
                             <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
                                 <i class="ph ph-list-bullets" style="margin-right: 5px"></i>
                                 <h4 class="order-by-btn">Ordenar Por</h4>
                             </div>
                             <div class="order-by-dropdown flex-column hidden">
-                                <p data-order="customers-table-date"    class="order-btn">Fecha</p>
-                                <p data-order="customers-table-name"    class="order-btn">Nombre</p>
-                                <p data-order="customers-table-email"   class="order-btn">Email</p>
-                                <p data-order="customers-table-phone"   class="order-btn">Teléfono</p>
+                                <p data-order="customers-table-date" class="order-btn">Fecha</p>
+                                <p data-order="customers-table-name" class="order-btn">Nombre</p>
+                                <p data-order="customers-table-email" class="order-btn">Email</p>
+                                <p data-order="customers-table-phone" class="order-btn">Teléfono</p>
                                 <p data-order="customers-table-address" class="order-btn">Dirección</p>
-                                <p data-order="customers-table-dni"     class="order-btn">DNI</p>
+                                <p data-order="customers-table-dni" class="order-btn">DNI</p>
                             </div>
                         </div>
-
-                        <input type="text" id="customers-input" placeholder="Buscar un cliente...">
                         <button class="btn btn-primary new-transaction-btn" style="margin-top: 0; margin-left: 1rem; justify-self: left" data-transaction="customer">+ Crear Cliente</button>
                     </div>
                 </div>
-
                 <div class="table-wrapper">
                     <div id="customers-table-container">
-                        <div id="customers-table-email-descending"   class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-email-ascending"    class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-name-descending"    class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-name-ascending"     class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-date-descending"    class="transaction-view customer-view"></div>
-                        <div id="customers-table-date-ascending"     class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-phone-ascending"    class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-phone-descending"   class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-address-descending" class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-address-ascending"  class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-dni-descending"     class="transaction-view hidden customer-view"></div>
-                        <div id="customers-table-dni-ascending"      class="transaction-view hidden customer-view"></div>
+                        <div id="customers-table-email-descending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-email-ascending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-name-descending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-name-ascending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-date-descending" class="transaction-view customer-view">
+                        </div>
+                        <div id="customers-table-date-ascending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-phone-ascending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-phone-descending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-address-descending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-address-ascending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-dni-descending" class="transaction-view hidden customer-view">
+                        </div>
+                        <div id="customers-table-dni-ascending" class="transaction-view hidden customer-view">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -558,42 +589,48 @@
                 <div class="table-header">
                     <h2>Proveedores</h2>
                     <div class="table-controls">
-                        <div data-direction="descending" data-order="none" class="direction-btn">
+                        <div data-direction="descending" data-order= "none" class="direction-btn">
                             <i class="ph ph-arrow-up hidden" style="margin-right: 5px"></i>
                             <i class="ph ph-arrow-down" style="margin-right: 5px"></i>
                         </div>
-
                         <div class="order-by-container">
                             <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
                                 <i class="ph ph-list-bullets" style="margin-right: 5px"></i>
                                 <h4 class="order-by-btn">Ordenar Por</h4>
                             </div>
                             <div class="order-by-dropdown flex-column hidden">
-                                <p data-order="providers-table-date"    class="order-btn">Fecha</p>
-                                <p data-order="providers-table-name"    class="order-btn">Nombre</p>
-                                <p data-order="providers-table-email"   class="order-btn">Email</p>
+                                <p data-order="providers-table-date" class="order-btn">Fecha</p>
+                                <p data-order="providers-table-name" class="order-btn">Nombre</p>
+                                <p data-order="providers-table-email" class="order-btn">Email</p>
                                 <p data-order="providers-table-address" class="order-btn">Dirección</p>
-                                <p data-order="providers-table-phone"   class="order-btn">Teléfono</p>
+                                <p data-order="providers-table-phone" class="order-btn">Teléfono</p>
                             </div>
                         </div>
-
-                        <input type="text" id="providers-input" placeholder="Buscar un proveedor...">
                         <button class="btn btn-primary new-transaction-btn" style="margin-top: 0; margin-left: 1rem; justify-self: left" data-transaction="provider">+ Crear Proveedor</button>
                     </div>
                 </div>
-
                 <div class="table-wrapper">
                     <div id="customers-table-container">
-                        <div id="providers-table-email-descending"   class="transaction-view hidden provider-view"><p>Proveedores Ordenados por Email descendiente</p></div>
-                        <div id="providers-table-email-ascending"    class="transaction-view hidden provider-view"><p>Proveedores Ordenadas por Email cresciente</p></div>
-                        <div id="providers-table-name-descending"    class="transaction-view hidden provider-view"><p>Proveedores Ordenadas por Nombre descendiente (Alfabeticamente)</p></div>
-                        <div id="providers-table-name-ascending"     class="transaction-view hidden provider-view"><p>Proveedores Ordenadas por Nombre cresciente (Alfabeticamente)</p></div>
-                        <div id="providers-table-date-descending"    class="transaction-view provider-view"><p>Proveedores Ordenadas por Fecha descendente</p></div>
-                        <div id="providers-table-date-ascending"     class="transaction-view hidden provider-view"><p>Proveedores Ordenadas por Fecha ascendente</p></div>
-                        <div id="providers-table-phone-descending"   class="transaction-view hidden provider-view"><p>Proveedores Ordenados por Telefono descendiente</p></div>
-                        <div id="providers-table-phone-ascending"    class="transaction-view hidden provider-view"><p>Proveedores Ordenadas por Telefono cresciente</p></div>
-                        <div id="providers-table-address-descending" class="transaction-view hidden provider-view"><p>Proveedores Ordenadas por Dirección descendiente (Alfabeticamente)</p></div>
-                        <div id="providers-table-address-ascending"  class="transaction-view hidden provider-view"><p>Proveedores Ordenadas por Dirección cresciente (Alfabeticamente)</p></div>
+                        <div id="providers-table-email-descending" class="transaction-view hidden provider-view">
+                        </div>
+                        <div id="providers-table-email-ascending" class="transaction-view hidden provider-view">
+                        </div>
+                        <div id="providers-table-name-descending" class="transaction-view hidden provider-view">
+                        </div>
+                        <div id="providers-table-name-ascending" class="transaction-view hidden provider-view">
+                        </div>
+                        <div id="providers-table-date-descending" class="transaction-view provider-view">
+                        </div>
+                        <div id="providers-table-date-ascending" class="transaction-view hidden provider-view">
+                        </div>
+                        <div id="providers-table-phone-descending" class="transaction-view hidden provider-view">
+                        </div>
+                        <div id="providers-table-phone-ascending" class="transaction-view hidden provider-view">
+                        </div>
+                        <div id="providers-table-address-descending" class="transaction-view hidden provider-view">
+                        </div>
+                        <div id="providers-table-address-ascending" class="transaction-view hidden provider-view">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -604,9 +641,8 @@
 </div>
 
 <!-- ===================== MODALES GENERALES (tuyos) ===================== -->
-<div id="import-modal" class="modal-overlay hidden">
-    <div class="modal-content view-container">
-        <button id="close-modal-btn" class="modal-close-btn">&times;</button>
+<div id="import-modal" class="modal-overlay hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <div class="modal-content view-container"> <button id="close-modal-btn" class="modal-close-btn">&times;</button>
 
         <div class="modal-header">
             <h2>Importar Datos desde CSV</h2>
@@ -636,8 +672,8 @@
     </div>
 </div>
 
-<div id="delete-confirm-modal" class="modal-overlay hidden">
-    <div class="modal-content view-container" style="max-width: 450px; --accent-color-hover: var(--accent-red = '#BF616A') !important;">
+<div id="delete-confirm-modal" class="modal-overlay hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <div class="modal-content view-container" style="max-width: 450px;">
         <button id="close-delete-modal-btn" class="modal-close-btn">&times;</button>
 
         <div class="modal-header">
@@ -647,13 +683,13 @@
 
         <div class="modal-body">
             <p style="text-align: left; color: var(--color-gray);">Para confirmar, escribí el nombre exacto de la base de datos:</p>
-            <input type="text" id="delete-confirm-input" placeholder="Nombre de la Base de Datos" style="margin-bottom: 1rem; border-color: var(--accent-red);">
+            <input type="text" id="delete-confirm-input" placeholder="Nombre de la Base de Datos" style="margin-bottom: 1rem;">
             <div id="delete-error-message" style="color: var(--accent-red); font-weight: 500;"></div>
         </div>
 
         <div class="modal-footer">
             <button id="cancel-delete-btn" class="btn btn-secondary">Cancelar</button>
-            <button id="confirm-delete-btn" class="btn btn-danger" disabled>Eliminar Permanentemente</button>
+            <button id="confirm-delete-btn" class="btn btn-primary" disabled>Eliminar Permanentemente</button>
         </div>
     </div>
 </div>
@@ -686,6 +722,7 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <!-- Tus módulos (mantengo orden y rutas) -->
+
 <script type="module" src="assets/js/import.js"></script>
 <script type="module" src="assets/js/dashboard.js"></script>
 </body>

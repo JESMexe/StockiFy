@@ -1,5 +1,5 @@
 import * as api from './api.js';
-import * as setup from "/../js/setupMiCuentaDropdown.js";
+import * as setup from "./setupMiCuentaDropdown.js";
 
 let desdeDate, hastaDate, todayDate, creationDate, chart, tablaID, user, fechaDesde, fechaHasta;
 

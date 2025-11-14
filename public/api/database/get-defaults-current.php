@@ -1,5 +1,9 @@
 <?php
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 
@@ -7,6 +11,12 @@ use App\core\Database;
 
 try {
     $pdo = Database::getInstance();
+
+    if (!getCurrentUser() || !isset($_SESSION['active_inventory_id'])) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'No autorizado o inventario no activo.']);
+        return; // Detiene la ejecución antes de que PHP lance un Notice HTML.
+    }
 
     $user = getCurrentUser();
     $user_id = $_SESSION['user_id'];

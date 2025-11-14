@@ -1,5 +1,5 @@
 import { mostrarMensaje } from './universal-functions.js'
-import * as setup from "/../js/setupMiCuentaDropdown.js";
+import * as setup from "./setupMiCuentaDropdown.js";
 
 document.addEventListener('DOMContentLoaded', () =>{
 

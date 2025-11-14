@@ -10,30 +10,31 @@ require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 use App\core\Database;
 
 try {
-    $pdo = Database::getInstance();
+    $data = json_decode(file_get_contents('php://input'), true);
 
+    $newUserEmail = $data;
     if (!getCurrentUser() || !isset($_SESSION['active_inventory_id'])) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'No autorizado o inventario no activo.']);
         return; // Detiene la ejecución antes de que PHP lance un Notice HTML.
     }
-
     $user = getCurrentUser();
-    $user_id = $_SESSION['user_id'];
+    $userID = $_SESSION['user_id'];
 
-    $inventoryID = $_SESSION['active_inventory_id'];
-    $stmt = $pdo->prepare("SELECT min_stock,sale_price,receipt_price,hard_gain,percentage_gain,auto_price,auto_price_type FROM inventories WHERE id = ?");
-    $stmt ->execute([$inventoryID]);
-    $preferences = $stmt->fetch();
+    $pdo = Database::getInstance();
+    $stmt = $pdo->prepare("SELECT email FROM users WHERE email = ? AND id != ?");
+    $stmt->execute([$newUserEmail,$userID]);
+    $user = $stmt->fetch();
 
-    $response = ['min_stock' => $preferences['min_stock'],'sale_price' => $preferences['sale_price'],
-        'receipt_price' => $preferences['receipt_price'],'hard_gain' => $preferences['hard_gain'],
-        'percentage_gain' => $preferences['percentage_gain'],'auto_price' => $preferences['auto_price'],
-        'auto_price_type' => $preferences['auto_price_type'], 'success' => true];
+    $exists = $user !== false;
 
+    $response = ['success' => true, 'exists' => $exists];
+
+    header('Content-Type: application/json');
 } catch (Exception $e) {
     $message = $e->getMessage();
     $response = ['success' => false, 'error' => 'Ha ocurrido un error interno = ' . $message];
 }
-
 echo json_encode($response, JSON_NUMERIC_CHECK);
+
+

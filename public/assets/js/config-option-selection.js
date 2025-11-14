@@ -1,11 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    btnCuenta = document.getElementById('btn-config-cuenta');
-    btnModifs = document.getElementById('btn-config-modifs');
-    btnSoporte = document.getElementById('btn-config-soporte');
+    const btnCuenta = document.getElementById('btn-config-cuenta');
+    const btnModifs = document.getElementById('btn-config-modifs');
+    const btnSoporte = document.getElementById('btn-config-soporte');
 
-    formCuenta = document.getElementById('form-micuenta');
-    containerRegistrosModif = document.getElementById('registro-modifs-container');
-    containerSoporte = document.getElementById('soporte-container');
+    const formCuenta = document.getElementById('form-micuenta');
+    const containerRegistrosModif = document.getElementById('registro-modifs-container');
+    const containerSoporte = document.getElementById('soporte-container');
 
     btnCuenta.addEventListener('click',() =>{
         btnCuenta.className = 'btn btn-option-selected';

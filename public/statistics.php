@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="assets/css/main.css">
     <script src="assets/js/theme.js"></script>
-    <script src="assets/js/estadisticas-handler.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
@@ -104,6 +103,6 @@
         </div>
     </div>
 </main>
-<script type="module" src="assets/js/estadisticas-handler.js"></script>
+<script type="module" src="assets/js/statistics-handler.js"></script>
 </body>
 </html>

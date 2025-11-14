@@ -9,7 +9,7 @@ async function handleResponse(response) {
     if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         const errorMessage = errorData?.message || `Error del servidor: ${response.status}`;
-        pop_ups.error(errorMessage, "Error del Servidor");
+        pop_ups.error(errorMessage, "Error del Servidor.");
         throw new Error(errorMessage);
     }
     return response.json();
@@ -62,12 +62,11 @@ export async function selectDatabase(inventoryId) {
     return handleResponse(response);
 }
 
-export async function createDatabase(dbName, columns, preferences = {}) {
-    const requestBody = { dbName, columns, preferences };
+export async function createDatabase(databaseData) {
     const response = await fetch('/api/database/create.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(databaseData),
     });
     return handleResponse(response);
 }
@@ -187,6 +186,14 @@ export async function getUserProfile() {
     return handleResponse(response);
 }
 
+export async function checkUserAdmin(){
+    const response = await fetch('/api/auth/check-admin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    })
+    return handleResponse(response);
+}
+
 /* ------------------- ESTADÍSTICAS ------------------- */
 export async function updateStatistics(tableID, dates) {
     const response = await fetch('/api/statistics/update.php', {
@@ -214,6 +221,15 @@ export async function getAllClients() {
 
 export async function getOrderedClients() {
     const response = await fetch('/api/customers/get-ordered-customers.php', { method: 'POST' });
+    return handleResponse(response);
+}
+
+export async function updateCustomer(customer){
+    const response = await fetch('/api/customers/update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customer),
+    })
     return handleResponse(response);
 }
 
@@ -255,9 +271,36 @@ export async function createProvider(provider) {
     return handleResponse(response);
 }
 
+export async function updateProvider(provider){
+    const response = await fetch('/api/providers/update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(provider),
+    })
+    return handleResponse(response);
+}
+
+export async function getProdivderById(id){
+    const response = await fetch('/api/providers/get-by-id.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({id}),
+    });
+    return handleResponse(response);
+}
+
 /* ------------------- PRODUCTOS ------------------- */
 export async function getAllProducts() {
     const response = await fetch('/api/products/get-all.php', { method: 'POST' });
+    return handleResponse(response);
+}
+
+export async function getProductData(productID,tableID){
+    const response = await fetch('/api/products/get-product-data.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({productID,tableID}),
+    });
     return handleResponse(response);
 }
 
@@ -266,6 +309,15 @@ export async function getTableProducts(table) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(table),
+    });
+    return handleResponse(response);
+}
+
+export async function getFullReceiptInfo(receiptID){
+    const response = await fetch('/api/receipts/get-info.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(receiptID),
     });
     return handleResponse(response);
 }
@@ -280,11 +332,29 @@ export async function createSale(saleInfo) {
     return handleResponse(response);
 }
 
+export async function updateSaleList(productList){
+    const response = await fetch('/api/sales/update-product-list.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productList),
+    });
+    return handleResponse(response);
+}
+
 export async function createReceipt(receiptInfo) {
     const response = await fetch('/api/receipts/create.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receiptInfo),
+    });
+    return handleResponse(response);
+}
+
+export async function updateRececiptList(productList){
+    const response = await fetch('/api/receipts/update-product-list.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productList),
     });
     return handleResponse(response);
 }

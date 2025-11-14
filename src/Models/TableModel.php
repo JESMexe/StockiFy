@@ -215,4 +215,74 @@ class TableModel
         $stmt->execute([$userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function updateItemValue(string $tableName, int $itemId, string $columnName, mixed $newValue): bool
+    {
+        // Seguridad: Sanitizar nombres
+        $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
+        // Asumimos que $columnName ya viene sanitizado o lo sanitizamos acá si es necesario
+        $safeColumnName = "`" . str_replace("`", "``", $columnName) . "`";
+
+        $sql = "UPDATE {$safeTableName} SET {$safeColumnName} = :newValue WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            ':newValue' => $newValue,
+            ':id' => $itemId
+        ]);
+    }
+
+    /**
+     * Ajusta (suma o resta) el valor numérico de una columna (ej: Stock).
+     *
+     * @param string $tableName Nombre real de la tabla.
+     * @param int $itemId ID de la fila.
+     * @param string $stockColumnName Nombre de la columna de stock.
+     * @param int $amountToAddOrSubtract Cantidad a sumar (positivo) o restar (negativo).
+     * @return int|false El nuevo valor del stock o false si falló.
+     */
+    public function adjustStock(string $tableName, int $itemId, string $stockColumnName, int $amountToAddOrSubtract): int|false
+    {
+        // Seguridad
+        $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
+        $safeStockColumn = "`" . str_replace("`", "``", $stockColumnName) . "`";
+
+        $this->db->beginTransaction();
+
+        try {
+            $sqlSelect = "SELECT {$safeStockColumn} FROM {$safeTableName} WHERE id = :id FOR UPDATE";
+            $stmtSelect = $this->db->prepare($sqlSelect);
+            $stmtSelect->execute([':id' => $itemId]);
+            $currentStock = $stmtSelect->fetchColumn();
+
+            if ($currentStock === false) {
+                throw new Exception("Item no encontrado.");
+            }
+
+            $newStock = (int)$currentStock + $amountToAddOrSubtract;
+
+            if ($newStock < 0) {
+                throw new Exception("Stock insuficiente. Stock actual: {$currentStock}, se intentó quitar: " . abs($amountToAddOrSubtract));
+            }
+
+            $sqlUpdate = "UPDATE {$safeTableName} SET {$safeStockColumn} = :newStock WHERE id = :id";
+            $stmtUpdate = $this->db->prepare($sqlUpdate);
+            $success = $stmtUpdate->execute([
+                ':newStock' => $newStock,
+                ':id' => $itemId
+            ]);
+
+            if ($success) {
+                $this->db->commit();
+                return $newStock;
+            } else {
+                throw new Exception("Error al actualizar el stock en la base de datos.");
+            }
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error en adjustStock: " . $e->getMessage());
+            return false;
+        }
+    }
 }

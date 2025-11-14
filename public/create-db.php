@@ -38,7 +38,7 @@
                     <i class="ph ph-caret-down rc-arrow"></i>
                 </header>
 
-                <div class="rc-content">
+                <div id="recomended-columns-form" class="rc-content">
                     <p class="rc-description">
                         Según las columnas que habilites y completes, la app podrá generar balances y estadísticas más precisas.
                     </p>
@@ -158,19 +158,5 @@
 <script type="module" src="assets/js/database/create-db.js"></script>
 <script type="module" src="assets/js/import.js"></script>
 <script type="module" src="assets/js/api.js"></script>
-<script>
-    (function () {
-        const headerBtn = document.getElementById('open-columnas-recomendadas-btn');
-        const content = document.getElementById('recomended-columns-form');
-        if (!headerBtn || !content) return;
-
-        headerBtn.addEventListener('click', () => {
-            const open = headerBtn.getAttribute('aria-expanded') === 'true';
-            headerBtn.setAttribute('aria-expanded', String(!open));
-            content.classList.toggle('open', !open);
-        });
-    })();
-</script>
-
 </body>
 </html>

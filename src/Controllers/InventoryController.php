@@ -2,6 +2,8 @@
 // src/Controllers/InventoryController.php
 namespace App\Controllers;
 
+require_once __DIR__ . '/../helpers/auth_helper.php';
+
 use App\Models\InventoryModel;
 use App\Models\TableModel;
 use Exception;
@@ -26,7 +28,11 @@ class InventoryController
 
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if (empty($data['dbName']) || empty($data['columns'])) {
+        $dbName = $data['dbName'] ?? null;
+        $columns = $data['columns'] ?? null;
+        $tablePreferences = $data['preferences'] ?? [];
+
+        if (empty($dbName) || empty($columns)) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'El nombre y las columnas son obligatorios.']);
             return;
@@ -34,13 +40,19 @@ class InventoryController
 
         try {
             $inventoryModel = new InventoryModel();
-            $columnsArray = explode(',', $data['columns']);
+            $columnsArray = explode(',', $columns);
 
             $creationResult = $inventoryModel->createInventoryAndTable(
-                $data['dbName'], $user['id'], $data['dbName'], $columnsArray
+                $dbName,
+                $user['id'],
+                $dbName,
+                $columnsArray,
+                $tablePreferences
             );
-            $_SESSION['active_inventory_id'] = $creationResult['id'];
+            $newInventoryId = $creationResult['id'];
             $tableName = $creationResult['tableName'];
+
+            $_SESSION['active_inventory_id'] = $newInventoryId;
 
             error_log("Verificando datos de importación pendientes..."); // DEBUG 1
             if (isset($_SESSION['pending_import_data'])) {

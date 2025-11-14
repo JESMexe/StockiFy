@@ -99,7 +99,7 @@ $nombre   = $_SESSION['username'] ?? 'Usuario';
         <article class="view-card">
             <h3><i class="ph ph-chart-line"></i> Estadísticas diarias</h3>
             <p>Observá ingresos, gastos y ganancias por hora para tomar mejores decisiones.</p>
-            <a class="btn btn-secondary" href="/dashboard.php#analysis">Ver Estadísticas</a>
+            <a class="btn btn-secondary" href="/dashboard.php#analisys">Ver Estadísticas</a>
         </article>
     </section>
 
