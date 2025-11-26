@@ -192,50 +192,117 @@
                         <i class="ph ph-caret-down"></i>
                     </button>
                     <div class="accordion-content">
-                        <form id="recomended-columns-form">
-                            <div class="form-group flex-column recomended-column-group">
-                                <input type="checkbox" class="hidden-checkbox" id="min-stock-input" name="min-stock" value="0">
-                                <label for="min-stock-input" class="btn btn-secondary btn-checkbox-toggle">Stock Mínimo</label>
-                                <input style="width:180px;" class="default-value-input" type="text" id="min-stock-default-input" name="min-stock-default" placeholder="Valor por Defecto (0)">
-                            </div>
+                        <div class="config-list">
 
-                            <div class="form-group flex-column recomended-column-group">
-                                <input type="checkbox" class="hidden-checkbox" id="sale-price-input" name="sale-price" value="0">
-                                <label for="sale-price-input" class="btn btn-secondary btn-checkbox-toggle">Precio de Venta</label>
-                                <input style="width:180px;" class="default-value-input" type="text" id="sale-price-default-input" name="sale-price-default" placeholder="Valor por Defecto (0)">
-                            </div>
-
-                            <div class="form-group flex-column recomended-column-group">
-                                <div class="flex-column all-center" style="gap:10px">
-                                    <input type="checkbox" class="hidden-checkbox" id="receipt-price-input" name="receipt-price" value="0">
-                                    <label for="receipt-price-input" class="btn btn-secondary btn-checkbox-toggle">Precio de Compra</label>
+                            <div class="rustic-block">
+                                <div class="block-header">
+                                    <label class="modal-option">
+                                        <input type="checkbox" id="min-stock-input" name="min-stock">
+                                        <span class="option-label">Stock Mínimo</span>
+                                    </label>
                                 </div>
-                                <input style="width:180px;" class="default-value-input" type="text" id="receipt-price-default-input" name="receipt-price-default" placeholder="Valor por Defecto (0)">
-                                <div class="flex-column" style="position:relative; z-index:10;">
-                                    <input type="checkbox" class="hidden-checkbox" id="auto-price-input" name="auto-price" value="0">
-                                    <label for="auto-price-input" id="auto-price-checkbox" class="btn btn-secondary btn-checkbox-toggle">Calcular Automaticamente</label>
-                                    <div class="form-group flex-column" id="auto-price-type-container" style="align-items:start;">
-                                        <div class="flex-row"><input type="radio" id="auto-iva-input"  name="price-type" value="iva"><p>Precio de Venta + IVA 21%</p></div>
-                                        <div class="flex-row"><input type="radio" id="auto-gain-input" name="price-type" value="gain"><p>Precio de Venta + Margen de Ganancia</p></div>
-                                        <div class="flex-row"><input type="radio" id="auto-iva-gain-input" name="price-type" value="gain-iva"><p>Precio de Venta + Margen de Ganancia + IVA 21%</p></div>
+                                <div class="reveal-wrapper" id="wrapper-min-stock">
+                                    <div class="reveal-inner">
+                                        <input type="number" id="min-stock-default-input" class="rustic-input" placeholder="Valor por defecto (Ej: 10)">
+                                        <p class="helper-text">Te avisará cuando quede poca cantidad.</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="form-group flex-column recomended-column-group">
-                                <input type="checkbox" class="hidden-checkbox" id="gain-input" name="gain" value="0">
-                                <label for="gain-input" class="btn btn-secondary btn-checkbox-toggle">Margen de Ganancia</label>
-                                <div class="flex-row">
-                                    <input style="width:180px;" class="default-value-input" type="text" id="gain-default-input" name="gain-default" placeholder="Valor por Defecto (0)">
-                                    <div class="form-group flex-column" id="gain-type-container" style="align-items:start;">
-                                        <div class="flex-row"><input type="radio" id="percentage-gain-input" name="gain-type"><p>Porcentaje</p></div>
-                                        <div class="flex-row"><input type="radio" id="hard-gain-input" name="gain-type"><p>Valor Fijo</p></div>
+                            <div class="rustic-block">
+                                <div class="block-header">
+                                    <label class="modal-option">
+                                        <input type="checkbox" id="sale-price-input" name="sale-price">
+                                        <span class="option-label">Precio de Venta</span>
+                                    </label>
+                                </div>
+                                <div class="reveal-wrapper" id="wrapper-sale-price">
+                                    <div class="reveal-inner">
+                                        <input type="number" id="sale-price-default-input" class="rustic-input" step="0.01" placeholder="0.00">
                                     </div>
                                 </div>
                             </div>
 
-                            <button class="btn btn-primary" id="save-changes-btn" disabled>Guardar Cambios</button>
-                        </form>
+                            <div class="rustic-block">
+                                <div class="block-header">
+                                    <label class="modal-option">
+                                        <input type="checkbox" id="receipt-price-input" name="receipt-price">
+                                        <span class="option-label">Precio de Compra</span>
+                                    </label>
+                                </div>
+                                <div class="reveal-wrapper" id="wrapper-receipt-price">
+                                    <div class="reveal-inner">
+                                        <input type="number" id="receipt-price-default-input" class="rustic-input" step="0.01" placeholder="0.00">
+
+                                        <div class="nested-section" id="auto-price-wrapper">
+                                            <label class="modal-option sub-option">
+                                                <input type="checkbox" id="auto-price-input" name="auto-price">
+                                                <span>Cálculo Automático</span>
+                                            </label>
+
+                                            <div class="reveal-wrapper" id="wrapper-auto-price">
+                                                <div class="reveal-inner">
+                                                    <div id="auto-price-type-container" class="radio-stack">
+                                                        <label class="modal-option">
+                                                            <input type="radio" id="auto-iva-input" name="price-type" value="iva">
+                                                            <span>Precio Venta + IVA (21%)</span>
+                                                        </label>
+                                                        <label class="modal-option">
+                                                            <input type="radio" id="auto-gain-input" name="price-type" value="gain">
+                                                            <span>Precio Venta + Ganancia</span>
+                                                        </label>
+                                                        <label class="modal-option">
+                                                            <input type="radio" id="auto-iva-gain-input" name="price-type" value="gain-iva">
+                                                            <span>Venta + Ganancia + IVA</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rustic-block">
+                                <div class="block-header">
+                                    <label class="modal-option">
+                                        <input type="checkbox" id="gain-input" name="gain">
+                                        <span class="option-label">Margen de Ganancia</span>
+                                    </label>
+                                </div>
+                                <div class="reveal-wrapper" id="wrapper-gain">
+                                    <div class="reveal-inner">
+
+                                        <div class="rustic-input-group">
+                                            <span class="input-addon" id="gain-symbol">%</span>
+                                            <input type="number" id="gain-default-input" class="rustic-input grouped" step="0.01" placeholder="Valor">
+                                        </div>
+
+                                        <div class="reveal-wrapper" id="wrapper-gain-type">
+                                            <div class="reveal-inner">
+                                                <div id="gain-type-container" class="radio-inline" style="margin-top: 10px;">
+                                                    <label class="modal-option">
+                                                        <input type="radio" id="percentage-gain-input" name="gain-type">
+                                                        <span>Porcentaje (%)</span>
+                                                    </label>
+                                                    <label class="modal-option">
+                                                        <input type="radio" id="hard-gain-input" name="gain-type">
+                                                        <span>Valor Fijo ($)</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="form-footer" style="margin-top: 2rem; text-align: right;">
+                            <button class="btn btn-primary" id="save-changes-btn" disabled>
+                                Guardar Cambios
+                            </button>
+                        </div>
                     </div>
                 </div>
 

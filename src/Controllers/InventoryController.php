@@ -13,16 +13,13 @@ class InventoryController
 
     public function create(): void
     {
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
-        error_reporting(E_ALL);
 
         header('Content-Type: application/json');
         $user = getCurrentUser();
 
         if (!$user) {
             http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'No autorizado.']);
+            //echo json_encode(['success' => false, 'message' => 'No autorizado.']);
             return;
         }
 
@@ -34,7 +31,7 @@ class InventoryController
 
         if (empty($dbName) || empty($columns)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'El nombre y las columnas son obligatorios.']);
+            //echo json_encode(['success' => false, 'message' => 'El nombre y las columnas son obligatorios.']);
             return;
         }
 
@@ -54,28 +51,34 @@ class InventoryController
 
             $_SESSION['active_inventory_id'] = $newInventoryId;
 
+            $importStatusMsg = "";
+
             error_log("Verificando datos de importación pendientes..."); // DEBUG 1
-            if (isset($_SESSION['pending_import_data'])) {
-                error_log("Verificando datos de importación pendientes..."); // DEBUG 1
+            if (isset($_SESSION['pending_import_data']) && !empty($_SESSION['pending_import_data'])) {
                 try {
+                    error_log("Iniciando importación post-creación para tabla: " . $tableName);
+
                     $tableModel = new TableModel();
                     $preparedData = $_SESSION['pending_import_data'];
-                    $overwrite = $_SESSION['pending_import_overwrite'] ?? false;
-                    error_log("Llamando a bulkInsertData para tabla: " . $tableName); // DEBUG 3
 
-                    $insertedRows = $tableModel->bulkInsertData($tableName, $preparedData, $overwrite);
-                    error_log("bulkInsertData completado. Filas insertadas: " . $insertedRows); // DEBUG 4
+                    // IMPORTANTE: Validar que preparedData no esté vacío
+                    if (count($preparedData) > 0) {
+                        $overwrite = $_SESSION['pending_import_overwrite'] ?? false;
 
-                    $importMessage = " e importadas {$insertedRows} filas.";
+                        // Intentar insertar
+                        $insertedRows = $tableModel->bulkInsertData($tableName, $preparedData, $overwrite);
+
+                        $importStatusMsg = " Se importaron {$insertedRows} registros correctamente.";
+                    }
 
                 } catch (Exception $importError) {
-                    error_log("ERROR durante la importación post-creación para tabla {$tableName}: " . $importError->getMessage()); // DEBUG Error
-                    error_log("Error durante la importación post-creación para tabla {$tableName}: " . $importError->getMessage());
-                    $importMessage = " (pero falló la importación de datos preparados).";
+                    // Si falla la importación, SOLO registramos el error, pero NO detenemos el script
+                    error_log("Error NO FATAL en importación: " . $importError->getMessage());
+                    $importStatusMsg = " La tabla se creó, pero hubo un error importando los datos: " . $importError->getMessage();
                 } finally {
+                    // Limpiar sesión SIEMPRE para no liberar memoria y evitar bucles
                     unset($_SESSION['pending_import_data']);
                     unset($_SESSION['pending_import_overwrite']);
-                    error_log("Datos pendientes de sesión eliminados."); // DEBUG 5
                 }
             }
             else
@@ -83,14 +86,14 @@ class InventoryController
                 error_log("No se encontraron datos de importación pendientes en la sesión."); // DEBUG No Data
             }
 
-            // Si todo va bien, devolvemos éxito
             echo json_encode([
                 'success' => true,
-                'message' => "¡Tabla '{$data['dbName']}' creada con éxito!"
+                'message' => "¡Base de datos '{$dbName}' creada!" . $importStatusMsg
             ]);
 
+
         } catch (Exception $e) {
-            if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1050)) {
+            if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && ($e->errorInfo[1] == 1050 || $e->errorInfo[1] == 1062))) {
                 http_response_code(409); // Conflict
                 echo json_encode(['success' => false, 'message' => 'Ya existe una base de datos con ese nombre.']);
             }
@@ -102,6 +105,13 @@ class InventoryController
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Ocurrió un error inesperado al crear la tabla.']);
                 error_log("Error en InventoryController::create: " . $e->getMessage());
+            }
+            if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1050)) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Ya existe una base de datos con ese nombre.']);
+            } else {
+                http_response_code(500); // Internal Server Error
+                echo json_encode(['success' => false, 'message' => 'Error crítico: ' . $e->getMessage()]);
             }
         }
     }

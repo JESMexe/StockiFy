@@ -85,102 +85,292 @@ async function handleStockUpdate(event) {
 }
 
 
-// --- renderTable (Fusión y Corrección de Regresión) ---
-// Ahora recibe las preferencias como argumento para evitar llamadas de API.
-async function renderTable(columns, data, inventoryPreferences) {
+/**
+ * Renderiza la tabla principal con corrección de datos y estética unificada.
+ */
+// ... (Tus importaciones y variables globales se mantienen igual) ...
+
+/**
+ * Renderiza la tabla con soporte para MODO EDICIÓN y PREFERENCIAS FLEXIBLES.
+ */
+async function renderTable(columns, data) {
     const tableHead = document.querySelector('#data-table thead');
     const tableBody = document.querySelector('#data-table tbody');
+
     if (!tableHead || !tableBody) {
-        console.error("Error crítico: No se encontraron los elementos thead o tbody.");
+        console.error("Error crítico: No se encontraron los elementos de la tabla.");
         return;
     }
 
-    // Event Listeners (Unificados)
-    tableBody.removeEventListener('click', handleStockUpdate);
-    tableBody.removeEventListener('change', handleStockUpdate);
-    tableBody.addEventListener('click', handleStockUpdate);
-    tableBody.addEventListener('change', handleStockUpdate);
-    tableBody.removeEventListener('click', handleTableClick);
-    tableBody.addEventListener('click', handleTableClick);
-
-    // Lógica de tabla vacía (Tuya)
-    if (!data || data.length === 0) {
-        tableHead.innerHTML = `<tr>${columns.map(col => `<th>${col.charAt(0).toUpperCase() + col.slice(1)}</th>`).join('')}<th>Acciones</th></tr>`;
-        tableBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="empty-table-message">Aún no hay datos ingresados. <button id="import-data-empty-btn" class="btn btn-primary btn-inline">¿Deseas importarlos?</button></td></tr>`;
-        const importBtn = document.getElementById('import-data-empty-btn');
-        if (importBtn) {
-            importBtn.addEventListener('click', () => {
-                setStockifyColumns(currentTableColumns);
-                openImportModal();
-            });
+    // 1. Obtener Preferencias (Con manejo de errores)
+    let inventoryPreferences = { min_stock: 1, sale_price: 1, receipt_price: 1, hard_gain: 1, percentage_gain: 1 };
+    try {
+        const response = await api.getCurrentInventoryPreferences();
+        if (response && response.success) {
+            inventoryPreferences = response;
         }
-        return;
-    } else {
-        // Estado con datos
-        tableBody.innerHTML = data.map(row => {
-            const rowId = row['id'] ?? row['Id'] ?? row['ID']; // Busco ID
-            if (rowId === undefined) console.warn("Fila sin ID encontrada:", row);
+    } catch (error) {
+        console.warn("Usando preferencias por defecto.");
+    }
 
-            // Si esta fila es la que estoy editando, muestro inputs
-            if (rowId == editingRowId) { // Uso '==' por si uno es string y otro int
-                return `
-          <tr class="editing-row" data-item-id="${rowId}">
-            ${columns.map(col => `<td>${createInputForCell(col, row[col])}</td>`).join('')}
-            <td class="action-buttons">
-              <button class="btn btn-primary save-row-btn"><i class="ph ph-check"></i></button>
-              <button class="btn btn-secondary cancel-row-btn"><i class="ph ph-x"></i></button>
-            </td>
-          </tr>`;
+    // 2. Definir Columnas
+    if ((!columns || columns.length === 0) && data && data.length > 0) {
+        columns = Object.keys(data[0]);
+        currentTableColumns = columns;
+    }
+
+    // 3. HEADERS
+    const headerHTML = columns.map(col => {
+        const c = col.toLowerCase();
+        if (c === 'created_at' || c === 'user_id' || c === 'inventory_id') return '';
+        if (c === 'min_stock' && inventoryPreferences.min_stock == 0) return '';
+        if (c === 'sale_price' && inventoryPreferences.sale_price == 0) return '';
+        if (c === 'receipt_price' && inventoryPreferences.receipt_price == 0) return '';
+        if (c === 'hard_gain' && inventoryPreferences.hard_gain == 0) return '';
+        if (c === 'percentage_gain' && inventoryPreferences.percentage_gain == 0) return '';
+
+        // Títulos bonitos
+        let label = col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, ' ');
+        if (c === 'min_stock') label = 'Stock Mín.';
+        if (c === 'sale_price') label = 'Precio Venta';
+        if (c === 'receipt_price') label = 'Precio Compra';
+        if (c === 'percentage_gain') label = 'Ganancia (%)';
+        if (c === 'hard_gain') label = 'Ganancia ($)';
+        if (c === 'id') label = 'ID';
+
+        return `<th>${label}</th>`;
+    }).join('') + '<th class="actions-header">Acciones</th>';
+
+    tableHead.innerHTML = `<tr>${headerHTML}</tr>`;
+
+    // 4. BODY
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="100%" class="empty-state">Aún no hay datos ingresados.</td></tr>`;
+    } else {
+        tableBody.innerHTML = data.map(row => {
+            const rowId = row['id'] ?? row['Id'] ?? row['ID'];
+            const createdAt = row['created_at'] || '';
+            const isEditing = (editingRowId == rowId); // ¿Esta fila se está editando?
+
+            // Renderizado de Celdas
+            const cellsHTML = columns.map(col => {
+                const c = col.toLowerCase();
+                // Mismos filtros que el header
+                if (c === 'created_at' || c === 'user_id' || c === 'inventory_id') return '';
+                if (c === 'min_stock' && inventoryPreferences.min_stock == 0) return '';
+                if (c === 'sale_price' && inventoryPreferences.sale_price == 0) return '';
+                if (c === 'receipt_price' && inventoryPreferences.receipt_price == 0) return '';
+                if (c === 'hard_gain' && inventoryPreferences.hard_gain == 0) return '';
+                if (c === 'percentage_gain' && inventoryPreferences.percentage_gain == 0) return '';
+
+                let value = row[col] ?? '-';
+
+                // --- MODO EDICIÓN ---
+                if (isEditing) {
+                    // Si es columna 'name', 'stock', precios, etc., mostramos INPUT
+                    // (Evitamos editar columnas calculadas si es complejo, pero por ahora todo editable)
+                    if (c === 'stock' || c.includes('price') || c.includes('gain') || c.includes('stock')) {
+                        return `<td><input type="number" class="editing-input" data-col="${col}" value="${value}" step="0.01"></td>`;
+                    }
+                    return `<td><input type="text" class="editing-input" data-col="${col}" value="${value}"></td>`;
+                }
+
+                // --- MODO VISUALIZACIÓN ---
+
+                // Stock Crítico
+                if (c === 'stock') {
+                    let minStock = row['min_stock'] ?? 0;
+                    let classCritical = (inventoryPreferences.min_stock == 1 && Number(value) <= Number(minStock)) ? 'status-critical' : '';
+                    return `<td class="${classCritical}">${value}</td>`;
+                }
+
+                // Moneda
+                if ((c.includes('price') || c.includes('hard_gain')) && !isNaN(value) && value !== '-') {
+                    value = `$${parseFloat(value).toFixed(2)}`;
+                }
+                // Porcentaje
+                if (c.includes('percentage') && !isNaN(value) && value !== '-') {
+                    value = `${value}%`;
+                }
+
+                return `<td>${value}</td>`;
+            }).join('');
+
+            // Celda de Acciones (Cambia según modo)
+            let actionsHTML = '';
+            if (isEditing) {
+                actionsHTML = `
+                    <td class="actions-cell">
+                        <button class="action-btn save-btn" data-action="save" title="Guardar Cambios" style="color: var(--accent-green);">
+                            <i class="ph ph-check"></i>
+                        </button>
+                        <button class="action-btn cancel-btn" data-action="cancel" title="Cancelar" style="color: var(--accent-red);">
+                            <i class="ph ph-x"></i>
+                        </button>
+                    </td>
+                `;
             } else {
-                // Fila normal (modo vista)
-                return `
-          <tr data-item-id="${rowId}">
-            ${columns.map(col => {
-                    let value = row[col];
-                    if (value === undefined && col.toLowerCase() === 'id') { value = row['id']; }
-                    return `<td>${value ?? ''}</td>`;
-                }).join('')}
-            <td class="action-cell">
-              <button class="btn btn-secondary edit-row-btn"><i class="ph ph-pencil"></i> Editar</button>
-            </td>
-          </tr>`;
+                actionsHTML = `
+                    <td class="actions-cell">
+                        <button class="action-btn edit-btn" data-action="edit" title="Editar">
+                            <i class="ph ph-pencil-simple"></i>
+                        </button>
+                        <button class="action-btn history-btn" data-action="history" title="Historial">
+                            <i class="ph ph-clock"></i>
+                        </button>
+                        <button class="action-btn delete-btn" data-action="delete" title="Eliminar">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </td>
+                `;
             }
+
+            return `<tr data-id="${rowId}" data-created-at="${createdAt}">${cellsHTML}${actionsHTML}</tr>`;
         }).join('');
     }
 
-    // Renderizado de Cabeceras (Fusión)
-    let headerHtml = columns.map(col => {
-        switch (col.toLowerCase()) {
-            case 'id':
-                return `<th>ID</th>`;
-            case 'created_at':
-                return '';
-            case 'name':
-                return `<th>Nombre</th>`;
-            case 'min_stock':
-                if (inventoryPreferences.min_stock === 1) { return `<th>Stock Mínimo</th>`; }
-                return '';
-            case 'sale_price':
-                if (inventoryPreferences.sale_price === 1) { return `<th>Precio de Venta</th>`; }
-                return '';
-            case 'receipt_price':
-                if (inventoryPreferences.receipt_price === 1) { return `<th>Precio de Compra</th>`; }
-                return '';
-            case 'hard_gain':
-            case 'percentage_gain':
-                if (inventoryPreferences.hard_gain === 1 || inventoryPreferences.percentage_gain === 1) {
-                    return `<th>Margen de Ganancia</th>`;
-                }
-                return '';
-            default:
-                return `<th>${col.charAt(0).toUpperCase() + col.slice(1)}</th>`;
-        }
-    }).join('');
-
-    tableHead.innerHTML = `<tr>${headerHtml}<th>Acciones</th></tr>`;
+    // 5. EVENTOS (Delegación actualizada)
+    setupTableActions(tableBody, data);
 }
 
+function setupTableActions(tableBody, data) {
+    const newBody = tableBody.cloneNode(true);
+    tableBody.parentNode.replaceChild(newBody, tableBody);
 
+    newBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.action-btn');
+        if (!btn) return;
+
+        const tr = btn.closest('tr');
+        const id = tr.dataset.id;
+        const action = btn.dataset.action;
+
+        if (action === 'edit') {
+            // Activar modo edición para esta fila
+            editingRowId = id;
+            // Re-renderizar tabla para mostrar inputs en esta fila
+            // Filtramos columnas para mantener la vista actual
+            const filterCols = currentTableColumns.filter(c => c.toLowerCase() !== 'created_at');
+            renderTable(filterCols, allData);
+        }
+        else if (action === 'save') {
+            handleSaveRow(tr, id);
+        }
+        else if (action === 'cancel') {
+            editingRowId = null; // Salir modo edición
+            const filterCols = currentTableColumns.filter(c => c.toLowerCase() !== 'created_at');
+            renderTable(filterCols, allData);
+        }
+        else if (action === 'history') {
+            handleHistoryClick(tr, id);
+        }
+        else if (action === 'delete') {
+            confirmDeleteRow(id);
+        }
+    });
+}
+
+// --- MANEJADORES DE ACCIONES ---
+
+// 1. Historial con ID y Resaltado
+function handleHistoryClick(tr, id) {
+    // 1. Efecto Visual: Resaltar fila
+    document.querySelectorAll('tr.highlight-row').forEach(r => r.classList.remove('highlight-row'));
+    tr.classList.add('highlight-row');
+    setTimeout(() => tr.classList.remove('highlight-row'), 4000); // Quitar a los 4s
+
+    // 2. Datos
+    const dateStr = tr.dataset.createdAt;
+    const productName = tr.querySelector('td:nth-child(2)')?.textContent || 'Producto'; // Intentamos pillar el nombre
+
+    if (dateStr && dateStr !== '0000-00-00 00:00:00') {
+        const d = new Date(dateStr);
+        const format = !isNaN(d) ? d.toLocaleString() : 'Fecha desconocida';
+
+        // 3. Pop-up con ID y Nombre
+        if (typeof pop_ups !== 'undefined') {
+            pop_ups.info(
+                `<b>Producto ID:</b> #${id}<br><b>Creado el:</b> ${format}`,
+                "Historial de Registro"
+            );
+        } else {
+            alert(`ID: ${id}\nCreado: ${format}`);
+        }
+    } else {
+        if (typeof pop_ups !== 'undefined') pop_ups.warning("Este registro no tiene fecha de creación guardada.", "Sin Datos");
+    }
+}
+
+// 2. Guardar Edición (API)
+async function handleSaveRow(tr, id) {
+    const inputs = tr.querySelectorAll('input.editing-input');
+    let updatedData = {};
+
+    // Recolectar datos de los inputs
+    inputs.forEach(input => {
+        updatedData[input.dataset.col] = input.value;
+    });
+
+    // Deshabilitar botón para evitar doble click
+    const saveBtn = tr.querySelector('.save-btn');
+    if(saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i>'; }
+
+    try {
+        // Llamada a la API para actualizar (Asumimos que existe endpoint de update genérico)
+        // Si usas el de Nano sería api.updateTableRow(id, updatedData)
+        const response = await api.updateTableRow(id, updatedData); // Asegúrate que api.js tenga esto
+
+        if (response.success) {
+            pop_ups.success("Registro actualizado correctamente.");
+            editingRowId = null;
+            await loadTableData(); // Recargar datos frescos
+        } else {
+            throw new Error(response.message || "Error al actualizar.");
+        }
+    } catch (error) {
+        pop_ups.error("Falló la actualización: " + error.message);
+        if(saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="ph ph-check"></i>'; }
+    }
+}
+
+// 3. Eliminar Fila (API)
+async function confirmDeleteRow(id) {
+    // Preguntar antes de borrar
+    if (!confirm("¿Estás seguro de eliminar este registro permanentemente?")) return;
+
+    try {
+        // Asumimos endpoint de borrado de fila (si no existe, hay que crearlo en backend)
+        // api.deleteRecord es un nombre sugerido, revisa tu api.js
+        // Si usas el código de Nano, busca su función de delete.
+        // Si no existe, aquí simulo la llamada genérica:
+        const response = await fetch('/api/table/delete-row.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: id })
+        }).then(res => res.json());
+
+        if (response.success) {
+            pop_ups.info("Registro eliminado.");
+            // Eliminar visualmente antes de recargar para que se sienta rápido
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            if (row) row.remove();
+
+            // Actualizar datos reales de fondo
+            const allDataIndex = allData.findIndex(r => r.id == id);
+            if (allDataIndex > -1) allData.splice(allDataIndex, 1);
+        } else {
+            throw new Error(response.message || "No se pudo eliminar.");
+        }
+    } catch (error) {
+        pop_ups.error("Error al eliminar: " + error.message);
+    }
+}
+
+// Función auxiliar para moneda
+function formatCurrency(value) {
+    if (value === undefined || value === null || value === '') return '-';
+    return `$${parseFloat(value).toFixed(2)}`;
+}
 
 
 
@@ -259,23 +449,50 @@ function setupMenuNavigation() {
 
 
 function setupAccordion() {
-    console.log("[INIT] Configurando acordeones...");
+    console.log("[INIT] Configurando acordeones inteligentes...");
     const headers = document.querySelectorAll('.accordion-header');
 
     headers.forEach(header => {
-        if (header.dataset.accordionAttached) return;
-        header.dataset.accordionAttached = 'true';
+        // Evitamos duplicar listeners si la función se llama varias veces
+        if (header.dataset.attached) return;
+        header.dataset.attached = 'true';
 
         header.addEventListener('click', () => {
             const content = header.nextElementSibling;
-            header.classList.toggle('active');
+            const isOpen = header.classList.toggle('active'); // Alternamos estado
 
-            if (header.classList.contains('active')) {
+            if (isOpen) {
+                // --- ABRIR ---
                 header.setAttribute('aria-expanded', 'true');
+                content.classList.add('open');
+
+                // 1. Asignamos la altura exacta actual para iniciar la animación
                 content.style.maxHeight = content.scrollHeight + "px";
+
+                // 2. TRUCO CLAVE: Al terminar la animación (400ms), quitamos el límite.
+                // Esto permite que el contenido crezca dinámicamente (ej: al agregar columnas o desplegar opciones).
+                setTimeout(() => {
+                    if (header.classList.contains('active')) {
+                        content.style.maxHeight = 'none';
+                        content.style.overflow = 'visible'; // Permite que se vean sombras o tooltips
+                    }
+                }, 400);
+
             } else {
+                // --- CERRAR ---
                 header.setAttribute('aria-expanded', 'false');
-                content.style.maxHeight = null;
+
+                // 1. Restauramos la altura en píxeles (porque estaba en 'none')
+                // Esto es necesario para que la animación de cierre funcione.
+                content.style.maxHeight = content.scrollHeight + "px";
+                content.style.overflow = 'hidden';
+
+                // 2. Forzamos un "reflow" para que el navegador registre el cambio
+                void content.offsetHeight;
+
+                // 3. Colapsamos a 0
+                content.style.maxHeight = '0';
+                content.classList.remove('open');
             }
         });
     });
@@ -2165,85 +2382,58 @@ function setupQuantityBtns(transactionType, itemList){
     })
 }
 
-function createNewSaleRow (selectedProduct) {
-    const newSaleRow = document.createElement('div');
-
-    newSaleRow.className = 'flex-row';
-    newSaleRow.style.borderWidth = '1px 0';
-    newSaleRow.style.borderStyle = 'solid';
-    newSaleRow.style.borderColor = 'black';
-    newSaleRow.style.padding = '5px 0';
-
-    newSaleRow.innerHTML = `<div class="flex-column">
-        <p style="font-weight: 600">Nombre</p>
-        <p style="font-weight: 400; text-wrap: nowrap; text-overflow: ellipsis; overflow: hidden">${selectedProduct.name}</p>
-    </div>
-    <div class="flex-column">
-        <p style="font-weight: 600">Stock Disponible</p>
-        <p style="font-weight: 400">${selectedProduct.stock}</p>
-    </div>
-    <div class="flex-column">
-        <p style="font-weight: 600">Cantidad</p>
-        <div style="font-weight: 400; gap: 10px" class="flex-row">
-            <div class="modify-quantity-btn ph ph-minus-square" data-pID=${selectedProduct.pID} data-tID=${selectedProduct.tID} data-type="subtract"></div>
-            <p style="width: fit-content">${selectedProduct.amount}</p>
-            <div class="modify-quantity-btn ph ph-plus-square" data-pID=${selectedProduct.pID} data-tID=${selectedProduct.tID} data-type="add"></div>
-        </div>
-    </div>
-    <div class="flex-column">
-        <p style="font-weight: 600">Precio de Venta</p>
-        <p style="font-weight: 400">${selectedProduct.salePrice}</p>
-    </div>
-    <div class="flex-column">
-        <p style="font-weight: 600; width: 50px;">Precio Total</p>
-        <p style="font-weight: 400; width: 50px;">${selectedProduct.totalPrice}</p>
-    </div>
-    <button type="button" class="btn delete-product-btn" data-type="sale" data-pID=${selectedProduct.pID} data-tID=${selectedProduct.tID}>
-        X
-    </button>`
-
-    return newSaleRow;
+function createNewSaleRow(selectedProduct) {
+    // Devuelve un string HTML para una fila de tabla (TR)
+    return `
+        <tr data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}">
+            <td class="col-product" title="${selectedProduct.name} ${selectedProduct.tableName ? `(${selectedProduct.tableName})` : ''}">
+                ${selectedProduct.name}
+                ${selectedProduct.tableName ? `<span style="font-size: 0.8rem; color: var(--color-gray); display: block;">(${selectedProduct.tableName})</span>` : ''}
+            </td>
+            <td class="col-stock">${selectedProduct.stock}</td>
+            <td class="col-quantity">
+                <div class="quantity-cell">
+                    <i class="modify-quantity-btn ph ph-minus-square" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}" data-type="subtract"></i>
+                    <span class="quantity-display">${selectedProduct.amount}</span>
+                    <i class="modify-quantity-btn ph ph-plus-square" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}" data-type="add"></i>
+                </div>
+            </td>
+            <td class="col-price">$${(selectedProduct.salePrice || 0).toFixed(2)}</td>
+            <td class="col-total">$${(selectedProduct.totalPrice || 0).toFixed(2)}</td>
+            <td class="col-actions">
+                <button type="button" class="btn delete-product-btn" data-type="sale" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}">
+                    <i class="ph ph-x"></i>
+                </button>
+            </td>
+        </tr>
+    `;
 }
 
-function createNewReceiptRow (selectedProduct) {
-    const newReceiptRow = document.createElement('div');
-
-    newReceiptRow.className = 'flex-row';
-    newReceiptRow.style.borderWidth = '1px 0';
-    newReceiptRow.style.borderStyle = 'solid';
-    newReceiptRow.style.borderColor = 'black';
-    newReceiptRow.style.padding = '5px 0';
-
-    newReceiptRow.innerHTML = `<div class="flex-column">
-        <p style="font-weight: 600">Nombre</p>
-        <p style="font-weight: 400; text-wrap: nowrap; text-overflow: ellipsis; overflow: hidden">${selectedProduct.name}</p>
-    </div>
-    <div class="flex-column">
-        <p style="font-weight: 600">Stock Disponible</p>
-        <p style="font-weight: 400">${selectedProduct.stock}</p>
-    </div>
-    <div class="flex-column">
-        <p style="font-weight: 600">Cantidad</p>
-        <div style="font-weight: 400; gap: 10px" class="flex-row">
-            <div class="modify-quantity-btn ph ph-minus-square" data-pID=${selectedProduct.pID} data-tID=${selectedProduct.tID} data-type="subtract"></div>
-            <p style="width: fit-content">${selectedProduct.amount}</p>
-            <div class="modify-quantity-btn ph ph-plus-square" data-pID=${selectedProduct.pID} data-tID=${selectedProduct.tID} data-type="add"></div>
-        </div>
-    </div>
-    <div class="flex-column">
-        <p style="font-weight: 600">Precio de Compra</p>
-        <p style="font-weight: 400">${selectedProduct.receiptPrice}</p>
-    </div>
-    <div class="flex-column">
-        <p style="font-weight: 600; width: 50px;">Precio Total</p>
-        <p style="font-weight: 400; width: 50px;">${selectedProduct.totalPrice}</p>
-    </div>
-    <button type="button" class="btn delete-product-btn" data-type="receipt" data-pID=${selectedProduct.pID} data-tID=${selectedProduct.tID}>
-        X
-    </button>`
-
-
-    return newReceiptRow;
+function createNewReceiptRow(selectedProduct) {
+    // Devuelve un string HTML para una fila de tabla (TR)
+    return `
+        <tr data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}">
+            <td class="col-product" title="${selectedProduct.name} ${selectedProduct.tableName ? `(${selectedProduct.tableName})` : ''}">
+                ${selectedProduct.name}
+                ${selectedProduct.tableName ? `<span style="font-size: 0.8rem; color: var(--color-gray); display: block;">(${selectedProduct.tableName})</span>` : ''}
+            </td>
+            <td class="col-stock">${selectedProduct.stock}</td>
+            <td class="col-quantity">
+                <div class="quantity-cell">
+                    <i class="modify-quantity-btn ph ph-minus-square" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}" data-type="subtract"></i>
+                    <span class="quantity-display">${selectedProduct.amount}</span>
+                    <i class="modify-quantity-btn ph ph-plus-square" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}" data-type="add"></i>
+                </div>
+            </td>
+            <td class="col-price">$${(selectedProduct.receiptPrice || 0).toFixed(2)}</td>
+            <td class="col-total">$${(selectedProduct.totalPrice || 0).toFixed(2)}</td>
+            <td class="col-actions">
+                <button type="button" class="btn delete-product-btn" data-type="receipt" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}">
+                    <i class="ph ph-x"></i>
+                </button>
+            </td>
+        </tr>
+    `;
 }
 
 
@@ -2257,26 +2447,51 @@ function renderProductList(itemList,transactionType){
     productListContainer.innerHTML = '';
 
     if (itemList.length === 0) {
-        productListContainer.innerHTML = `<h3>No hay productos en la lista</h3>`;
+        productListContainer.innerHTML = `<div class="empty-product-list">
+            <i class="ph ph-basket"></i>
+            <p>Aún no hay productos en la lista.</p>
+        </div>`;
         totalPriceInput.value = priceAcum;
         totalPriceText.textContent = priceAcum;
         return;
     }
 
+    let tableRows = '';
     itemList.forEach(item =>{
         priceAcum += item.totalPrice;
         let newProductRow;
         if (transactionType === 'sale') {
-            newProductRow = createNewSaleRow(item);
+            tableRows += createNewSaleRow(item);
         }
         else{
-            newProductRow = createNewReceiptRow(item);
+            tableRows += createNewReceiptRow(item);
         }
-
-        productListContainer.appendChild(newProductRow);
     })
 
-    totalPriceText.textContent = priceAcum;
+    // Determina el encabezado de precio correcto
+    const tableHeader = (transactionType === 'sale')
+        ? '<th class="col-price">Precio Venta</th>'
+        : '<th class="col-price">Precio Compra</th>';
+
+    productListContainer.innerHTML = `
+        <table class="transaction-product-table">
+            <thead>
+                <tr>
+                    <th class="col-product">Producto</th>
+                    <th class="col-stock">Stock</th>
+                    <th class="col-quantity">Cantidad</th>
+                    ${tableHeader}
+                    <th class="col-total">Total</th>
+                    <th class="col-actions"><i class="ph ph-trash"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRows}
+            </tbody>
+        </table>
+    `;
+
+    totalPriceText.textContent = `$${priceAcum.toFixed(2)}`;
     totalPriceInput.value = priceAcum;
 }
 
@@ -2473,6 +2688,7 @@ function populateTablePicker(tables){
     itemPickerHeader.appendChild(inventoryPicker);
 }
 
+
 function populateProductModal(products, tables, transactionType){
     const itemPickerBody = document.getElementById('item-list');
 
@@ -2514,6 +2730,30 @@ function populateProductModal(products, tables, transactionType){
         productListWrapper.appendChild(tableProductsDiv);
     })
     itemPickerBody.appendChild(productListWrapper);
+}
+
+function createProductItem(product,transactionType){
+    const item = document.createElement('div');
+    let price;
+    if (transactionType === 'sale'){price = product.salePrice;}
+    else {price = product.receiptPrice;}
+
+    item.innerHTML = `<div class="flex-column">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-stock">Stock Disponible: <span>${product.stock}</span></div>
+                      </div>
+                      <div class="flex-colum" style="text-align: right; width: 100%;">
+                            <div class="product-inventory-name">${product.tableName}</div>
+                            <div class="product-price">$${price}</div>
+                      </div>`
+    ;
+    item.dataset.tID = product.tID;
+    item.dataset.pID = product.pID;
+    item.className = 'flex-row product-item';
+
+    if (product.stock === 0 && transactionType === 'sale') {item.classList.add('no-stock');}
+
+    return item;
 }
 
 
@@ -3362,63 +3602,83 @@ function getForm(transactionType){
 }
 
 function getSaleForm() {
-    return `<form class="flex-column" method="get" action="/dashboard.php">
-                                <h4 class="transaction-error-message hidden" style="color: var(--accent-red)"></h4>
-                                <hr>
-                                <div class="flex-row" style="gap: 50px; justify-content: space-between; align-items: center">
-                                    <h3>Productos</h3>
-                                    <div class="btn picker-btn" data-modal-target="item-picker-modal" data-type="sale">
-                                        Agregar Producto
-                                    </div>
-                                </div>       
-                                <div class="flex-column" id="product-list-container"></div>
-                                <hr style="margin-top: 50px">
-                                <div class="flex-row" style="justify-content: space-between; align-items: center">
-                                    <div>
-                                    <h3>Cliente</h3>
-                                    <p id="sale-client-name">Ningúno</p>
-                                    </div>
-                                    <div class="btn picker-btn" data-modal-target="client-picker-modal">Cambiar</div>
-                                </div>
-                                <div class="flex-row" style="justify-content: space-between; align-items: center">
-                                <h2 style="margin-top: 50px">Total = $<span id="price-text">0</h2>
-                                </div>
-                                <input name="price" id="price-input" value="0" hidden>
-                                <input name="product-list" id="product-list" hidden>
-                                <input name="client-data" id="client-id-input" hidden>
-                                <input name="price" id="price-input" value="0" hidden>            
-                                <div class="btn btn-primary complete-transaction-btn" data-type="sale">Confirmar Venta</div>
-                                </form>`;
+    // El 'form' ahora tiene un layout de 3 partes: header, body (scroll), summary (footer)
+    return `<form class="flex-column" style="height: 100%;" method="get" action="/dashboard.php">
+                <h4 class="transaction-error-message hidden" style="color: var(--accent-red); padding: 0 2rem; margin-top: 1.5rem;"></h4>
+                
+                <div class="transaction-header flex-row" style="justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3>Cliente</h3>
+                        <p id="sale-client-name">Ninguno</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary picker-btn" data-modal-target="client-picker-modal">Cambiar</button>
+                </div>
+
+                <div class="transaction-body">
+                    <div class="flex-row" style="gap: 20px; justify-content: space-between; align-items: center;">
+                        <h3>Productos</h3>
+                        <button type="button" class="btn btn-primary picker-btn" data-modal-target="item-picker-modal" data-type="sale">
+                            <i class="ph ph-plus"></i> Agregar Producto
+                        </button>
+                    </div>       
+                    
+                    <div id="product-list-container" style="margin-top: 1rem;">
+                        </div>
+                </div>
+                
+                <div class="transaction-summary">
+                    <div class="total-display">
+                        <h2>Total: <span id="price-text">$0.00</span></h2>
+                    </div>
+                    <button type="button" class="btn btn-primary complete-transaction-btn" data-type="sale">
+                        Confirmar Venta
+                    </button>
+                </div>
+
+                <input name="price" id="price-input" value="0" hidden>
+                <input name="product-list" id="product-list" hidden>
+                <input name="client-data" id="client-id-input" hidden>
+            </form>`;
 }
 
+// REEMPLAZAR esta función en dashboard.js
 function getReceiptForm() {
-    return `<form class="flex-column" method="get" action="/dashboard.php">
-                                <h4 class="transaction-error-message hidden" style="color: var(--accent-red)"></h4>
-                                <hr>
-                                <div class="flex-row" style="gap: 50px; justify-content: space-between; align-items: center">
-                                    <h3>Productos</h3>
-                                    <div class="btn picker-btn" data-modal-target="item-picker-modal" data-type="receipt">
-                                        Agregar Producto
-                                    </div>
-                                </div>       
-                                <div class="flex-column" id="product-list-container"></div>
-                                <hr style="margin-top: 50px">
-                                <div class="flex-row" style="justify-content: space-between; align-items: center">
-                                    <div>
-                                    <h3>Proveedor</h3>
-                                    <p id="receipt-provider-name">Ningúno</p>
-                                    </div>
-                                    <div class="btn picker-btn" data-modal-target="provider-picker-modal">Cambiar</div>
-                                </div>
-                                <div class="flex-row" style="justify-content: space-between; align-items: center">
-                                <h2 style="margin-top: 50px">Total = $<span id="price-text">0</h2>
-                                </div>
-                                <input name="price" id="price-input" value="0" hidden>
-                                <input name="product-list" id="product-list" hidden>
-                                <input name="provider-id" id="provider-id-input" hidden>
-                                <input name="price" id="price-input" value="0" hidden>          
-                                <div class="btn btn-primary complete-transaction-btn" data-type="receipt">Confirmar Compra</div>
-                                </form>`;
+    return `<form class="flex-column" style="height: 100%;" method="get" action="/dashboard.php">
+                <h4 class="transaction-error-message hidden" style="color: var(--accent-red); padding: 0 2rem; margin-top: 1.5rem;"></h4>
+                
+                <div class="transaction-header flex-row" style="justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3>Proveedor</h3>
+                        <p id="receipt-provider-name">Ninguno</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary picker-btn" data-modal-target="provider-picker-modal">Cambiar</button>
+                </div>
+
+                <div class="transaction-body">
+                    <div class="flex-row" style="gap: 20px; justify-content: space-between; align-items: center;">
+                        <h3>Productos</h3>
+                        <button type="button" class="btn btn-primary picker-btn" data-modal-target="item-picker-modal" data-type="receipt">
+                            <i class="ph ph-plus"></i> Agregar Producto
+                        </button>
+                    </div>       
+                    
+                    <div id="product-list-container" style="margin-top: 1rem;">
+                        </div>
+                </div>
+                
+                <div class="transaction-summary">
+                    <div class="total-display">
+                        <h2>Total: <span id="price-text">$0.00</span></h2>
+                    </div>
+                    <button type="button" class="btn btn-primary complete-transaction-btn" data-type="receipt">
+                        Confirmar Compra
+                    </button>
+                </div>
+
+                <input name="price" id="price-input" value="0" hidden>
+                <input name="product-list" id="product-list" hidden>
+                <input name="provider-id" id="provider-id-input" hidden>
+            </form>`;
 }
 
 function getCustomerForm() {
@@ -3542,13 +3802,6 @@ async function setupRecomendedColumns(){
         return;
     }
 
-    const openColumnasRecomendadasBtn = document.getElementById('open-columnas-recomendadas-btn');
-
-    openColumnasRecomendadasBtn.addEventListener('click', () => {
-        form.classList.toggle('visible');
-        openColumnasRecomendadasBtn.classList.toggle('is-rotated');
-    })
-
     const gainCheckbox = document.getElementById('gain-input');
     const minStockCheckbox = document.getElementById('min-stock-input');
     const salePriceCheckbox = document.getElementById('sale-price-input');
@@ -3586,21 +3839,34 @@ async function setupRecomendedColumns(){
     const receiptPriceDefaultInput = document.getElementById('receipt-price-default-input');
     receiptPriceDefaultInput.value = (receiptPriceCheckbox.checked) ? defaults.receipt_price : '';
 
+    function toggleWrapper(inputId, isVisible) {
+        const inputEl = document.getElementById(inputId);
+        if (!inputEl) return;
+
+        // Buscamos el wrapper más cercano (el padre o el abuelo)
+        const wrapper = inputEl.closest('.reveal-wrapper');
+
+        if (wrapper) {
+            if (isVisible) {
+                wrapper.classList.add('open');
+                inputEl.disabled = false;
+            } else {
+                wrapper.classList.remove('open');
+                inputEl.disabled = true; // Deshabilitar input al cerrar
+            }
+        }
+    }
+
     function updateMinStockInput() {
         const isChecked = minStockCheckbox.checked;
         const defaultInput = document.getElementById('min-stock-default-input');
 
         defaultInput.disabled = !isChecked;
 
-        if (!isChecked) {
-            defaultInput.value = "";
-            defaultInput.classList.remove('visible');
-        }
-        else{
-            defaultInput.value = defaults.min_stock;
-            defaultInput.classList.add('visible');
-        }
+        if (!isChecked) defaultInput.value = "";
+        else defaultInput.value = defaults.min_stock;
 
+        toggleWrapper('min-stock-default-input', isChecked);
         checkFormState();
     }
 
@@ -3608,102 +3874,104 @@ async function setupRecomendedColumns(){
         const isChecked = salePriceCheckbox.checked;
         const defaultInput = document.getElementById('sale-price-default-input');
 
-        defaultInput.disabled = !isChecked;
-
         if (!isChecked) {
-            defaultInput.classList.remove('visible');
+            // Lógica de cascada: cerrar todo lo de abajo
             autoPriceCheckbox.checked = false;
-            autoIvaRadio.checked = false;
-            autoGainRadio.checked = false;
-            autoIvaGainRadio.checked = false;
-            autoPriceLabel.classList.remove('visible');
-            autoPriceTypeContainer.classList.remove('visible');
-        }
-        else{
+            updateAutoPrice(); // Cerrar automatización también
+            document.getElementById('auto-price-wrapper').classList.add('hidden'); // Ocultar sección entera
+        } else {
             defaultInput.value = defaults.sale_price;
-            defaultInput.classList.add('visible');
+            document.getElementById('auto-price-wrapper').classList.remove('hidden'); // Mostrar sección entera
             updateReceiptPriceInput();
         }
-        checkFormState();
 
+        toggleWrapper('sale-price-default-input', isChecked);
+        checkFormState();
     }
 
     function updateReceiptPriceInput() {
         const isChecked = receiptPriceCheckbox.checked;
         const defaultInput = document.getElementById('receipt-price-default-input');
 
-        defaultInput.disabled = !isChecked;
-
         if (!isChecked) {
             defaultInput.value = "";
-            defaultInput.classList.remove('visible');
-            autoPriceLabel.classList.remove('visible');
-            autoPriceCheckbox.checked = false;
-            autoPriceTypeContainer.classList.remove('visible');
-        }
-        else{
+        } else {
             defaultInput.value = defaults.receipt_price;
-            defaultInput.classList.add('visible');
-            if (salePriceCheckbox.checked){autoPriceLabel.classList.add('visible');}
-            if (preferences.auto_price === 1) {autoPriceCheckbox.checked = true;}
-            updateAutoPrice();
         }
+
+        toggleWrapper('receipt-price-default-input', isChecked);
         checkFormState();
+    }
+
+    function updateGainSymbol() {
+        const symbolSpan = document.getElementById('gain-symbol');
+        if (percentageRadio.checked) {
+            symbolSpan.textContent = '%';
+        } else if (hardRadio.checked) {
+            symbolSpan.textContent = '$';
+        }
+        checkFormState(); // Verificar si hay cambios para habilitar botón guardar
     }
 
     function updateGainInput() {
         const isChecked = gainCheckbox.checked;
         const defaultInput = document.getElementById('gain-default-input');
-        const gainTypeContainer = document.getElementById('gain-type-container');
 
         percentageRadio.disabled = !isChecked;
         hardRadio.disabled = !isChecked;
-        defaultInput.disabled = !isChecked;
 
         if (!isChecked) {
+            // Si desmarcamos el padre, limpiamos y cerramos
             percentageRadio.checked = false;
             hardRadio.checked = false;
             defaultInput.value = "";
-            defaultInput.classList.remove('visible');
-            gainTypeContainer.classList.remove('visible');
+            document.getElementById('wrapper-gain-type').classList.remove('open');
         } else {
-            percentageRadio.checked = (preferences.percentage_gain === 1);
-            hardRadio.checked = (preferences.hard_gain === 1);
-
+            // Si marcamos el padre, restauramos valores SOLO si no hay ninguno seleccionado
+            // (Esto evita el bug de que se resetee al cambiar de radio)
             if (!percentageRadio.checked && !hardRadio.checked) {
-                percentageRadio.checked = true;
+                percentageRadio.checked = (preferences.percentage_gain === 1);
+                hardRadio.checked = (preferences.hard_gain === 1);
+
+                // Default de seguridad si la preferencia vino vacía
+                if (!percentageRadio.checked && !hardRadio.checked) {
+                    percentageRadio.checked = true;
+                }
             }
 
-            gainTypeContainer.classList.add('visible');
-            autoIvaRadio.checked = true;
-            autoGainRadio.checked = false;
-            autoIvaGainRadio.checked = false;
-
             defaultInput.value = defaults.hard_gain;
-            defaultInput.classList.add('visible');
-            gainTypeContainer.classList.add('visible');
+            document.getElementById('wrapper-gain-type').classList.add('open');
         }
+
+        // Actualizamos el símbolo visual y animaciones
+        updateGainSymbol();
+        toggleWrapper('gain-default-input', isChecked);
         updateAutoPrice();
         checkFormState();
     }
 
+    // --- LISTENERS CORREGIDOS ---
+    // El checkbox padre controla toda la sección
+    gainCheckbox.addEventListener('change', updateGainInput);
+
+    // Los radios SOLO actualizan el símbolo visual (ya no resetean todo)
+    percentageRadio.addEventListener('change', updateGainSymbol);
+    hardRadio.addEventListener('change', updateGainSymbol);
+
     function updateAutoPrice(){
         const isChecked = autoPriceCheckbox.checked;
+        const typeWrapper = document.getElementById('wrapper-auto-price');
 
         if (!isChecked){
             autoIvaRadio.checked = false;
             autoGainRadio.checked = false;
             autoIvaGainRadio.checked = false;
-            autoPriceTypeContainer.classList.remove('visible');
+            autoPriceTypeContainer.classList.remove('open');
         }
         else{
             if (preferences.auto_price !== 1 || !gainCheckbox.checked){
                 autoIvaRadio.checked = true;
-                autoGainRadio.checked = false;
-                autoIvaGainRadio.checked = false;
-            }
-            else{
-                console.log(preferences.auto_price_type);
+            } else {
                 autoIvaRadio.checked = (preferences.auto_price_type === 'iva');
                 autoGainRadio.checked = (preferences.auto_price_type === 'gain');
                 autoIvaGainRadio.checked = (preferences.auto_price_type === 'gain-iva');
@@ -3711,14 +3979,16 @@ async function setupRecomendedColumns(){
             if (!gainCheckbox.checked){
                 autoGainRadio.disabled = true;
                 autoIvaGainRadio.disabled = true;
-            }
-            else{
+            } else{
                 autoGainRadio.disabled = false;
                 autoIvaGainRadio.disabled = false;
             }
 
 
-            autoPriceTypeContainer.classList.add('visible');
+            autoGainRadio.disabled = !gainCheckbox.checked;
+            autoIvaGainRadio.disabled = !gainCheckbox.checked;
+
+            if(typeWrapper) typeWrapper.classList.add('open');
         }
         checkFormState();
     }

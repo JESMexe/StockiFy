@@ -173,12 +173,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         columnList = [...new Set(columnList)];
 
         // === LÓGICA DE FUSIÓN DE COLUMNAS ===
-        // 1. Columnas obligatorias (de Nano)
         if (!columnList.includes('stock')) columnList.unshift('stock');
-        const hasNameCol = columnList.includes('name') || columnList.includes('nombre');
+        /* const hasNameCol = columnList.includes('name') || columnList.includes('nombre');
         if (!hasNameCol) {
             columnList.unshift('name');
         }
+        */
 
         // 2. Columnas recomendadas (basadas en los botones 'active')
         if (preferences.min_stock.active && !columnList.includes('min_stock')) columnList.push('min_stock');
@@ -240,7 +240,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(prefs.hard_gain.active) currentCols.push('hard_gain');
         if(prefs.percentage_gain.active) currentCols.push('percentage_gain');
 
-        setStockifyColumns(['name', 'stock', ...currentCols]);
+        const finalColsForImport = [...currentCols];
+        const uniqueCols = [...new Set(finalColsForImport)];
+
+        setStockifyColumns(uniqueCols);
         openImportModal();
     });
 

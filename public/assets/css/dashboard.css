@@ -571,6 +571,19 @@
     transition: max-height 0.3s ease-out; /* La animación fluida */
 }
 
+.accordion-content.open {
+    opacity: 1;
+    /* La altura se maneja por JS para ser exacta */
+}
+
+.accordion-header .ph-caret-down {
+    transition: transform 0.4s ease;
+}
+
+.accordion-header.active .ph-caret-down {
+    transform: rotate(180deg);
+}
+
 .accordion-header.active + .accordion-content {
     max-height: 1000px; /* Un valor alto para que entre el contenido */
     padding-top: 1.5rem;
@@ -735,3 +748,720 @@
     color: var(--accent-color); /* Visible si está activo */
 }
 
+/* =================================================================
+   MEJORAS DE UI PARA TRANSACCIONES (VENTAS Y COMPRAS)
+   ================================================================= */
+
+/* --- 1. Estilo para la lista principal (Ventas, Compras, Clientes...) --- */
+
+.sale-row,
+.receipt-row,
+.client-row,
+.provider-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background-color: var(--background-color-offset);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+}
+
+.sale-row:hover,
+.receipt-row:hover,
+.client-row:hover,
+.provider-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border-color: var(--accent-color-medium-opacity);
+}
+
+.sale-row h3,
+.receipt-row h3,
+.client-row h3,
+.provider-row h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* El <h2> para el precio */
+.sale-row h2,
+.receipt-row h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent-green);
+    margin-top: 0.25rem;
+}
+
+.sale-row p,
+.receipt-row p,
+.client-row p,
+.provider-row p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-gray);
+    text-align: right;
+}
+
+.sale-row .customer-name,
+.receipt-row .customer-name {
+    font-weight: 500;
+    color: var(--color-text-light);
+    margin-top: 0.25rem;
+}
+
+/* --- 2. Estilo para el Modal de "Crear Transacción" --- */
+
+/* Hacemos el modal más grande y con scroll interno */
+#new-transaction-container {
+    width: 800px; /* Más ancho */
+    max-width: 90vw;
+    height: 85vh; /* Alto fijo */
+    max-height: 700px;
+    display: flex;
+    flex-direction: column;
+    padding: 0; /* Quitamos padding para que el form controle todo */
+}
+
+/* El formulario ahora es el que maneja el layout */
+#transaction-form-container form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Un cabezal fijo para el Cliente/Proveedor */
+.transaction-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Evita que se encoja */
+}
+
+.transaction-header h3 {
+    margin: 0 0 4px 0;
+    color: var(--color-gray);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.transaction-header p {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+/* Contenedor principal para la lista de productos (con scroll) */
+.transaction-body {
+    padding: 1rem 2rem;
+    flex-grow: 1; /* Ocupa todo el alto disponible */
+    overflow-y: auto; /* ¡SCROLL AQUÍ! */
+}
+
+.transaction-body .flex-row {
+    padding-bottom: 1rem;
+}
+
+/* El pie de página fijo con el total y el botón */
+.transaction-summary {
+    flex-shrink: 0; /* Evita que se encoja */
+    padding: 1.5rem 2rem;
+    background-color: var(--background-color-offset);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.transaction-summary .total-display {
+    text-align: right;
+    margin-bottom: 1rem;
+}
+
+.transaction-summary .total-display h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.transaction-summary .total-display h2 span {
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+.transaction-summary .btn-primary {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* Placeholder para cuando la lista está vacía */
+.empty-product-list {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--color-gray);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-product-list i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--border-color);
+}
+
+
+/* --- 3. La nueva TABLA de productos (la magia) --- */
+
+.transaction-product-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.transaction-product-table th {
+    text-align: left;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--color-gray);
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.transaction-product-table td {
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+/* Definimos anchos de columnas */
+.transaction-product-table .col-product {
+    width: 40%;
+    font-weight: 500;
+    /* Evitar desbordamiento de nombres largos */
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.transaction-product-table .col-stock,
+.transaction-product-table .col-price,
+.transaction-product-table .col-total {
+    width: 15%;
+    text-align: right;
+    font-feature-settings: "tnum"; /* Números tabulares */
+}
+.transaction-product-table .col-quantity {
+    width: 20%;
+    text-align: center;
+}
+.transaction-product-table .col-actions {
+    width: 5%;
+    text-align: center;
+}
+
+/* Celda de Cantidad (+/-) */
+.quantity-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.quantity-cell .modify-quantity-btn {
+    font-size: 1.3rem;
+    color: var(--accent-color);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding: 2px;
+}
+
+.quantity-cell .modify-quantity-btn:hover {
+    color: var(--accent-color);
+}
+
+.quantity-cell .quantity-display {
+    font-weight: 500;
+    font-size: 1.1rem;
+    min-width: 25px;
+    text-align: center;
+}
+
+/* Botón de eliminar (rojo) */
+.delete-product-btn {
+    background: none;
+    border: none;
+    color: var(--accent-red);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.delete-product-btn:hover {
+    color: var(--accent-red);
+}
+
+/* =================================================================
+   MEJORAS DE UI PARA EL MODAL DE SELECCIÓN (PRODUCTOS Y CLIENTES)
+   ================================================================= */
+
+/* --- 1. Contenedor General del Picker --- */
+#transaction-picker-modal {
+    width: 600px; /* Más ancho que antes */
+    max-width: 90vw;
+    height: 70vh; /* Alto fijo */
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0 0 0; /* Padding solo arriba */
+    background-color: var(--background-color);
+}
+
+/* El 'header' donde está el dropdown de inventarios */
+#transaction-picker-modal .flex-row {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+#inventory-picker-name {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+#transaction-picker-modal hr {
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
+/* --- 2. Contenedor de la Lista (con scroll) --- */
+.picker-list {
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 0.5rem 1.5rem;
+}
+
+/* --- 3. Botón de Confirmar (fijo abajo) --- */
+.picker-confirm-btn {
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0;
+    border-radius: 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto; /* Empuja el botón abajo */
+    flex-shrink: 0;
+}
+.picker-confirm-btn:disabled {
+    background-color: var(--background-color-offset);
+    color: var(--color-gray-light);
+    border-color: var(--border-color);
+}
+
+/* --- 4. NUEVO: Estilo para Picker de Clientes/Proveedores --- */
+.person-picker-item {
+    display: block;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background-color: var(--background-color-offset);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.person-picker-item:hover {
+    background-color: var(--background-color-hover);
+    border-color: var(--accent-color-medium-opacity);
+}
+
+.person-picker-item.selected {
+    background-color: var(--accent-color-low-opacity);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px var(--accent-color-medium-opacity);
+}
+
+.person-picker-item .person-name {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.person-picker-item .person-id {
+    font-size: 0.9rem;
+    color: var(--color-gray);
+    margin-top: 0.25rem;
+}
+
+/* --- 5. NUEVO: Estilo para Picker de Productos (TABLA) --- */
+.product-picker-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.product-picker-table th {
+    text-align: left;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--color-gray);
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.product-picker-table .col-product-stock,
+.product-picker-table .col-product-price {
+    text-align: right;
+    width: 25%;
+}
+.product-picker-table .col-product-name {
+    width: 50%;
+}
+
+/* Fila de la tabla de productos */
+.product-picker-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.product-picker-row:hover {
+    background-color: var(--background-color-hover);
+}
+
+.product-picker-row.selected {
+    background-color: var(--accent-color-low-opacity);
+}
+
+.product-picker-row.no-stock {
+    cursor: not-allowed;
+    color: var(--color-gray-light);
+}
+.product-picker-row.no-stock .product-table-name {
+    color: var(--color-gray-light) !important;
+}
+
+.product-picker-row td {
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.product-picker-row .col-product-name {
+    font-weight: 500;
+}
+
+.product-picker-row .product-table-name {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--color-gray);
+    font-weight: 400;
+}
+
+.product-picker-row .col-product-price span {
+    font-size: 0.85rem;
+    color: var(--color-gray);
+}
+
+/* =========================================
+   ESTILOS DE ACCIONES Y TABLA (Definitivo)
+   ========================================= */
+
+/* Encabezado de acciones */
+th.actions-header {
+    width: 130px;
+    text-align: center !important;
+    vertical-align: middle;
+}
+
+/* Celda de acciones: Flexbox al rescate */
+td.actions-cell {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px; /* Espacio entre botones */
+    padding: 4px !important;
+    border-bottom: 1px solid var(--border-color); /* Mantiene la línea de la tabla */
+    height: 100%;
+}
+
+/* Estilo del botón "lindo" */
+.action-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease;
+    color: var(--color-gray, #64748b);
+}
+
+/* Hover General */
+.action-btn:hover {
+    background-color: #f3f4f6;
+    transform: translateY(-2px);
+}
+
+/* Colores específicos */
+.edit-btn:hover { color: #2563eb; background-color: rgba(37, 99, 235, 0.1); }
+.history-btn:hover { color: #0ea5e9; background-color: rgba(14, 165, 233, 0.1); }
+.delete-btn:hover { color: #dc2626; background-color: rgba(220, 38, 38, 0.1); }
+
+/* Alerta de Stock */
+.status-critical {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+/* Efecto de resaltado para la fila al ver historial */
+tr.highlight-row {
+    background-color: rgba(14, 165, 233, 0.15) !important; /* Celeste suave */
+    transition: background-color 0.3s ease;
+}
+
+/* Inputs en modo edición (para que no rompan la tabla) */
+.editing-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+/* =========================================
+   ESTILO RÚSTICO / GLITCH (StockiFy)
+   ========================================= */
+
+.config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Bloque contenedor de cada opción */
+.rustic-block {
+    background-color: #fff;
+    border: 2px solid var(--color-black); /* Borde negro sólido */
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    transition: all 0.2s ease;
+    /* Sombra dura estilo Glitch */
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.05);
+}
+
+.rustic-block:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.1); /* Sombra más marcada al hover */
+}
+
+/* Headers y Labels */
+.block-header {
+    margin-bottom: 0.5rem;
+}
+
+.option-label {
+    font-weight: 700; /* Fuente gruesa como en Notion headers */
+    font-size: 1rem;
+    color: var(--color-black);
+}
+
+/* Reutilización de tus clases de checkbox (.modal-option) */
+/* Aquí ajustamos un poco el espaciado si es necesario */
+.modal-option input[type="checkbox"],
+.modal-option input[type="radio"] {
+    position: relative !important;
+    z-index: 1;
+    margin: 0;
+    display: inline-block;
+}
+
+/* Inputs Rústicos */
+.rustic-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #1b1b1b; /* Borde negro fino pero visible */
+    border-radius: 8px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 0.95rem;
+    background-color: #f9f9f9;
+    transition: all 0.2s ease;
+
+    /* Oculto por defecto, el JS lo muestra con la clase .visible */
+    display: none;
+}
+
+.rustic-input.visible {
+    display: block;
+    margin-top: 0.8rem;
+}
+
+/* Efecto Focus "Glitch" (Sombra dura de color) */
+.rustic-input:focus {
+    outline: none;
+    background-color: #fff;
+    border-color: var(--color-black);
+    /* Sombra dura del color de acento actual (theme.js) */
+    box-shadow: 4px 4px 0px var(--accent-color);
+}
+
+/* Textos de ayuda */
+.helper-text {
+    font-size: 0.8rem;
+    color: var(--color-gray);
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+/* Sub-secciones (Automatización) */
+.nested-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1.5px dashed #ccc; /* Separador punteado rústico */
+}
+
+.sub-option span {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Radio Groups */
+.radio-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 1rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid var(--accent-color); /* Línea de color al lado */
+}
+
+.radio-inline {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* Utilidades de visibilidad */
+.hidden { display: none !important; }
+.visible { display: block !important; }
+
+/* =========================================
+   ANIMACIONES DE APARICIÓN (Inputs y Opciones)
+   ========================================= */
+
+/* 2. Aplicar animación a los Inputs Rústicos */
+.rustic-input.visible {
+    display: block !important;
+    /* Duración: 0.3s | Curva: ease-out (frenado suave al final) */
+    animation: softSlideIn 0.3s ease-out forwards;
+}
+
+/* 3. Aplicar animación a los Grupos de Radio (Horizontales - Ganancia) */
+.radio-inline.visible {
+    display: flex !important; /* Forzamos flex para que no se rompa el diseño */
+    gap: 1.5rem;
+    animation: softSlideIn 0.3s ease-out forwards;
+}
+
+/* 4. Aplicar animación a los Grupos de Radio (Verticales - Automatización) */
+.radio-stack.visible {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.8rem;
+    animation: softSlideIn 0.3s ease-out forwards;
+}
+
+/* =========================================
+   ANIMACIÓN SUAVE DE EXPANSIÓN (Grid Trick)
+   ========================================= */
+
+.reveal-wrapper {
+    display: grid;
+    /* Estado inicial: Colapsado */
+    grid-template-rows: 0fr;
+    opacity: 0;
+    /* Animamos altura y opacidad */
+    transition: grid-template-rows 0.4s ease-in-out,
+    opacity 0.4s ease-in-out,
+    margin-top 0.4s ease;
+    margin-top: 0;
+}
+
+.reveal-wrapper.open {
+    /* Estado abierto: Expandido */
+    grid-template-rows: 1fr;
+    opacity: 1;
+    margin-top: 1rem; /* Espacio extra al abrirse */
+}
+
+.reveal-inner {
+    overflow: hidden; /* Necesario para que funcione el truco del grid */
+}
+
+/* Ajustes para los inputs dentro del wrapper */
+.rustic-input {
+    display: block !important; /* Siempre block, la visibilidad la maneja el wrapper */
+    width: 100%;
+}
+
+/* Ajustes para sub-secciones */
+.radio-stack, .radio-inline {
+    /* Eliminamos display:none porque el wrapper lo oculta */
+    display: flex !important;
+}
+
+/* =========================================
+   INPUT GROUP RÚSTICO (Addon + Input)
+   ========================================= */
+
+.rustic-input-group {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 0.8rem; /* Espacio superior */
+}
+
+/* El cuadradito del símbolo */
+.input-addon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    background-color: #e0e0e0; /* Gris rústico */
+    border: 1.5px solid #1b1b1b;
+    border-right: none; /* Quitamos borde derecho para unir */
+    border-radius: 8px 0 0 8px; /* Redondeado solo a la izquierda */
+    font-weight: 600;
+    font-family: 'Satoshi', sans-serif;
+    width: 48px;       /* Ancho fijo exacto */
+    flex: 0 0 48px;
+    color: var(--color-black);
+    min-width: 45px; /* Ancho mínimo fijo */
+}
+
+/* Ajuste del input cuando está dentro del grupo */
+.rustic-input.grouped {
+    border-radius: 0 8px 8px 0; /* Redondeado solo a la derecha */
+    margin-top: 0 !important; /* Quitamos margen propio */
+    /* El borde izquierdo ya lo pone el addon, pero mantenemos el borde del input para el focus */
+}
+
+.rustic-input.grouped:focus {
+    position: relative; /* Para que la sombra de foco quede por encima */
+    z-index: 2;
+}

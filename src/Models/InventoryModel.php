@@ -28,66 +28,118 @@ class InventoryModel
     /**
      * Realiza la operación completa de crear un inventario y su tabla física
      * dentro de una transacción segura.
-     * (Versión corregida por StokiFyBot)
+     */
+    /**
+     * Realiza la operación completa de crear un inventario y su tabla física.
+     * CORREGIDO: Evita duplicar columnas reservadas (sale_price, min_stock, etc).
      */
     public function createInventoryAndTable(string $inventoryName, int $userId, string $baseTableName, array $columns, array $tablePreferences): array
     {
-        if (!$this->db->inTransaction()) {
-            $this->db->beginTransaction();
+        // --- PASO 1: PREPARAR DATOS ---
+        $safeBaseName = $this->sanitizeTableName($baseTableName);
+        $tableName = "user_{$userId}_{$safeBaseName}";
+
+        // Definir columnas SQL y JSON
+        $columnDefinitions = [];
+        $userColumnsJson = [];
+
+        // LISTA NEGRA: Columnas que YA crea el SQL base automáticamente.
+        // Si el usuario (o el JS) las manda, las ignoramos en el bucle para no duplicarlas.
+        $reservedColumns = [
+            'id',
+            'created_at',
+            'min_stock',
+            'sale_price',
+            'receipt_price',
+            'hard_gain',
+            'percentage_gain'
+        ];
+
+        foreach ($columns as $columnName) {
+            $trimmedName = trim($columnName);
+            if (empty($trimmedName)) continue;
+
+            $safeColumnName = $this->sanitizeColumnName($trimmedName);
+            if (empty($safeColumnName)) continue;
+
+            // --- CORRECCIÓN AQUÍ: Filtramos si está en la lista negra ---
+            if (in_array(strtolower($safeColumnName), $reservedColumns)) {
+                continue;
+            }
+
+            // Configuración de tipos especiales (stock, name, etc.)
+            $colType = "TEXT";
+            if (in_array(strtolower($safeColumnName), ['name', 'nombre'])) {
+                $colType = "VARCHAR(255)";
+            } else if (strtolower($safeColumnName) === 'stock') {
+                $colType = "INT DEFAULT 0";
+            }
+
+            $columnDefinitions[] = "`{$safeColumnName}` {$colType}";
+            $userColumnsJson[] = $safeColumnName;
         }
 
+        // Preparar JSON de columnas completas (Metadatos)
+        // Aquí SÍ las agregamos manualmentes si están activas en preferencias
+        $finalColumnJson = ['id', 'created_at'];
+        if ($tablePreferences['min_stock']['active']) $finalColumnJson[] = 'min_stock';
+        if ($tablePreferences['sale_price']['active']) $finalColumnJson[] = 'sale_price';
+        if ($tablePreferences['receipt_price']['active']) $finalColumnJson[] = 'receipt_price';
+        if ($tablePreferences['hard_gain']['active']) $finalColumnJson[] = 'hard_gain';
+        if ($tablePreferences['percentage_gain']['active']) $finalColumnJson[] = 'percentage_gain';
+
+        // Agregamos el resto de columnas del usuario (ej. stock, color, talla)
+        if (!empty($userColumnsJson)) {
+            $finalColumnJson = array_merge($finalColumnJson, $userColumnsJson);
+        }
+        $finalColumnJson = array_unique($finalColumnJson);
+
+
+        // --- PASO 2: TRANSACCIÓN DE METADATOS (Todo lo administrativo) ---
+        $inventoryId = null;
+
         try {
-            // 1. INSERTAR EN LA TABLA MAESTRA 'inventories'
-            // (Esto almacena si las columnas están activas)
-            $stmt = $this->db->prepare("INSERT INTO inventories (name, user_id, min_stock, sale_price, receipt_price, hard_gain, percentage_gain,auto_price,auto_price_type) 
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+            }
+
+            // 2.1 Insertar Inventario
+            $stmt = $this->db->prepare("INSERT INTO inventories (name, user_id, min_stock, sale_price, receipt_price, hard_gain, percentage_gain, auto_price, auto_price_type) 
                                             VALUES (:name, :user_id, :min_stock, :sale_price, :receipt_price, :hard_gain, :percentage_gain, :auto_price, :auto_price_type)");
-            $stmt->execute([':name' => $inventoryName, ':user_id' => $userId, ':min_stock' => $tablePreferences['min_stock']['active'],
-                ':sale_price' => $tablePreferences['sale_price']['active'], ':receipt_price' => $tablePreferences['receipt_price']['active'],
-                ':hard_gain' => $tablePreferences['hard_gain']['active'], ':percentage_gain' => $tablePreferences['percentage_gain']['active'],
-                ':auto_price' => $tablePreferences['auto_price'], ':auto_price_type' => $tablePreferences['auto_price_type']]);
-
+            $stmt->execute([
+                ':name' => $inventoryName,
+                ':user_id' => $userId,
+                ':min_stock' => $tablePreferences['min_stock']['active'],
+                ':sale_price' => $tablePreferences['sale_price']['active'],
+                ':receipt_price' => $tablePreferences['receipt_price']['active'],
+                ':hard_gain' => $tablePreferences['hard_gain']['active'],
+                ':percentage_gain' => $tablePreferences['percentage_gain']['active'],
+                ':auto_price' => $tablePreferences['auto_price'],
+                ':auto_price_type' => $tablePreferences['auto_price_type']
+            ]);
             $inventoryId = (int)$this->db->lastInsertId();
-            if (!$inventoryId) {
-                throw new \PDOException("No se pudo crear el registro del inventorio principal.");
-            }
 
-            // 2. SANITIZAR EL NOMBRE DE LA TABLA FÍSICA
-            $safeBaseName = $this->sanitizeTableName($baseTableName); // Usa la función que ya existe
-            $tableName = "user_{$userId}_{$safeBaseName}";
+            // 2.2 Insertar User Tables (Metadatos)
+            $stmtMeta = $this->db->prepare("INSERT INTO user_tables (inventory_id, table_name, columns_json) VALUES (?, ?, ?)");
+            $stmtMeta->execute([$inventoryId, $tableName, json_encode(array_values($finalColumnJson))]);
 
-            // 3. PROCESAR Y SANITIZAR LAS COLUMNAS DE USUARIO
-            $columnDefinitions = []; // Para el SQL (ej. `nombre` VARCHAR(255))
-            $userColumnsJson = []; // Para el JSON (ej. 'nombre')
+            // 2.3 COMMIT ADMINISTRATIVO
+            $this->db->commit();
 
-            foreach ($columns as $columnName) {
-                $trimmedName = trim($columnName);
-                if (empty($trimmedName)) continue;
-                $safeColumnName = $this->sanitizeColumnName($trimmedName); // Usa la función que ya existe
-                if (empty($safeColumnName)) continue;
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            throw $e;
+        }
 
-                // Filtramos las columnas 100% protegidas
-                if (in_array(strtolower($safeColumnName), ['id', 'created_at'])) continue;
-
-                // Asignamos tipos de datos
-                $colType = "TEXT"; // Default
-                if (in_array(strtolower($safeColumnName), ['name', 'nombre'])) {
-                    $colType = "VARCHAR(255) NOT NULL";
-                } else if (strtolower($safeColumnName) === 'stock') {
-                    $colType = "INT DEFAULT 0";
-                }
-
-                // Añadimos a ambas listas
-                $columnDefinitions[] = "`{$safeColumnName}` {$colType}";
-                $userColumnsJson[] = $safeColumnName;
-            }
-
-            // 4. OBTENER VALORES DEFAULT (DE NANO)
+        // --- PASO 3: CREACIÓN DE TABLA FÍSICA ---
+        try {
+            // Valores por defecto
             $minStockDefault = (int) $tablePreferences['min_stock']['default'];
             $salePriceDefault = (float) $tablePreferences['sale_price']['default'];
             $receiptPriceDefault = (float) $tablePreferences['receipt_price']['default'];
-            $gainDefault = (float) $tablePreferences['hard_gain']['default']; // Asumimos que hard_gain tiene el default
+            $gainDefault = (float) $tablePreferences['hard_gain']['default'];
 
-            // 5. CONSTRUIR LA CONSULTA SQL (CORREGIDA)
+            // SQL Base (Aquí es donde ya se crean las columnas reservadas)
             $sql = "CREATE TABLE IF NOT EXISTS `{$tableName}` (
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
                 `min_stock` INT DEFAULT {$minStockDefault},
@@ -95,69 +147,26 @@ class InventoryModel
                 `receipt_price` DECIMAL(10,2) DEFAULT {$receiptPriceDefault},
                 `hard_gain` DECIMAL(10,2) DEFAULT {$gainDefault},
                 `percentage_gain` DECIMAL(10,2) DEFAULT {$gainDefault},
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            ";
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
 
-            // Añadimos las columnas de usuario (si existen)
+            // Solo agregamos las columnas extra (stock, nombre, etc) que NO son reservadas
             if (!empty($columnDefinitions)) {
                 $sql .= ", " . implode(', ', $columnDefinitions);
             }
-
-            // Cerramos la consulta
             $sql .= ")";
 
-            // 6. EJECUTAR EL CREATE TABLE
-            if ($this->db->exec($sql) === false) {
-                $errorInfo = $this->db->errorInfo();
-                throw new \PDOException("Error al crear la tabla física: " . ($errorInfo[2] ?? 'Error desconocido'));
-            }
+            $this->db->exec($sql);
 
-            // 7. CONSTRUIR Y GUARDAR LOS METADATOS (JSON)
-            $columnJson = ['id', 'created_at']; // Columnas base (no-editables)
-
-            // Añadimos las recomendadas (si están activas)
-            if ($tablePreferences['min_stock']['active']) { $columnJson[] = 'min_stock'; }
-            if ($tablePreferences['sale_price']['active']) { $columnJson[] = 'sale_price'; }
-            if ($tablePreferences['receipt_price']['active']) { $columnJson[] = 'receipt_price'; }
-            if ($tablePreferences['hard_gain']['active']) { $columnJson[] = 'hard_gain'; }
-            if ($tablePreferences['percentage_gain']['active']) { $columnJson[] = 'percentage_gain'; }
-
-            // Añadimos las del usuario (ej. 'nombre', 'stock', 'sku')
-            if (!empty($userColumnsJson)) {
-                $columnJson = array_merge($columnJson, $userColumnsJson);
-            }
-
-            // Eliminamos duplicados por si acaso
-            $columnJson = array_unique($columnJson);
-
-            $checkMeta = $this->db->prepare("SELECT id FROM user_tables WHERE inventory_id = ?");
-            $checkMeta->execute([$inventoryId]);
-
-            if ($checkMeta->fetchColumn() === false) {
-                $stmt = $this->db->prepare("INSERT INTO user_tables (inventory_id, table_name, columns_json) VALUES (?, ?, ?)");
-                if (!$stmt->execute([$inventoryId, $tableName, json_encode(array_values($columnJson))])) { // Usamos array_values para reindexar
-                    $errorInfo = $stmt->errorInfo();
-                    throw new \PDOException("Error al guardar metadatos de la tabla: " . ($errorInfo[2] ?? 'Error desconocido'));
-                }
-            }
-
-            // 8. COMMIT
-            if ($this->db->inTransaction()) {
-                if (!$this->db->commit()) {
-                    throw new \PDOException("Fallo al confirmar la transacción (commit).");
-                }
-            }
             return ['id' => $inventoryId, 'tableName' => $tableName];
 
-        } catch (\PDOException | \InvalidArgumentException $e) {
-            if ($this->db->inTransaction()) {
-                try {
-                    $this->db->rollBack();
-                } catch (\PDOException $rollbackEx) {
-                    error_log("¡ERROR ADICIONAL EN ROLLBACK!: " . $rollbackEx->getMessage());
-                }
-            }
-            throw $e;
+        } catch (Exception $e) {
+            // --- PASO 4: COMPENSACIÓN DE ERRORES (Rollback Manual) ---
+            error_log("Fallo al crear tabla física. Revertiendo metadatos para ID: $inventoryId");
+            $this->db->exec("DELETE FROM user_tables WHERE inventory_id = $inventoryId");
+            $this->db->exec("DELETE FROM inventories WHERE id = $inventoryId");
+            $this->db->exec("DROP TABLE IF EXISTS `{$tableName}`");
+
+            throw new Exception("Error al crear la estructura de la base de datos: " . $e->getMessage());
         }
     }
 

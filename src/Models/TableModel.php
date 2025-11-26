@@ -94,6 +94,28 @@ class TableModel
     }
 
     /**
+     * Elimina una fila específica de una tabla dinámica.
+     * * @param string $tableName El nombre real de la tabla (ej: user_1_inventario).
+     * @param int $itemId El ID de la fila a eliminar.
+     * @return bool True si se eliminó correctamente, False si falló.
+     */
+    public function deleteRow(string $tableName, int $itemId): bool
+    {
+        // Sanitizamos el nombre de la tabla por seguridad (backticks)
+        $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
+
+        $sql = "DELETE FROM {$safeTableName} WHERE id = :id";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([':id' => $itemId]);
+        } catch (\PDOException $e) {
+            error_log("Error al eliminar fila $itemId de $tableName: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Actualiza una fila completa en una tabla dinámica.
      * @param string $tableName El nombre real de la tabla (user_X_...).
      * @param int $itemId El ID de la fila a actualizar.

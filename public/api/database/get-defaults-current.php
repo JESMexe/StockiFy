@@ -12,17 +12,16 @@ use App\core\Database;
 try {
     $pdo = Database::getInstance();
 
-    if (!getCurrentUser() || !isset($_SESSION['active_inventory_id'])) {
+    $user = getCurrentUser();
+    if (!$user || !isset($_SESSION['active_inventory_id'])) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'No autorizado o inventario no activo.']);
-        return; // Detiene la ejecución antes de que PHP lance un Notice HTML.
+        return;
     }
-
-    $user = getCurrentUser();
     $user_id = $_SESSION['user_id'];
-
     $inventoryID = $_SESSION['active_inventory_id'];
 
+    // Obtener el nombre de la tabla
     $stmt = $pdo->prepare("SELECT table_name FROM user_tables WHERE inventory_id = ?");
     $stmt->execute([$inventoryID]);
     $tableName = $stmt->fetchColumn();
@@ -30,14 +29,24 @@ try {
     $columns = ['min_stock', 'sale_price', 'receipt_price', 'percentage_gain', 'hard_gain'];
     $response = [];
 
-    foreach($columns as $column){
-        $sql = "SHOW COLUMNS FROM {$tableName} WHERE FIELD = ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$column]);
+    // Consulta única para todas las columnas
+    $placeholders = str_repeat('?,', count($columns) - 1) . '?';
+    $sql = "SHOW COLUMNS FROM {$tableName} WHERE Field IN ({$placeholders})";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($columns);
 
-        $columnData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $columnData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $response[$column] = $columnData['Default'];
+    // Organizar los resultados
+    foreach($columnData as $data) {
+        $response[$data['Field']] = $data['Default'];
+    }
+
+    // Asegurar que todas las columnas estén en la respuesta
+    foreach($columns as $column) {
+        if (!isset($response[$column])) {
+            $response[$column] = null;
+        }
     }
 
     $response['success'] = true;
