@@ -1,7 +1,6 @@
 <?php
 // public/api/notifications/create.php
 
-// Dependencias necesarias
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
 require_once __DIR__ . '/../../../src/Models/NotificationModel.php';
@@ -10,7 +9,6 @@ use App\Models\NotificationModel;
 
 header('Content-Type: application/json');
 
-// Iniciar sesión (para getCurrentUser y autenticación)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -33,13 +31,11 @@ if (!$type || !$title) {
     exit;
 }
 
-// LÓGICA PRINCIPAL: SOLO GUARDAR EN LA BASE DE DATOS
 try {
     $model = new NotificationModel();
     $model->create($user['id'], $type, $title, $message);
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
-    // Si falla el guardado en la DB, lo reportamos
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

@@ -15,9 +15,7 @@ class TableModel
     }
 
     /**
-     * Obtiene los metadatos de una tabla de usuario (nombre real y columnas).
-     * @param int $inventoryId El ID del inventario activo.
-     * @return array|false Un array con 'table_name' y 'columns_json' o false si no se encuentra.
+     * Obtiene los metadatos de una tabla de usuario.
      */
     public function getTableMetadata(int $inventoryId): array|false
     {
@@ -27,24 +25,7 @@ class TableModel
     }
 
     /**
-     * Obtiene todos los datos de una tabla específica.
-     * @param string $tableName El nombre real y seguro de la tabla (ej: user_1_mi_tienda).
-     * @return array Una lista de todas las filas de la tabla.
-     */
-    public function getData(string $tableName): array
-    {
-        $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
-        $stmt = $this->db->query("SELECT * FROM {$safeTableName}");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Inserta múltiples filas de datos en una tabla dinámica.
-     * @param string $tableName Nombre real de la tabla (user_X_...).
-     * @param array $data Array de arrays asociativos ['columna' => 'valor'].
-     * @param bool $overwrite Si es true, trunca la tabla antes de insertar.
-     * @return int Número de filas insertadas.
-     * @throws \PDOException Si ocurre un error SQL.
+     * Inserta múltiples filas. Si overwrite es true, usa TRUNCATE para reiniciar IDs.
      */
     public function bulkInsertData(string $tableName, array $data, bool $overwrite = false): int
     {
@@ -54,14 +35,19 @@ class TableModel
 
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
 
-        if ($overwrite) {
-            $this->db->exec("TRUNCATE TABLE {$safeTableName}");
-        }
-
-        $this->db->beginTransaction();
-
         try {
+            // --- FASE 1: LIMPIEZA Y REINICIO (Fuera de Transacción) ---
+            if ($overwrite) {
+                // TRUNCATE borra todo Y reinicia el contador de ID a 1.
+                // Importante: TRUNCATE no se puede hacer dentro de una transacción activa en algunos motores,
+                // y causa un commit implícito. Por eso lo hacemos aquí, antes del beginTransaction.
+                $this->db->exec("TRUNCATE TABLE {$safeTableName}");
+            }
 
+            // --- FASE 2: INSERCIÓN MASIVA (Transaccional) ---
+            $this->db->beginTransaction();
+
+            // Preparamos la sentencia SQL una sola vez
             $columns = array_keys($data[0]);
             $safeColumns = array_map(fn($col) => "`" . str_replace("`", "``", $col) . "`", $columns);
             $placeholders = implode(',', array_fill(0, count($columns), '?'));
@@ -75,20 +61,23 @@ class TableModel
                 foreach($columns as $col) {
                     $values[] = $row[$col] ?? null;
                 }
+
                 if ($stmt->execute($values)) {
                     $insertedCount++;
-                } else {
-                    error_log("Error al insertar fila en {$tableName}: " . implode(', ', $stmt->errorInfo()));
                 }
             }
 
+            // Confirmamos la inserción
             $this->db->commit();
             return $insertedCount;
 
         } catch (\PDOException $e) {
+            // Si falla la inserción, deshacemos solo la parte de insertar
+            // (Si se hizo TRUNCATE antes, esos datos ya se perdieron, es el comportamiento esperado de 'Reemplazar')
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
+            error_log("Error en bulkInsertData: " . $e->getMessage());
             throw $e;
         }
     }
@@ -101,16 +90,12 @@ class TableModel
      */
     public function deleteRow(string $tableName, int $itemId): bool
     {
-        // Sanitizamos el nombre de la tabla por seguridad (backticks)
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
-
         $sql = "DELETE FROM {$safeTableName} WHERE id = :id";
-
         try {
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([':id' => $itemId]);
         } catch (\PDOException $e) {
-            error_log("Error al eliminar fila $itemId de $tableName: " . $e->getMessage());
             return false;
         }
     }
@@ -121,60 +106,53 @@ class TableModel
      * @param int $itemId El ID de la fila a actualizar.
      * @param array $dataToUpdate Un array asociativo ['columna' => 'valor', ...].
      * @return array|false La fila actualizada o false si falla.
+     * @throws Exception
      */
     public function updateItemRow(string $tableName, int $itemId, array $dataToUpdate): array|false
     {
-        // Seguridad: Sanitizo el nombre de la tabla
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
+        $setClauses = [];
+        $bindings = [':id' => $itemId];
 
-        $setClauses = []; // Acá armo la parte SET de la consulta
-        $bindings = [':id' => $itemId]; // Acá van los valores a bindear
-
-        // Construyo la consulta dinámicamente
         foreach ($dataToUpdate as $column => $value) {
-            // Me aseguro de no intentar actualizar las columnas automáticas
-            if (strcasecmp($column, 'id') === 0 || strcasecmp($column, 'created_at') === 0) {
-                continue; // Salto esta columna
-            }
+            if (strcasecmp($column, 'id') === 0 || strcasecmp($column, 'created_at') === 0) continue;
 
-            // Sanitizo el nombre de la columna
             $safeColumn = "`" . str_replace("`", "``", trim($column)) . "`";
-            $placeholder = ":" . preg_replace('/[^a-zA-Z0-9_]/', '', trim($column)); // ej: :Nombre
-
+            $placeholder = ":" . preg_replace('/[^a-zA-Z0-9_]/', '', trim($column));
             $setClauses[] = "{$safeColumn} = {$placeholder}";
             $bindings[$placeholder] = $value;
         }
 
-        if (empty($setClauses)) {
-            // No se envió nada válido para actualizar
-            throw new \InvalidArgumentException("No hay datos válidos para actualizar.");
-        }
+        if (empty($setClauses)) throw new \InvalidArgumentException("No hay datos válidos para actualizar.");
 
         $sql = "UPDATE {$safeTableName} SET " . implode(', ', $setClauses) . " WHERE id = :id";
 
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare($sql);
-            if (!$stmt->execute($bindings)) {
-                $errorInfo = $stmt->errorInfo();
-                throw new \PDOException("Error al ejecutar UPDATE: " . ($errorInfo[2] ?? 'Error desconocido'));
-            }
+            if (!$stmt->execute($bindings)) throw new \PDOException("Error al ejecutar UPDATE");
 
-            // Si el UPDATE funcionó, busco la fila actualizada para devolverla
             $selectStmt = $this->db->prepare("SELECT * FROM {$safeTableName} WHERE id = ?");
             $selectStmt->execute([$itemId]);
             $updatedRow = $selectStmt->fetch(PDO::FETCH_ASSOC);
 
             $this->db->commit();
             return $updatedRow;
-
-        } catch (\PDOException | \InvalidArgumentException $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            error_log("Error en TableModel::updateItemRow: " . $e->getMessage());
-            throw $e; // Relanzo para que el controlador lo maneje
+        } catch (\Exception $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            throw $e;
         }
+    }
+
+    /**
+     * Obtiene todos los datos ordenados por ID para garantizar consistencia.
+     */
+    public function getData(string $tableName): array
+    {
+        $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
+        // Agregamos ORDER BY id ASC para asegurar el orden secuencial
+        $stmt = $this->db->query("SELECT * FROM {$safeTableName} ORDER BY id ASC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -187,56 +165,36 @@ class TableModel
     public function insertItem(string $tableName, array $data): array|false
     {
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
+        $columns = []; $values = []; $placeholders = [];
 
-        $columns = [];
-        $values = [];
-        $placeholders = [];
         foreach ($data as $key => $value) {
             $trimmedKey = trim($key);
             if (strcasecmp($trimmedKey, 'id') !== 0 && strcasecmp($trimmedKey, 'created_at') !== 0) {
-                $safeColumn = "`" . str_replace("`", "``", $trimmedKey) . "`";
-                $columns[] = $safeColumn;
-                $values[] = $value; // Guardo el valor
-                $placeholders[] = '?'; // Añado un placeholder
+                $columns[] = "`" . str_replace("`", "``", $trimmedKey) . "`";
+                $values[] = $value;
+                $placeholders[] = '?';
             }
         }
 
-        if (empty($columns)) {
-            error_log("Intento de insertar fila vacía o solo con columnas automáticas en {$tableName}");
-            return false;
-        }
+        if (empty($columns)) return false;
 
         $sql = "INSERT INTO {$safeTableName} (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
 
-        $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare($sql);
             if ($stmt->execute($values)) {
                 $newId = $this->db->lastInsertId();
-                $selectStmt = $this->db->prepare("SELECT * FROM {$safeTableName} WHERE id = ?");
-                $selectStmt->execute([$newId]);
-                $newRow = $selectStmt->fetch(PDO::FETCH_ASSOC);
-
-                $this->db->commit();
-                return $newRow ?: false;
-            } else {
-                throw new \PDOException("Error al ejecutar la inserción: " . implode(', ', $stmt->errorInfo()));
+                $stmtSel = $this->db->prepare("SELECT * FROM {$safeTableName} WHERE id = ?");
+                $stmtSel->execute([$newId]);
+                return $stmtSel->fetch(PDO::FETCH_ASSOC);
             }
-        } catch (\PDOException $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            error_log("Error en TableModel::insertItem: " . $e->getMessage());
+            return false;
+        } catch (\Exception $e) {
             return false;
         }
     }
 
-    public function getUserDatabases(int $userId): array
-    {
-        $stmt = $this->pdo->prepare("SELECT * FROM inventories WHERE user_id = ?");
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+
 
     public function updateItemValue(string $tableName, int $itemId, string $columnName, mixed $newValue): bool
     {

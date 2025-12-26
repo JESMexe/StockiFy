@@ -7,11 +7,15 @@
 
     <!-- Tus hojas de estilo (se respetan versiones y orden) -->
     <link rel="stylesheet" href="assets/css/main.css?v=1.2">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=1.2">
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=1.3">
     <link rel="stylesheet" href="assets/css/notifications.css?v=1.0">
+    <link rel="stylesheet" href="assets/css/employees.css?v=1.0">
+    <link rel="stylesheet" href="assets/css/purchases.css">
+    <link rel="stylesheet" href="assets/css/payments.css">
 
     <!-- Iconos -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
 
     <!-- Tema -->
@@ -20,6 +24,8 @@
     <!-- (Se mantienen también tus enlaces “plain” por compatibilidad con otras vistas) -->
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/analytics.css">
+    <link rel="stylesheet" href="assets/css/sales.css">
 </head>
 <body>
 <header>
@@ -101,6 +107,7 @@
                 <li><button class="menu-btn" data-target-view="receipts"><i class="ph ph-stack"></i> Compras</button></li>
                 <li><button class="menu-btn" data-target-view="customers"><i class="ph ph-user-focus"></i> Clientes</button></li>
                 <li><button class="menu-btn" data-target-view="providers"><i class="ph ph-van"></i> Proveedores</button></li>
+                <li><button class="menu-btn" data-target-view="employees"><i class="ph ph-identification-badge"></i> Empleados</button></li>
                 <hr>
             </ul>
 
@@ -108,20 +115,27 @@
             <ul>
                 <li><button class="menu-btn" data-target-view="analysis"><i class="ph ph-chart-line"></i> Estadísticas Diarias</button></li>
                 <li><button class="menu-btn" data-target-view="notifications"><i class="ph ph-bell"></i> Notificaciones</button></li>
+                <li><button class="menu-btn" data-target-view="payments"><i class="ph ph-wallet"></i> Métodos de Pago</button></li>
             </ul>
             <!--                          FIN DE CODIGO                        -->
         </nav>
     </aside>
 
     <main class="dashboard-main">
-        <!-- ===================== TU SECCIÓN: VER DATOS ===================== -->
+        <!-- ===================== VER DATOS ===================== -->
         <div id="view-db" class="dashboard-view">
             <div class="table-container">
                 <div class="table-header">
                     <h2 id="table-title">Cargando...</h2>
 
                     <div class="table-controls">
+                        <button id="critical-filter-btn" class="btn hidden" title="Mostrar solo productos con stock bajo o pérdidas"
+                                style="margin-right: 10px; border: 2px solid var(--accent-red); color: var(--accent-red); background: #fff0f0; padding: 0 12px; transition: all 0.2s;">
+                            <i class="ph ph-warning-circle" style="font-size: 1.4rem; font-weight: bold;"></i>
+                        </button>
+
                         <div class="search-wrapper">
+
                             <input type="text" id="search-input" placeholder="Buscar en la tabla...">
 
                             <button id="search-column-btn" class="btn btn-secondary">
@@ -137,12 +151,12 @@
                             </div>
                         </div>
 
+                        <button id="open-import-modal-btn" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px;">
+                            <i class="ph ph-download-simple"></i> Importar Datos
+                        </button>
+
                         <!-- (Se respeta tu botón para añadir fila) -->
                         <button id="add-row-btn" class="btn btn-primary" style="width: auto; margin-top: 0;">+ Añadir Fila</button>
-
-                        <!-- (Del compañero: acceso rápido a transacciones desde Ver Datos) -->
-                        <button class="btn btn-primary new-transaction-btn" style="width: auto; margin-top: 0;" data-transaction="sale">+ Agregar Venta</button>
-                        <button class="btn btn-primary new-transaction-btn" style="width: auto; margin-top: 0;" data-transaction="receipt">+ Agregar Compra</button>
                     </div>
                 </div>
 
@@ -158,298 +172,165 @@
         </div>
         <!-- ===================== FIN VER DATOS ===================== -->
 
-        <!-- ===================== TU SECCIÓN: CONFIGURAR TABLA + (complementos del compañero) ===================== -->
+        <!-- ===================== CONFIGURAR TABLA ===================== -->
         <div id="config-db" class="dashboard-view hidden">
-            <h2><i class="ph ph-gear"></i> Configurar Tabla</h2>
-            <p>Gestioná las secciones de tu tabla y otras configuraciones.</p>
+            <h2><i class="ph ph-gear"></i> Configuración de Inventario</h2>
+            <p>Personalizá cómo StockiFy entiende y procesa tus datos.</p>
 
             <div class="accordion" style="margin-top: 2rem;">
-                <!-- Tu bloque “Gestionar Columnas” -->
+
                 <div class="accordion-item">
                     <button class="accordion-header" aria-expanded="false">
-                        <span>Gestionar Columnas</span>
+                        <span><i class="ph ph-magnifying-glass"></i> Identificación de Columnas</span>
+                        <i class="ph ph-caret-down"></i>
+                    </button>
+                    <div class="accordion-content" style="max-height: 0px; overflow: hidden;">
+                            <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">
+                                Seleccioná qué columna de tu tabla corresponde a cada dato. Esto permite que el sistema calcule ganancias y registre ventas correctamente.
+                            </p>
+
+                            <form id="mapping-columns-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="form-group">
+                                    <label class="micro-label">Columna NOMBRE / PRODUCTO</label>
+                                    <select id="map-name-col" class="rustic-select"><option value="">-- Sin asignar --</option></select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="micro-label">Columna STOCK ACTUAL</label>
+                                    <select id="map-stock-col" class="rustic-select"><option value="">-- Sin asignar --</option></select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="micro-label">Columna PRECIO COMPRA (Costo)</label>
+                                    <select id="map-buy-price-col" class="rustic-select"><option value="">-- Sin asignar --</option></select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="micro-label">Columna PRECIO VENTA</label>
+                                    <select id="map-sale-price-col" class="rustic-select"><option value="">-- Sin asignar --</option></select>
+                                </div>
+
+                                <div style="grid-column: 1 / -1; text-align: right; margin-top: 10px;">
+                                    <button type="submit" class="btn btn-primary" id="save-mapping-btn">Guardar Referencias</button>
+                                </div>
+                            </form>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span><i class="ph ph-lightning"></i> Funcionalidades Extra</span>
+                        <i class="ph ph-caret-down"></i>
+                    </button>
+                    <div class="accordion-content">
+                        <form id="automated-features-form">
+                            <div class="config-list">
+
+                                <div class="rustic-block">
+                                    <div class="block-header">
+                                        <label class="modal-option">
+                                            <input type="checkbox" id="feature-min-stock">
+                                            <span class="option-label">Control de Stock Mínimo</span>
+                                        </label>
+                                    </div>
+                                    <div class="reveal-wrapper" id="wrap-min-stock">
+                                        <div class="reveal-inner" style="padding-top: 10px;">
+                                            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">
+                                                Crea una columna <b>"Stock Mínimo"</b>. Si tu stock real baja de este número, recibirás una alerta.
+                                            </p>
+                                            <div class="input-group-vertical">
+                                                <label class="micro-label">Valor por defecto (nuevos productos):</label>
+                                                <input type="number" id="default-min-stock" class="rustic-input" value="5" style="width: 100px;">
+                                            </div>
+
+                                            <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                                                <label class="micro-label" style="color: var(--accent-color);">Importar datos iniciales</label>
+                                                <p style="font-size: 0.8rem; color:#888;">¿Ya tenés una columna con estos valores? Copialos aquí:</p>
+                                                <div class="flex-row" style="gap: 10px; align-items: center;">
+                                                    <select id="import-min-stock-source" class="rustic-select" style="width: auto; flex-grow: 1;">
+                                                        <option value="">-- Elegir columna origen --</option>
+                                                    </select>
+                                                    <button type="button" id="btn-import-min-stock" class="btn btn-secondary btn-sm">Importar</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rustic-block">
+                                    <div class="block-header">
+                                        <label class="modal-option">
+                                            <input type="checkbox" id="feature-gain">
+                                            <span class="option-label">Cálculo de Margen de Ganancia</span>
+                                        </label>
+                                    </div>
+                                    <div class="reveal-wrapper" id="wrap-gain">
+                                        <div class="reveal-inner" style="padding-top: 10px;">
+                                            <p style="font-size: 0.85rem; color: #666;">
+                                                Muestra automáticamente la diferencia entre tu Precio de Venta y Compra.
+                                                <br><i>Requiere tener mapeados ambos precios arriba.</i>
+                                            </p>
+                                            <div class="radio-inline" style="margin-top: 10px;">
+                                                <label class="micro-label" style="margin-right: 10px;">Formato:</label>
+                                                <label class="modal-option">
+                                                    <input type="radio" name="gain-type" value="percent" checked> <span>Porcentaje (%)</span>
+                                                </label>
+                                                <label class="modal-option">
+                                                    <input type="radio" name="gain-type" value="fixed"> <span>Dinero ($)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <div class="form-footer" style="margin-top: 2rem; text-align: right;">
+                                <button type="submit" class="btn btn-primary" id="save-features-btn">Aplicar Cambios</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span>Gestionar Columnas Manuales</span>
                         <i class="ph ph-caret-down"></i>
                     </button>
                     <div class="accordion-content">
                         <form id="add-column-form" class="form-inline">
                             <div class="form-group" style="flex-grow: 1;">
                                 <label for="new-column-name">Nombre de la Nueva Columna</label>
-                                <input type="text" id="new-column-name" placeholder="Ej: PrecioCompra" required>
+                                <input type="text" id="new-column-name" placeholder="Ej: Ubicación, Talle, Color..." required>
                             </div>
-                            <button type="submit" class="btn btn-primary">Añadir Columna</button>
+                            <button type="submit" class="btn btn-primary">Añadir</button>
                         </form>
 
-                        <h4 style="margin-top: 1.5rem;">Columnas Actuales</h4>
+                        <h4 style="margin-top: 1.5rem;">Mis Columnas</h4>
                         <div id="column-list-container"></div>
                         <p id="column-list-status">Cargando columnas...</p>
                     </div>
                 </div>
 
-                <!-- Bloque del compañero: Columnas Recomendadas / Automatizaciones -->
-                <div class="accordion-item">
-                    <button class="accordion-header" aria-expanded="false">
-                        <span>Columnas Recomendadas y Automatizaciones</span>
-                        <i class="ph ph-caret-down"></i>
-                    </button>
-                    <div class="accordion-content">
-                        <div class="config-list">
-
-                            <div class="rustic-block">
-                                <div class="block-header">
-                                    <label class="modal-option">
-                                        <input type="checkbox" id="min-stock-input" name="min-stock">
-                                        <span class="option-label">Stock Mínimo</span>
-                                    </label>
-                                </div>
-                                <div class="reveal-wrapper" id="wrapper-min-stock">
-                                    <div class="reveal-inner">
-                                        <input type="number" id="min-stock-default-input" class="rustic-input" placeholder="Valor por defecto (Ej: 10)">
-                                        <p class="helper-text">Te avisará cuando quede poca cantidad.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rustic-block">
-                                <div class="block-header">
-                                    <label class="modal-option">
-                                        <input type="checkbox" id="sale-price-input" name="sale-price">
-                                        <span class="option-label">Precio de Venta</span>
-                                    </label>
-                                </div>
-                                <div class="reveal-wrapper" id="wrapper-sale-price">
-                                    <div class="reveal-inner">
-                                        <input type="number" id="sale-price-default-input" class="rustic-input" step="0.01" placeholder="0.00">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rustic-block">
-                                <div class="block-header">
-                                    <label class="modal-option">
-                                        <input type="checkbox" id="receipt-price-input" name="receipt-price">
-                                        <span class="option-label">Precio de Compra</span>
-                                    </label>
-                                </div>
-                                <div class="reveal-wrapper" id="wrapper-receipt-price">
-                                    <div class="reveal-inner">
-                                        <input type="number" id="receipt-price-default-input" class="rustic-input" step="0.01" placeholder="0.00">
-
-                                        <div class="nested-section" id="auto-price-wrapper">
-                                            <label class="modal-option sub-option">
-                                                <input type="checkbox" id="auto-price-input" name="auto-price">
-                                                <span>Cálculo Automático</span>
-                                            </label>
-
-                                            <div class="reveal-wrapper" id="wrapper-auto-price">
-                                                <div class="reveal-inner">
-                                                    <div id="auto-price-type-container" class="radio-stack">
-                                                        <label class="modal-option">
-                                                            <input type="radio" id="auto-iva-input" name="price-type" value="iva">
-                                                            <span>Precio Venta + IVA (21%)</span>
-                                                        </label>
-                                                        <label class="modal-option">
-                                                            <input type="radio" id="auto-gain-input" name="price-type" value="gain">
-                                                            <span>Precio Venta + Ganancia</span>
-                                                        </label>
-                                                        <label class="modal-option">
-                                                            <input type="radio" id="auto-iva-gain-input" name="price-type" value="gain-iva">
-                                                            <span>Venta + Ganancia + IVA</span>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rustic-block">
-                                <div class="block-header">
-                                    <label class="modal-option">
-                                        <input type="checkbox" id="gain-input" name="gain">
-                                        <span class="option-label">Margen de Ganancia</span>
-                                    </label>
-                                </div>
-                                <div class="reveal-wrapper" id="wrapper-gain">
-                                    <div class="reveal-inner">
-
-                                        <div class="rustic-input-group">
-                                            <span class="input-addon" id="gain-symbol">%</span>
-                                            <input type="number" id="gain-default-input" class="rustic-input grouped" step="0.01" placeholder="Valor">
-                                        </div>
-
-                                        <div class="reveal-wrapper" id="wrapper-gain-type">
-                                            <div class="reveal-inner">
-                                                <div id="gain-type-container" class="radio-inline" style="margin-top: 10px;">
-                                                    <label class="modal-option">
-                                                        <input type="radio" id="percentage-gain-input" name="gain-type">
-                                                        <span>Porcentaje (%)</span>
-                                                    </label>
-                                                    <label class="modal-option">
-                                                        <input type="radio" id="hard-gain-input" name="gain-type">
-                                                        <span>Valor Fijo ($)</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <div class="form-footer" style="margin-top: 2rem; text-align: right;">
-                            <button class="btn btn-primary" id="save-changes-btn" disabled>
-                                Guardar Cambios
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tu bloque “Zona de Peligro” (se mantiene para compatibilidad) -->
-                <div class="accordion-item" style="border:2px solid var(--accent-red); border-radius:var(--border-radius);">
+                <div class="accordion-item" style="border:2px solid var(--accent-red);">
                     <button class="accordion-header" aria-expanded="false">
                         <span style="color: var(--accent-red)">Zona de Peligro</span>
                         <i class="ph ph-caret-down"></i>
                     </button>
                     <div class="accordion-content">
                         <p style="color: var(--accent-red); margin-bottom: 1rem;">
-                            Eliminar tu base de datos borrará permanentemente todas las tablas y datos.
-                            <strong>Esta acción no se puede deshacer.</strong>
+                            Esta acción borrará permanentemente la base de datos y sus registros.
                         </p>
-                        <button id="delete-db-btn" class="btn btn-danger">Eliminar esta Base de Datos</button>
+                        <button id="delete-db-btn" class="btn btn-danger">Eliminar Base de Datos</button>
                     </div>
                 </div>
+
             </div>
         </div>
         <!-- ===================== FIN CONFIGURAR TABLA ===================== -->
 
-        <!-- ===================== ESTADÍSTICAS DIARIAS (versión AVANZADA del compañero) ===================== -->
+        <!-- ===================== ESTADÍSTICAS DIARIAS ===================== -->
         <div id="analysis" class="dashboard-view hidden">
-            <p style="font-size: 13px; text-align: right;" class="inventory-info-btn">¿Donde están mis inventarios?</p>
-            <div class="menu-container">
-                <div class="table-header">
-                    <h2>Estadísticas Diarias</h2>
-                    <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
-                        <h3>Mostrando Estadisticas para Inventario = </h3>
-                        <div class="inventory-select-container">
-                            <h4 class="select-inventory-btn" id="inventory-picker">Todos</h4>
-                            <div class="inventories-dropdown flex-column hidden" id="inventories-dropdown">
-                                <div class="inventory-btn" data-value="all" style="border: none"><h4>Todos</h4></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="table-wrapper" id="stats-wrapper">
-                    <div class="daily-stats-wrapper flex-row" id="general-stats">
-                        <div class="flex-column" style="gap: 2rem;">
-                            <div class="stat-group-container">
-                                <h3>Stock</h3>
-                                <div class="flex-column">
-                                    <div class="daily-stat-item" data-graph="stock-ingresado">
-                                        <h4>Stock Ingresado</h4>
-                                        <div class="daily-stat" id="daily-stock-ingresado">0</div>
-                                    </div>
-                                    <div class="daily-stat-item" data-graph="stock-vendido">
-                                        <h4>Stock Vendido</h4>
-                                        <div class="daily-stat" id="daily-stock-vendido">0</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="stat-group-container">
-                                <h3>Monetarias</h3>
-                                <div class="flex-column">
-                                    <div class="daily-stat-item" data-graph="gastos">
-                                        <h4>Gastos</h4>
-                                        <div class="flex-column">
-                                            <div class="daily-stat" id="daily-gastos">0</div>
-                                        </div>
-                                    </div>
-                                    <div class="daily-stat-item" data-graph="ingresos">
-                                        <h4>Ingresos</h4>
-                                        <div class="daily-stat" id="daily-ingresos">0</div>
-                                    </div>
-                                    <div class="daily-stat-item" data-graph="ganancias">
-                                        <h4>Ganancias</h4>
-                                        <div class="daily-stat" id="daily-ganancias">0</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-column" style="gap: 2rem">
-                            <div class="stat-group-container">
-                                <h3>Transacciones</h3>
-                                <div class="flex-column">
-                                    <div class="daily-stat-item" data-graph="ventas">
-                                        <h4>Ventas Realizadas</h4>
-                                        <div class="daily-stat" id="daily-ventas">0</div>
-                                    </div>
-                                    <div class="daily-stat-item" data-graph="compras">
-                                        <h4>Compras Realizadas</h4>
-                                        <div class="daily-stat" id="daily-compras">0</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="stat-group-container">
-                                <h3>Conexiones</h3>
-                                <div class="flex-column">
-                                    <div class="daily-stat-item" data-graph="clientes">
-                                        <h4>Nuevos Clientes</h4>
-                                        <div class="daily-stat" id="daily-clientes">0</div>
-                                    </div>
-                                    <div class="daily-stat-item" data-graph="proveedores">
-                                        <h4>Nuevos Proveedores</h4>
-                                        <div class="daily-stat" id="daily-proveedores">0</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="estadisticas-graph-wrapper all-center">
-                        <div class="flex-column stat-graph all-center" id="stock-ingresado-container">
-                            <h2>Stock Ingresado por Hora</h2>
-                            <div id="stock-ingresado-graph"></div>
-                        </div>
-                        <div class="flex-column all-center stat-graph hidden" id="stock-vendido-container">
-                            <h2>Stock Vendido por Hora</h2>
-                            <div id="stock-vendido-graph"></div>
-                        </div>
-                        <div class="flex-column stat-graph all-center hidden" id="ventas-container">
-                            <h2>Ventas Realizadas por Hora</h2>
-                            <div id="ventas-graph"></div>
-                        </div>
-                        <div class="flex-column all-center stat-graph hidden" id="compras-container">
-                            <h2>Compras Realizadas por Hora</h2>
-                            <div id="compras-graph"></div>
-                        </div>
-                        <div class="flex-column stat-graph all-center hidden" id="gastos-container">
-                            <h2>Gastos por Hora</h2>
-                            <div id="gastos-graph"></div>
-                        </div>
-                        <div class="flex-column all-center stat-graph hidden" id="ingresos-container">
-                            <h2>Ingresos por Hora</h2>
-                            <div id="ingresos-graph"></div>
-                        </div>
-                        <div class="flex-column all-center stat-graph hidden" id="ganancias-container">
-                            <h2>Ganancias por Hora</h2>
-                            <div id="ganancias-graph"></div>
-                        </div>
-                        <div class="flex-column stat-graph all-center hidden" id="clientes-container">
-                            <h2>Nuevos Clientes por Hora</h2>
-                            <div id="clientes-graph"></div>
-                        </div>
-                        <div class="flex-column all-center stat-graph hidden" id="proveedores-container">
-                            <h2>Nuevos Proveedores por Hora</h2>
-                            <div id="proveedores-graph"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
         <!-- ===================== FIN ESTADÍSTICAS DIARIAS ===================== -->
 
-        <!-- ===================== NOTIFICACIONES (TU VERSIÓN) ===================== -->
+        <!-- ===================== NOTIFICACIONES ===================== -->
         <div id="notifications" class="dashboard-view hidden">
             <h2><i class="ph ph-bell"></i>Notificaciones</h2>
             <p>Historial de todos los avisos importantes de tu cuenta.</p>
@@ -483,232 +364,41 @@
         </div>
         <!-- ===================== FIN NOTIFICACIONES ===================== -->
 
-        <!-- ===================== VENTAS (NUEVO DEL COMPAÑERO) ===================== -->
+        <!-- ===================== VENTAS ===================== -->
         <div id="sales" class="dashboard-view hidden">
-            <div class="not-available-container hidden">
-                <h2>Para gestionar el registro de Ventas, primero debes activar los siguientes Campos Recomendados para la Base de Datos seleccionada:</h2>
-                <div class="missing-preference-text flex-column"></div>
-                <button class="btn btn-primary got-to-config-btn">Ir a Configuración</button>
-            </div>
-            <div id="ventas-container" class="menu-container" style="overflow: visible;">
-                <div class="table-header">
-                    <h2>Ventas</h2>
-                    <div class="table-controls">
-                        <div data-direction="descending" data-order= "none" class="direction-btn">
-                            <i class="ph ph-arrow-up hidden" style="margin-right: 5px"></i>
-                            <i class="ph ph-arrow-down" style="margin-right: 5px"></i>
-                        </div>
-                        <div class="order-by-container">
-                            <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
-                                <i class="ph ph-list-bullets" style="margin-right: 5px"></i>
-                                <h4 class="order-by-btn">Ordenar Por</h4>
-                            </div>
-                            <div class="order-by-dropdown flex-column hidden">
-                                <p data-order="sales-table-date" class="order-btn">Fecha</p>
-                                <p data-order="sales-table-id" class="order-btn">Número</p>
-                                <p data-order="sales-table-client" class="order-btn">Cliente</p>
-                                <p data-order="sales-table-price" class="order-btn">Precio</p>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary new-transaction-btn" style="margin-top: 0; margin-left: 1rem;" data-transaction="sale">+ Crear una Venta</button>
-                    </div>
-                </div>
-                <div class="table-wrapper">
-                    <div id="sales-table-container">
-                        <div id="sales-table-id-descending" class="transaction-view hidden">
-                        </div>
-                        <div id="sales-table-id-ascending" class="transaction-view hidden">
-                        </div>
-                        <div id="sales-table-client-descending" class="transaction-view hidden">
-                        </div>
-                        <div id="sales-table-client-ascending" class="transaction-view hidden">
-                        </div>
-                        <div id="sales-table-price-ascending" class="transaction-view hidden">
-                        </div>
-                        <div id="sales-table-price-descending" class="transaction-view hidden">
-                        </div>
-                        <div id="sales-table-date-ascending" class="transaction-view hidden">
-                        </div>
-                        <div id="sales-table-date-descending" class="transaction-view">
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
         <!-- ===================== FIN VENTAS ===================== -->
 
-        <!-- ===================== COMPRAS (NUEVO DEL COMPAÑERO) ===================== -->
+        <!-- ===================== COMPRAS ===================== -->
         <div id="receipts" class="dashboard-view hidden">
-            <div class="not-available-container hidden">
-                <h2>Para gestionar el registro de Compras, primero debes activar los siguientes Campos Recomendados para la Base de Datos seleccionada:</h2>
-                <div class="missing-preference-text flex-column"></div>
-                <button class="btn btn-primary got-to-config-btn">Ir a Configuración</button>
-            </div>
-            <div id="receipts-container" class="menu-container" style="overflow: visible;">
-                <div class="table-header">
-                    <h2>Compras</h2>
-                    <div class="table-controls">
-                        <div data-direction="descending" data-order= "none" class="direction-btn">
-                            <i class="ph ph-arrow-up hidden" style="margin-right: 5px"></i>
-                            <i class="ph ph-arrow-down" style="margin-right: 5px"></i>
-                        </div>
-                        <div class="order-by-container">
-                            <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
-                                <i class="ph ph-list-bullets" style="margin-right: 5px"></i>
-                                <h4 class="order-by-btn">Ordenar Por</h4>
-                            </div>
-                            <div class="order-by-dropdown flex-column hidden">
-                                <p data-order="receipts-table-date" class="order-btn">Fecha</p>
-                                <p data-order="receipts-table-id" class="order-btn">Número</p>
-                                <p data-order="receipts-table-provider" class="order-btn">Proveedor</p>
-                                <p data-order="receipts-table-price" class="order-btn">Precio</p>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary new-transaction-btn" style="margin-top: 0; margin-left: 1rem; justify-self: left" data-transaction="receipt">+ Crear una Compra</button>
-                    </div>
-                </div>
-                <div class="table-wrapper">
-                    <div id="receipts-table-container">
-                        <div id="receipts-table-id-descending" class="transaction-view hidden">
-                        </div>
-                        <div id="receipts-table-id-ascending" class="transaction-view hidden">
-                        </div>
-                        <div id="receipts-table-provider-descending" class="transaction-view hidden">
-                        </div>
-                        <div id="receipts-table-provider-ascending" class="transaction-view hidden">
-                        </div>
-                        <div id="receipts-table-price-ascending" class="transaction-view hidden">
-                        </div>
-                        <div id="receipts-table-price-descending" class="transaction-view hidden">
-                        </div>
-                        <div id="receipts-table-date-descending" class="transaction-view">
-                        </div>
-                        <div id="receipts-table-date-ascending" class="transaction-view hidden">
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
         <!-- ===================== FIN COMPRAS ===================== -->
 
-        <!-- ===================== CLIENTES (NUEVO DEL COMPAÑERO) ===================== -->
+        <!-- ===================== CLIENTES ===================== -->
         <div id="customers" class="dashboard-view hidden">
-            <div class="menu-container" style="overflow: visible;">
-                <div class="table-header">
-                    <h2>Clientes</h2>
-                    <div class="table-controls">
-                        <div data-direction="descending" data-order= "none" class="direction-btn">
-                            <i class="ph ph-arrow-up hidden" style="margin-right: 5px"></i>
-                            <i class="ph ph-arrow-down" style="margin-right: 5px"></i>
-                        </div>
-                        <div class="order-by-container">
-                            <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
-                                <i class="ph ph-list-bullets" style="margin-right: 5px"></i>
-                                <h4 class="order-by-btn">Ordenar Por</h4>
-                            </div>
-                            <div class="order-by-dropdown flex-column hidden">
-                                <p data-order="customers-table-date" class="order-btn">Fecha</p>
-                                <p data-order="customers-table-name" class="order-btn">Nombre</p>
-                                <p data-order="customers-table-email" class="order-btn">Email</p>
-                                <p data-order="customers-table-phone" class="order-btn">Teléfono</p>
-                                <p data-order="customers-table-address" class="order-btn">Dirección</p>
-                                <p data-order="customers-table-dni" class="order-btn">DNI</p>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary new-transaction-btn" style="margin-top: 0; margin-left: 1rem; justify-self: left" data-transaction="customer">+ Crear Cliente</button>
-                    </div>
-                </div>
-                <div class="table-wrapper">
-                    <div id="customers-table-container">
-                        <div id="customers-table-email-descending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-email-ascending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-name-descending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-name-ascending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-date-descending" class="transaction-view customer-view">
-                        </div>
-                        <div id="customers-table-date-ascending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-phone-ascending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-phone-descending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-address-descending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-address-ascending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-dni-descending" class="transaction-view hidden customer-view">
-                        </div>
-                        <div id="customers-table-dni-ascending" class="transaction-view hidden customer-view">
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
         <!-- ===================== FIN CLIENTES ===================== -->
 
-        <!-- ===================== PROVEEDORES (NUEVO DEL COMPAÑERO) ===================== -->
+        <!-- ===================== PROVEEDORES ===================== -->
         <div id="providers" class="dashboard-view hidden">
-            <div class="menu-container" style="overflow: visible;">
-                <div class="table-header">
-                    <h2>Proveedores</h2>
-                    <div class="table-controls">
-                        <div data-direction="descending" data-order= "none" class="direction-btn">
-                            <i class="ph ph-arrow-up hidden" style="margin-right: 5px"></i>
-                            <i class="ph ph-arrow-down" style="margin-right: 5px"></i>
-                        </div>
-                        <div class="order-by-container">
-                            <div class="flex-row" style="margin-right: 20px; align-items: center; justify-content: flex-end;">
-                                <i class="ph ph-list-bullets" style="margin-right: 5px"></i>
-                                <h4 class="order-by-btn">Ordenar Por</h4>
-                            </div>
-                            <div class="order-by-dropdown flex-column hidden">
-                                <p data-order="providers-table-date" class="order-btn">Fecha</p>
-                                <p data-order="providers-table-name" class="order-btn">Nombre</p>
-                                <p data-order="providers-table-email" class="order-btn">Email</p>
-                                <p data-order="providers-table-address" class="order-btn">Dirección</p>
-                                <p data-order="providers-table-phone" class="order-btn">Teléfono</p>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary new-transaction-btn" style="margin-top: 0; margin-left: 1rem; justify-self: left" data-transaction="provider">+ Crear Proveedor</button>
-                    </div>
-                </div>
-                <div class="table-wrapper">
-                    <div id="customers-table-container">
-                        <div id="providers-table-email-descending" class="transaction-view hidden provider-view">
-                        </div>
-                        <div id="providers-table-email-ascending" class="transaction-view hidden provider-view">
-                        </div>
-                        <div id="providers-table-name-descending" class="transaction-view hidden provider-view">
-                        </div>
-                        <div id="providers-table-name-ascending" class="transaction-view hidden provider-view">
-                        </div>
-                        <div id="providers-table-date-descending" class="transaction-view provider-view">
-                        </div>
-                        <div id="providers-table-date-ascending" class="transaction-view hidden provider-view">
-                        </div>
-                        <div id="providers-table-phone-descending" class="transaction-view hidden provider-view">
-                        </div>
-                        <div id="providers-table-phone-ascending" class="transaction-view hidden provider-view">
-                        </div>
-                        <div id="providers-table-address-descending" class="transaction-view hidden provider-view">
-                        </div>
-                        <div id="providers-table-address-ascending" class="transaction-view hidden provider-view">
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
         <!-- ===================== FIN PROVEEDORES ===================== -->
+
+        <!-- ===================== EMPLEADOS ===================== -->
+        <div id="employees" class="dashboard-view hidden">
+        </div>
+        <!-- ===================== FIN EMPLEADOS ===================== -->
+
+        <!-- ===================== PAYMENT ===================== -->
+        <div id="payments" class="dashboard-view hidden">
+        </div>
+        <!-- ===================== FIN PAYMENT ===================== -->
 
     </main>
 </div>
 
-<!-- ===================== MODALES GENERALES (tuyos) ===================== -->
-<div id="import-modal" class="modal-overlay hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+<!-- ===================== MODALES GENERALES ===================== -->
+<div id="import-modal" class="modal-overlay hidden">
     <div class="modal-content view-container"> <button id="close-modal-btn" class="modal-close-btn">&times;</button>
 
         <div class="modal-header">
@@ -765,7 +455,6 @@
 <!-- Notificaciones/toasts -->
 <div id="toast-container"></div>
 
-<!-- Prompt genérico -->
 <div id="custom-prompt-modal" class="modal-overlay hidden">
     <div class="modal-content view-container" style="max-width: 450px;">
         <div class="modal-header">
@@ -784,6 +473,85 @@
     </div>
 </div>
 
+<div id="sale-modal-v2" class="modal-overlay hidden">
+    <div class="modal-content view-container" style="width: 900px; max-width: 95vw;">
+        <button class="modal-close-btn" id="close-sale-v2">&times;</button>
+
+        <div class="modal-header">
+            <h2><i class="ph ph-shopping-cart"></i> Nueva Venta</h2>
+            <p>Selecciona productos y asigna un cliente.</p>
+        </div>
+
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+            <div class="rustic-block" style="padding: 1rem;">
+                <div class="flex-row align-center justify-between">
+                    <div class="flex-row align-center" style="gap: 10px;">
+                        <i class="ph ph-user" style="font-size: 1.5rem;"></i>
+                        <div class="flex-column">
+                            <span class="micro-label">Cliente</span>
+                            <h3 id="v2-client-name" style="margin:0;">Consumidor Final</h3>
+                            <input type="hidden" id="v2-client-id">
+                        </div>
+                    </div>
+                    <select id="v2-client-select" class="rustic-select" style="width: auto; min-width: 200px;">
+                        <option value="">Consumidor Final</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex-row" style="gap: 10px;">
+                <div class="search-wrapper" style="height: 44px;">
+                    <input type="text" id="v2-product-search" placeholder="Buscar producto para agregar...">
+                    <div id="v2-search-results" class="search-dropdown hidden" style="max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
+            <div class="table-wrapper" style="height: 300px; min-height: 300px;">
+                <table id="v2-cart-table">
+                    <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th style="width: 100px; text-align: center;">Cant.</th>
+                        <th style="width: 120px; text-align: right;">Precio Unit.</th>
+                        <th style="width: 120px; text-align: right;">Subtotal</th>
+                        <th style="width: 60px;"></th>
+                    </tr>
+                    </thead>
+                    <tbody id="v2-cart-body">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex-row justify-between align-center" style="background: #f4f4f4; padding: 1rem; border-radius: 8px; border: 2px solid #1b1b1b;">
+                <h3 style="margin:0;">Total a Cobrar:</h3>
+                <h1 style="margin:0; font-size: 2.5rem;" id="v2-cart-total">$0.00</h1>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancel-sale-v2">Cancelar</button>
+            <button class="btn btn-primary" id="confirm-sale-v2" disabled>Confirmar Venta</button>
+        </div>
+    </div>
+</div>
+
+<div id="sale-details-modal" class="modal-overlay hidden" style="z-index: 2000;">
+    <div class="modal-content view-container" style="width: 500px; max-width: 90vw;">
+        <div class="modal-header">
+            <h2>Detalle de Transacción</h2>
+            <button class="modal-close-btn" id="close-details-modal">&times;</button>
+        </div>
+        <div class="modal-body" id="sale-details-content">
+        </div>
+    </div>
+</div>
+
+<div id="restore-actions-tab" class="restore-tab" onclick="window.toggleActionsColumn()" title="Mostrar Acciones">
+    <i class="ph ph-caret-left"></i> Acciones
+</div>
+
 <!-- ===================== SCRIPTS ===================== -->
 <!-- Librería para gráficos (necesaria para Estadísticas Diarias del compañero) -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -792,5 +560,8 @@
 
 <script type="module" src="assets/js/import.js"></script>
 <script type="module" src="assets/js/dashboard.js"></script>
+<script type="module" src="assets/js/sales/sales.js"></script>
+<script type="module" src="assets/js/payment/payment.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </body>
 </html>

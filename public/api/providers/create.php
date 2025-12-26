@@ -1,34 +1,51 @@
 <?php
+// public/api/providers/create.php
+header('Content-Type: application/json');
 
+// Desactivar errores HTML para no romper JSON
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
-require_once __DIR__ . '/../../../vendor/autoload.php';
-require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
+use App\Models\ProviderModel;
 
-use App\core\Database;
-
-$data = json_decode(file_get_contents('php://input'), true);
-
-//ESTAS 4 ESTADISTICAS SON INDEPENDIENTES DE LA TABLA SELECCIONADA YA QUE NO INVOLUCRAN TABLAS
-
-$response = [];
 try {
-    $pdo = Database::getInstance();
-    getCurrentUser();
-    $user_id = $_SESSION['user_id'];
+    // 1. Definir ruta raíz y cargar dependencias
+    $projectRoot = dirname(__DIR__, 3);
+    require_once $projectRoot . '/vendor/autoload.php';
+    require_once $projectRoot . '/src/helpers/auth_helper.php';
+    require_once $projectRoot . '/src/Models/ProviderModel.php';
 
-    $providerData = $data['provider'];
+    // 2. Verificar Autenticación
+    if (!function_exists('getCurrentUser')) throw new Exception('Auth helper no cargado');
 
-    $newprovider = $pdo->prepare("INSERT INTO providers (user_id,full_name, email, phone, address) 
-                                    VALUES (:user_id,:name, :email, :phone, :address)");
-    $newprovider ->execute([
-        ':user_id' => $user_id,
-        ':name' => $providerData['name'],
-        ':email' => $providerData['email'],
-        ':phone' => $providerData['phone'],
-        ':address' => $providerData['address']]);
-    $response = ['success' => true];
-} catch (Exception $e) {
-    $response = ['success' => false];
+    $user = getCurrentUser();
+    if (!$user) {
+        echo json_encode(['success' => false, 'message' => 'No autorizado']);
+        exit;
+    }
+
+    // 3. Leer JSON (Plano, sin 'provider' wrapper)
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    // Validación básica
+    if (empty($input['name'])) {
+        echo json_encode(['success' => false, 'message' => 'El nombre es obligatorio']);
+        exit;
+    }
+
+    // 4. Guardar usando el Modelo
+    $model = new ProviderModel();
+    // Pasamos el array $input directo porque el modelo ya sabe qué campos usar
+    $id = $model->createProvider($user['id'], $input);
+
+    if ($id) {
+        echo json_encode(['success' => true, 'id' => $id]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error al guardar en base de datos']);
+    }
+
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error 500: ' . $e->getMessage()]);
 }
-
-echo json_encode($response, JSON_NUMERIC_CHECK);
+?>

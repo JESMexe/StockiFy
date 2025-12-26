@@ -1,16 +1,13 @@
 <?php
 // public/api/table/delete-row.php
 
-// 1. Cargar configuraciones y helpers
-require_once __DIR__ . '/../../../vendor/autoload.php'; // Ajusta si tu autoloader está en otra ruta
+require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 
 use App\Models\TableModel;
 
-// 2. Configurar cabeceras
 header('Content-Type: application/json');
 
-// 3. Verificar sesión
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -22,7 +19,6 @@ if (!$user) {
     exit;
 }
 
-// 4. Obtener datos de entrada (JSON)
 $input = json_decode(file_get_contents('php://input'), true);
 $idToDelete = $input['id'] ?? null;
 
@@ -32,7 +28,6 @@ if (!$idToDelete) {
     exit;
 }
 
-// 5. Obtener la tabla activa desde la sesión
 $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
 
 if (!$activeInventoryId) {
@@ -42,10 +37,8 @@ if (!$activeInventoryId) {
 }
 
 try {
-    // Instanciamos el modelo
     $tableModel = new TableModel();
 
-    // Obtenemos el nombre real de la tabla (ej: user_1_inventario)
     $metadata = $tableModel->getTableMetadata($activeInventoryId);
 
     if (!$metadata || empty($metadata['table_name'])) {
@@ -54,7 +47,6 @@ try {
 
     $tableName = $metadata['table_name'];
 
-    // 6. Ejecutar el borrado
     if ($tableModel->deleteRow($tableName, $idToDelete)) {
         echo json_encode(['success' => true, 'message' => 'Registro eliminado correctamente.']);
     } else {

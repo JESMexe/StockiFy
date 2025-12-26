@@ -1,148 +1,496 @@
-﻿/* =========================================================
-   🎨 SECCIÓN DE COLUMNAS RECOMENDADAS (ACORDEÓN)
+﻿/*
+ * Archivo: public/assets/css/create-db.css
+ * Versión: FINAL STOCKIFY (Detalles desalineados + Bordes activos)
+ */
+
+/* =========================================================
+   1. ESTRUCTURA GENERAL
    ========================================================= */
 
-#recomended-columns-form {
-    background: #fff;
-    border: 2px solid #1b1b1b;
-    border-radius: 14px;
-    margin-top: 1.8rem;
-    margin-bottom: 2rem;
-    overflow: hidden;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    transition: all 0.4s ease;
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    background-color: var(--bg-primary, #f4f4f4);
 }
 
-/* === TÍTULO Y BOTÓN DE DESPLEGABLE === */
-#recomended-columns-header {
+.auth-form-container {
+    width: 100%;
+    max-width: 800px;
+    background: transparent;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-black, #1b1b1b);
+}
+
+.auth-header p {
+    color: var(--color-gray, #666);
+    font-size: 1rem;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-black, #1b1b1b);
+}
+
+/* Inputs */
+.auth-form input[type="text"],
+.auth-form input[type="number"],
+.auth-form textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 2px solid var(--border-color, #1b1b1b);
+    border-radius: 12px;
+    background: #fff;
+    font-size: 1rem;
+    color: #1b1b1b !important;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.auth-form input:focus,
+.auth-form textarea:focus {
+    outline: none;
+    border-color: var(--accent-color, #4f46e5);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+}
+
+/* =========================================================
+   2. ACORDEÓN (.rc-accordion)
+   ========================================================= */
+
+.rc-accordion {
+    background: #fff;
+    border: 2px solid var(--color-black, #1b1b1b);
+    border-radius: 12px;
+    box-shadow: 6px 6px 0 var(--color-black, #1b1b1b);
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+/* Cabecera */
+.rc-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--accent-color);
-    color: white;
-    padding: 1rem 1.3rem;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1.1rem;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: var(--accent-color, #4f46e5);
     border-bottom: 2px solid #1b1b1b;
-    transition: background 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+    transition: filter 0.2s ease;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
 }
 
-#recomended-columns-header:hover {
-    background: rgba(var(--accent-color-rgb), 0.8);
+.rc-header:hover {
+    filter: brightness(1.1);
 }
 
-#recomended-columns-header img {
-    width: 18px;
-    height: 18px;
+.rc-header.open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.rc-header h5 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffffff !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rc-arrow {
+    font-size: 1.3rem;
+    color: #ffffff !important;
     transition: transform 0.3s ease;
 }
 
-#recomended-columns-header.rotated img {
+.rc-header.open .rc-arrow {
     transform: rotate(180deg);
 }
 
-/* === CONTENIDO DEL ACORDEÓN === */
-#recomended-columns-content {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.5s ease, opacity 0.4s ease;
-    background: #fdfdfd;
-    padding: 0 1.5rem;
-}
-
-#recomended-columns-form.open #recomended-columns-content {
-    max-height: 1200px; /* suficiente para todo el contenido */
-    opacity: 1;
-    padding-bottom: 1.5rem;
-}
-
-/* === BLOQUES DE COLUMNA === */
-.column-block {
-    border: 1.5px solid #1b1b1b;
-    border-radius: 10px;
-    padding: 1rem;
-    margin-top: 1.2rem;
+/* Contenido */
+#recomended-columns-form {
     background: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    transition: all 0.25s ease;
+    padding: 2rem 1.5rem;
+    display: block;
+    opacity: 1 !important;
+    visibility: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    color: #333333 !important;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    animation: simpleFadeIn 0.3s ease-out;
 }
 
-.column-block:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+.hidden {
+    display: none !important;
 }
 
-/* === TÍTULO DE BLOQUE === */
-.column-block h4 {
-    margin: 0 0 0.6rem 0;
-    font-weight: 600;
-    font-size: 1rem;
-    color: #1b1b1b;
-}
-
-/* === INPUTS Y CHECKBOXES === */
-.column-block input[type="text"] {
-    width: 100%;
-    border: 1.5px solid #ccc;
-    border-radius: 8px;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-    transition: border 0.2s ease;
-}
-
-.column-block input[type="text"]:focus {
-    border-color: var(--accent-color);
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.25);
-}
-
-.column-block input[type="checkbox"],
-.column-block input[type="radio"] {
-    accent-color: var(--accent-color);
-    transform: scale(1.2);
-    margin-right: 0.4rem;
-}
-
-/* === SUBSECCIONES RADIO === */
-.radio-section {
-    margin-top: 0.7rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    padding-left: 1.2rem;
-    font-size: 0.9rem;
-    color: #333;
-}
-
-/* === BOTÓN PRINCIPAL === */
-#createDbForm button[type="submit"] {
-    background: var(--accent-yellow);
-    color: #1b1b1b;
-    font-weight: 700;
-    padding: 0.9rem;
-    border: 2px solid #1b1b1b;
-    border-radius: 12px;
-    margin-top: 2rem;
-    box-shadow: 3px 3px 0 #1b1b1b;
-    transition: all 0.3s ease;
-}
-
-#createDbForm button[type="submit"]:hover {
-    background: var(--accent-green);
-    color: white;
-    box-shadow: 0 0 0 #1b1b1b;
-    transform: translate(3px, 3px);
-}
-
-/* === Animación sutil === */
-@keyframes accordionFade {
-    from { opacity: 0; transform: translateY(-10px); }
+@keyframes simpleFadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-#recomended-columns-form.open #recomended-columns-content {
-    animation: accordionFade 0.4s ease;
+.rc-description {
+    font-size: 0.95rem;
+    color: #555 !important;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+.rc-note {
+    font-size: 0.85rem;
+    color: #888 !important;
+    margin-top: 1.5rem;
+    font-style: italic;
+    text-align: center;
+}
+
+/* =========================================================
+   3. ITEMS Y BOTONES FÍSICOS
+   ========================================================= */
+
+.rc-item {
+    margin-bottom: 1.2rem;
+    display: block;
+    width: 100%;
+    position: relative;
+}
+
+.rc-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    background: #ffffff;
+    border: 2px solid #1b1b1b;
+    border-radius: 12px;
+    box-shadow: 5px 5px 0 #1b1b1b;
+    font-weight: 700;
+    color: #1b1b1b !important;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    transform: translate(0, 0);
+    position: relative;
+    z-index: 1;
+}
+
+.rc-btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 6px 6px 0 #1b1b1b;
+    background: #f9f9f9;
+    z-index: 50;
+}
+
+.rc-btn.active {
+    background: var(--accent-color, #4f46e5);
+    border-color: #1b1b1b;
+    color: #ffffff !important;
+    box-shadow: 0 0 0 #1b1b1b;
+    transform: translate(5px, 5px);
+    z-index: 50;
+}
+
+/* =========================================================
+   4. ICONO AYUDA & TOOLTIPS
+   ========================================================= */
+
+.rc-help {
+    font-size: 1.4rem;
+    color: #999;
+    position: relative;
+    z-index: 10;
+    transition: color 0.2s;
+    margin-left: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rc-btn:hover .rc-help {
+    color: #1b1b1b;
+}
+
+.rc-btn.active .rc-help {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* EL GLOBO (Tooltip) */
+.tooltip-container::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 150%;
+    right: -10px;
+    width: 260px;
+    background: #1b1b1b;
+    color: #fff;
+    font-family: 'Satoshi', sans-serif !important;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: left;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+/* LA FLECHITA */
+.tooltip-container::before {
+    content: '';
+    position: absolute;
+    bottom: 130%;
+    right: 5px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #1b1b1b transparent transparent transparent;
+
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s ease;
+}
+
+/* MOSTRAR AL HOVER */
+.tooltip-container:hover::after,
+.tooltip-container:hover::before {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Wrapper necesario para que el icono no desaparezca */
+.tooltip-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 10px;
+    cursor: help;
+    z-index: 20;
+}
+
+.tooltip-container i {
+    font-size: 1.4rem;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.rc-btn:hover .tooltip-container i {
+    color: #1b1b1b;
+}
+
+.rc-btn.active .tooltip-container i {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* =========================================================
+   5. CONTROLES EXTRA
+   ========================================================= */
+
+.rc-extra {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f4f4f4;
+    border: 2px solid #1b1b1b;
+    border-radius: 10px;
+    display: block;
+    animation: simpleFadeIn 0.3s ease-out;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.rc-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: #1b1b1b !important;
+}
+
+.rc-input {
+    width: 100%;
+    margin-top: 0.8rem;
+    padding: 0.7rem 1rem;
+    border: 2px solid #1b1b1b;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #fff;
+    color: #1b1b1b !important;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+}
+
+.rc-input:focus {
+    border-color: var(--accent-color, #4f46e5);
+    outline: none;
+    box-shadow: 3px 3px 0 var(--accent-color, #4f46e5);
+}
+
+.rc-radio {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    color: #1b1b1b !important;
+    font-weight: 500;
+}
+
+/* =========================================================
+   6. CHECKBOX & RADIO (Estilo StockiFy Desaliñado)
+   ========================================================= */
+
+input[type="checkbox"],
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #1b1b1b;
+    background: #fff;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+/* Estado CHECKED: Borde Accent */
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+    border-color: var(--accent-color, #4f46e5);
+}
+
+/* --- Checkbox cuadrado --- */
+input[type="checkbox"] {
+    border-radius: 6px;
+}
+
+input[type="checkbox"]::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    background: var(--accent-color, #4f46e5);
+    transform: scale(0);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 2px;
+}
+
+/* CHECKED: Aparece y se desalinea hacia abajo-derecha */
+input[type="checkbox"]:checked::before {
+    transform: scale(1) translate(1.5px, 1.5px);
+}
+
+/* --- Radio redondo --- */
+input[type="radio"] {
+    border-radius: 50%;
+}
+
+input[type="radio"]::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    background: var(--accent-color, #4f46e5);
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* CHECKED: Aparece y se desalinea hacia abajo-derecha */
+input[type="radio"]:checked::before {
+    transform: scale(1) translate(1.5px, 1.5px);
+}
+
+/* =========================================================
+   7. BOTÓN PRIMARIO
+   ========================================================= */
+
+.auth-form .btn-primary {
+    margin-top: 2rem;
+    width: 100%;
+    padding: 1.1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: #1b1b1b;
+    color: #fff;
+    border: 2px solid #1b1b1b;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-form .btn-primary:hover {
+    background: var(--accent-color, #4f46e5);
+    border-color: var(--accent-color, #4f46e5);
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+}
+
+.auth-form .btn-primary:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+}
+
+.auth-form .btn-primary:disabled {
+    background: #999;
+    border-color: #999;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+#message {
+    font-weight: 600;
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
 }

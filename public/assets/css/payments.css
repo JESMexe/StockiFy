@@ -1,0 +1,100 @@
+﻿/* public/assets/css/payments.css */
+
+.payments-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 1rem;
+}
+
+/* Grilla */
+.pay-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Más ancho para info */
+    gap: 20px;
+    padding: 10px;
+}
+
+.pay-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-left: 5px solid #6610f2;
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column; /* Cambiado a columna para mostrar más datos */
+    gap: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pay-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 16, 242, 0.1);
+}
+
+.pay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pay-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+/* Badges (Etiquetas) */
+.pay-tags {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge.currency-ARS { background-color: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
+.badge.currency-USD { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+.badge.currency-USDT { background-color: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
+
+.badge.type { background-color: #f5f5f5; color: #666; border: 1px solid #ddd; }
+.badge.surcharge { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+
+/* Botones */
+.pay-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+    justify-content: flex-end;
+}
+
+.icon-btn-sm {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: #888;
+    transition: color 0.2s;
+}
+.icon-btn-sm:hover { color: #6610f2; }
+.icon-btn-sm.delete:hover { color: #dc3545; }
+
+/* Modales */
+#create-payment-modal .modal-content,
+#edit-payment-modal .modal-content {
+    background-color: #ffffff !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+/* Formulario */
+.form-row { display: flex; gap: 15px; }
+.form-col { flex: 1; }
+.form-group label { display: block; font-size: 0.85rem; color: #666; margin-bottom: 5px; font-weight: 600; }

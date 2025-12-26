@@ -15,19 +15,27 @@ class ImportModel
      */
     public function parseCsvHeaders(string $filePath): array
     {
+        if (!file_exists($filePath)) {
+            throw new Exception("El archivo no existe.");
+        }
         $handle = fopen($filePath, 'r');
         if ($handle === false) {
-            throw new Exception("No se pudo abrir el archivo CSV subido.");
+            throw new Exception("No se pudo abrir el archivo CSV.");
         }
 
-        $headers = fgetcsv($handle, 0, ','); // 0 = max length (no limit), ',' = delimiter
+        // Leemos la primera línea para sacar headers
+        // Usamos str_getcsv para mejor control si fuera necesario, pero fgetcsv es estándar
+        $headers = fgetcsv($handle, 0, ',');
         fclose($handle);
 
-        if ($headers === false || count($headers) === 0 || (count($headers) === 1 && empty($headers[0]))) {
-            throw new Exception("El archivo CSV está vacío o la fila de cabeceras no es válida.");
+        if ($headers === false || count($headers) === 0) {
+            throw new Exception("El archivo CSV parece estar vacío o dañado.");
         }
 
-        return array_map('trim', $headers);
+        // Limpiamos caracteres extraños (BOM, espacios invisibles) que rompen la comparación
+        return array_map(function($h) {
+            return trim(preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $h));
+        }, $headers);
     }
 
     /**
@@ -51,38 +59,55 @@ class ImportModel
             throw new Exception("Error al leer la cabecera del archivo CSV.");
         }
 
+        $headerMap = [];
+        foreach ($headers as $index => $name) {
+            $cleanName = trim(preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $name));
+            $headerMap[strtolower($cleanName)] = $index;
+        }
+
         $parsedData = [];
-        $rowNumber = 1;
 
         while (($rowData = fgetcsv($handle, 0, ',')) !== false) {
-            $rowNumber++;
-            $newRow = [];
-            $isEmptyRow = true;
+            if (count($rowData) === 1 && $rowData[0] === null) continue;
 
-            foreach ($mapping as $stockifyColumn => $csvIndex) {
-                if (isset($rowData[$csvIndex])) {
-                    $value = trim($rowData[$csvIndex]);
-                    $newRow[$stockifyColumn] = $value;
-                    if (!empty($value)) {
-                        $isEmptyRow = false;
+            $newRow = [];
+            $hasData = false;
+
+            foreach ($mapping as $dbCol => $csvColName) {
+                // CASO A: EL USUARIO ELIGIÓ "VACIAR DATOS"
+                if ($csvColName === '__EMPTY__') {
+                    // Heurística simple: si parece numérico, ponemos 0, si no 'N/A'
+                    // Esto asegura que el campo exista en $newRow y sobreescriba el viejo en el merge
+                    $isNumericCol = in_array(strtolower($dbCol), ['stock', 'min_stock', 'sale_price', 'receipt_price', 'hard_gain', 'percentage_gain']);
+                    $newRow[$dbCol] = $isNumericCol ? 0 : 'N/A';
+                    $hasData = true; // Consideramos que esta fila "tiene cambios"
+                }
+                // CASO B: MAPEADO A COLUMNA CSV
+                else {
+                    $lookupName = strtolower(trim($csvColName));
+
+                    // Buscamos el índice numérico usando el mapa
+                    if (isset($headerMap[$lookupName])) {
+                        $index = $headerMap[$lookupName];
+                        $val = isset($rowData[$index]) ? trim($rowData[$index]) : null;
+
+                        // Convertimos vacíos a NULL para base de datos
+                        if ($val === '') $val = null;
+
+                        $newRow[$dbCol] = $val;
+                        $hasData = true;
+                    } else {
+                        // Si no encontramos la columna por nombre (raro si el header venía de ahí), ignoramos
                     }
-                } else {
-                    $newRow[$stockifyColumn] = null;
-                    // error_log("Advertencia: Índice CSV {$csvIndex} no encontrado en la fila {$rowNumber}");
                 }
             }
 
-            if (!$isEmptyRow) {
+            if ($hasData) {
                 $parsedData[] = $newRow;
             }
         }
 
         fclose($handle);
-
-        if (empty($parsedData)) {
-            error_log("Advertencia: No se encontraron datos válidos en el archivo CSV después de la cabecera.");
-        }
-
         return $parsedData;
     }
 }

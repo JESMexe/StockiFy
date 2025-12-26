@@ -45,16 +45,64 @@ class TableStructureController
                     throw new \InvalidArgumentException('Acción no válida.');
             }
         } catch (Exception $e) {
-            // Manejo de errores
-            $code = ($e instanceof \InvalidArgumentException) ? 400 : 500;
-            if (str_contains($e->getMessage(), '1050') || str_contains($e->getMessage(), '42S01')) {
-                $code = 409; // Conflicto (ya existe)
-            } else if (str_contains($e->getMessage(), '1054')) {
-                $code = 404; // No encontrado
+            // --- MANEJO DE ERRORES EMBELLECIDO ---
+
+            // 1. Errores SQL Específicos (PDOException)
+            // Verificamos si tiene errorInfo (propio de PDO) para sacar el código SQL exacto
+            if (isset($e->errorInfo[1])) {
+                $sqlCode = $e->errorInfo[1];
+
+                if ($sqlCode == 1059) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "El nombre de la columna es demasiado largo. Por favor, usa menos de 64 caracteres."]);
+                }
+                else if ($sqlCode == 1060) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "Ya existe una columna con ese nombre en la base de datos."]);
+                }
+                else if ($sqlCode == 1054) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "Error de referencia: La columna solicitada no existe."]);
+                }
+                else if ($sqlCode == 1064) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "El nombre contiene caracteres inválidos. Usa solo letras, números y guiones bajos."]);
+                }
+                else if ($sqlCode == 1091) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "No se pudo borrar la columna porque no existe."]);
+                }
+                else if ($sqlCode == 1146) {
+                    http_response_code(500);
+                    echo json_encode(['success' => false, 'message' => "Error crítico: La tabla de datos no se encuentra."]);
+                }
+                else if ($sqlCode == 1061) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "Ya existe un índice con ese nombre."]);
+                }
+                else {
+                    // Otros errores SQL no mapeados
+                    http_response_code(500);
+                    echo json_encode(['success' => false, 'message' => 'Error de Base de Datos: ' . $e->getMessage()]);
+                }
             }
-            http_response_code($code);
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-            error_log("Error en TableStructureController: " . $e->getMessage());
+            // 2. Errores de Lógica (InvalidArgumentException)
+            else if ($e instanceof \InvalidArgumentException) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            }
+            // 3. Errores Genéricos (Fallback)
+            else {
+                // Mantenemos tu chequeo de string por si acaso no viene el errorInfo
+                if (str_contains($e->getMessage(), '1059')) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "El nombre de la columna es demasiado largo (Detectado por texto)."]);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(['success' => false, 'message' => 'Error inesperado: ' . $e->getMessage()]);
+                    error_log("Error en TableStructureController: " . $e->getMessage());
+                }
+            }
         }
     }
 

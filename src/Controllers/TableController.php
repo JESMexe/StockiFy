@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Models\TableModel;
 use App\Models\InventoryModel;
+use Exception;
 
 class TableController
 {
@@ -131,12 +132,10 @@ class TableController
         try {
             $tableModel = new TableModel();
 
-            // Busco el nombre real de la tabla
             $metadata = $tableModel->getTableMetadata($activeInventoryId);
             if (!$metadata) { throw new Exception("Metadatos de tabla no encontrados."); }
             $tableName = $metadata['table_name'];
 
-            // Llamo al modelo para actualizar
             $updatedItem = $tableModel->updateItemRow($tableName, $itemId, $dataToUpdate);
 
             if ($updatedItem) {

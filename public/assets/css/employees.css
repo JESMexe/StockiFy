@@ -1,0 +1,68 @@
+﻿/* public/assets/css/employees.css */
+
+.employees-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 1rem;
+}
+
+/* Modales */
+#create-employee-modal .modal-content {
+    background-color: #ffffff !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+/* Grid de Tarjetas */
+.emp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 10px;
+}
+
+/* Tarjeta Individual */
+.emp-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+}
+
+.emp-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #7c4dff; /* Acento Violeta */
+}
+
+/* Avatar */
+.emp-avatar {
+    width: 60px;
+    height: 60px;
+    background: #ede7f6;
+    color: #5e35b1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 10px auto;
+}
+
+/* Textos */
+.emp-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.emp-id {
+    font-size: 0.8rem;
+    color: #888;
+}

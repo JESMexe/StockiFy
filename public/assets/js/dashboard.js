@@ -1,27 +1,99 @@
-// assets/js/dashboard.js (Versión FINAL Unificada y Corregida)
+// assets/js/dashboard.js
 
 // --- 1. IMPORTACIONES ---
 import * as api from './api.js';
-// Nano: Asumimos que este archivo existe y es necesario.
 import * as setup from './setupMiCuentaDropdown.js';
 import {notificationConfig, pop_ups} from './notifications/pop-up.js';
+import { salesModuleInstance } from './sales/sales.js';
+import { purchaseModuleInstance } from './purchases/purchases.js';
+import { customerModuleInstance } from './customers/customers.js';
+import { providerModuleInstance } from './providers/providers.js';
+import { employeeModuleInstance } from './employees/employees.js';
+import { analyticsModuleInstance } from './analytics/analytics.js';
+import { paymentsModuleInstance } from './payment/payment.js';
 import {initializeImportModal, openImportModal, setStockifyColumns} from './import.js';
 
 // --- 2. VARIABLES GLOBALES ---
 let allData = []; // Guardo todos los datos para filtrar
 let currentTableColumns = []; // Guardo las columnas de la tabla actual
+let originalData = []; // COPIA DE SEGURIDAD PARA EL ORDEN ORIGINAL
 let editingRowId = null; // Para saber qué fila estoy editando
 let selectedSearchColumn = 'all'; // 'all' es el valor por defecto
 let searchColumnBtn, searchColumnBtnText, searchColumnDropdown;
+let isCriticalFilterActive = false; // Estado del filtro de peligro
+let isActionsHidden = true; // false = Visible, true = Oculto (Pestaña activa)
 const protectedColumns = ['id', 'created_at'];
 
-// Variables para el Modal de Eliminación (Tu Lógica)
 let deleteModal, deleteConfirmInput, confirmDeleteBtn, deleteDbNameConfirmSpan, deleteErrorMsg;
 let currentDbNameToDelete = '';
 let columnListContainer, addColumnForm, columnListStatus;
 
+let currentSort = { column: null, state: 0 };
 
-// --- 3. FUNCIONES DEL NÚCLEO (Fusión y Correcciones de Lógica) ---
+let columnMapping = { name: null, stock: null, sale_price: null, buy_price: null };
+let activeFeatures = { min_stock: false, gain: false, gain_type: 'percent' };
+
+
+function formatColumnName(col) {
+    const lowerCol = col.toLowerCase();
+
+    // 1. Mapeo exacto de columnas del sistema a Español
+    const map = {
+        'id': 'ID',
+        'name': 'Nombre',
+        'stock': 'Stock',
+        'min_stock': 'Stock Mínimo',
+        'sale_price': 'Precio de Venta',
+        'receipt_price': 'Precio de Compra',
+        'percentage_gain': 'Ganancia (%)',
+        'hard_gain': 'Ganancia ($)',
+        'created_at': 'Fecha de Creación',
+        'updated_at': 'Última Actualización'
+    };
+
+    if (map[lowerCol]) {
+        return map[lowerCol];
+    }
+
+    const cleanName = col.replace(/_/g, ' ');
+    return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+}
+
+function checkCriticalStatus() {
+    const btn = document.getElementById('critical-filter-btn');
+    if (!btn) return;
+
+    // Recorremos los datos para ver si AL MENOS UNO es crítico
+    const hasCriticalItems = allData.some(row => {
+        // 1. Chequeo de Stock
+        if (activeFeatures.min_stock) {
+            const stock = parseFloat(row[columnMapping.stock]) || 0;
+            const min = parseFloat(row['min_stock']) || 0;
+            if (stock <= min) return true;
+        }
+        // 2. Chequeo de Ganancia (Pérdida)
+        if (activeFeatures.gain) {
+            const sale = parseFloat(row['sale_price']) || 0;
+            const buy = parseFloat(row['receipt_price']) || 0;
+            if (sale > 0 && buy > 0 && sale < buy) return true;
+        }
+        return false;
+    });
+
+    // Mostrar u ocultar botón
+    if (hasCriticalItems) {
+        btn.classList.remove('hidden');
+    } else {
+        btn.classList.add('hidden');
+        // Si el botón desaparece y estaba activo, desactivamos el filtro
+        if (isCriticalFilterActive) {
+            isCriticalFilterActive = false;
+            btn.style.backgroundColor = '#fff0f0';
+            btn.style.color = 'var(--accent-red)';
+            filterTable();
+        }
+    }
+}
 
 // -- Manejo de Stock --
 async function handleStockUpdate(event) {
@@ -86,263 +158,202 @@ async function handleStockUpdate(event) {
 
 
 /**
- * Renderiza la tabla principal con corrección de datos y estética unificada.
+ * REEMPLAZAR renderTable
+ * Calcula Ganancia y Stock Mínimo usando el Mapeo
  */
-// ... (Tus importaciones y variables globales se mantienen igual) ...
-
 /**
- * Renderiza la tabla con soporte para MODO EDICIÓN y PREFERENCIAS FLEXIBLES.
+ * renderTable ACTUALIZADA (Ordenamiento de columnas especiales al final)
  */
 async function renderTable(columns, data) {
     const tableHead = document.querySelector('#data-table thead');
     const tableBody = document.querySelector('#data-table tbody');
 
-    if (!tableHead || !tableBody) {
-        console.error("Error crítico: No se encontraron los elementos de la tabla.");
-        return;
-    }
+    if (!tableHead || !tableBody) return;
 
-    // 1. Obtener Preferencias (Con manejo de errores)
-    let inventoryPreferences = { min_stock: 1, sale_price: 1, receipt_price: 1, hard_gain: 1, percentage_gain: 1 };
     try {
-        const response = await api.getCurrentInventoryPreferences();
-        if (response && response.success) {
-            inventoryPreferences = response;
+        if (!columnMapping.name) {
+            const prefs = await api.getCurrentInventoryPreferences();
+            if (prefs && prefs.success) {
+                if(prefs.mapping) columnMapping = prefs.mapping;
+                if(prefs.features) activeFeatures = prefs.features;
+            }
         }
-    } catch (error) {
-        console.warn("Usando preferencias por defecto.");
-    }
+    } catch (e) { console.warn("Usando prefs por defecto"); }
 
-    // 2. Definir Columnas
     if ((!columns || columns.length === 0) && data && data.length > 0) {
         columns = Object.keys(data[0]);
         currentTableColumns = columns;
     }
 
-    // 3. HEADERS
-    const headerHTML = columns.map(col => {
+
+    const specialCols = ['min_stock', 'sale_price', 'receipt_price'];
+    const normalColumns = columns.filter(col => {
         const c = col.toLowerCase();
-        if (c === 'created_at' || c === 'user_id' || c === 'inventory_id') return '';
-        if (c === 'min_stock' && inventoryPreferences.min_stock == 0) return '';
-        if (c === 'sale_price' && inventoryPreferences.sale_price == 0) return '';
-        if (c === 'receipt_price' && inventoryPreferences.receipt_price == 0) return '';
-        if (c === 'hard_gain' && inventoryPreferences.hard_gain == 0) return '';
-        if (c === 'percentage_gain' && inventoryPreferences.percentage_gain == 0) return '';
+        return !['created_at', 'user_id', 'inventory_id', 'updated_at', ...specialCols].includes(c);
+    });
 
-        // Títulos bonitos
-        let label = col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, ' ');
-        if (c === 'min_stock') label = 'Stock Mín.';
-        if (c === 'sale_price') label = 'Precio Venta';
-        if (c === 'receipt_price') label = 'Precio Compra';
-        if (c === 'percentage_gain') label = 'Ganancia (%)';
-        if (c === 'hard_gain') label = 'Ganancia ($)';
-        if (c === 'id') label = 'ID';
+    const orderedSpecialColumns = [];
 
-        return `<th>${label}</th>`;
-    }).join('') + '<th class="actions-header">Acciones</th>';
+    if (columns.includes('receipt_price')) orderedSpecialColumns.push('receipt_price');
+    if (columns.includes('sale_price')) orderedSpecialColumns.push('sale_price');
 
-    tableHead.innerHTML = `<tr>${headerHTML}</tr>`;
+    if (columns.includes('min_stock') && activeFeatures.min_stock) {
+        orderedSpecialColumns.push('min_stock');
+    }
 
-    // 4. BODY
+    const displayColumns = [...normalColumns, ...orderedSpecialColumns];
+
+    let actionsHeaderContent = '';
+    let actionsHeaderClass = 'actions-header';
+
+    let actionsTh = '';
+    if (!isActionsHidden) {
+        // Solo si NO está oculta, la dibujamos
+        actionsTh = `<th class="actions-header" onclick="window.toggleActionsColumn()" title="Ocultar columna">Acciones <i class="ph ph-caret-right" style="vertical-align: middle; margin-left: 5px;"></i></th>`;
+    }
+
+
+    const headerHTML = displayColumns.map(col => {
+
+        let niceName = formatColumnName(col);
+        let label = niceName;
+
+        // Iconos
+        if (col === columnMapping.stock) label += ' <i class="ph-bold ph-package"></i>';
+        if (col === columnMapping.sale_price) label += ' <i class="ph-bold ph-coin-vertical"></i>';
+        if (col === columnMapping.buy_price) label += ' <i class="ph-bold ph-shopping-cart"></i>';
+        if (col === 'min_stock') label += ' <i class="ph-bold ph-folder-simple-minus"></i>';
+
+        let sortIcon = '';
+        if (currentSort.column === col) {
+            if (currentSort.state === 1) sortIcon = ' <i class="ph-fill ph-caret-up" style="font-size: 1.5em; color: var(--accent-color);"></i>';
+            if (currentSort.state === 2) sortIcon = ' <i class="ph-fill ph-caret-down" style="font-size: 1.5em; color: var(--accent-color);"></i>';
+        }
+
+        return `<th onclick="window.handleSort('${col}')" style="cursor: pointer; user-select: none;" title="Ordenar por ${niceName}">${sortIcon}${label}</th>`;
+    }).join('');
+
+    let gainHeader = '';
+    if (activeFeatures.gain) {
+        const gainLabel = activeFeatures.gain_type === 'percent' ? 'Ganancia (%)' : 'Ganancia ($)';
+        gainHeader = `<th style="cursor: default;">${gainLabel}</th>`;
+    }
+
+    tableHead.innerHTML = `<tr>${headerHTML}${gainHeader}${actionsTh}</tr>`;
+
+    // --- GENERACIÓN DEL BODY ---
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="100%" class="empty-state">Aún no hay datos ingresados.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="100%" class="empty-state"><p>Sin datos</p></td></tr>`;
     } else {
         tableBody.innerHTML = data.map(row => {
             const rowId = row['id'] ?? row['Id'] ?? row['ID'];
-            const createdAt = row['created_at'] || '';
-            const isEditing = (editingRowId == rowId); // ¿Esta fila se está editando?
+            const isEditing = (editingRowId == rowId);
 
-            // Renderizado de Celdas
-            const cellsHTML = columns.map(col => {
-                const c = col.toLowerCase();
-                // Mismos filtros que el header
-                if (c === 'created_at' || c === 'user_id' || c === 'inventory_id') return '';
-                if (c === 'min_stock' && inventoryPreferences.min_stock == 0) return '';
-                if (c === 'sale_price' && inventoryPreferences.sale_price == 0) return '';
-                if (c === 'receipt_price' && inventoryPreferences.receipt_price == 0) return '';
-                if (c === 'hard_gain' && inventoryPreferences.hard_gain == 0) return '';
-                if (c === 'percentage_gain' && inventoryPreferences.percentage_gain == 0) return '';
-
+            // Iteramos sobre displayColumns (el orden nuevo)
+            const cellsHTML = displayColumns.map(col => {
                 let value = row[col] ?? '-';
+                let cellClass = '';
 
-                // --- MODO EDICIÓN ---
-                if (isEditing) {
-                    // Si es columna 'name', 'stock', precios, etc., mostramos INPUT
-                    // (Evitamos editar columnas calculadas si es complejo, pero por ahora todo editable)
-                    if (c === 'stock' || c.includes('price') || c.includes('gain') || c.includes('stock')) {
-                        return `<td><input type="number" class="editing-input" data-col="${col}" value="${value}" step="0.01"></td>`;
-                    }
-                    return `<td><input type="text" class="editing-input" data-col="${col}" value="${value}"></td>`;
+                // Lógica de Stock Mínimo (Alerta visual)
+                if (col === columnMapping.stock && activeFeatures.min_stock) {
+                    const min = parseFloat(row['min_stock']) || 0;
+                    const current = parseFloat(value) || 0;
+                    if (current <= min) cellClass = 'status-critical';
                 }
 
-                // --- MODO VISUALIZACIÓN ---
-
-                // Stock Crítico
-                if (c === 'stock') {
-                    let minStock = row['min_stock'] ?? 0;
-                    let classCritical = (inventoryPreferences.min_stock == 1 && Number(value) <= Number(minStock)) ? 'status-critical' : '';
-                    return `<td class="${classCritical}">${value}</td>`;
-                }
-
-                // Moneda
-                if ((c.includes('price') || c.includes('hard_gain')) && !isNaN(value) && value !== '-') {
+                // Formato Moneda
+                if ((col === 'sale_price' || col === 'receipt_price') && !isNaN(value) && value !== '-') {
                     value = `$${parseFloat(value).toFixed(2)}`;
                 }
-                // Porcentaje
-                if (c.includes('percentage') && !isNaN(value) && value !== '-') {
-                    value = `${value}%`;
+
+                if (isEditing) {
+                    return `<td><input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" style="width:100%"></td>`;
                 }
 
-                return `<td>${value}</td>`;
+                return `<td class="${cellClass}">${value}</td>`;
             }).join('');
 
-            // Celda de Acciones (Cambia según modo)
-            let actionsHTML = '';
-            if (isEditing) {
-                actionsHTML = `
-                    <td class="actions-cell">
-                        <button class="action-btn save-btn" data-action="save" title="Guardar Cambios" style="color: var(--accent-green);">
-                            <i class="ph ph-check"></i>
-                        </button>
-                        <button class="action-btn cancel-btn" data-action="cancel" title="Cancelar" style="color: var(--accent-red);">
-                            <i class="ph ph-x"></i>
-                        </button>
-                    </td>
-                `;
-            } else {
-                actionsHTML = `
-                    <td class="actions-cell">
-                        <button class="action-btn edit-btn" data-action="edit" title="Editar">
-                            <i class="ph ph-pencil-simple"></i>
-                        </button>
-                        <button class="action-btn history-btn" data-action="history" title="Historial">
-                            <i class="ph ph-clock"></i>
-                        </button>
-                        <button class="action-btn delete-btn" data-action="delete" title="Eliminar">
-                            <i class="ph ph-trash"></i>
-                        </button>
-                    </td>
-                `;
+            // Cálculo de Ganancia (si aplica)
+            let gainHTML = '';
+            if (activeFeatures.gain) {
+                const sale = parseFloat(row['sale_price']) || 0; // Usamos nombres estándar
+                const buy = parseFloat(row['receipt_price']) || 0;
+                let profit = 0;
+                let displayProfit = '-';
+                let profitClass = '';
+
+                if (sale > 0 && buy > 0) {
+                    if (activeFeatures.gain_type === 'fixed') {
+                        profit = sale - buy;
+                        displayProfit = `$${profit.toFixed(2)}`;
+                    } else {
+                        profit = ((sale - buy) / sale) * 100;
+                        displayProfit = `${profit.toFixed(1)}%`;
+                    }
+
+                    if (profit > 0) profitClass = 'text-green-600 font-bold';
+                    else if (profit < 0) profitClass = 'status-critical';
+                }
+                gainHTML = `<td class="${profitClass}">${displayProfit}</td>`;
             }
 
-            return `<tr data-id="${rowId}" data-created-at="${createdAt}">${cellsHTML}${actionsHTML}</tr>`;
+
+            // Botones de Acción
+            let actionsHTML = '';
+            if (!isActionsHidden) {
+                if (isEditing) {
+                    actionsHTML = `
+                    <td class="actions-cell">
+                        <div class="flex-row">
+                            <button class="btn-icon action-save" onclick="window.saveRowChanges(this, '${rowId}')" title="Guardar">
+                                <i class="ph ph-check" style="color: var(--accent-green); font-weight: bold;"></i>
+                            </button>
+                            <button class="btn-icon action-cancel" onclick="window.cancelEditRow('${rowId}')" title="Cancelar">
+                                <i class="ph ph-x" style="color: var(--accent-red); font-weight: bold;"></i>
+                            </button>
+                        </div>
+                    </td>`;
+                } else {
+                    actionsHTML = `
+                    <td class="actions-cell">
+                        <div class="flex-row">
+                            <button class="btn-icon action-edit" title="Editar Fila" onclick="window.enableEditRow(this, '${rowId}')">
+                                <i class="ph ph-pencil-simple"></i>
+                            </button>
+                            <button class="btn-icon action-history" title="Ver Fecha Creación" onclick="window.showRowHistory('${row.created_at}', '${rowId}')">
+                                <i class="ph ph-clock"></i>
+                            </button>
+                            <button class="btn-icon action-delete" title="Eliminar Fila" onclick="window.confirmDeleteRow('${rowId}')">
+                                <i class="ph ph-trash" style="color: var(--accent-red);"></i>
+                            </button>
+                        </div>
+                    </td>`;
+                }
+            }
+
+
+            return `<tr id="row-${rowId}">${cellsHTML}${gainHTML}${actionsHTML}</tr>`;
         }).join('');
     }
-
-    // 5. EVENTOS (Delegación actualizada)
-    setupTableActions(tableBody, data);
 }
 
-function setupTableActions(tableBody, data) {
-    const newBody = tableBody.cloneNode(true);
-    tableBody.parentNode.replaceChild(newBody, tableBody);
+// --- FUNCIONES DE ACCIONES DE LA TABLA ---
 
-    newBody.addEventListener('click', (e) => {
-        const btn = e.target.closest('.action-btn');
-        if (!btn) return;
+window.showRowHistory = (dateString, id) => {
+    pop_ups.info(`Este registro (ID: ${id}) fue creado el: <br><b>${dateString}</b>`, "Historial de Creación");
+};
 
-        const tr = btn.closest('tr');
-        const id = tr.dataset.id;
-        const action = btn.dataset.action;
+window.confirmDeleteRow = async(id) => {
+    const confirmado = await pop_ups.confirm(
+        'Eliminar Registro',
+        '¿Estás seguro de que deseas eliminar esta fila permanentemente?'
+    );
 
-        if (action === 'edit') {
-            // Activar modo edición para esta fila
-            editingRowId = id;
-            // Re-renderizar tabla para mostrar inputs en esta fila
-            // Filtramos columnas para mantener la vista actual
-            const filterCols = currentTableColumns.filter(c => c.toLowerCase() !== 'created_at');
-            renderTable(filterCols, allData);
-        }
-        else if (action === 'save') {
-            handleSaveRow(tr, id);
-        }
-        else if (action === 'cancel') {
-            editingRowId = null; // Salir modo edición
-            const filterCols = currentTableColumns.filter(c => c.toLowerCase() !== 'created_at');
-            renderTable(filterCols, allData);
-        }
-        else if (action === 'history') {
-            handleHistoryClick(tr, id);
-        }
-        else if (action === 'delete') {
-            confirmDeleteRow(id);
-        }
-    });
-}
-
-// --- MANEJADORES DE ACCIONES ---
-
-// 1. Historial con ID y Resaltado
-function handleHistoryClick(tr, id) {
-    // 1. Efecto Visual: Resaltar fila
-    document.querySelectorAll('tr.highlight-row').forEach(r => r.classList.remove('highlight-row'));
-    tr.classList.add('highlight-row');
-    setTimeout(() => tr.classList.remove('highlight-row'), 4000); // Quitar a los 4s
-
-    // 2. Datos
-    const dateStr = tr.dataset.createdAt;
-    const productName = tr.querySelector('td:nth-child(2)')?.textContent || 'Producto'; // Intentamos pillar el nombre
-
-    if (dateStr && dateStr !== '0000-00-00 00:00:00') {
-        const d = new Date(dateStr);
-        const format = !isNaN(d) ? d.toLocaleString() : 'Fecha desconocida';
-
-        // 3. Pop-up con ID y Nombre
-        if (typeof pop_ups !== 'undefined') {
-            pop_ups.info(
-                `<b>Producto ID:</b> #${id}<br><b>Creado el:</b> ${format}`,
-                "Historial de Registro"
-            );
-        } else {
-            alert(`ID: ${id}\nCreado: ${format}`);
-        }
-    } else {
-        if (typeof pop_ups !== 'undefined') pop_ups.warning("Este registro no tiene fecha de creación guardada.", "Sin Datos");
+    if (!confirmado) {
+        return;
     }
-}
-
-// 2. Guardar Edición (API)
-async function handleSaveRow(tr, id) {
-    const inputs = tr.querySelectorAll('input.editing-input');
-    let updatedData = {};
-
-    // Recolectar datos de los inputs
-    inputs.forEach(input => {
-        updatedData[input.dataset.col] = input.value;
-    });
-
-    // Deshabilitar botón para evitar doble click
-    const saveBtn = tr.querySelector('.save-btn');
-    if(saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i>'; }
 
     try {
-        // Llamada a la API para actualizar (Asumimos que existe endpoint de update genérico)
-        // Si usas el de Nano sería api.updateTableRow(id, updatedData)
-        const response = await api.updateTableRow(id, updatedData); // Asegúrate que api.js tenga esto
-
-        if (response.success) {
-            pop_ups.success("Registro actualizado correctamente.");
-            editingRowId = null;
-            await loadTableData(); // Recargar datos frescos
-        } else {
-            throw new Error(response.message || "Error al actualizar.");
-        }
-    } catch (error) {
-        pop_ups.error("Falló la actualización: " + error.message);
-        if(saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="ph ph-check"></i>'; }
-    }
-}
-
-// 3. Eliminar Fila (API)
-async function confirmDeleteRow(id) {
-    // Preguntar antes de borrar
-    if (!confirm("¿Estás seguro de eliminar este registro permanentemente?")) return;
-
-    try {
-        // Asumimos endpoint de borrado de fila (si no existe, hay que crearlo en backend)
-        // api.deleteRecord es un nombre sugerido, revisa tu api.js
-        // Si usas el código de Nano, busca su función de delete.
-        // Si no existe, aquí simulo la llamada genérica:
         const response = await fetch('/api/table/delete-row.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -350,21 +361,152 @@ async function confirmDeleteRow(id) {
         }).then(res => res.json());
 
         if (response.success) {
-            pop_ups.info("Registro eliminado.");
-            // Eliminar visualmente antes de recargar para que se sienta rápido
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            if (row) row.remove();
+            pop_ups.info("Registro eliminado.", "Info.");
+            const idx = allData.findIndex(r => (r.id ?? r.Id ?? r.ID) == id);
+            if (idx > -1) {
+                const item = allData[idx];
+                const originalIdx = originalData.indexOf(item);
+                if (originalIdx > -1) originalData.splice(originalIdx, 1);
 
-            // Actualizar datos reales de fondo
-            const allDataIndex = allData.findIndex(r => r.id == id);
-            if (allDataIndex > -1) allData.splice(allDataIndex, 1);
+                allData.splice(idx, 1);
+            }
+
+            checkCriticalStatus();
+            filterTable();
         } else {
             throw new Error(response.message || "No se pudo eliminar.");
         }
     } catch (error) {
-        pop_ups.error("Error al eliminar: " + error.message);
+        pop_ups.error("Error al eliminar: " + error.message, "Error");
     }
 }
+
+window.toggleActionsColumn = () => {
+    isActionsHidden = !isActionsHidden; // Invertir estado
+
+    // Manejo de la Pestaña Flotante
+    const tab = document.getElementById('restore-actions-tab');
+    if (tab) {
+        if (isActionsHidden) {
+            tab.classList.remove('hidden'); // Mostrar pestaña
+        } else {
+            tab.classList.add('hidden');    // Ocultar pestaña
+        }
+    }
+
+    filterTable(); // Re-renderizar la tabla
+};
+
+// --- FUNCIÓN DE ORDENAMIENTO (NUEVA) ---
+window.handleSort = (column) => {
+    // 1. Calcular nuevo estado
+    if (currentSort.column === column) {
+        currentSort.state = (currentSort.state + 1) % 3; // Ciclo 0 -> 1 -> 2 -> 0
+    } else {
+        currentSort.column = column;
+        currentSort.state = 1; // Si es nueva columna, empieza Ascendente
+    }
+
+    // 2. Aplicar Orden
+    if (currentSort.state === 0) {
+        // Estado 0: Volver al orden original (copia de seguridad)
+        allData = [...originalData];
+    } else {
+        // Estado 1 (Asc) o 2 (Desc)
+        const direction = currentSort.state === 1 ? 1 : -1;
+
+        allData.sort((a, b) => {
+            let valA = a[column] ?? '';
+            let valB = b[column] ?? '';
+
+            // Detectar si son números para ordenar correctamente (1, 2, 10 en vez de 1, 10, 2)
+            const numA = parseFloat(valA);
+            const numB = parseFloat(valB);
+
+            // Si ambos son números válidos, comparamos matemáticamente
+            if (!isNaN(numA) && !isNaN(numB) && valA !== '' && valB !== '') {
+                return (numA - numB) * direction;
+            }
+
+            // Si no, comparamos como texto (case insensitive)
+            return String(valA).toLowerCase().localeCompare(String(valB).toLowerCase()) * direction;
+        });
+    }
+
+    // 3. Refrescar tabla (respetando filtros de búsqueda si los hay)
+    filterTable();
+};
+
+window.enableEditRow = (btn, id) => {
+    editingRowId = id;
+    const filterableColumns = currentTableColumns.filter(c => c.toLowerCase() !== 'created_at');
+    renderTable(filterableColumns, allData);
+};
+
+window.saveRowChanges = async (btn, id) => {
+    const row = btn.closest('tr');
+
+    if (!row) {
+        pop_ups.error("No se pudo encontrar la fila para guardar.", "Error UI");
+        return;
+    }
+
+    const inputs = row.querySelectorAll('.editing-input');
+    const dataToUpdate = {};
+    let hasData = false;
+
+    const numericColumns = ['stock', 'min_stock', 'sale_price', 'receipt_price', 'percentage_gain', 'hard_gain'];
+
+    inputs.forEach(input => {
+        const colName = input.dataset.col;
+        let value = input.value.trim();
+
+        if (value === '' && numericColumns.includes(colName.toLowerCase())) {
+            value = 0;
+        }
+        if (value === '' && !(numericColumns.includes(colName.toLowerCase()))) {
+            value = "-";
+        }
+
+        dataToUpdate[colName] = value;
+        hasData = true;
+    });
+
+    if (!hasData) {
+        pop_ups.error("No se encontraron datos para actualizar.", "Error de Datos");
+        return;
+    }
+
+    try {
+        console.log("Enviando actualización:", { itemId: id, dataToUpdate });
+
+        const result = await api.updateTableRow(id, dataToUpdate);
+
+        if (result.success) {
+            pop_ups.success("Fila actualizada correctamente.", "Éxito");
+
+            const idx = allData.findIndex(r => (r.id ?? r.Id ?? r.ID) == id);
+            if(idx !== -1) {
+                Object.assign(allData[idx], dataToUpdate);
+            }
+
+            checkCriticalStatus();
+            editingRowId = null;
+
+            filterTable();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        pop_ups.error("Error al guardar: " + error.message, "Error");
+    }
+};
+
+window.cancelEditRow = (id) => {
+    editingRowId = null;
+    filterTable();
+};
+
 
 // Función auxiliar para moneda
 function formatCurrency(value) {
@@ -373,10 +515,6 @@ function formatCurrency(value) {
 }
 
 
-
-// --- 3. OTRAS FUNCIONES DEL NÚCLEO ---
-
-// Tu lógica de Filtro y Edición se mantiene, se corrigió el alert por pop_ups.
 function createInputForCell(columnName, value) {
     const colLower = columnName.toLowerCase();
     if (colLower === 'id' || colLower === 'created_at') {
@@ -390,35 +528,38 @@ function createInputForCell(columnName, value) {
 
 function filterTable() {
     const searchInput = document.getElementById('search-input');
-    if (!searchInput) return;
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
     const filteredData = allData.filter(row => {
-        if (searchTerm === '') return true; // Si no hay búsqueda, mostrar todo
-
-        // Si buscamos en "Todas"
-        if (selectedSearchColumn === 'all') {
-            return Object.values(row).some(value =>
-                String(value).toLowerCase().includes(searchTerm)
-            );
+        if (isCriticalFilterActive) {
+            let isRowCritical = false;
+            if (activeFeatures.min_stock) {
+                const stock = parseFloat(row[columnMapping.stock]) || 0;
+                const min = parseFloat(row['min_stock']) || 0;
+                if (stock <= min) isRowCritical = true;
+            }
+            if (!isRowCritical && activeFeatures.gain) {
+                const sale = parseFloat(row['sale_price']) || 0;
+                const buy = parseFloat(row['receipt_price']) || 0;
+                if (sale > 0 && buy > 0 && sale < buy) isRowCritical = true;
+            }
+            if (!isRowCritical) return false;
         }
-        // Si buscamos en una columna específica
-        else {
+
+        if (searchTerm === '') return true;
+
+        if (selectedSearchColumn === 'all') {
+            return Object.values(row).some(value => String(value).toLowerCase().includes(searchTerm));
+        } else {
             const rowKeys = Object.keys(row);
             const matchingKey = rowKeys.find(key => key.toLowerCase() === selectedSearchColumn.toLowerCase());
-
-            if (matchingKey) {
-                return String(row[matchingKey]).toLowerCase().includes(searchTerm);
-            }
+            if (matchingKey) return String(row[matchingKey]).toLowerCase().includes(searchTerm);
             return false;
         }
     });
 
-    const filterableColumns = currentTableColumns.filter(
-        col => col.toLowerCase() !== 'created_at'
-    );
-
-    // ¡OJO! Usamos allData filtrada, no la global
+    // Renderizar
+    const filterableColumns = currentTableColumns.filter(col => col.toLowerCase() !== 'created_at');
     renderTable(filterableColumns, filteredData);
 }
 
@@ -437,11 +578,48 @@ function setupMenuNavigation() {
     menuButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetView = button.dataset.targetView;
+
+            // Lógica específica para Notificaciones
             if (targetView === 'notifications') {
-                loadNotifications(); // Carga el historial
+                loadNotifications();
             }
-            if (targetView) { showDashboardView(targetView); }
-            else { alert("Funcionalidad aún no implementada."); }
+
+            // Lógica específica para Ventas (CONECTANDO TU NUEVO MÓDULO)
+            if (targetView === 'sales') {
+                // Llamamos al init() del módulo que creamos en el Paso 2
+                salesModuleInstance.init();
+            }
+
+            if (targetView === 'receipts') { // 'receipts' es el ID que usa el botón del menú
+                purchaseModuleInstance.init();
+            }
+
+            // Lógica existente de ventas/compras...
+            if (targetView === 'customers') {
+                customerModuleInstance.init();
+            }
+
+            if (targetView === 'providers') {
+                providerModuleInstance.init();
+            }
+
+            if (targetView === 'employees') {
+                employeeModuleInstance.init();
+            }
+
+            if (targetView === 'analysis') {
+                analyticsModuleInstance.init();
+            }
+
+            if (targetView === 'payments') {
+                paymentsModuleInstance.init();
+            }
+
+            if (targetView) {
+                showDashboardView(targetView);
+            } else {
+                if(typeof pop_ups !== 'undefined') pop_ups.info("Funcionalidad aún no implementada.");
+            }
         });
     });
     console.log("Navegación del menú lateral configurada.");
@@ -452,84 +630,68 @@ function setupAccordion() {
     console.log("[INIT] Configurando acordeones inteligentes...");
     const headers = document.querySelectorAll('.accordion-header');
 
-    headers.forEach(header => {
-        // Evitamos duplicar listeners si la función se llama varias veces
-        if (header.dataset.attached) return;
-        header.dataset.attached = 'true';
+    try{
+        headers.forEach(header => {
+            // Evitamos duplicar listeners si la función se llama varias veces
+            if (header.dataset.attached) return;
+            header.dataset.attached = 'true';
 
-        header.addEventListener('click', () => {
-            const content = header.nextElementSibling;
-            const isOpen = header.classList.toggle('active'); // Alternamos estado
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling;
+                const isOpen = header.classList.toggle('active'); // Alternamos estado
 
-            if (isOpen) {
-                // --- ABRIR ---
-                header.setAttribute('aria-expanded', 'true');
-                content.classList.add('open');
+                if (isOpen) {
+                    // --- ABRIR ---
+                    header.setAttribute('aria-expanded', 'true');
+                    content.classList.add('open');
 
-                // 1. Asignamos la altura exacta actual para iniciar la animación
-                content.style.maxHeight = content.scrollHeight + "px";
+                    // 1. Asignamos la altura exacta actual para iniciar la animación
+                    content.style.maxHeight = content.scrollHeight + "px";
 
-                // 2. TRUCO CLAVE: Al terminar la animación (400ms), quitamos el límite.
-                // Esto permite que el contenido crezca dinámicamente (ej: al agregar columnas o desplegar opciones).
-                setTimeout(() => {
-                    if (header.classList.contains('active')) {
-                        content.style.maxHeight = 'none';
-                        content.style.overflow = 'visible'; // Permite que se vean sombras o tooltips
-                    }
-                }, 400);
+                    // 2. TRUCO CLAVE: Al terminar la animación (400ms), quitamos el límite.
+                    // Esto permite que el contenido crezca dinámicamente (ej: al agregar columnas o desplegar opciones).
+                    setTimeout(() => {
+                        if (header.classList.contains('active')) {
+                            content.style.maxHeight = 'none';
+                            content.style.overflow = 'visible'; // Permite que se vean sombras o tooltips
+                        }
+                    }, 400);
 
-            } else {
-                // --- CERRAR ---
-                header.setAttribute('aria-expanded', 'false');
+                } else {
+                    // --- CERRAR ---
+                    header.setAttribute('aria-expanded', 'false');
 
-                // 1. Restauramos la altura en píxeles (porque estaba en 'none')
-                // Esto es necesario para que la animación de cierre funcione.
-                content.style.maxHeight = content.scrollHeight + "px";
-                content.style.overflow = 'hidden';
+                    // 1. Restauramos la altura en píxeles (porque estaba en 'none')
+                    // Esto es necesario para que la animación de cierre funcione.
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    content.style.overflow = 'hidden';
 
-                // 2. Forzamos un "reflow" para que el navegador registre el cambio
-                void content.offsetHeight;
+                    // 2. Forzamos un "reflow" para que el navegador registre el cambio
+                    void content.offsetHeight;
 
-                // 3. Colapsamos a 0
-                content.style.maxHeight = '0';
-                content.classList.remove('open');
-            }
+                    // 3. Colapsamos a 0
+                    content.style.maxHeight = '0';
+                    content.classList.remove('open');
+                }
+            });
         });
-    });
+    } catch (error) {
+        console.error(error);
+    }
+
 }
 
-async function setupNanoFeatures() {
+async function setupFeatures() {
     try {
-        console.log("[INIT] Inicializando funcionalidades de Nano...");
-        // 1. Funciones de Navegación y Vistas (Rápidas)
         getReloadVariables();
         setupOrderBy();
-        console.log("[INIT] Funciones de navegación pasadas");
 
+        await setupInventoryPicker();
+        await setupRecomendedColumns();
+        await setupInventoryInfoBtn();
 
-        // 2. Funciones de Carga de Datos y UI (await)
-        // El 'await' es necesario aquí para no sobrecargar el servidor
-        const featurePromises = [
-            await setupClients(),
-            await setupProviders(),
-            await setupSaleList(),
-            await setupReceiptList(),
-            await setupInventoryPicker(),
-            await setupRecomendedColumns(),
-            await setupInventoryInfoBtn(),
-        ]
-        console.log("[INIT] Funciones de Carga de Datos y UI pasadas");
-        // 3. Funciones de Inicialización de UI y Gráficos (Donde fallaban los 'Element not found')
-        setupTransactions();
-        createCharts();
-        setupStatPickers();
-        await updateDailyStatistics('all');
-        console.log("[INIT] Funciones de Inicialización de UI y Gráficos pasadas");
-
-        console.log("[INIT] Funcionalidades de Nano inicializadas correctamente.");
     } catch (error) {
-        // Esto captura solo errores sincrónicos, pero es buena práctica.
-        console.error("Error en la inicialización de funcionalidades de Nano:", error);
+        console.error("Error en la inicialización de funcionalidades:", error);
         pop_ups.warning("Algunas funcionalidades avanzadas no pudieron cargarse.", "Error de Componente.");
     }
 }
@@ -715,26 +877,52 @@ async function handleConfirmDelete() {
 function renderColumnList() {
     if (!columnListContainer) return;
 
+    // Columnas protegidas siempre
+    const protectedCols = ['id', 'created_at', 'updated_at'];
+    // Columnas protegidas si están activas (Features)
+    if (activeFeatures.min_stock) protectedCols.push('min_stock');
+
+    // Filtramos para mostrar solo las gestionables
     const manageableColumns = currentTableColumns.filter(
-        col => !protectedColumns.includes(col.toLowerCase())
+        col => !protectedCols.includes(col.toLowerCase())
     );
 
-    if (manageableColumns.length === 0) {
-        columnListStatus.textContent = 'No hay columnas personalizadas para gestionar.';
-        columnListContainer.innerHTML = '';
-        return;
-    }
-
-    columnListStatus.textContent = '';
-    columnListContainer.innerHTML = manageableColumns.map(colName => `
+    columnListContainer.innerHTML = manageableColumns.map(colName => {
+        return `
         <div class="column-item" data-column-name="${colName}">
-            <span>${colName}</span>
+            <span>${formatColumnName(colName)}</span>
             <div class="column-actions">
                 <button class="btn btn-secondary btn-sm rename-col-btn">Renombrar</button>
                 <button class="btn btn-danger-secondary btn-sm drop-col-btn">Eliminar</button>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
+}
+
+// Manejador del Click en el Ojo
+columnListContainer?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.visibility-btn');
+    if (btn) {
+        const colItem = btn.closest('.column-item');
+        handleToggleVisibility(colItem.dataset.columnName);
+    } else if (e.target.classList.contains('drop-col-btn')) {
+        handleDropColumn(e);
+    } else if (e.target.classList.contains('rename-col-btn')) {
+        handleRenameColumn(e);
+    }
+});
+
+async function handleToggleVisibility(columnName) {
+    try {
+        const response = await api.manageTableColumn('toggle_visibility', { columnName });
+        if (response.success) {
+            await loadTableData(); // Recargar para actualizar vista
+        } else {
+            throw new Error(response.message);
+        }
+    } catch (error) {
+        pop_ups.error("No se pudo cambiar visibilidad: " + error.message);
+    }
 }
 
 async function handleAddColumn(e) {
@@ -1102,10 +1290,7 @@ function setupGreyBg(){
     const inventoryInfoModal = document.getElementById('inventory-info-modal');
     greyBg.addEventListener('click', (event) =>{
         if (event.target === greyBg) {
-            if (!transactionModal.classList.contains('hidden')) {
-                hideTransactionModal();
-            }
-            else if (!mobileMenu.classList.contains('hidden')) {
+            if (!mobileMenu.classList.contains('hidden')) {
                 greyBg.classList.add('hidden');
                 mobileMenu.classList.add('hidden');
             }
@@ -1114,28 +1299,13 @@ function setupGreyBg(){
                 greyBg.classList.add('hidden');
                 inventoryInfoModal.classList.add('hidden');
             }
-            else{
-                greyBg.classList.add('hidden');
-                hideTransactionSuccess();
-            }
 
         }
     })
 }
 
-function setupReturnBtn(){
-    const returnBtn = document.getElementById('return-btn');
-    const greyBg = document.getElementById('grey-background');
 
-    returnBtn.addEventListener('click', () => {
-        greyBg.classList.add('hidden');
-        hideTransactionSuccess();
-        hideTransactionModal();
-    })
-}
-// **--- FIN: FUNCIONES AUXILIARES NECESARIAS (De Nano) ---**
-
-
+// --- 4. INICIALIZACIÓN (LA ÚNICA FUNCIÓN init) ---
 // --- 4. INICIALIZACIÓN (LA ÚNICA FUNCIÓN init) ---
 async function init() {
     console.log("[INIT] Iniciando dashboard...");
@@ -1145,6 +1315,7 @@ async function init() {
     if (!response.success){
         alert('Ha ocurrido un error interno. Será deslogeado');
         window.location.href = '/logout.php';
+        return; // Agregado return para detener ejecución si falla
     }
     const isAdmin = response.isAdmin;
 
@@ -1152,28 +1323,27 @@ async function init() {
 
     const nav = document.getElementById('header-nav');
     if (nav) nav.innerHTML = `
-                                <a href="/statistics.php" class="btn btn-secondary">Estadisticas</a>
-                                   <div id="dropdown-container">
-                <div class="btn btn-secondary" id="mi-cuenta-btn">Mi Cuenta</div>
-                <div class="flex-column hidden" id="mi-cuenta-dropdown">
-                    <a href="/configuration.php" class="btn btn-secondary">Configuración</a>
-                    <a href="/configuration.php" class="btn btn-secondary">Modificaciones de Stock</a>
-                    <a href="/configuration.php" class="btn btn-secondary">Soporte</a>
-                    <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
-                </div>
-            </div>   
-                           `;
-    //PREPARA LOS FONDOS GRISES DE LOS MODALES
-    setupReturnBtn();
+        <a href="/statistics.php" class="btn btn-secondary">Estadisticas</a>
+        <div id="dropdown-container">
+            <div class="btn btn-secondary" id="mi-cuenta-btn">Mi Cuenta</div>
+            <div class="flex-column hidden" id="mi-cuenta-dropdown">
+                <a href="/configuration.php" class="btn btn-secondary">Configuración</a>
+                <a href="/configuration.php" class="btn btn-secondary">Modificaciones de Stock</a>
+                <a href="/configuration.php" class="btn btn-secondary">Soporte</a>
+                <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
+            </div>
+        </div>`;
+
+    // PREPARA LOS FONDOS GRISES DE LOS MODALES
     setupGreyBg();
     setupMobileMenu();
 
-    //PREPARA EL DROPDOWN DE "MI CUENTA"
+    // PREPARA EL DROPDOWN DE "MI CUENTA"
     setup.setupMiCuenta();
 
     // 2. CONFIGURACIÓN BÁSICA DE LA VISTA
     const tableTitleElement = document.getElementById('table-title');
-    initializeImportModal(); // Inicializo modal al principio
+    initializeImportModal();
     console.log("[INIT] Modal inicializado.");
 
     // --- Selecciono Elementos del Modal de Eliminación ---
@@ -1190,15 +1360,15 @@ async function init() {
     searchColumnDropdown = document.getElementById('search-column-dropdown');
     const closeDeleteBtn = document.getElementById('close-delete-modal-btn');
     const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-    const deleteDbBtn = document.getElementById('delete-db-btn'); // El botón que abre el modal
+    const deleteDbBtn = document.getElementById('delete-db-btn');
 
     // --- Conecto Eventos del Modal de Eliminación ---
     deleteDbBtn?.addEventListener('click', openDeleteModal);
     closeDeleteBtn?.addEventListener('click', closeDeleteModal);
     cancelDeleteBtn?.addEventListener('click', closeDeleteModal);
-    deleteConfirmInput?.addEventListener('input', handleDeleteConfirmInput); // Valida al escribir
+    deleteConfirmInput?.addEventListener('input', handleDeleteConfirmInput);
     confirmDeleteBtn?.addEventListener('click', handleConfirmDelete);
-    if(deleteModal) { // Cierro si se hace clic en el overlay
+    if(deleteModal) {
         deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
     }
     console.log("[INIT] Modal de Eliminación inicializado.");
@@ -1212,7 +1382,44 @@ async function init() {
         }
     });
 
-    await loadTableData();
+    const openImportBtn = document.getElementById('open-import-modal-btn');
+    if (openImportBtn) {
+        openImportBtn.addEventListener('click', async () => {
+            let activePrefs = {};
+            try {
+                const response = await api.getCurrentInventoryPreferences();
+                if (response.success) activePrefs = response;
+            } catch (e) {
+                console.warn("No se pudieron cargar preferencias para el filtro de importación.");
+            }
+
+            const systemCols = ['id', 'created_at', 'updated_at', 'user_id', 'inventory_id', 'percentage_gain', 'hard_gain'];
+
+            const colsToMap = currentTableColumns.filter(col => {
+                return !systemCols.includes(col.toLowerCase());
+            });
+
+            setStockifyColumns(colsToMap);
+            openImportModal();
+        });
+    }
+
+    const criticalBtn = document.getElementById('critical-filter-btn');
+    if (criticalBtn) {
+        criticalBtn.addEventListener('click', () => {
+            isCriticalFilterActive = !isCriticalFilterActive; // Toggle
+
+            if (isCriticalFilterActive) {
+                criticalBtn.style.backgroundColor = 'var(--accent-red)';
+                criticalBtn.style.color = '#fff';
+            } else {
+                criticalBtn.style.backgroundColor = '#fff0f0';
+                criticalBtn.style.color = 'var(--accent-red)';
+            }
+
+            filterTable();
+        });
+    }
 
     document.getElementById('search-input')?.addEventListener('input', filterTable);
     document.getElementById('add-row-btn')?.addEventListener('click', handleAddRowClick);
@@ -1226,7 +1433,11 @@ async function init() {
         if (!item) return;
 
         selectedSearchColumn = item.dataset.column;
-        if (searchColumnBtnText) searchColumnBtnText.textContent = (selectedSearchColumn === 'all') ? 'Todas' : selectedSearchColumn;
+        if (searchColumnBtnText) {
+            searchColumnBtnText.textContent = (selectedSearchColumn === 'all')
+                ? 'Todas'
+                : formatColumnName(selectedSearchColumn);
+        }
 
         searchColumnDropdown.querySelectorAll('.search-dropdown-item').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.column === selectedSearchColumn);
@@ -1235,13 +1446,13 @@ async function init() {
         filterTable();
     });
 
-    // Oculto dropdown si se hace clic fuera
     document.addEventListener('click', (e) => {
         if (!searchColumnBtn?.contains(e.target) && !searchColumnDropdown?.contains(e.target)) {
             searchColumnDropdown?.classList.add('hidden');
         }
     });
 
+    // Debug Toast y Notificaciones
     document.getElementById('debug-toast-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
         const type = document.getElementById('debug-toast-type').value;
@@ -1250,12 +1461,10 @@ async function init() {
 
         pop_ups[type](message || 'Este es un mensaje de prueba.', title);
 
-        // Limpio el form
         document.getElementById('debug-toast-title').value = '';
         document.getElementById('debug-toast-message').value = '';
     });
 
-    // Listener para borrar notificaciones del historial
     document.getElementById('notifications-list')?.addEventListener('click', async (e) => {
         const deleteBtn = e.target.closest('.toast-close-btn');
         const notificationDiv = e.target.closest('.toast-notification');
@@ -1290,51 +1499,28 @@ async function init() {
         }
     });
 
-
-    // 3. CARGA CRÍTICA DE DATOS (Arregla los botones laterales y la carga de la tabla)
+    // 3. CARGA DE DATOS Y FEATURE SETUP
     try {
-        console.log("[INIT] Llamando a api.getTableData...");
-        const result = await api.getTableData();
-        console.log("[INIT] Respuesta de getTableData:", result);
+        console.log("[INIT] Cargando datos de tabla...");
+        await loadTableData(); // ESTA ES LA ÚNICA LLAMADA QUE DEBE QUEDAR
 
-        if (result && result.success === true) {
-            allData = result.data || []; // Aseguro que sea array
-            currentTableColumns = result.columns || []; // Aseguro que sea array
-
-            if (tableTitleElement) {
-                tableTitleElement.textContent = result.inventoryName || 'Inventario';
-            }
-
-            console.log("[INIT] Llamando a renderTable...");
-            renderTable(currentTableColumns, allData);
-            console.log("[INIT] renderTable completado.");
-
-            const searchInput = document.getElementById('search-input');
-            if (searchInput) {
-                searchInput.addEventListener('input', filterTable);
-                console.log("[INIT] Listener de búsqueda añadido.");
-            } else {
-                console.warn("[INIT] Input de búsqueda no encontrado.");
-            }
-        } else {
-            console.error("[INIT] getTableData devolvió success: false o respuesta inválida.");
-            throw new Error(result?.message || 'Error al obtener datos de tabla.');
-        }
-        // 4. LISTENERS CRÍTICOS (Se activan SÓLO si la carga fue exitosa)
         setupMenuNavigation();
+        console.log("[INIT] Post setupMenuNavigation()...");
         setupAccordion();
+        console.log("[INIT] Post setupAccordion()...");
         showDashboardView('view-db');
+        console.log("[INIT] Post showDashboardView('view-db')...");
 
         setTimeout(() => {
-            setupNanoFeatures().catch(error => {
-                // Esto atrapará errores como 'Element not found' sin romper el flujo principal.
-                console.error("Error en la inicialización de funciones de Nano:", error);
+            setupFeatures().catch(error => {
+                console.error("Error en la inicialización de funciones:", error);
             });
-        }, 50); // 50ms de delay para estabilizar la vista
+        }, 50);
 
     } catch (error) {
         console.error("[INIT] Error CATCH:", error);
         pop_ups.error(`Error al cargar el panel: ${error.message}. Serás redirigido.`, "Error Crítico de Carga");
+
         if (error.message.includes('No autorizado')) {
             window.location.href = '/login.php';
         } else {
@@ -1365,105 +1551,6 @@ function getReloadVariables(){
     console.log(menuToClick);
 
     menuToClick.click();
-}
-
-async function setupSaleList(){
-    const response = await api.getUserSales();
-    if (response.success) {
-        const saleList = response.saleList;
-        await populateSaleView(saleList);
-    }
-}
-
-async function populateSaleView(saleList) {
-    const dateDescendingContainer = document.getElementById('sales-table-date-descending');
-    const dateAscendingContainer = document.getElementById('sales-table-date-ascending');
-    const idDescendingContainer = document.getElementById('sales-table-id-descending');
-    const idAscendingContainer = document.getElementById('sales-table-id-ascending');
-    const customerDescendingContainer = document.getElementById('sales-table-client-descending');
-    const customerAscendingContainer = document.getElementById('sales-table-client-ascending');
-    const priceDescendingContainer = document.getElementById('sales-table-price-descending');
-    const priceAscendingContainer = document.getElementById('sales-table-price-ascending');
-
-    const dateDescendingList = saleList.date.descending;
-    const dateAscendingList = saleList.date.ascending;
-    const idDescendingList = saleList.id.descending;
-    const idAscendingList = saleList.id.ascending;
-    const customerDescendingList = saleList.customer.descending;
-    const customerAscendingList = saleList.customer.ascending;
-    const priceDescendingList = saleList.price.descending;
-    const priceAscendingList = saleList.price.ascending;
-
-
-    for (const sale of dateDescendingList) {
-        const saleDiv = await createSaleRow(sale);
-        dateDescendingContainer.appendChild(saleDiv);
-    }
-
-    for (const sale of dateAscendingList) {
-        const saleDiv = await createSaleRow(sale);
-        dateAscendingContainer.appendChild(saleDiv);
-    }
-
-    for (const sale of idDescendingList) {
-        const saleDiv = await createSaleRow(sale);
-        idDescendingContainer.appendChild(saleDiv);
-    }
-
-    for (const sale of idAscendingList) {
-        const saleDiv = await createSaleRow(sale);
-        idAscendingContainer.appendChild(saleDiv);
-    }
-
-    for (const sale of customerDescendingList) {
-        const saleDiv = await createSaleRow(sale);
-        customerDescendingContainer.appendChild(saleDiv);
-    }
-
-    for (const sale of customerAscendingList) {
-        const saleDiv = await createSaleRow(sale);
-        customerAscendingContainer.appendChild(saleDiv);
-    }
-
-    for (const sale of priceDescendingList) {
-        const saleDiv = await createSaleRow(sale);
-        priceDescendingContainer.appendChild(saleDiv);
-    }
-
-    for (const sale of priceAscendingList) {
-        const saleDiv = await createSaleRow(sale);
-        priceAscendingContainer.appendChild(saleDiv);
-
-    }
-
-}
-
-async function createSaleRow(sale){
-    let customerName;
-
-    if (sale.customer_id === null){customerName = "No asignado";}
-    else{
-        const result = await api.getCustomerById(sale.customer_id);
-        const customer = result.clientInfo;
-        customerName = customer.full_name;
-    }
-
-    const saleDiv = document.createElement('div');
-    saleDiv.classList.add('sale-row');
-    saleDiv.dataset.saleId = sale.id;
-    saleDiv.innerHTML = `<div class="flex-column" style="width: fit-content; justify-content: space-between">
-                            <h3>Número = ${sale.id}</h3>
-                            <h2>$${sale.total_amount}</h2>   
-                        </div>
-                        <div class="flex-column" style="width: fit-content; text-align: right">
-                            <p>${sale.sale_date}</p>
-                            <p class="customer-name">Cliente = ${customerName}</p>   
-                        </div>`;
-    saleDiv.addEventListener('click', async () => {
-        const saleInfo = await api.getFullSaleInfo(sale.id);
-        showSaleModal(saleInfo);
-    });
-    return saleDiv;
 }
 
 function showSaleModal(saleInfo){
@@ -2184,315 +2271,94 @@ function showTransactionView(viewOrder, viewDirection,menuContainer) {
     if (viewToShow) { viewToShow.classList.remove('hidden'); }
 }
 
-/* -------------------- FUNCIONES DE TRANSACCIONES -------------------- */
 
-//Detecta la transaccion que se quiere agregar
-function setupTransactions(){
-    const newTransacionButtons = document.querySelectorAll('.new-transaction-btn');
-    document.querySelectorAll('.new-transaction-btn').length
-    const greyBg = document.getElementById('grey-background');
-
-    configTransactionModalsReturn();
-    configureTablePickerDropdown();
-
-    newTransacionButtons.forEach(button =>{
-        button.addEventListener('click', async () =>{
-            const transactionModal = document.getElementById('new-transaction-container');
-            const pickerModal = document.getElementById('transaction-picker-modal');
-            const successModal = document.getElementById('transaction-success-modal');
-            const infoModal = document.getElementById('transaction-info-modal');
-            infoModal.classList.add('hidden');
-            successModal.classList.add('hidden');
-            pickerModal.classList.add('hidden');
-            transactionModal.classList.remove('hidden');
-            greyBg.classList.remove('hidden');
-            await populateTransactionContainer(button.dataset.transaction);
-        })
-    })
-}
-
-function configureTablePickerDropdown(){
-    const inventoryPickerName = document.getElementById('inventory-picker-name');
-    const itemPickerHeader = document.getElementById('item-picker-header');
-
-    inventoryPickerName.addEventListener('click', () => {
-        itemPickerHeader.classList.toggle('visible');
-    })
-}
-
-//Llena el modal de transacción segun la transacción elegida
-async function populateTransactionContainer(transactionType){
-    const transactionFormContainer = document.getElementById('transaction-form-container');
-    let itemList= [];
-
-    transactionFormContainer.innerHTML = getForm(transactionType);
-
-    if (transactionType === 'sale' || transactionType ===  'receipt'){
-        //Prepara el selector de productos
-        await populateProductPicker(transactionType);
-        //Prepara el selector de clientes
-        await populateTransactionClientList();
-        //Prepara el selector de provedores
-        await populateTransactionProviderList();
-        //Prepara los botones para subir/bajar la cantidad de productos
-        setupQuantityBtns(transactionType,itemList);
-        //Prepara los botones para eliminar items de la lista
-        configRemoveProduct(itemList,transactionType);
-        //Prepara los botones que abren los modales de productos/clientes/proveedores
-        configurePickerBtns();
-        //Renderiza la lista de productos
-        renderProductList(itemList,transactionType);
-    }
-
-    else if (transactionType === 'customer') {configCreateClientBtn(); }
-    else {configCreateProviderBtn(); }
-
-    setupPickerConfirmBtns(itemList,transactionType);
-
-    //Prepara los botones que completan las transacciones de compra/venta
-    setupCompleteTransactionBtn(itemList);
-}
-
-function setupPickerConfirmBtns(itemList, transactionType){
-    const allBtns = document.querySelectorAll('.picker-confirm-btn');
-
-    allBtns.forEach(btn => {
-        btn.onclick = () => {
-            if (btn.disabled) return;
-
-            const confirmType = btn.dataset.type;
-            const selectedData = JSON.parse(btn.dataset.data);
-
-            switch (confirmType) {
-                case 'item':
-                    const selectedProduct = selectedData;
-                    selectedProduct.amount = 1;
-                    Object.defineProperty(selectedProduct, 'totalPrice', {
-                        get() {
-                            if (transactionType === "sale") { return this.salePrice * this.amount }
-                            else { return this.receiptPrice * this.amount }
-                        }
-                    });
-                    addProduct(selectedProduct, itemList, transactionType);
-                    break;
-
-                case 'client':
-                    selectClient(selectedData.id, selectedData.name);
-                    break;
-
-                case 'provider':
-                    selectProvider(selectedData.id, selectedData.name);
-                    break;
-            }
-
-            hideTransactionModal();
-            btn.disabled = true;
-            delete btn.dataset.item;
-            document.querySelectorAll('.product-item.selected, .client-picker-item.selected, .provider-picker-item.selected').forEach(i => i.classList.remove('selected'));
-        };
-    })
-}
-
-function configTransactionModalsReturn(){
-    const returnBtn = document.getElementById('modal-return-btn');
-    const itemPickerHeader = document.getElementById('item-picker-header');
-
-    returnBtn.addEventListener('click', () => {
-        itemPickerHeader.classList.remove('visible');
-        hideTransactionModal();
-    })
-}
-
-function configRemoveProduct(itemList){
-    const productListContainer = document.getElementById('product-list-container');
-
-    if (productListContainer){
-        productListContainer.addEventListener('click', (event) =>{
-            const deleteButton = event.target.closest('.delete-product-btn');
-            if (!deleteButton) return;
-
-            const transactionType = deleteButton.dataset.type;
-
-            const itemID = parseInt(deleteButton.dataset.pid,10);
-            const tableID = parseInt(deleteButton.dataset.tid,10);
-
-            const itemIndex = itemList.findIndex(item => item.pID === itemID && item.tID === tableID);
-
-            if (itemIndex > -1) {
-                itemList.splice(itemIndex, 1);
-                renderProductList(itemList,transactionType);
-            }
-        })
-    }
-}
-
-function configurePickerBtns(){
-    const pickerBtns = document.querySelectorAll('.picker-btn');
-    const pickerModalContainer = document.getElementById('transaction-picker-modal');
-
-    pickerBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const modalID = btn.dataset.modalTarget;
-            pickerModalContainer.classList.remove('hidden');
-            showPickerModal(modalID);
-        })
-    })
-
-    window.addEventListener('click', (event) => {
-
-        const isPickerBtn = event.target.closest('.picker-btn');
-        // Si el picker está visible Y el clic fue FUERA del picker
-        if (!pickerModalContainer.classList.contains('hidden') &&
-            !pickerModalContainer.contains(event.target) &&
-            !isPickerBtn === null) {
-            hideTransactionModal();
-        }
-    });
-}
-
-function setupQuantityBtns(transactionType, itemList){
-    const productListContainer = document.getElementById('product-list-container');
-
-    productListContainer.addEventListener('click', (event) => {
-        const button = event.target.closest('.modify-quantity-btn');
-        if (!button) return;
-
-        const productID = parseInt(button.dataset.pid,10);
-        const tableID = parseInt(button.dataset.tid,10);
-        const type = button.dataset.type;
-
-        hideTransactionError();
-        let item = itemList.find(item => item.pID === productID && item.tID === tableID);
-        if (!item) return;
-
-        if (type === 'add') {
-            if (item.amount === (item.stock) && transactionType === 'sale') {
-                const errorMessage = 'La cantidad de un producto no puede ser mayor a su stock actual';
-                showTransactionError(errorMessage);
-            }
-            else{item.amount++;}
-        }
-        else {if (item.amount > 1) {item.amount--;}
-        else{
-            const errorMessage = 'La cantidad de un producto no puede ser menor a 1';
-            showTransactionError(errorMessage);
-        }
-        }
-        renderProductList(itemList,transactionType);
-    })
-}
-
-function createNewSaleRow(selectedProduct) {
-    // Devuelve un string HTML para una fila de tabla (TR)
-    return `
-        <tr data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}">
-            <td class="col-product" title="${selectedProduct.name} ${selectedProduct.tableName ? `(${selectedProduct.tableName})` : ''}">
-                ${selectedProduct.name}
-                ${selectedProduct.tableName ? `<span style="font-size: 0.8rem; color: var(--color-gray); display: block;">(${selectedProduct.tableName})</span>` : ''}
-            </td>
-            <td class="col-stock">${selectedProduct.stock}</td>
-            <td class="col-quantity">
-                <div class="quantity-cell">
-                    <i class="modify-quantity-btn ph ph-minus-square" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}" data-type="subtract"></i>
-                    <span class="quantity-display">${selectedProduct.amount}</span>
-                    <i class="modify-quantity-btn ph ph-plus-square" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}" data-type="add"></i>
-                </div>
-            </td>
-            <td class="col-price">$${(selectedProduct.salePrice || 0).toFixed(2)}</td>
-            <td class="col-total">$${(selectedProduct.totalPrice || 0).toFixed(2)}</td>
-            <td class="col-actions">
-                <button type="button" class="btn delete-product-btn" data-type="sale" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}">
-                    <i class="ph ph-x"></i>
-                </button>
-            </td>
-        </tr>
-    `;
-}
-
-function createNewReceiptRow(selectedProduct) {
-    // Devuelve un string HTML para una fila de tabla (TR)
-    return `
-        <tr data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}">
-            <td class="col-product" title="${selectedProduct.name} ${selectedProduct.tableName ? `(${selectedProduct.tableName})` : ''}">
-                ${selectedProduct.name}
-                ${selectedProduct.tableName ? `<span style="font-size: 0.8rem; color: var(--color-gray); display: block;">(${selectedProduct.tableName})</span>` : ''}
-            </td>
-            <td class="col-stock">${selectedProduct.stock}</td>
-            <td class="col-quantity">
-                <div class="quantity-cell">
-                    <i class="modify-quantity-btn ph ph-minus-square" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}" data-type="subtract"></i>
-                    <span class="quantity-display">${selectedProduct.amount}</span>
-                    <i class="modify-quantity-btn ph ph-plus-square" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}" data-type="add"></i>
-                </div>
-            </td>
-            <td class="col-price">$${(selectedProduct.receiptPrice || 0).toFixed(2)}</td>
-            <td class="col-total">$${(selectedProduct.totalPrice || 0).toFixed(2)}</td>
-            <td class="col-actions">
-                <button type="button" class="btn delete-product-btn" data-type="receipt" data-pid="${selectedProduct.pID}" data-tid="${selectedProduct.tID}">
-                    <i class="ph ph-x"></i>
-                </button>
-            </td>
-        </tr>
-    `;
-}
-
-
-
-function renderProductList(itemList,transactionType){
-    const productListContainer = document.getElementById('product-list-container');
-    const totalPriceInput = document.getElementById('price-input');
+function renderProductList(itemList, transactionType) {
+    const container = document.getElementById('product-list-container');
     const totalPriceText = document.getElementById('price-text');
-    let priceAcum = 0;
+    const totalPriceInput = document.getElementById('price-input');
 
-    productListContainer.innerHTML = '';
+    container.innerHTML = '';
+    let total = 0;
 
     if (itemList.length === 0) {
-        productListContainer.innerHTML = `<div class="empty-product-list">
-            <i class="ph ph-basket"></i>
-            <p>Aún no hay productos en la lista.</p>
-        </div>`;
-        totalPriceInput.value = priceAcum;
-        totalPriceText.textContent = priceAcum;
+        container.innerHTML = '<div class="empty-state-small">No hay productos seleccionados.</div>';
+        totalPriceText.textContent = '$0.00';
         return;
     }
 
-    let tableRows = '';
-    itemList.forEach(item =>{
-        priceAcum += item.totalPrice;
-        let newProductRow;
-        if (transactionType === 'sale') {
-            tableRows += createNewSaleRow(item);
-        }
-        else{
-            tableRows += createNewReceiptRow(item);
-        }
-    })
+    itemList.forEach((item, index) => {
+        const itemTotal = item.amount * item.salePrice;
+        total += itemTotal;
 
-    // Determina el encabezado de precio correcto
-    const tableHeader = (transactionType === 'sale')
-        ? '<th class="col-price">Precio Venta</th>'
-        : '<th class="col-price">Precio Compra</th>';
+        const row = document.createElement('div');
+        row.className = 'transaction-item-row';
+        row.innerHTML = `
+            <div class="item-info">
+                <span class="item-name">${item.name}</span>
+                <span class="item-meta">${item.tableName || 'Inventario'} | Stock: ${item.stock}</span>
+            </div>
+            
+            <div class="item-controls">
+                <div class="quantity-control">
+                    <button type="button" class="qty-btn minus" data-index="${index}">-</button>
+                    <span class="qty-val">${item.amount}</span>
+                    <button type="button" class="qty-btn plus" data-index="${index}">+</button>
+                </div>
+                
+                <div class="item-price">
+                    <span class="unit-price">$${item.salePrice} c/u</span>
+                    <span class="row-total">$${itemTotal.toFixed(2)}</span>
+                </div>
 
-    productListContainer.innerHTML = `
-        <table class="transaction-product-table">
-            <thead>
-                <tr>
-                    <th class="col-product">Producto</th>
-                    <th class="col-stock">Stock</th>
-                    <th class="col-quantity">Cantidad</th>
-                    ${tableHeader}
-                    <th class="col-total">Total</th>
-                    <th class="col-actions"><i class="ph ph-trash"></i></th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tableRows}
-            </tbody>
-        </table>
-    `;
+                <button type="button" class="btn-icon delete-item-btn" data-index="${index}">
+                    <i class="ph ph-trash" style="color: var(--accent-red);"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(row);
+    });
 
-    totalPriceText.textContent = `$${priceAcum.toFixed(2)}`;
-    totalPriceInput.value = priceAcum;
+    totalPriceText.textContent = `$${total.toFixed(2)}`;
+    totalPriceInput.value = total;
+
+    // Conectar eventos de esta renderización
+    connectItemEvents(itemList, transactionType);
+}
+
+function connectItemEvents(itemList, transactionType) {
+    // Botón Menos
+    document.querySelectorAll('.qty-btn.minus').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = btn.dataset.index;
+            if (itemList[idx].amount > 1) {
+                itemList[idx].amount--;
+                renderProductList(itemList, transactionType);
+            }
+        });
+    });
+
+    // Botón Más
+    document.querySelectorAll('.qty-btn.plus').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = btn.dataset.index;
+            // Validar stock máximo
+            if (itemList[idx].amount < itemList[idx].stock) {
+                itemList[idx].amount++;
+                renderProductList(itemList, transactionType);
+            } else {
+                pop_ups.warning(`No puedes superar el stock disponible (${itemList[idx].stock}).`);
+            }
+        });
+    });
+
+    // Botón Borrar
+    document.querySelectorAll('.delete-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = btn.dataset.index;
+            itemList.splice(idx, 1);
+            renderProductList(itemList, transactionType);
+        });
+    });
 }
 
 async function populateTransactionClientList(){
@@ -2554,36 +2420,6 @@ function configureClientSelection(){
     })
 }
 
-function selectClient(clientID, clientName){
-    const clientFormInput = document.getElementById('client-id-input');
-    const formText = document.getElementById('sale-client-name');
-
-    formText.innerHTML = (isNaN(clientID)) ? 'Ninguno' : clientName;
-    clientFormInput.value = clientID;
-
-    hideTransactionModal();
-}
-
-async function populateTransactionProviderList(){
-
-    const response = await api.getAllProviders();
-    const providers = response.providerList;
-
-    const providerModal = document.getElementById('provider-list');
-
-    providerModal.innerHTML = '';
-
-    const none = {full_name: 'Ninguno', id: null};
-    const noneSelected = createPersonItem(none,'receipt')
-    providerModal.appendChild(noneSelected);
-
-    providers.forEach(provider => {
-        const newProviderItem = createPersonItem(provider,'receipt')
-        providerModal.appendChild(newProviderItem);
-    })
-
-    configureProviderSelection();
-}
 
 function configureProviderSelection(){
     const providerPickers = document.querySelectorAll('.provider-picker-item');
@@ -2606,200 +2442,6 @@ function configureProviderSelection(){
     })
 }
 
-function selectProvider(providerID,providerName){
-    const providerFormInput = document.getElementById('provider-id-input');
-    const formText = document.getElementById('receipt-provider-name');
-
-    formText.innerHTML = (isNaN(providerID)) ? 'Ninguno' : providerName;
-    providerFormInput.value = providerID;
-
-    hideTransactionModal();
-}
-
-function addProduct(selectedProduct,itemList,transactionType) {
-    if (itemList.find(item => item.pID === selectedProduct.pID && item.tID === selectedProduct.tID)){
-        showTransactionError('El producto ya se encuentra en la lista');
-        hideTransactionModal();
-        return;
-    }
-    hideTransactionError();
-
-    itemList.push(selectedProduct);
-
-    renderProductList(itemList,transactionType);
-    hideTransactionModal();
-}
-
-async function populateProductPicker(transactionType){
-    const response = await api.getUserVerifiedTables();
-    if (!response.success) {showTransactionError(response.error); return;}
-
-    const tables = response['verifiedInventories'];
-
-    populateTablePicker(tables);
-    configureTablePickers();
-
-    let products = [];
-
-    try {
-        for (const table of tables){
-            const response = await api.getTableProducts(table.id);
-            if (!response.success) {showTransactionError(response.error);return;}
-
-            const tableProducts = response.productList;
-            if (tableProducts.length === 0) {continue;}
-
-            products.push(...tableProducts);
-        }
-    } catch (error) {
-        console.error("Error al procesar los inventarios del usuario:", error);
-        showTransactionError("Error inesperado de conexión.");
-        return;
-    }
-
-    populateProductModal(products,tables,transactionType);
-    configureProductSelection(products);
-}
-
-function populateTablePicker(tables){
-    const itemPickerHeader = document.getElementById('item-picker-header');
-    const inventoryPicker = document.createElement('div');
-
-    itemPickerHeader.innerHTML = '';
-    inventoryPicker.className = 'flex-column';
-
-    const tableItem = document.createElement('div');
-
-    tableItem.dataset.tID = 'all';
-    tableItem.innerHTML = 'Todos';
-    tableItem.className = 'product-table-picker';
-
-    inventoryPicker.appendChild(tableItem);
-
-    tables.forEach(table => {
-        const tableItem = document.createElement('div');
-        tableItem.dataset.tID = table.id;
-        tableItem.innerHTML = table.name;
-        tableItem.className = 'product-table-picker';
-
-        inventoryPicker.appendChild(tableItem);
-    })
-
-    itemPickerHeader.appendChild(inventoryPicker);
-}
-
-
-function populateProductModal(products, tables, transactionType){
-    const itemPickerBody = document.getElementById('item-list');
-
-    itemPickerBody.innerHTML = '';
-
-    const allProductsDiv = document.createElement('div');
-    allProductsDiv.className = 'flex-column product-list';
-    allProductsDiv.id = 'all';
-
-    let emptyList = true;
-
-    products.forEach(product => {
-        emptyList = false;
-        const item = createProductItem(product,transactionType);
-        allProductsDiv.appendChild(item);
-    })
-
-    if (emptyList) {allProductsDiv.innerHTML = '<h3>No hay productos en el inventario</h3>';}
-
-    const productListWrapper = document.createElement('div');
-    productListWrapper.className = 'hidden';
-    productListWrapper.id = 'product-list-wrapper';
-
-    itemPickerBody.appendChild(allProductsDiv);
-
-    tables.forEach(table => {
-        emptyList = true;
-        const tableProductsDiv = document.createElement('div');
-        tableProductsDiv.className = 'hidden flex-column product-list';
-        tableProductsDiv.id = table.id;
-
-        products.forEach(product => {
-            if (product.tID !== table.id) return;
-            emptyList = false;
-            const item = createProductItem(product,transactionType);
-            tableProductsDiv.appendChild(item);
-        })
-        if (emptyList) {tableProductsDiv.innerHTML = '<h3>No hay productos en el inventario</h3>';}
-        productListWrapper.appendChild(tableProductsDiv);
-    })
-    itemPickerBody.appendChild(productListWrapper);
-}
-
-function createProductItem(product,transactionType){
-    const item = document.createElement('div');
-    let price;
-    if (transactionType === 'sale'){price = product.salePrice;}
-    else {price = product.receiptPrice;}
-
-    item.innerHTML = `<div class="flex-column">
-                            <div class="product-name">${product.name}</div>
-                            <div class="product-stock">Stock Disponible: <span>${product.stock}</span></div>
-                      </div>
-                      <div class="flex-colum" style="text-align: right; width: 100%;">
-                            <div class="product-inventory-name">${product.tableName}</div>
-                            <div class="product-price">$${price}</div>
-                      </div>`
-    ;
-    item.dataset.tID = product.tID;
-    item.dataset.pID = product.pID;
-    item.className = 'flex-row product-item';
-
-    if (product.stock === 0 && transactionType === 'sale') {item.classList.add('no-stock');}
-
-    return item;
-}
-
-
-function configureProductSelection(products){
-    const productItem = document.querySelectorAll('.product-item');
-    productItem.forEach(item => {
-        if (item.classList.contains('no-stock')) return;
-        item.addEventListener('click', () => {
-            const findProduct = products.find(product => product.pID === parseInt(item.dataset.pID,10) &&
-                product.tID === parseInt(item.dataset.tID,10));
-            if (!findProduct){
-                showTransactionError('El producto no existe');
-                return;
-            }
-
-            const modalBody = item.closest('.picker-modal');
-            if (!modalBody) return;
-
-            modalBody.querySelectorAll('.product-item').forEach(i => i.classList.remove('selected'));
-            item.classList.add('selected');
-
-            const selectedProduct = { ... findProduct };
-            const confirmBtn = modalBody.querySelector('.picker-confirm-btn');
-
-            confirmBtn.disabled = false;
-            confirmBtn.dataset.data = JSON.stringify(selectedProduct);
-        })
-    })
-}
-
-function configureTablePickers(){
-    const tablePickers = document.querySelectorAll('.product-table-picker');
-
-    tablePickers.forEach(table => {
-        table.addEventListener('click', () => {
-            const tableID = table.dataset.tID;
-            const itemPickerHeader = document.getElementById('item-picker-header');
-            const inventoryPickerName = document.getElementById('inventory-picker-name');
-
-            itemPickerHeader.classList.remove('visble');
-            inventoryPickerName.innerHTML = table.innerHTML;
-            showProductList(tableID);
-        })
-    })
-}
-
 function setupCompleteTransactionBtn(itemList){
 
     const buttons = document.querySelectorAll('.complete-transaction-btn');
@@ -2818,150 +2460,6 @@ function setupCompleteTransactionBtn(itemList){
     })
 }
 
-async function completeSale(itemList){
-    if (itemList.length === 0) {showTransactionError('Agregar al menos un producto.'); return;}
-
-    let clientID = document.getElementById('client-id-input').value;
-    const totalPrice = document.getElementById('price-input').value;
-    const clientName = document.getElementById('sale-client-name').innerHTML;
-
-    if (clientID === '' || isNaN(clientID)) {clientID = null;}
-
-    const saleInfo = {'itemList' : itemList, 'clientID' : clientID, 'totalPrice' : totalPrice};
-
-    var response = await api.createSale(saleInfo);
-    if (!response.success) {showTransactionError('Ha ocurrido un error interno = ' + response.error); return;}
-
-    const saleID = response.saleId;
-
-    response = await api.getCustomerById(clientID);
-    if (!response.success) {showTransactionError('Ha ocurrido un error interno = ' + response.error); return;}
-
-    const client = response.clientInfo;
-    var hasEmail = false, emailInfo = null;
-
-    if (client){
-        hasEmail = (client.email!==null);
-    }
-
-    const saleList = itemList.map(item => {
-        const name = item.name;
-        const amount = item.amount;
-        const price = item.salePrice;
-        const totalPrice = item.totalPrice;
-
-        return `<div class="flex-row" style="gap: 15px;">
-                <p style="width: 100px; text-align: right; overflow: hidden; text-wrap: nowrap; text-overflow: ellipsis">${name}</p>
-                <p style="width: 70px; text-align: right">${amount}</p>
-                <p style="width: 65px; text-align: right">${price}$</p>
-                <p style="width: 80px; text-align: right">${totalPrice}$</p>
-             </div>`;
-    }).join('');
-
-    const saleTicket = `<div style="margin-top: 20px; padding: 5px; border: var(--border-strong); border-radius: var(--border-radius)">
-    <hr> <div class="flex-row" style="justify-content: space-between"><p>N° ${saleID}</p><h2 style="text-align: right">Lista de Productos</h2></div>
-    
-    <div class="flex-column" style="gap: 15px; margin-top: 15px;"> 
-         
-         <div class="flex-row" style="text-align: right; gap: 15px;"><h4 style="width: 100px">Nombre</h4>
-         <h4 style="width: 70px">Cantidad</h4><h4 style="width: 65px">Precio de Venta</h4><h4 style="width: 80px">Precio Total</h4></div>
-         <div class="flex-column" style="max-height: 200px; overflow-y: auto;">${saleList}</div>
-         <hr>
-         <div class="flex-column" style="text-align: right"><h4>Cliente</h4><p>${clientName}</p></div>
-         <div class="flex-row" style="justify-content: right; gap:10px;"><h2>Precio Final =</h2><h1>${totalPrice}$</h1></div>
-    </div></div>`;
-
-    const transactionSuccessBody = `
-    <h3 class="flex-row all-center" style="margin-top: 10px">Se ha registrado la venta con exito.</h3>
-    <div>${saleTicket}</div>
-    ${(hasEmail) ? `<div class="flex-row" style="justify-content: end">
-<div class="btn btn-primary"  id="send-sale-email-btn" style="width: 50%; background-color: var(--accent-color); font-size: 0.85rem">Enviar Factura a Cliente</div></div>`
-        : ''}
-    <p style="margin-top: 15px; font-size: 0.75rem">Actualiza la pagina para ver tus cambios.</p>
-    <div class="flex-column all-center">
-        <div class="btn btn-primary reload-btn" data-location="sales">Actualizar Pagina</div>
-        <div class="btn btn-secondary" id="success-return-btn">Cerrar</div>
-    </div>`;
-
-    if (hasEmail) {
-        // Construir emailInfo en el formato esperado por send-email.php
-        emailInfo = {
-            to: client.email,
-            subject: `Factura de su compra - Venta #${saleID}`,
-            sale: {
-                id: saleID,
-                date: new Date().toISOString().slice(0,19).replace('T',' '),
-                customer: client.name,
-                items: itemList.map(item => ({
-                    name: item.name,
-                    quantity: item.amount,
-                    unit_price: item.salePrice,
-                    total: item.totalPrice
-                })),
-                total: totalPrice
-            }
-        };
-    }
-
-    showTransactionSuccess(transactionSuccessBody);
-    return emailInfo;
-}
-
-async function completeReceipt(itemList){
-
-    if (itemList.length === 0) {showTransactionError('Agregar al menos un producto.'); return;}
-
-    let providerID = document.getElementById('provider-id-input').value;
-    const providerName = document.getElementById('receipt-provider-name').innerHTML;
-    const totalPrice = document.getElementById('price-input').value;
-
-    if (providerID === '' || isNaN(providerID)) {providerID = null;}
-
-    const receiptInfo = {'itemList' : itemList, 'providerID' : providerID, 'totalPrice' : totalPrice};
-
-    var response = await api.createReceipt(receiptInfo);
-    if (!response.success) {showTransactionError('Ha ocurrido un error interno = ' + response.error); return;}
-
-    const receiptID = response.receiptId;
-
-    const receiptList = itemList.map(item => {
-        const name = item.name;
-        const amount = item.amount;
-        const price = item.receiptPrice;
-        const totalPrice = item.totalPrice;
-
-        return `<div class="flex-row" style="gap: 15px;">
-                <p style="width: 100px; text-align: right; overflow: hidden; text-wrap: nowrap; text-overflow: ellipsis">${name}</p>
-                <p style="width: 70px; text-align: right">${amount}</p>
-                <p style="width: 65px; text-align: right">${price}$</p>
-                <p style="width: 80px; text-align: right">${totalPrice}$</p>
-             </div>`;
-    }).join('');
-
-    const receiptTicket = `<div style="margin-top: 20px; padding: 5px; border: var(--border-strong); border-radius: var(--border-radius)">
-    <hr> <div class="flex-row" style="justify-content: space-between"><p>N° ${receiptID}</p><h2 style="text-align: right">Lista de Productos</h2></div>
-    
-    <div class="flex-column" style="gap: 15px; margin-top: 15px;"> 
-         
-         <div class="flex-row" style="text-align: right; gap: 15px;"><h4 style="width: 100px">Nombre</h4>
-         <h4 style="width: 70px">Cantidad</h4><h4 style="width: 65px">Precio de Venta</h4><h4 style="width: 80px">Precio Total</h4></div>
-         <div class="flex-column" style="max-height: 200px; overflow-y: auto;">${receiptList}</div>
-         <hr>
-         <div class="flex-column" style="text-align: right"><h4>Proveedor</h4><p>${providerName}</p></div>
-         <div class="flex-row" style="justify-content: right; gap:10px;"><h2>Precio Final =</h2><h1>${totalPrice}$</h1></div>
-    </div></div>`;
-
-    const transactionSuccessBody = `
-    <h3 class="flex-row all-center" style="margin-top: 10px">Se ha registrado la venta con exito.</h3>
-    <div>${receiptTicket}</div>
-    <p style="margin-top: 15px; font-size: 0.75rem">Actualiza la pagina para ver tus cambios.</p>
-    <div class="flex-column all-center">
-        <div class="btn btn-primary reload-btn" data-location="receipts">Actualizar Pagina</div>
-        <div class="btn btn-secondary" id="success-return-btn">Cerrar</div>
-    </div>`;
-
-    showTransactionSuccess(transactionSuccessBody);
-}
 
 function configCreateClientBtn(){
     const customerForm = document.getElementById('customer-form');
@@ -3601,45 +3099,7 @@ function getForm(transactionType){
     return HTML;
 }
 
-function getSaleForm() {
-    // El 'form' ahora tiene un layout de 3 partes: header, body (scroll), summary (footer)
-    return `<form class="flex-column" style="height: 100%;" method="get" action="/dashboard.php">
-                <h4 class="transaction-error-message hidden" style="color: var(--accent-red); padding: 0 2rem; margin-top: 1.5rem;"></h4>
-                
-                <div class="transaction-header flex-row" style="justify-content: space-between; align-items: center;">
-                    <div>
-                        <h3>Cliente</h3>
-                        <p id="sale-client-name">Ninguno</p>
-                    </div>
-                    <button type="button" class="btn btn-secondary picker-btn" data-modal-target="client-picker-modal">Cambiar</button>
-                </div>
 
-                <div class="transaction-body">
-                    <div class="flex-row" style="gap: 20px; justify-content: space-between; align-items: center;">
-                        <h3>Productos</h3>
-                        <button type="button" class="btn btn-primary picker-btn" data-modal-target="item-picker-modal" data-type="sale">
-                            <i class="ph ph-plus"></i> Agregar Producto
-                        </button>
-                    </div>       
-                    
-                    <div id="product-list-container" style="margin-top: 1rem;">
-                        </div>
-                </div>
-                
-                <div class="transaction-summary">
-                    <div class="total-display">
-                        <h2>Total: <span id="price-text">$0.00</span></h2>
-                    </div>
-                    <button type="button" class="btn btn-primary complete-transaction-btn" data-type="sale">
-                        Confirmar Venta
-                    </button>
-                </div>
-
-                <input name="price" id="price-input" value="0" hidden>
-                <input name="product-list" id="product-list" hidden>
-                <input name="client-data" id="client-id-input" hidden>
-            </form>`;
-}
 
 // REEMPLAZAR esta función en dashboard.js
 function getReceiptForm() {
@@ -3772,292 +3232,196 @@ function hideTransactionError(){
     });
 }
 
-function hideTransactionModal(){
-    const transactionModal = document.getElementById('transaction-picker-modal');
-    transactionModal.classList.add('hidden');
-    const transactionContainer = document.getElementById('new-transaction-container');
-    transactionContainer.classList.remove('hidden');
-}
 
-function hideTransactionSuccess(){
-    const modalContainer = document.getElementById('transaction-success-modal');
-    const greyBg = document.getElementById('grey-background');
+// Funciones globales para usar en onclick (por simplicidad)
+window.updateCartQty = (index, delta) => {
+    const item = saleCart[index];
+    const newQty = item.qty + delta;
 
-    modalContainer.classList.add('hidden');
-    greyBg.classList.add('hidden');
-}
-
-async function setupRecomendedColumns(){
-    const preferences = await api.getCurrentInventoryPreferences();
-    const form = document.getElementById('recomended-columns-form');
-
-    if (!preferences.success) {
-        console.error("Error crítico: No se encontraron las preferencias del inventario." + preferences.error);
+    if (newQty > item.stock) {
+        pop_ups.warning(`Stock máximo alcanzado (${item.stock}).`);
         return;
     }
-
-    const defaults = await api.getCurrentInventoryDefaults();
-    if (!defaults.success) {
-        console.error("Error crítico: No se encontraron los valores por defecto del inventario." + defaults.error);
+    if (newQty < 1) {
+        removeFromCart(index);
         return;
     }
+    item.qty = newQty;
+    renderCart();
+};
 
-    const gainCheckbox = document.getElementById('gain-input');
-    const minStockCheckbox = document.getElementById('min-stock-input');
-    const salePriceCheckbox = document.getElementById('sale-price-input');
-    const receiptPriceCheckbox = document.getElementById('receipt-price-input');
-    const percentageRadio = document.getElementById('percentage-gain-input');
-    const hardRadio = document.getElementById('hard-gain-input');
 
-    const autoPriceCheckbox = document.getElementById('auto-price-input');
-    const autoIvaRadio = document.getElementById('auto-iva-input');
-    const autoGainRadio = document.getElementById('auto-gain-input');
-    const autoIvaGainRadio = document.getElementById('auto-iva-gain-input');
+// REEMPLAZA LA FUNCIÓN setupRecomendedColumns COMPLETA
 
-    const autoPriceLabel = document.getElementById('auto-price-checkbox');
+async function setupRecomendedColumns() {
+    // 1. Cargar Preferencias Actuales
+    let prefs = {};
+    try {
+        const res = await api.getCurrentInventoryPreferences();
+        if(res.success) {
+            prefs = res;
+            if(res.mapping) columnMapping = res.mapping;
+            if(res.features) activeFeatures = res.features;
+        }
+    } catch(e) { console.error(e); }
 
-    const autoPriceTypeContainer = document.getElementById('auto-price-type-container');
+    // --- FORMULARIO 1: MAPEO ---
+    const mapForm = document.getElementById('mapping-columns-form');
+    if (mapForm) {
+        // Llenar selects
+        const systemFields = [
+            { key: 'name', label: 'Nombre del Producto', id: 'map-name-col' },
+            { key: 'stock', label: 'Stock Actual', id: 'map-stock-col' },
+            { key: 'buy_price', label: 'Precio de Compra', id: 'map-buy-price-col' },
+            { key: 'sale_price', label: 'Precio de Venta', id: 'map-sale-price-col' }
+        ];
 
-    autoPriceCheckbox.checked = (preferences.auto_price === 1);
+        let html = `
+            <div class="clean-mapping-layout">
+                <div class="mapping-header">Campo en StockiFy</div>
+                <div class="mapping-header center"></div>
+                <div class="mapping-header">Tu Columna en DB</div>
+        `;
 
-    gainCheckbox.checked = (preferences.percentage_gain === 1 || preferences.hard_gain === 1);
-    minStockCheckbox.checked = (preferences.min_stock === 1);
-    salePriceCheckbox.checked = (preferences.sale_price === 1);
-    receiptPriceCheckbox.checked = (preferences.receipt_price === 1);
-    percentageRadio.checked = (preferences.percentage_gain === 1);
-    hardRadio.checked = (preferences.hard_gain === 1);
+        systemFields.forEach(field => {
+            // Valor guardado actualmente
+            const currentValue = (prefs.mapping && prefs.mapping[field.key]) ? prefs.mapping[field.key] : '';
 
-    const minStockDefaultInput = document.getElementById('min-stock-default-input');
-    minStockDefaultInput.value = (minStockCheckbox.checked) ? defaults.min_stock : '';
+            html += `
+                <div class="mapping-row">
+                    <div class="db-field-wrapper">
+                        <span class="db-field-name">${field.label}</span>
+                    </div>
 
-    const gainDefaultInput = document.getElementById('gain-default-input');
-    gainDefaultInput.value = (gainCheckbox.checked) ? defaults.hard_gain : '';
+                    <div class="arrow-wrapper">
+                        <i class="ph ph-arrow-right" style="color: var(--accent-color)"></i>
+                    </div>
 
-    const salePriceDefaultInput = document.getElementById('sale-price-default-input');
-    salePriceDefaultInput.value = (salePriceCheckbox.checked) ? defaults.sale_price : '';
+                    <div class="input-wrapper">
+                        <select id="${field.id}" class="rustic-select">
+                            <option value="">-- Sin Asignar --</option>
+                            ${currentTableColumns.map(col => {
+                // Filtramos columnas de sistema que no deberían mapearse
+                if(['id','created_at','min_stock'].includes(col.toLowerCase())) return '';
 
-    const receiptPriceDefaultInput = document.getElementById('receipt-price-default-input');
-    receiptPriceDefaultInput.value = (receiptPriceCheckbox.checked) ? defaults.receipt_price : '';
+                const isSelected = (col === currentValue) ? 'selected' : '';
+                // Usamos formatColumnName para que se vea lindo en el dropdown también
+                return `<option value="${col}" ${isSelected}>${formatColumnName(col)}</option>`;
+            }).join('')}
+                        </select>
+                    </div>
+                </div>
+            `;
+        });
 
-    function toggleWrapper(inputId, isVisible) {
-        const inputEl = document.getElementById(inputId);
-        if (!inputEl) return;
+        html += `</div>`; // Cierre grid
 
-        // Buscamos el wrapper más cercano (el padre o el abuelo)
-        const wrapper = inputEl.closest('.reveal-wrapper');
+        // Agregamos el botón de guardar al final
+        html += `
+            <div class="flex-row" style="justify-content: flex-end; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary" 
+                    style="
+                        width: auto;
+                        padding: 1px 30px;         /* MENOS ALTO: Bajado de 12px a 8px */
+                        font-size: 0.95rem;        /* Letra apenas más chica para acompañar */
+                        line-height: 1.2;          /* Evita espacios extra arriba/abajo */
+                        font-weight: 700;
+                        letter-spacing: 1px;
+                        white-space: nowrap;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 5px;
+                        cursor: pointer;
+                    ">
+                    GUARDAR REFERENCIAS
+                </button>
+            </div>
+        `;
 
-        if (wrapper) {
-            if (isVisible) {
-                wrapper.classList.add('open');
-                inputEl.disabled = false;
-            } else {
-                wrapper.classList.remove('open');
-                inputEl.disabled = true; // Deshabilitar input al cerrar
+        // Inyectamos todo el HTML nuevo en el formulario
+        mapForm.innerHTML = html;
+
+        // Listener del Submit (Igual que antes, pero ahora los IDs existen gracias al HTML de arriba)
+        mapForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newMap = {
+                name: document.getElementById('map-name-col').value,
+                stock: document.getElementById('map-stock-col').value,
+                buy_price: document.getElementById('map-buy-price-col').value,
+                sale_price: document.getElementById('map-sale-price-col').value
+            };
+            const res = await api.setCurrentInventoryPreferences({ mapping: newMap });
+            if(res.success) {
+                columnMapping = newMap;
+                pop_ups.success("Referencias guardadas correctamente.", "Éxito");
+                await loadTableData(); // Recargar para actualizar iconos y lógica
             }
-        }
-    }
-
-    function updateMinStockInput() {
-        const isChecked = minStockCheckbox.checked;
-        const defaultInput = document.getElementById('min-stock-default-input');
-
-        defaultInput.disabled = !isChecked;
-
-        if (!isChecked) defaultInput.value = "";
-        else defaultInput.value = defaults.min_stock;
-
-        toggleWrapper('min-stock-default-input', isChecked);
-        checkFormState();
-    }
-
-    function updateSalePriceInput() {
-        const isChecked = salePriceCheckbox.checked;
-        const defaultInput = document.getElementById('sale-price-default-input');
-
-        if (!isChecked) {
-            // Lógica de cascada: cerrar todo lo de abajo
-            autoPriceCheckbox.checked = false;
-            updateAutoPrice(); // Cerrar automatización también
-            document.getElementById('auto-price-wrapper').classList.add('hidden'); // Ocultar sección entera
-        } else {
-            defaultInput.value = defaults.sale_price;
-            document.getElementById('auto-price-wrapper').classList.remove('hidden'); // Mostrar sección entera
-            updateReceiptPriceInput();
-        }
-
-        toggleWrapper('sale-price-default-input', isChecked);
-        checkFormState();
-    }
-
-    function updateReceiptPriceInput() {
-        const isChecked = receiptPriceCheckbox.checked;
-        const defaultInput = document.getElementById('receipt-price-default-input');
-
-        if (!isChecked) {
-            defaultInput.value = "";
-        } else {
-            defaultInput.value = defaults.receipt_price;
-        }
-
-        toggleWrapper('receipt-price-default-input', isChecked);
-        checkFormState();
-    }
-
-    function updateGainSymbol() {
-        const symbolSpan = document.getElementById('gain-symbol');
-        if (percentageRadio.checked) {
-            symbolSpan.textContent = '%';
-        } else if (hardRadio.checked) {
-            symbolSpan.textContent = '$';
-        }
-        checkFormState(); // Verificar si hay cambios para habilitar botón guardar
-    }
-
-    function updateGainInput() {
-        const isChecked = gainCheckbox.checked;
-        const defaultInput = document.getElementById('gain-default-input');
-
-        percentageRadio.disabled = !isChecked;
-        hardRadio.disabled = !isChecked;
-
-        if (!isChecked) {
-            // Si desmarcamos el padre, limpiamos y cerramos
-            percentageRadio.checked = false;
-            hardRadio.checked = false;
-            defaultInput.value = "";
-            document.getElementById('wrapper-gain-type').classList.remove('open');
-        } else {
-            // Si marcamos el padre, restauramos valores SOLO si no hay ninguno seleccionado
-            // (Esto evita el bug de que se resetee al cambiar de radio)
-            if (!percentageRadio.checked && !hardRadio.checked) {
-                percentageRadio.checked = (preferences.percentage_gain === 1);
-                hardRadio.checked = (preferences.hard_gain === 1);
-
-                // Default de seguridad si la preferencia vino vacía
-                if (!percentageRadio.checked && !hardRadio.checked) {
-                    percentageRadio.checked = true;
-                }
-            }
-
-            defaultInput.value = defaults.hard_gain;
-            document.getElementById('wrapper-gain-type').classList.add('open');
-        }
-
-        // Actualizamos el símbolo visual y animaciones
-        updateGainSymbol();
-        toggleWrapper('gain-default-input', isChecked);
-        updateAutoPrice();
-        checkFormState();
-    }
-
-    // --- LISTENERS CORREGIDOS ---
-    // El checkbox padre controla toda la sección
-    gainCheckbox.addEventListener('change', updateGainInput);
-
-    // Los radios SOLO actualizan el símbolo visual (ya no resetean todo)
-    percentageRadio.addEventListener('change', updateGainSymbol);
-    hardRadio.addEventListener('change', updateGainSymbol);
-
-    function updateAutoPrice(){
-        const isChecked = autoPriceCheckbox.checked;
-        const typeWrapper = document.getElementById('wrapper-auto-price');
-
-        if (!isChecked){
-            autoIvaRadio.checked = false;
-            autoGainRadio.checked = false;
-            autoIvaGainRadio.checked = false;
-            autoPriceTypeContainer.classList.remove('open');
-        }
-        else{
-            if (preferences.auto_price !== 1 || !gainCheckbox.checked){
-                autoIvaRadio.checked = true;
-            } else {
-                autoIvaRadio.checked = (preferences.auto_price_type === 'iva');
-                autoGainRadio.checked = (preferences.auto_price_type === 'gain');
-                autoIvaGainRadio.checked = (preferences.auto_price_type === 'gain-iva');
-            }
-            if (!gainCheckbox.checked){
-                autoGainRadio.disabled = true;
-                autoIvaGainRadio.disabled = true;
-            } else{
-                autoGainRadio.disabled = false;
-                autoIvaGainRadio.disabled = false;
-            }
-
-
-            autoGainRadio.disabled = !gainCheckbox.checked;
-            autoIvaGainRadio.disabled = !gainCheckbox.checked;
-
-            if(typeWrapper) typeWrapper.classList.add('open');
-        }
-        checkFormState();
-    }
-
-    gainCheckbox.addEventListener('change', updateGainInput);
-    minStockCheckbox.addEventListener('change', updateMinStockInput);
-    salePriceCheckbox.addEventListener('change', updateSalePriceInput);
-    receiptPriceCheckbox.addEventListener('change', updateReceiptPriceInput);
-    autoPriceCheckbox.addEventListener('change', updateAutoPrice);
-
-    const saveBtn = document.getElementById('save-changes-btn');
-
-    const allTrackedInputs = [
-        gainCheckbox, minStockCheckbox, salePriceCheckbox, receiptPriceCheckbox,
-        percentageRadio, hardRadio,
-        gainDefaultInput, minStockDefaultInput, salePriceDefaultInput, receiptPriceDefaultInput, autoPriceCheckbox,
-        autoIvaRadio, autoGainRadio, autoIvaGainRadio
-    ];
-
-    let initialState = {};
-
-    function captureInitialState() {
-        initialState = {};
-        allTrackedInputs.forEach(input => {
-            const prop = (input.type === 'checkbox' || input.type === 'radio') ? 'checked' : 'value';
-            initialState[input.id] = input[prop];
         });
     }
 
-    function checkFormState() {
-        let isChanged = false;
+    // --- B. FEATURES ---
+    const featForm = document.getElementById('automated-features-form');
+    if (featForm) {
+        const chkMin = document.getElementById('feature-min-stock');
+        const chkGain = document.getElementById('feature-gain');
+        const inpDefMin = document.getElementById('default-min-stock');
+        const radiosGain = document.getElementsByName('gain-type');
 
-        for (const input of allTrackedInputs) {
-            const prop = (input.type === 'checkbox' || input.type === 'radio') ? 'checked' : 'value';
-            if (input[prop] !== initialState[input.id]) {
-                isChanged = true;
-                break;
+        // Restaurar estado
+        if(prefs.features) {
+            chkMin.checked = !!prefs.features.min_stock;
+            chkGain.checked = !!prefs.features.gain;
+            if(prefs.features.min_stock_val) inpDefMin.value = prefs.features.min_stock_val;
+            radiosGain.forEach(r => { if(r.value === prefs.features.gain_type) r.checked = true; });
+        }
+
+        // Importar Datos Min Stock
+        const selImport = document.getElementById('import-min-stock-source');
+        const btnImport = document.getElementById('btn-import-min-stock');
+
+        currentTableColumns.forEach(col => {
+            if(['id','created_at','min_stock'].includes(col.toLowerCase())) return;
+            const opt = document.createElement('option');
+            opt.value = col;
+            opt.textContent = formatColumnName(col); // Usamos formatColumnName aquí también
+            selImport.appendChild(opt);
+        });
+
+        btnImport.addEventListener('click', async () => {
+            const source = selImport.value;
+            if(!source) return pop_ups.warning("Elegí una columna.");
+            // Usamos la API de gestión de columnas para copiar data
+            const res = await api.manageTableColumn('copy_data', { source: source, target: 'min_stock' });
+            if(res.success) pop_ups.success("Datos importados.");
+        });
+
+        // Guardar
+        featForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newFeat = {
+                min_stock: chkMin.checked,
+                min_stock_val: inpDefMin.value,
+                gain: chkGain.checked,
+                gain_type: document.querySelector('input[name="gain-type"]:checked').value
+            };
+            const res = await api.setCurrentInventoryPreferences({ features: newFeat });
+            if(res.success) {
+                activeFeatures = newFeat;
+                pop_ups.success("Configuración aplicada.");
+                await loadTableData(); // Recargar tabla
             }
-        }
-        saveBtn.disabled = !isChanged;
+        });
+
+        // Reveal visual
+        const toggle = (chk, id) => {
+            const el = document.getElementById(id);
+            if(chk.checked) el.classList.add('open');
+            chk.addEventListener('change', () => el.classList.toggle('open', chk.checked));
+        };
+        toggle(chkMin, 'wrap-min-stock');
+        toggle(chkGain, 'wrap-gain');
     }
-
-    updateGainInput();
-    updateMinStockInput();
-    updateSalePriceInput();
-    updateReceiptPriceInput();
-    updateAutoPrice();
-
-    captureInitialState();
-    saveBtn.disabled = true;
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const setPreferences = getUserPreferences();
-
-        const response = await api.setCurrentInventoryPreferences(setPreferences);
-
-        if (response){
-            saveBtn.textContent = 'Guardado!';
-
-            alert('Preferencias guardadas correctamente.');
-            window.location.href = '/dashboard.php';
-        }
-        else{
-            alert('Ha ocurrido un error al guardar las preferencias del inventario.');
-        }
-    })
-
-    form.addEventListener('input', checkFormState);
 }
 
 function getUserPreferences(){
@@ -4073,15 +3437,20 @@ function getUserPreferences(){
     const salePriceDefaultInput = document.getElementById('sale-price-default-input');
     const receiptPriceDefaultInput = document.getElementById('receipt-price-default-input');
 
-    const gainDefault = (gainDefaultInput.value === '') ? 0 : parseFloat(gainDefaultInput.value);
-    const minStockDefault = (minStockDefaultInput.value === '') ? 0 : parseFloat(minStockDefaultInput.value);
-    const salePriceDefault = (salePriceDefaultInput.value === '') ? 0 : parseFloat(salePriceDefaultInput.value);
-    const receiptPriceDefault = (receiptPriceDefaultInput.value === '') ? 0 : parseFloat(receiptPriceDefaultInput.value);
+    const getVal = (input) => (input && input.value !== '') ? parseFloat(input.value) : 0;
 
-    let auto_price_type;
+    const gainDefault = getVal(gainDefaultInput);
+    const minStockDefault = getVal(minStockDefaultInput);
+    const salePriceDefault = getVal(salePriceDefaultInput);
+    const receiptPriceDefault = getVal(receiptPriceDefaultInput);
 
-    if (autoPrice.checked){auto_price_type = document.querySelector('input[name="price-type"]:checked').value;}
-    else{auto_price_type = null;}
+    let auto_price_type = null;
+    if (autoPrice.checked) {
+        const checkedRadio = document.querySelector('input[name="price-type"]:checked');
+        if(checkedRadio) auto_price_type = checkedRadio.value;
+    } else {
+        auto_price_type = null;
+    }
 
 
     const preferences = {
@@ -4431,81 +3800,109 @@ function groupHourlyData(hourlyData) {
 }
 
 async function setupInventoryPicker() {
-    const user = await api.getUserProfile();
-    if (user){
-        const response = await api.getUserVerifiedTables();
-        if (!response.success){console.log(response.message); return;}
+    try {
+        const user = await api.getUserProfile();
+        if (!user) return;
 
-        const inventories = response.verifiedInventories;
+        const response = await api.getUserVerifiedTables();
+
+        // Debug para ver qué devuelve realmente la API
+        console.log("Respuesta API Inventarios:", response);
+
+        if (!response.success) {
+            console.error("Error cargando inventarios:", response.message);
+            return;
+        }
+
+        // CORRECCIÓN: Buscamos la propiedad correcta.
+        // Si no es 'verifiedInventories', intentamos con 'data', 'tables' o 'inventories'.
+        const inventories = response.verifiedInventories || response.inventories || response.data || [];
+
+        if (!Array.isArray(inventories)) {
+            console.error("Formato de inventarios incorrecto:", inventories);
+            return;
+        }
 
         const inventoriesDropdown = document.getElementById('inventories-dropdown');
+        if (!inventoriesDropdown) return;
+
+        inventoriesDropdown.innerHTML = ''; // Limpiar antes de llenar
+
+        // Opción "Todos" (si la lógica lo requiere)
+        // inventoriesDropdown.innerHTML = '<div class="inventory-btn" data-value="all"><h4>Todos</h4></div>';
 
         inventories.forEach(inventory => {
             const inventoryBtn = document.createElement('div');
-
             inventoryBtn.className = 'inventory-btn';
             inventoryBtn.dataset.value = inventory.id;
-            inventoryBtn.innerHTML = `<h4>${inventory.name}</h4>`;
-
+            // Aseguramos que 'name' exista, si no usamos un fallback
+            const name = inventory.name || inventory.table_name || 'Inventario ' + inventory.id;
+            inventoryBtn.innerHTML = `<h4>${name}</h4>`;
             inventoriesDropdown.appendChild(inventoryBtn);
-        })
+        });
 
         const inventoryPicker = document.getElementById('inventory-picker');
+        if (!inventoryPicker) return;
 
+        // Delegación de eventos (más limpio que agregar listener a cada btn)
+        inventoriesDropdown.addEventListener('click', (e) => {
+            const btn = e.target.closest('.inventory-btn');
+            if (btn) {
+                // Actualizar estadísticas
+                if (typeof updateDailyStatistics === 'function') {
+                    updateDailyStatistics(btn.dataset.value);
+                }
+                // Actualizar texto del botón principal
+                inventoryPicker.innerHTML = `<h4>${btn.innerText}</h4>`;
 
-        const allBtns = inventoriesDropdown.querySelectorAll('.inventory-btn');
-        allBtns.forEach(btn =>{
-            btn.addEventListener('click', () => {
-                updateDailyStatistics(btn.dataset.value);
-                inventoryPicker.innerHTML = `<h4>${btn.innerHTML}</h4>`;
-            })
-        })
-
-
-
-        inventoryPicker.addEventListener('click', () => {
-            if(!inventoryPicker.classList.contains('clicked')){
-                inventoriesDropdown.classList.remove('hidden');
-                inventoryPicker.classList.add('clicked');
-            }
-            else{
+                // Cerrar dropdown
                 inventoriesDropdown.classList.add('hidden');
                 inventoryPicker.classList.remove('clicked');
             }
         });
 
+        // Toggle del dropdown
+        inventoryPicker.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isClosed = inventoriesDropdown.classList.contains('hidden');
+
+            if (isClosed) {
+                inventoriesDropdown.classList.remove('hidden');
+                inventoryPicker.classList.add('clicked');
+            } else {
+                inventoriesDropdown.classList.add('hidden');
+                inventoryPicker.classList.remove('clicked');
+            }
+        });
+
+        // Cerrar al hacer clic fuera
         window.addEventListener('click', (event) => {
-            if (inventoryPicker.classList.contains('clicked') && !inventoryPicker.contains(event.target) &&
-                !inventoriesDropdown.contains(event.target)) {
+            if (!inventoryPicker.contains(event.target) && !inventoriesDropdown.contains(event.target)) {
                 inventoriesDropdown.classList.add('hidden');
                 inventoryPicker.classList.remove('clicked');
             }
         });
 
-        inventoriesDropdown.addEventListener('click', () => {
-            if(!inventoryPicker.classList.contains('clicked')){
-                inventoriesDropdown.classList.remove('hidden');
-                inventoryPicker.classList.add('clicked');
-            }
-            else{
-                inventoriesDropdown.classList.add('hidden');
-                inventoryPicker.classList.remove('clicked');
-            }
-        });
-
+    } catch (error) {
+        console.error("Error fatal en setupInventoryPicker:", error);
     }
 }
 /* ---------------------- FIN DE FUNCIONES DE NANO  ---------------------- */
 
 /* ---------------------- Gestionar columnas ---------------------- */
 
-async function loadTableData() {
+export async function loadTableData() {
     try {
         console.log("[loadTableData] Llamando a api.getTableData...");
         const result = await api.getTableData();
+        console.log("[loadTableData] Se llamó");
 
         if (result && result.success === true) {
             allData = result.data || [];
+
+            originalData = [...allData];
+
+
             currentTableColumns = result.columns || [];
 
             const filterTableColumns = currentTableColumns.filter(
@@ -4514,16 +3911,19 @@ async function loadTableData() {
 
             document.getElementById('table-title').textContent = result.inventoryName || 'Inventario';
 
-            console.log("[loadTableData] Llamando a renderTable y renderColumnList...");
+            console.log("[loadTableData] Llamando a renderTable...");
             await renderTable(filterTableColumns, allData);
-            renderColumnList(); // Asegúrate de que la lista de config. también se actualice
+            console.log("[loadTableData] Llamando a renderColumnList...");
+            if(typeof renderColumnList === 'function') renderColumnList();
+            checkCriticalStatus();
+            console.log("[loadTableData] renderColumnList y renderTable llamados...");
 
-            // Construyo el dropdown de columnas de búsqueda
+
             if (searchColumnDropdown) {
                 searchColumnDropdown.innerHTML = `
-          <button class="search-dropdown-item ${selectedSearchColumn === 'all' ? 'active' : ''}" data-column="all">
-            <i class="ph ph-check"></i> Todas las Columnas
-          </button>`;
+                  <button class="search-dropdown-item ${selectedSearchColumn === 'all' ? 'active' : ''}" data-column="all">
+                    <i class="ph ph-check"></i> Todas las Columnas
+                  </button>`;
 
                 const filterableColumns = currentTableColumns.filter(
                     col => col.toLowerCase() !== 'created_at'
@@ -4536,17 +3936,19 @@ async function loadTableData() {
                         item.classList.add('active');
                     }
                     item.dataset.column = col;
-                    item.innerHTML = `<i class="ph ph-check"></i> ${col}`;
+                    item.innerHTML = `<i class="ph ph-check"></i> ${formatColumnName(col)}`;
                     searchColumnDropdown.appendChild(item);
                 });
             }
-
         } else {
-            pop_ups.error("[loadTableData] getTableData devolvió success: false.");
+            pop_ups.error("Error", "[loadTableData] getTableData devolvió success: false.");
             throw new Error(result?.message || 'Error al obtener datos de tabla.');
         }
     } catch (error) {
-        pop_ups.error("[loadTableData] Error CATCH:", error);
+        console.error("🛑 ¡ERROR CRÍTICO CAPTURADO!", error);
+        console.log("Mensaje de error:", error.message);
+        console.log("Pila de llamadas (Stack):", error.stack);
+        pop_ups.error(error.message || String(error), "[loadTableData] Error CATCH");
         pop_ups.warning(`Error al cargar datos: ${error.message} Serás redirigido.`);
         if (error.message.includes('No autorizado')) {
             window.location.href = '/login.php';
@@ -4558,8 +3960,10 @@ async function loadTableData() {
 
 
 
+window.loadTableData = loadTableData;
 
-
-
+if (document.getElementById('data-table')) {
+    document.addEventListener('DOMContentLoaded', init);
+}
 
 document.addEventListener('DOMContentLoaded', init);

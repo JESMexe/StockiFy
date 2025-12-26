@@ -1,37 +1,28 @@
-﻿// public/assets/js/import.js
+// public/assets/js/import.js
 import * as api from './api.js';
-import {pop_ups} from "./notifications/pop-up.js";
+import { pop_ups } from "./notifications/pop-up.js";
 
 let modalElement, closeModalBtn, importCancelBtn, dropZone, fileInput, importStatus;
-let step1, step2, mappingForm, validatePrepareBtn; // Cambio nombre de botones
+let step1, step2, mappingForm, validatePrepareBtn;
 let uploadedFile = null;
 let currentStockifyColumns = [];
 
 function setStockifyColumns(columns) {
     currentStockifyColumns = columns;
-    console.log("Columnas de StockiFy actualizadas en import.js:", currentStockifyColumns);
 }
 
 function openImportModal() {
-    console.log("Función openImportModal FUE LLAMADA.");
     if (!modalElement) return;
-    console.log("A");
-
     modalElement.classList.remove('hidden');
-    showStep(1); // Siempre empezamos en el paso 1
+    showStep(1);
     importStatus.textContent = '';
     uploadedFile = null;
     if (fileInput) fileInput.value = '';
 }
 
 function closeImportModal() {
-    console.log("Intentando cerrar modal. Elemento:", modalElement); // DEBUG 1
-    if (!modalElement) {
-        console.error("Error: modalElement no encontrado al intentar cerrar."); // DEBUG Error
-        return;
-    }
+    if (!modalElement) return;
     modalElement.classList.add('hidden');
-    console.log("Clase 'hidden' añadida al modal. Clases actuales:", modalElement.className); // DEBUG 2
 }
 
 function showStep(stepNumber) {
@@ -39,193 +30,230 @@ function showStep(stepNumber) {
     step1.classList.toggle('hidden', stepNumber !== 1);
     step2.classList.toggle('hidden', stepNumber !== 2);
     validatePrepareBtn.classList.toggle('hidden', stepNumber !== 2);
-
-    if (mappingForm) {
-        mappingForm.classList.toggle('hidden', stepNumber !== 2);
-    }
+    if (mappingForm) mappingForm.classList.toggle('hidden', stepNumber !== 2);
 }
 
 // --- Manejo de Archivo ---
 function handleFileSelect(file) {
-    if (!file || !file.type.match('text/csv')) { pop_ups.error("Error en el manejo del archivo a importar."); return; }
+    if (!file || !file.type.match('text/csv')) {
+        pop_ups.error("Por favor, selecciona un archivo CSV válido.");
+        return;
+    }
     uploadedFile = file;
-    importStatus.textContent = `Archivo seleccionado: ${file.name}`;
+    importStatus.textContent = `Archivo: ${file.name}`;
     importStatus.style.color = 'var(--accent-green)';
-    // Directamente intento leer las cabeceras
     fetchHeaders();
 }
 
 async function fetchHeaders() {
     if (!uploadedFile) return;
-
-    importStatus.textContent = 'Leyendo cabeceras...';
+    importStatus.textContent = 'Analizando archivo...';
 
     const formData = new FormData();
     formData.append('csvFile', uploadedFile);
 
     try {
-        // Llamo a la API para obtener cabeceras CSV
         const result = await api.getCsvHeaders(formData);
-
         if (result.success) {
-            console.log("Cabeceras CSV:", result.csvHeaders);
-            console.log("Columnas StockiFy (del input):", currentStockifyColumns);
-
-            // Uso las columnas del input como destino
             populateMappingUI(result.csvHeaders, currentStockifyColumns);
             showStep(2);
             importStatus.textContent = '';
         } else {
-            throw new Error(result.message || 'Error desconocido del servidor.');
+            throw new Error(result.message || 'Error al leer el CSV.');
         }
     } catch (error) {
-        importStatus.textContent = `Error al leer cabeceras: ${error.message}`;
+        importStatus.textContent = `Error: ${error.message}`;
         importStatus.style.color = 'var(--accent-red)';
-    } finally {
-        // Habilitar dropZone si lo deshabilitamos
     }
 }
 
 // --- Mapeo y Preparación ---
-/**
- * Genera dinámicamente la interfaz para que el usuario mapee
- * las columnas del CSV a las columnas de StockiFy.
- * @param {string[]} csvHeaders - Array con los nombres de columna del archivo CSV.
- * @param {string[]} stockifyColumns - Array con los nombres de columna de la tabla StockiFy.
- */
+
+// Función auxiliar para llenar el select (Aquí está la opción VACIAR DATOS)
+function generateMappingOptions(select, csvHeaders, dbColumn) {
+    select.innerHTML = '';
+
+    // 1. Opción Default
+    const defaultOption = document.createElement('option');
+    defaultOption.value = "";
+    defaultOption.textContent = "Ignorar esta columna";
+    select.appendChild(defaultOption);
+
+    // 2. Opción Vaciar Datos
+    const emptyOption = document.createElement('option');
+    emptyOption.value = "__EMPTY__";
+    emptyOption.textContent = "Vaciar Datos";
+    emptyOption.style.color = 'var(--accent-red)'; // Rojo para destacar
+    select.appendChild(emptyOption);
+
+    // 3. Opciones del CSV
+    csvHeaders.forEach((header, index) => {
+        const option = document.createElement('option');
+        // Enviamos el NOMBRE del header, no el índice, para que el backend lo encuentre fácil
+        option.value = header;
+        option.textContent = header;
+
+        // Auto-match (Fuzzy)
+        const normHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normDb = dbColumn.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        if (normHeader === normDb) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
 function populateMappingUI(csvHeaders, stockifyColumns) {
     if (!mappingForm) return;
-    mappingForm.innerHTML = ''; // Limpio el placeholder
+    mappingForm.innerHTML = '';
 
-    // Creo las cabeceras visuales
+    // Cabeceras visuales
     mappingForm.insertAdjacentHTML('beforeend', `
-        <div style="text-align: left; font-weight: bold;">Columna CSV</div>
-        <div></div> <div style="text-align: left; font-weight: bold;">Columna StockiFy</div>
+        <div style="text-align: left; font-weight: bold; color: var(--color-gray);">Columna CSV</div>
+        <div></div> 
+        <div style="text-align: center; font-weight: bold; color: var(--color-gray);">Destino StockiFy</div>
     `);
 
-    // Por cada columna de StockiFy, creo una fila de mapeo
+    const niceNames = {
+        'min_stock': 'Stock Mínimo',
+        'sale_price': 'Precio de Venta',
+        'receipt_price': 'Precio de Compra',
+    };
+
     stockifyColumns.forEach(stockifyCol => {
-        // Ignoro 'id' y 'created_at' ya que son automáticas
-        if (stockifyCol.toLowerCase() === 'id' || stockifyCol.toLowerCase() === 'created_at') {
-            return;
-        }
+        // Filtramos columnas de sistema
+        if (['id', 'created_at', 'updated_at'].includes(stockifyCol.toLowerCase())) return;
 
-        // Creo el <select> para las columnas del CSV
+        // Crear Select
         const select = document.createElement('select');
-        select.name = stockifyCol; // El 'name' será la columna StockiFy de destino
-        select.classList.add('csv-column-select');
+        select.dataset.column = stockifyCol; // Usamos data attribute para identificar
+        select.classList.add('mapping-select'); // Clase para buscar luego
 
-        // Opción por defecto "No importar"
-        const defaultOption = document.createElement('option');
-        defaultOption.value = "";
-        defaultOption.textContent = "-- Ignorar esta columna --";
-        select.appendChild(defaultOption);
-
-        // Opciones con las cabeceras del CSV
-        csvHeaders.forEach((csvHeader, index) => {
-            const option = document.createElement('option');
-            option.value = index; // Guardo el ÍNDICE de la columna CSV
-            option.textContent = csvHeader;
-            if (csvHeader.trim().toLowerCase() === stockifyCol.trim().toLowerCase()) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
+        // ¡AQUÍ ESTÁ LA CORRECCIÓN! Usamos la función auxiliar
+        generateMappingOptions(select, csvHeaders, stockifyCol);
 
         const csvColDiv = document.createElement('div');
         csvColDiv.appendChild(select);
-        const arrowDiv = document.createElement('div');
-        arrowDiv.innerHTML = '&rarr;';
-        arrowDiv.style.textAlign = 'center';
-        const stockifyColDiv = document.createElement('div');
-        stockifyColDiv.textContent = stockifyCol;
-        stockifyColDiv.style.fontWeight = '500';
 
-        // Añado la fila al grid del formulario
+        const arrowDiv = document.createElement('div');
+        arrowDiv.innerHTML = '<i class="ph ph-arrow-right"></i>';
+        arrowDiv.style.textAlign = 'right';
+        arrowDiv.style.color = 'var(--accent-color)';
+
+        const stockifyColDiv = document.createElement('div');
+        stockifyColDiv.textContent = stockifyCol.charAt(0).toUpperCase() + stockifyCol.slice(1).replace(/_/g, ' ');
+        stockifyColDiv.style.fontWeight = '600';
+
+        const colKey = stockifyCol.toLowerCase();
+        let displayName = niceNames[colKey];
+
+        if (!displayName) {
+            // Si no está en el mapa, lo formateamos genérico (primera mayúscula y sin guiones)
+            displayName = stockifyCol.charAt(0).toUpperCase() + stockifyCol.slice(1).replace(/_/g, ' ');
+        }
+
+        stockifyColDiv.textContent = displayName;
         mappingForm.appendChild(csvColDiv);
         mappingForm.appendChild(arrowDiv);
         mappingForm.appendChild(stockifyColDiv);
     });
 
-    // Añado la opción de sobrescribir
-    mappingForm.insertAdjacentHTML('beforeend', `
-        <div class="modal-option right-check" style="grid-column: 1 / -1; margin-top: 1rem; text-align: left; margin-bottom: 0.2rem;">
-            <input type="checkbox" id="replace-all">
-            <label for="replace-all">Reemplazar todos los datos existentes en esta tabla</label>
+    // Checkbox de Reemplazo (Con la estructura CSS correcta)
+    const overwriteHTML = `
+        <div class="checkbox-align-wrapper" style="display: flex; align-items: center; gap: 15px; grid-column: 1 / -1; margin-top: 1.5rem; padding: 1rem; border: 1px dashed var(--accent-red); border-radius: 8px; background-color: #fff5f5;">
+            <input type="checkbox" id="overwrite-data" name="overwrite" class="checkbox-danger">
+            
+            <label for="overwrite-data" style="cursor: pointer;">
+                <span style="color: var(--accent-red); font-weight: 700; font-size: 1.05rem;">Reemplazar todos los datos existentes</span>
+                <span style="display:block; font-size:0.85rem; color:#666; font-weight: 500; margin-top:4px; line-height: 1.4;">
+                     <i class="ph ph-warning" style="color: var(--accent-red); margin-right: 4px;"></i> 
+                     Borrará todo el contenido actual de la tabla antes de importar.
+                </span>
+            </label>
         </div>
-    `);
+    `;
+    mappingForm.insertAdjacentHTML('beforeend', overwriteHTML);
 }
 
+// --- Lógica Principal de Envío ---
 async function handleValidateAndPrepare(event) {
     event.preventDefault();
 
-    if (!uploadedFile || !mappingForm) {
-        console.error("Falta archivo subido o formulario de mapeo.");
-        return;
-    }
+    if (!uploadedFile) return;
 
     validatePrepareBtn.disabled = true;
     validatePrepareBtn.textContent = 'Procesando...';
-    importStatus.textContent = 'Validando y preparando datos...';
+    importStatus.textContent = 'Subiendo y analizando datos...';
 
-    // Preparo el FormData como antes
-    const mappingData = new FormData(mappingForm);
+    // 1. Recopilar Mapeo
     const mapping = {};
-    mappingData.forEach((value, key) => {
-        if (key !== 'overwrite' && value !== "") {
-            mapping[key] = parseInt(value, 10);
+    document.querySelectorAll('.mapping-select').forEach(select => {
+        if (select.value) {
+            mapping[select.dataset.column] = select.value;
         }
     });
+
+    // 2. Recopilar Checkbox
+    const overwriteCheck = document.getElementById('overwrite-data');
+    const overwrite = overwriteCheck ? overwriteCheck.checked : false;
+
+    // 3. Preparar FormData
     const formData = new FormData();
-    formData.append('csvFile', uploadedFile);
+    formData.append('csvFile', uploadedFile); // Nota: PHP espera 'csvFile' (CamelCase)
     formData.append('mapping', JSON.stringify(mapping));
-    formData.append('overwrite', mappingData.has('overwrite') ? 'true' : 'false');
+    // Enviamos 'true' o 'false' como texto para que PHP lo entienda fácil
+    formData.append('overwrite', overwrite ? 'true' : 'false');
 
     try {
-        console.log("Intentando llamar a api.prepareCsvImport..."); // DEBUG 1
-        // 1. Solo llamo a PREPARAR
+        // PASO 1: SIEMPRE PREPARAR (Guardar en sesión)
+        // Esto valida el CSV y lo deja listo en el servidor
+        console.log("Enviando a preparar...");
         const resultPrepare = await api.prepareCsvImport(formData);
-        console.log("Respuesta de prepareCsvImport:", resultPrepare); // DEBUG 2
 
-        if (resultPrepare.success) {
-            console.log("API prepare fue exitosa."); // DEBUG 3
-
-            // Verifico si estoy en create-db.php (donde existe window.updateImportStatus)
-            if (typeof window.updateImportStatus === 'function') {
-                console.log("Estoy en create-db.php. Actualizando estado."); // DEBUG 4
-                window.updateImportStatus(`${resultPrepare.rowCount} filas preparadas para importar.`);
-            } else {
-                // Estoy en dashboard.php, acá SÍ llamo a executeImport
-                console.log("Estoy en dashboard.php. Llamando a executeImport..."); // DEBUG 4b
-                const resultExecute = await api.executeImport();
-                console.log("Respuesta de executeImport:", resultExecute);
-                if (resultExecute.success) {
-                    pop_ups.success(`${resultExecute.insertedRows} filas importadas con éxito.`, "Importación Exitosa.");
-                    location.reload(); // Recargo el dashboard
-                } else {
-                    throw new Error(resultExecute.message); // Error en execute
-                }
-            }
-
-            closeImportModal(); // Cierro el modal
-            console.log("Modal cerrado."); // DEBUG 5
-
-        } else {
-            // Si resultPrepare.success es false
-            console.error(`Resultado de API prepare fue false: ${resultPrepare.message}`);
+        if (!resultPrepare.success) {
             throw new Error(resultPrepare.message);
         }
-    } catch (apiError) {
-        pop_ups.error(`Error en la llamada API o procesamiento: ${apiError}`);
-        importStatus.textContent = `Error: ${apiError.message}`;
+
+        console.log("Preparación exitosa. Filas:", resultPrepare.rowCount);
+
+        // PASO 2: DECIDIR QUÉ HACER
+        // Si existe esta función, estamos en "Crear DB" -> Solo avisamos y cerramos
+        if (typeof window.updateImportStatus === 'function') {
+            window.updateImportStatus(`${resultPrepare.rowCount} filas listas para importar.`);
+            pop_ups.success("Datos validados correctamente.");
+            closeImportModal();
+        }
+        // Si NO existe, estamos en "Dashboard" -> EJECUTAR INSERCIÓN AHORA
+        else {
+            importStatus.textContent = 'Insertando en base de datos...';
+            const resultExecute = await api.executeImport(); // Llamada sin args, usa la sesión
+
+            if (resultExecute.success) {
+                pop_ups.success(resultExecute.message, "Importación Exitosa");
+                closeImportModal();
+
+                // Recargar tabla
+                if (typeof window.loadTableData === 'function') {
+                    await window.loadTableData();
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                throw new Error(resultExecute.message);
+            }
+        }
+
+    } catch (error) {
+        console.error(error);
+        pop_ups.error(`Error: ${error.message}`, "Fallo en Importación");
+        importStatus.textContent = "Error al procesar.";
         importStatus.style.color = 'var(--accent-red)';
     } finally {
         validatePrepareBtn.disabled = false;
-        validatePrepareBtn.textContent = 'Validar y Preparar Datos';
-        console.log("Bloque finally ejecutado.");
+        validatePrepareBtn.textContent = 'Importar Datos';
     }
 }
-
 
 // --- Inicialización ---
 function initializeImportModal() {
@@ -240,40 +268,32 @@ function initializeImportModal() {
     mappingForm = document.getElementById('mapping-form');
     validatePrepareBtn = document.getElementById('validate-prepare-btn');
 
-    if (!modalElement) {
-        console.error("Error: Elemento #import-modal no encontrado.");
-        return;
-    }
+    if (!modalElement) return;
 
     modalElement.classList.add('hidden');
     showStep(1);
 
-
-    // Cerrar con X o Cancelar
     closeModalBtn?.addEventListener('click', closeImportModal);
     importCancelBtn?.addEventListener('click', closeImportModal);
-    // Cerrar haciendo clic en el fondo
+
     modalElement.addEventListener('click', (event) => {
-        if (event.target === modalElement) {
-            closeImportModal();
-        }
+        if (event.target === modalElement) closeImportModal();
     });
 
-    // Abrir selector de archivo al hacer clic en dropzone
     dropZone?.addEventListener('click', () => fileInput?.click());
-    // Manejar archivo seleccionado
-    fileInput?.addEventListener('change', (event) => { if (event.target.files.length > 0) handleFileSelect(event.target.files[0]); });
+    fileInput?.addEventListener('change', (event) => {
+        if (event.target.files.length > 0) handleFileSelect(event.target.files[0]);
+    });
 
-    // Manejar Drag and Drop
     dropZone?.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
     dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone?.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]); });
+    dropZone?.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
+    });
 
-    // Botón principal del modal
     validatePrepareBtn?.addEventListener('click', handleValidateAndPrepare);
-
-    console.log("Modal de importación inicializado."); // Confirmación
 }
 
-// Exportamos solo lo necesario
 export { openImportModal, initializeImportModal, setStockifyColumns };

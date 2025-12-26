@@ -1,39 +1,44 @@
 <?php
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
+header('Content-Type: application/json');
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
+require_once __DIR__ . '/../../../src/core/Database.php';
 
 use App\core\Database;
 
-try {
-    $pdo = Database::getInstance();
+$user = getCurrentUser();
+if (!$user) { echo json_encode(['success'=>false]); exit; }
 
-    if (!getCurrentUser() || !isset($_SESSION['active_inventory_id'])) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'No autorizado o inventario no activo.']);
-        return; // Detiene la ejecución antes de que PHP lance un Notice HTML.
-    }
+// Obtener inventario activo
+// (Asumimos lógica de "último activo" o "único")
+// Aquí simplifico buscando el último creado o el seleccionado en sesión si existiera
+$db = Database::getInstance();
+$stmt = $db->prepare("SELECT id, preferences, min_stock, hard_gain FROM inventories WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
+$stmt->execute([$user['id']]);
+$inv = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $user = getCurrentUser();
-    $user_id = $_SESSION['user_id'];
+if ($inv) {
+    // Decodificar JSON
+    $prefs = json_decode($inv['preferences'], true) ?? [];
 
-    $inventoryID = $_SESSION['active_inventory_id'];
-    $stmt = $pdo->prepare("SELECT min_stock,sale_price,receipt_price,hard_gain,percentage_gain,auto_price,auto_price_type FROM inventories WHERE id = ?");
-    $stmt ->execute([$inventoryID]);
-    $preferences = $stmt->fetch();
-
-    $response = ['min_stock' => $preferences['min_stock'],'sale_price' => $preferences['sale_price'],
-        'receipt_price' => $preferences['receipt_price'],'hard_gain' => $preferences['hard_gain'],
-        'percentage_gain' => $preferences['percentage_gain'],'auto_price' => $preferences['auto_price'],
-        'auto_price_type' => $preferences['auto_price_type'], 'success' => true];
-
-} catch (Exception $e) {
-    $message = $e->getMessage();
-    $response = ['success' => false, 'error' => 'Ha ocurrido un error interno = ' . $message];
+    // Estructura por defecto si está vacío
+    $response = [
+        'success' => true,
+        'mapping' => $prefs['mapping'] ?? [
+                'name' => null,
+                'stock' => null,
+                'sale_price' => null,
+                'buy_price' => null
+            ],
+        'features' => $prefs['features'] ?? [
+                'min_stock' => (bool)$inv['min_stock'], // Mantener compatibilidad con dato viejo
+                'gain' => (bool)$inv['hard_gain'],      // Mantener compatibilidad
+                'min_stock_val' => 5,
+                'gain_type' => 'percent'
+            ]
+    ];
+    echo json_encode($response);
+} else {
+    echo json_encode(['success' => false, 'message' => 'No hay inventario']);
 }
-
-echo json_encode($response, JSON_NUMERIC_CHECK);
+?>

@@ -1,0 +1,80 @@
+﻿/* public/assets/css/analytics.css */
+
+.analytics-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 20px;
+}
+
+/* Tarjetas KPI */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stat-title {
+    color: #666; font-size: 0.9rem; font-weight: 500;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.stat-value { font-size: 1.8rem; font-weight: 700; color: #333; }
+.stat-sub { font-size: 0.8rem; margin-top: 5px; opacity: 0.8; }
+
+/* COLORES DE LA APP */
+.stat-card.revenue { border-left: 4px solid var(--accent-green, #28a745); }
+.stat-card.revenue .stat-title i { color: var(--accent-green, #28a745); }
+
+.stat-card.expenses { border-left: 4px solid var(--accent-red, #dc3545); }
+.stat-card.expenses .stat-title i { color: var(--accent-red, #dc3545); }
+
+/* Balance y Stock usan el color de acento principal (Azul/Tema) */
+.stat-card.balance { border-left: 4px solid var(--accent-blue); }
+.stat-card.balance .stat-title i { color: var(--accent-blue); }
+
+.stat-card.inventory { border-left: 4px solid var(--accent-yellow); }
+.stat-card.inventory .stat-title i { color: var(--accent-yellow); }
+
+/* Gráficos y Tablas */
+.charts-section, .top-list-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.top-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.top-list-item:last-child { border-bottom: none; }
+
+.top-item-name { font-weight: 600; color: #333; }
+.top-item-sub { font-size: 0.85rem; color: #888; }
+.top-item-val { font-weight: 700; color: var(--accent-color); }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .bottom-section { grid-template-columns: 1fr; }
+}

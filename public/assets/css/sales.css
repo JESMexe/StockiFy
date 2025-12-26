@@ -1,0 +1,46 @@
+﻿/* public/assets/css/sales.css */
+.sales-layout { display: flex; flex-direction: column; height: 100%; gap: 1rem; }
+
+#create-sale-modal .modal-content,
+#detail-sale-modal .modal-content,
+#quick-sale-modal .modal-content {
+    background-color: #ffffff !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.sale-modal-body { display: flex; flex-direction: row; height: calc(80vh - 60px); overflow: hidden; }
+.sale-col { padding: 1rem; display: flex; flex-direction: column; border-right: 1px solid #eee; }
+.sale-col:last-child { border-right: none; background-color: #f1f8ff; /* Azul muy suave */ }
+
+.sale-col h4 {
+    margin-bottom: 1rem; color: #007bff; font-weight: 600; font-size: 1rem;
+    border-bottom: 2px solid #0056b3; padding-bottom: 0.5rem; display: inline-block;
+}
+
+/* Listas */
+.resource-list { flex-grow: 1; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px; background: white; }
+.resource-item { padding: 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.resource-item:hover { background-color: #e3f2fd; }
+
+/* Carrito */
+.cart-item { background: white; padding: 10px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.cart-controls { display: flex; align-items: center; gap: 8px; background: #eee; border-radius: 4px; padding: 2px; }
+.qty-btn { width: 24px; height: 24px; border: none; background: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.qty-btn:hover { background: #ddd; }
+
+/* Venta Rápida */
+.big-amount-input { font-size: 2.5rem; font-weight: bold; text-align: center; color: #28a745; border: none; border-bottom: 3px solid #eee; background: transparent; width: 100%; padding: 10px; }
+.big-amount-input:focus { outline: none; border-bottom-color: #28a745; }
+.quick-form-group { margin-bottom: 15px; }
+.quick-label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+
+/* Ghost Edit Button */
+.detail-relative-container { position: relative; }
+.btn-ghost-edit { position: absolute; top: 0; left: 0; background: transparent; border: none; color: #bbb; font-size: 1.2rem; cursor: pointer; padding: 5px; z-index: 10; transition: all 0.2s; }
+.btn-ghost-edit:hover { color: #007bff; transform: scale(1.1); }
+.edit-controls-wrapper { display: flex; gap: 5px; margin-top: 10px; justify-content: center; }
+
+/* Utils */
+.text-right { text-align: right; } .text-bold { font-weight: bold; } .text-green { color: #28a745; } .w-full { width: 100%; } .mt-auto { margin-top: auto; }

@@ -101,17 +101,50 @@ class InventoryController
                 http_response_code(400); // Bad Request
                 echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1054)) {
+                http_response_code(400); // Bad Request
+                echo json_encode(['success' => false, 'message' => "Estás intentando asignar datos a una columna que no existe."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1059)) {
+                http_response_code(400); // Bad Request
+                echo json_encode(['success' => false, 'message' => "El nombre de la columna es demasiado largo. Por favor, usa menos de 64 caracteres."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1060)) {
+                http_response_code(400); // Bad Request
+                echo json_encode(['success' => false, 'message' => "Ya existe una columna con ese nombre en la base de datos."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1061)) {
+                http_response_code(400); // Bad Request
+                echo json_encode(['success' => false, 'message' => "Ya existe un índice con ese nombre."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1064)) {
+                http_response_code(400); // Bad Request
+                echo json_encode(['success' => false, 'message' => "El nombre de la columna contiene caracteres no válidos o palabras reservadas."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1091)) {
+                http_response_code(400); // Bad Request
+                echo json_encode(['success' => false, 'message' => "No se pudo encontrar la columna solicitada para modificar o borrar."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1146)) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => "La tabla de la base de datos no existe o está corrupta."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1264)) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => "El número ingresado es demasiado grande para esta columna."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1265)) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => "El texto es demasiado largo para esta columna o el formato es incorrecto."]);
+            }
+            else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1366)) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => "Se esperaba un número entero pero se recibió texto o decimales."]);
+            }
             else {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Ocurrió un error inesperado al crear la tabla.']);
                 error_log("Error en InventoryController::create: " . $e->getMessage());
-            }
-            if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1050)) {
-                http_response_code(409);
-                echo json_encode(['success' => false, 'message' => 'Ya existe una base de datos con ese nombre.']);
-            } else {
-                http_response_code(500); // Internal Server Error
-                echo json_encode(['success' => false, 'message' => 'Error crítico: ' . $e->getMessage()]);
             }
         }
     }

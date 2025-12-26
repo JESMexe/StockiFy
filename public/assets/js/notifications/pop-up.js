@@ -80,26 +80,62 @@ function _showPrompt(title, message, placeholder = '', initialValue = '') {
         modal.classList.remove('hidden');
         inputEl.focus();
 
-        // --- ¡ARREGLO DEL BUG DE CLONACIÓN! ---
-
-        // 1. Clonamos el formulario (esto también clona los botones de adentro)
         const newForm = form.cloneNode(true);
         form.parentNode.replaceChild(newForm, form);
 
-        // 2. Buscamos el botón cancelar DENTRO del NUEVO formulario
         const newCancelBtn = newForm.querySelector('#prompt-cancel-btn');
 
-        // 3. Añadimos el listener de submit al NUEVO formulario
         newForm.addEventListener('submit', (e) => {
             e.preventDefault();
             modal.classList.add('hidden');
             resolve(newForm.querySelector('#prompt-input').value.trim());
         });
 
-        // 4. Añadimos el listener de click al NUEVO botón cancelar
         newCancelBtn.addEventListener('click', () => {
             modal.classList.add('hidden');
             reject(new Error('Acción cancelada por el usuario.'));
+        });
+    });
+}
+
+function _showConfirm(title, message) {
+    return new Promise((resolve, reject) => {
+        const modal = document.getElementById('custom-prompt-modal');
+        const titleEl = document.getElementById('prompt-title');
+        const messageEl = document.getElementById('prompt-message');
+        const inputEl = document.getElementById('prompt-input');
+        const form = document.getElementById('prompt-form');
+
+        if (!modal || !titleEl || !messageEl || !inputEl || !form) {
+            return reject(new Error('UI no encontrada.'));
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        inputEl.style.display = 'none';
+        inputEl.value = 'CONFIRMADO';
+
+        modal.classList.remove('hidden');
+
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+
+        const hiddenInput = newForm.querySelector('#prompt-input');
+
+        const newCancelBtn = newForm.querySelector('#prompt-cancel-btn');
+
+        newForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            modal.classList.add('hidden');
+            inputEl.style.display = 'block';
+            resolve(true);
+        });
+
+        newCancelBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            inputEl.style.display = 'block';
+            resolve(false);
         });
     });
 }
@@ -125,6 +161,7 @@ export const pop_ups = {
         _showToast('system', title, message);
     },
 
-    prompt: _showPrompt
+    prompt: _showPrompt,
+    confirm: _showConfirm
 };
 

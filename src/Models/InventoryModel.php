@@ -29,10 +29,6 @@ class InventoryModel
      * Realiza la operación completa de crear un inventario y su tabla física
      * dentro de una transacción segura.
      */
-    /**
-     * Realiza la operación completa de crear un inventario y su tabla física.
-     * CORREGIDO: Evita duplicar columnas reservadas (sale_price, min_stock, etc).
-     */
     public function createInventoryAndTable(string $inventoryName, int $userId, string $baseTableName, array $columns, array $tablePreferences): array
     {
         // --- PASO 1: PREPARAR DATOS ---
@@ -450,5 +446,124 @@ class InventoryModel
     {
         return array_map('trim', $columns);
         // $columns = $this->cleanColumnSpaces($tableInfo['columns']);
+    }
+
+    /**
+     * Aumenta el stock de un producto (para Compras).
+     */
+    public function increaseStock(int $userId, $productId, int $quantity): bool
+    {
+        // 1. Buscar tabla activa
+        $sqlTable = "SELECT ut.table_name 
+                     FROM user_tables ut
+                     JOIN inventories i ON ut.inventory_id = i.id
+                     WHERE i.user_id = :user_id 
+                     LIMIT 1";
+
+        $stmt = $this->db->prepare($sqlTable);
+        $stmt->execute([':user_id' => $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) return false;
+
+        $tableName = $row['table_name'];
+        $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
+
+        // 2. Aumentar Stock
+        try {
+            $sql = "UPDATE {$safeTable} SET stock = stock + :qty WHERE id = :id";
+            $stmtUpdate = $this->db->prepare($sql);
+            return $stmtUpdate->execute([':qty' => $quantity, ':id' => $productId]);
+        } catch (Exception $e) {
+            error_log("InventoryModel: Error al aumentar stock: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Descuenta el stock de un producto en la tabla activa del usuario.
+     * @param int $userId ID del usuario.
+     * @param mixed $productId ID del producto (puede ser int o string).
+     * @param int $quantity Cantidad a descontar.
+     * @return bool True si se actualizó, False si falló.
+     */
+    public function decreaseStock(int $userId, $productId, int $quantity): bool
+    {
+        // 1. Buscar la tabla activa del usuario
+        // (Simplificación: buscamos la primera tabla asociada al inventario del usuario)
+        $sqlTable = "SELECT ut.table_name 
+                     FROM user_tables ut
+                     JOIN inventories i ON ut.inventory_id = i.id
+                     WHERE i.user_id = :user_id 
+                     LIMIT 1"; // OJO: Idealmente deberíamos recibir el inventoryId desde la venta
+
+        $stmt = $this->db->prepare($sqlTable);
+        $stmt->execute([':user_id' => $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            error_log("InventoryModel: No se encontró tabla activa para el usuario $userId");
+            return false;
+        }
+
+        $tableName = $row['table_name'];
+        // Sanitizamos por seguridad, aunque viene de DB
+        $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
+
+        // 2. Descontar Stock
+        // Asumimos que la columna se llama 'stock'. Si tu usuario le puso 'cantidad', esto fallará.
+        // Para esta versión v1.0, asumiremos 'stock'.
+        try {
+            $sql = "UPDATE {$safeTable} SET stock = stock - :qty WHERE id = :id";
+            $stmtUpdate = $this->db->prepare($sql);
+            return $stmtUpdate->execute([':qty' => $quantity, ':id' => $productId]);
+        } catch (Exception $e) {
+            error_log("InventoryModel: Error al descontar stock: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Copia los valores de una columna a otra en la misma tabla.
+     * Útil para importar datos viejos a las nuevas columnas 'min_stock' o precios.
+     */
+    /**
+     * Copia los valores de una columna a otra en la tabla específica.
+     */
+    public function copyColumnData(int $inventoryId, string $sourceCol, string $targetCol): bool
+    {
+        // Limpieza básica anti-inyección (permitiendo espacios si tu DB los tiene)
+        $safeSource = "`" . str_replace("`", "``", $sourceCol) . "`";
+        $safeTarget = "`" . str_replace("`", "``", $targetCol) . "`";
+
+        try {
+            // 1. Buscar el nombre de la tabla CORRESPONDIENTE al ID del inventario
+            $stmt = $this->db->prepare("SELECT table_name FROM user_tables WHERE inventory_id = :inv_id LIMIT 1");
+            $stmt->execute([':inv_id' => $inventoryId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) throw new Exception("No se encontró la tabla para el inventario ID: $inventoryId");
+
+            $tableName = $row['table_name'];
+            $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
+
+            // 2. Ejecutar Copia
+            // Usamos lógica condicional: Si el valor es vacío o no numérico, ponemos 0.
+            // Esto evita problemas con celdas vacías.
+            if (strpos($targetCol, 'min_stock') !== false) {
+                // Para enteros (Stock Mínimo)
+                $sql = "UPDATE $safeTable SET $safeTarget = CAST($safeSource AS UNSIGNED)";
+            } else {
+                // Para decimales (Precios)
+                $sql = "UPDATE $safeTable SET $safeTarget = CAST($safeSource AS DECIMAL(10,2))";
+            }
+
+            $this->db->exec($sql);
+            return true;
+
+        } catch (Exception $e) {
+            error_log("InventoryModel Copy Error: " . $e->getMessage());
+            return false;
+        }
     }
 }

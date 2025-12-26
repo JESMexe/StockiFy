@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.style.setProperty('--accent-red', '#BF616A'); // error
     document.documentElement.style.setProperty('--accent-green', '#A3BE8C'); // ok
     document.documentElement.style.setProperty('--accent-yellow', '#EBCB8B'); // warning
+    document.documentElement.style.setProperty('--accent-blue', '#88C0D0');
+    document.documentElement.style.setProperty('--accent-violet', '#B48EAD');
 
     const randomColor = accentColors[Math.floor(Math.random() * accentColors.length)];
     document.documentElement.style.setProperty('--accent-color', randomColor);

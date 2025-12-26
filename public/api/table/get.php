@@ -6,9 +6,7 @@ error_reporting(E_ALL);
 
 session_start();
 
-// Es posible que el autoload de Composer no esté cargando los helpers
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
-// Y si el TableController usa un Modelo o Database directamente
 require_once __DIR__ . '/../../../src/core/Database.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
 

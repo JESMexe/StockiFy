@@ -1,518 +1,151 @@
-﻿/*
- * Archivo: public/assets/css/auth.css
- * Descripción: Estilos para centrar los formularios de Login y Registro.
- */
-
-.auth-wrapper {
+﻿/* --- LAYOUT DIVIDIDO (Caja Izq | Form Der) --- */
+.login-split-screen {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
-    min-height: 100vh;
-    padding: 2rem 1rem;
-}
-
-.auth-form-container {
-    /* Aca heredo todos los estilos de .view-container de main.css */
-    /* Este contenedor se usa en el HTML para aplicar esos estilos */
-    /* Y para cualquier ajuste específico si fuera necesario */
-}
-
-.auth-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-}
-
-.form-group {
-    text-align: left;
-}
-
-.auth-form .btn {
-    margin-top: 1rem;
-}
-
-.auth-footer {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--color-gray);
-}
-
-.auth-footer a {
-    color: var(--accent-color);
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.auth-footer a:hover {
-    text-decoration: underline;
-}
-
-/* =========================================================
-   Columnas Recomendadas (acordeón)
-   ========================================================= */
-.rc-accordion {
-    background: #fff;
-    border: var(--border-strong);
-    border-radius: var(--border-radius);
-    box-shadow: 6px 6px 0 var(--color-black);
-    overflow: hidden;
-}
-
-/* Cabecera del acordeón */
-.rc-header {
-    width: 100%;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-    background: var(--color-white);
-    border-bottom: var(--border-strong);
-    padding: .9rem 1rem;
-    cursor: pointer;
-    transition: background .25s ease;
-}
-
-.rc-header:hover {
-    background: rgba(var(--accent-color-rgb), .08);
-}
-
-.rc-header h5 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 900;
-}
-
-.rc-header .rc-arrow {
-    width: 18px;
-    height: 18px;
-    transition: transform .25s ease, filter .2s ease;
-    filter: grayscale(100%);
-}
-
-.rc-header[aria-expanded="true"] .rc-arrow {
-    transform: rotate(180deg);
-    filter: none;
-}
-
-/* Contenido colapsable */
-.rc-content {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    padding: 0 1rem;
-    transition: max-height .4s ease, opacity .3s ease, padding .25s ease;
-    background: #fff;
-}
-
-.rc-content.open {
-    max-height: 2000px; /* suficiente para todo el bloque */
-    opacity: 1;
-    padding: 1rem;
-}
-
-/* Grupos internos */
-.recomended-column-group {
-    border: 2px solid #1b1b1b;
-    border-radius: 10px;
-    padding: .9rem;
-    margin-bottom: 1rem;
-    background: #fff;
-    box-shadow: 3px 3px 0 #1b1b1b;
-}
-
-/* Ocultamos el checkbox original y usamos el label como “toggle” */
-.hidden-checkbox {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Botón/label estilo compacto */
-.btn-checkbox-toggle {
-    width: fit-content;
-    margin: 0 0 .6rem 0;
-    user-select: none;
-}
-
-/* tamaños opcionales */
-.btn-checkbox-toggle.sm { font-size: .9rem; padding: .45rem .8rem; }
-.btn-checkbox-toggle.xs { font-size: .8rem; padding: .35rem .65rem; }
-
-/* Input de valor por defecto */
-.default-value-input {
-    width: 220px;
-    max-width: 100%;
-    padding: .55rem .7rem;
-    border: 2px solid #1b1b1b;
-    border-radius: 8px;
-    background: #fff;
-    font-size: .95rem;
-}
-
-/* Filas de radios */
-.rc-radios {
-    gap: .35rem;
-    margin-top: .6rem;
-}
-
-.rc-radio-row {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-    line-height: 1.2;
-    font-size: .95rem;
-}
-
-/* Fila especial de “margen de ganancia” (input + radios) */
-.rc-gain-row {
     gap: 1rem;
-    align-items: flex-start;
-    flex-wrap: wrap;
+    min-height: 85vh;
+    padding: 0rem;
+    overflow-x: hidden;
 }
 
-.rc-gain-row .default-value-input {
-    min-width: 220px;
+/* Columna de la Mascota */
+.mascot-side {
+    flex: 0 0 auto; /* No se estira ni encoge */
 }
 
-/* Mejoramos el foco */
-.default-value-input:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), .25);
-    border-color: var(--accent-color);
+.login-mascot-container {
+    width: 950px;
+    height: 950px;
 }
 
-/* Radios/checkbox con el color del tema */
-.rc-radio-row input[type="radio"],
-.recomended-column-group input[type="checkbox"] {
-    accent-color: var(--accent-color);
-    transform: scale(1.15);
+/* --- OVERRIDE CRÍTICO PARA .box-22 --- */
+/* Esto arregla que la caja se vaya volando o se superponga */
+.login-split-screen .box-22 {
+    position: absolute !important; /* Importante para anular el absolute del main.css */
+    right: 1620px;
+    bottom: 340px !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 1 !important;
+
+    /* Mantenemos la animación de flotar si quieres */
+    animation: float-rotate-reverse 25s ease-in-out infinite;
 }
 
-/* Responsive */
-@media (max-width: 640px) {
-    .rc-header h5 { font-size: .95rem; }
-    .rc-radio-row span { font-size: .92rem; }
+.box {
+    width: 1050px;
+    height: 1050px;
 }
 
-/* === Acordeón general === */
-.rc-accordion {
-    border: 2px solid #1b1b1b;
-    border-radius: 12px;
-    box-shadow: 5px 5px 0 #1b1b1b;
-    background: #fff;
-    overflow: hidden;
-    margin-top: 1rem;
+/* Columna del Formulario */
+.form-side {
+    flex: 0 1 450px; /* Ancho base del form */
+    max-width: 100%;
 }
 
-.rc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: .9rem 1.25rem;
-    background: var(--accent-color);
-    color: #fff;
-    font-weight: 700;
-    cursor: pointer;
+/* --- ESTILOS DE LA MANO --- */
+#hands-group .hand {
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.rc-header:hover { filter: brightness(1.05); }
-
-.rc-arrow {
-    font-size: 1.2rem;
-    transition: transform .25s ease;
-}
-.rc-header.open .rc-arrow { transform: rotate(180deg); }
-
-/* === Contenido colapsable === */
-.rc-content {
-    max-height: 0;
-    overflow: hidden;
+/* Estado NORMAL: Mano escondida abajo */
+.hand {
+    transform: translate(200px, 900px) rotate(-30deg);
     opacity: 0;
-    transition: all .4s ease;
-    padding: 0 1.25rem;
 }
-.rc-content.open {
-    max-height: 1000px;
+
+/* Estado COVERING: Mano tapa ojos */
+.covering .hand {
+    transform: translate(320px, 250px) rotate(-10deg) !important;
+    opacity: 1 !important;
+}
+
+/* --- RESPONSIVE (Celulares) --- */
+@media (max-width: 900px) {
+    .login-split-screen {
+        flex-direction: column; /* Uno arriba del otro */
+        gap: 2rem;
+    }
+
+    .mascot-side {
+        margin-bottom: 1rem;
+    }
+
+    /* Ajuste para que no sea gigante en móvil */
+    .login-mascot-container {
+        width: 180px;
+        height: 180px;
+    }
+}
+
+/* --- TRANSICIONES DE EXPRESIÓN Y MANOS --- */
+
+
+
+/* 2. LAS MANOS (Swapping) */
+#hands-group .hand-resting,
+#hands-group .hand-covering {
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* -- Mano en Reposo -- */
+.hand-resting {
+    /* Posición inicial relajada (abajo a la derecha del cubo) */
+    transform: translate(150px, 500px) rotate(10deg);
     opacity: 1;
-    padding: 1rem 1.25rem 1.5rem;
 }
 
-.rc-description, .rc-note {
-    font-size: 0.9rem;
-    color: #444;
-    margin: 0 0 1rem;
+/* Al escribir, la mano de reposo se va (baja y desaparece) */
+.login-mascot-container.covering .hand-resting {
+    transform: translate(480px, 170px) rotate(30deg);
+    opacity: 0;
 }
 
-/* === Ítems === */
-.rc-item {
-    margin-bottom: 1rem;
-}
-.rc-btn {
-    width: 100%;
-    background: #fff;
-    border: 2px solid #bbb;
-    border-radius: 10px;
-    font-weight: 700;
-    color: #999;
-    padding: .7rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all .25s ease;
-}
-.rc-btn.active {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-}
-.rc-btn:hover { background: #fafafa; }
-
-/* === Extra visible al activar === */
-.rc-extra {
-    margin-top: .6rem;
-    padding-left: .5rem;
-    animation: fadeIn .25s ease;
-}
-.rc-inline {
-    display: flex;
-    align-items: center;
-    gap: .4rem;
-    font-size: .9rem;
-}
-.rc-input {
-    width: 200px;
-    padding: .5rem .7rem;
-    border: 2px solid #1b1b1b;
-    border-radius: 8px;
-    margin-top: .5rem;
-}
-.hidden { display: none !important; }
-
-/* === Radios === */
-.rc-radio {
-    display: flex;
-    align-items: center;
-    gap: .4rem;
-    margin-top: .4rem;
-}
-.rc-radio input { accent-color: var(--accent-color); }
-
-/* === Tooltip === */
-.rc-help {
-    font-size: 1.2rem;
-    color: #777;
-    cursor: pointer;
-    position: relative;
-}
-.rc-help:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    top: -5px;
-    left: 130%;
-    transform: translateY(-50%);
-    background: #1b1b1b;
-    color: #fff;
-    font-size: .8rem;
-    padding: .5rem .6rem;
-    border-radius: 6px;
-    width: 220px;
-    line-height: 1.2;
-    box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
-    z-index: 10;
+/* -- Mano para Tapar -- */
+.hand-covering {
+    /* Empieza invisible y abajo */
+    transform: translate(150px, 500px) rotate(-10deg);
+    opacity: 0;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Al escribir, sube y tapa los ojos */
+.login-mascot-container.covering .hand-covering {
+    transform: translate(480px, 170px) rotate(30deg) !important;
+    opacity: 1 !important;
 }
 
-/* === BOTONES DE COLUMNAS (nuevo diseño tipo StockiFy) === */
-.rc-btn {
-    width: 100%;
-    background: #f2f2f2;
-    border: 2px solid #1b1b1b;
-    border-radius: 12px;
-    font-weight: 700;
-    color: #333;
-    padding: 0.8rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 5px 5px 0 #1b1b1b;
-    transition: all 0.15s ease-in-out;
+/* --- ANIMACIÓN DEL PERSONAJE --- */
+
+/* ============ 1. LAS BOCAS (Sonrisa vs Sorpresa) ============ */
+
+/* Configuración común para ambas bocas */
+.mouth-shape {
+    transition: opacity 0.2s ease-in-out;
+    /* ¡IMPORTANTE! Quitamos 'position: absolute' que rompía el SVG */
 }
 
-.rc-btn:hover {
-    background: #e9e9e9;
-    transform: translate(-1px, -1px);
-    box-shadow: 6px 6px 0 var(--accent-color);
+/* --- Estado NORMAL --- */
+
+/* Sonrisa visible */
+.login-mascot-container #smile {
+    opacity: 1;
 }
 
-.rc-btn.active {
-    background: var(--accent-color);
-    color: #fff;
-    border-color: #1b1b1b;
-    transform: translate(3px, 3px);
-    box-shadow: none;
+/* Boca de sorpresa oculta */
+.login-mascot-container #surprised-mouth {
+    opacity: 0;
 }
 
-/* === CHECKBOXES Y RADIOS MODERNOS === */
-input[type="checkbox"],
-input[type="radio"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #1b1b1b;
-    border-radius: 50%;
-    background: #fff;
-    cursor: pointer;
-    display: inline-block;
-    position: relative;
-    transition: all 0.2s ease;
+/* --- Estado COVERING (Escribiendo) --- */
+
+/* Sonrisa desaparece */
+.login-mascot-container.covering #smile {
+    opacity: 0;
 }
 
-input[type="checkbox"]:hover,
-input[type="radio"]:hover {
-    border-color: var(--accent-color);
+/* Boca de sorpresa aparece */
+.login-mascot-container.covering #surprised-mouth {
+    opacity: 1;
 }
-
-input[type="checkbox"]:checked::after,
-input[type="radio"]:checked::after {
-    content: "";
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent-color);
-}
-
-/* Ajuste visual para checkboxes cuadrados si los querés diferentes */
-input[type="checkbox"].square {
-    border-radius: 6px;
-}
-input[type="checkbox"].square:checked::after {
-    border-radius: 3px;
-}
-
-/* === INPUTS y extras coherentes con el diseño === */
-.rc-input {
-    width: 220px;
-    padding: .55rem .75rem;
-    border: 2px solid #1b1b1b;
-    border-radius: 10px;
-    background: #fff;
-    font-size: .95rem;
-    margin-top: .5rem;
-    box-shadow: 3px 3px 0 #1b1b1b;
-    transition: all 0.2s ease;
-}
-
-.rc-input:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 4px 4px 0 var(--accent-color);
-}
-
-/* Corrige el radio del modal (alineado y sin recorte) */
-.modal-option input[type="radio"] {
-    appearance: none;
-    -webkit-appearance: none;
-    position: relative;
-    width: 18px;
-    height: 18px;
-    flex: 0 0 18px;
-    margin: 0;
-    border: 2px solid #1b1b1b;
-    border-radius: 50%;
-    background-color: #fff;
-    cursor: pointer;
-    box-shadow: none;
-    transition: all 0.2s ease-in-out;
-}
-
-/* ===== FIX DEFINITIVO PARA RADIOS DENTRO DEL MODAL ===== */
-.modal-content .modal-option input[type="radio"] {
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    position: relative;
-    width: 18px;
-    height: 18px;
-    flex: 0 0 18px;
-    margin: 0;
-    border: 2px solid #1b1b1b;
-    border-radius: 50%;
-    background-color: #fff;
-    cursor: pointer;
-    box-shadow: none;
-    transition: all 0.2s ease-in-out;
-    display: inline-block;
-    vertical-align: middle;
-}
-
-/* Hover y estado activo */
-.modal-content .modal-option input[type="radio"]:hover {
-    border-color: var(--accent-color);
-}
-
-/* Checked: centrado perfecto */
-.modal-content .modal-option input[type="radio"]:checked::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent-color);
-    transform: translate(-50%, -50%);
-}
-
-/* Ajuste de contenedor para evitar recorte */
-.modal-content .modal-option {
-    padding-left: 6px;
-    align-items: center;
-}
-
-/* Asegura que no herede el border-radius global de checkboxes cuadrados */
-.modal-content input[type="radio"].square {
-    border-radius: 50% !important;
-}
-
-/* === Fix visual para centrar el check circular con el texto === */
-.modal-option {
-    display: flex;
-    align-items: center;        /* ✅ Alinea perfectamente en altura */
-    gap: 0.55rem;               /* Espacio entre el check y el texto */
-    margin-top: 0.8rem;
-    line-height: 1.2;
-}
-
-.modal-option input[type="radio"],
-.modal-option input[type="checkbox"] {
-    position: relative;
-    top: 0;                     /* resetea offsets */
-    transform: translateY(1px); /* ✅ pequeña corrección óptica */
-    flex-shrink: 0;
-    margin: 0;
-}
-
-/* Pequeña mejora óptica del label */
-.modal-option label {
-    display: flex;
-    align-items: center;
-    font-size: 0.95rem;
-    color: #1b1b1b;
-    font-weight: 600;
-    cursor: pointer;
-}
-
 
