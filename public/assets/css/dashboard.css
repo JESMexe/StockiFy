@@ -10,17 +10,31 @@
 
 /* Sidebar (Menú Lateral) */
 .dashboard-sidebar {
+    height: auto;
     width: 250px;
+    top: -9999px;
+    bottom: -9999px;
     background-color: var(--color-white);
     border-right: var(--border-strong);
     padding: 1.5rem;
-    flex-shrink: 0; /* Evita que se encoja */
+    flex: 0 0 250px; /* Evita que se encoja y mantiene el ancho */
+    min-height: calc(100vh - 62px);
+    overflow-y: auto; /* Scroll si el menú es muy largo */
+    position: sticky;
+}
+
+.main-menu {
+    width: 250px;
+    padding: 1.5rem;
+    flex: 0 0 250px; /* Evita que se encoja y mantiene el ancho */
     height: calc(100vh - 62px); /* Ajusta altura (100% viewport - altura del header aprox) */
     overflow-y: auto; /* Scroll si el menú es muy largo */
-    position: sticky;       /* <-- AÑADIDO */
-    top: 62px;              /* <-- AÑADIDO (Asume 62px de header) */
+    position: fixed;
+    top: 62px; /* Asume 62px de header */
+    left: 3px;
     align-self: flex-start;
 }
+
 
 .btn-icon {
     background: none;
@@ -78,7 +92,7 @@
 
 #view-db {
     width: 100%;
-    max-width: none; /* Quitamos cualquier max-width heredado */
+    max-width: calc(100vh + 60rem);
     padding: 0; /* Quitamos padding si no lo necesitamos directamente aquí */
     border: none; /* Quitamos bordes si no los necesitamos */
     box-shadow: none; /* Quitamos sombra si no la necesitamos */
@@ -209,12 +223,14 @@
     width: 100%;
     border-collapse: collapse;
 }
-#data-table th{
+#data-table th {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid #ddd;
     color: var(--color-black);
-    white-space: nowrap;
+    /* ANTES: white-space: nowrap; */
+    white-space: normal; /* CAMBIO: Permite que el texto se ajuste */
+    word-wrap: break-word; /* CAMBIO: Rompe palabras largas si es necesario */
 }
 #data-table td {
     /* Aumentamos el padding para dar "aire" vertical y horizontal */
@@ -222,7 +238,11 @@
     color: var(--color-black);
     border-bottom: 1px solid #e0e0e0;
     font-size: 0.95rem;
-    white-space: nowrap; /* Mantiene los datos en una línea */
+
+    /* ANTES: white-space: nowrap; */
+    white-space: normal; /* CAMBIO: Permite saltos de línea */
+    word-wrap: break-word; /* CAMBIO: Asegura que el texto no desborde */
+    max-width: 300px; /* OPCIONAL: Límite máximo para que una columna no sea gigante */
 }
 /* Opcional: Hacer que la columna Nombre ocupe el resto del espacio */
 
@@ -230,7 +250,7 @@
     position: sticky;
     top: 0;
     z-index: 20;
-    background-color: #f8f9fa; /* Un gris un pelín más claro queda más limpio */
+    background-color: #f8f9fa;
     border-bottom: 2px solid #1b1b1b;
 
     /* TIPOGRAFÍA */
@@ -241,13 +261,10 @@
     user-select: none;
 
     /* ESPACIADO (La clave del diseño) */
-    /* Arriba/Abajo: 16px (igual que td) */
-    /* Izquierda: 24px (igual que td) */
-    /* Derecha: 40px (Espacio visual + Espacio reservado para la flecha) */
     padding: 16px 40px 16px 24px;
 
     /* ESTRATEGIA DE ANCHO */
-    width: 1%; /* Por defecto, intenta ser compacto */
+    width: 1%;
     white-space: nowrap;
 
     transition: background-color 0.2s ease;
@@ -703,6 +720,7 @@ table {
 
 .accordion-item:last-child .accordion-header {
     /* El último item no necesita borde inferior si está cerrado */
+    border-color: var(--accent-red);
     border-bottom: none;
 }
 

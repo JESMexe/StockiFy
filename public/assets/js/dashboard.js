@@ -243,7 +243,7 @@ async function renderTable(columns, data) {
 
     // --- GENERACIÓN DEL BODY ---
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="100%" class="empty-state"><p>Sin datos</p></td></tr>`;
+        tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Descripción de la imagen" style="width: 100%; height: 100%;">`
     } else {
         tableBody.innerHTML = data.map(row => {
             const rowId = row['id'] ?? row['Id'] ?? row['ID'];
@@ -874,8 +874,11 @@ async function handleConfirmDelete() {
     }
 }
 
+
 function renderColumnList() {
     if (!columnListContainer) return;
+
+    const messageLoading = document.getElementById('column-list-status');
 
     // Columnas protegidas siempre
     const protectedCols = ['id', 'created_at', 'updated_at'];
@@ -897,6 +900,8 @@ function renderColumnList() {
             </div>
         </div>`;
     }).join('');
+
+    messageLoading.style.display = 'none';
 }
 
 // Manejador del Click en el Ojo
