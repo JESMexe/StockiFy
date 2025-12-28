@@ -37,6 +37,44 @@ class ProviderModel {
         }
     }
 
+    // --- NUEVO: Actualizar ---
+    public function updateProvider($id, $userId, $data): bool
+    {
+        try {
+            $sql = "UPDATE providers 
+                    SET full_name = :name, phone = :phone, address = :address, email = :email, tax_id = :tax_id 
+                    WHERE id = :id AND user_id = :user";
+
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
+                ':id'      => $id,
+                ':user'    => $userId,
+                ':name'    => $data['name'],
+                ':phone'   => $data['phone'] ?? null,
+                ':address' => $data['address'] ?? null,
+                ':email'   => $data['email'] ?? null,
+                ':tax_id'  => $data['tax_id'] ?? null
+            ]);
+        } catch (Exception $e) {
+            error_log("Update Provider Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // --- NUEVO: Eliminar ---
+    public function deleteProvider($id, $userId): bool
+    {
+        try {
+            // Nota: Si hay compras vinculadas, la DB podría lanzar error por Foreign Key.
+            // Idealmente se maneja con un try/catch específico o borrado lógico.
+            $stmt = $this->db->prepare("DELETE FROM providers WHERE id = :id AND user_id = :user");
+            $stmt->execute([':id' => $id, ':user' => $userId]);
+            return $stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
     public function getAll($userId, $order = 'DESC'): array
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';

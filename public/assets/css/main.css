@@ -24,10 +24,11 @@
     --color-gray: rgba(138, 138, 138, 0.6);
     --accent-color: #5E81AC; /* Azul por defecto */
     --accent-color-rgb: 94, 129, 172;
-    --accent-color-medium-opacity: rgba(var(--accent-color-rgb), 0.75);
-    --accent-color-hover: #5E81AC;
-    --accent-red: #d11616;
-    --accent-green: #1bd61b;
+    --accent-color-medium-opacity: rgba(var(--accent-color-rgb), 0.5);
+    --accent-color-quat-opacity: rgba(var(--accent-color-rgb), 0.25);
+    --accent-color-hover: var(--accent-color-rgb);
+    --accent-red: #BF616A;
+    --accent-green: #A3BE8C;
     --font-title: 'Satoshi', sans-serif;
     --font-body: 'Satoshi', sans-serif;
     --border-strong: 2px solid var(--color-black);

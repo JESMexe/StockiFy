@@ -1,9 +1,14 @@
 ﻿/* public/assets/css/payments.css */
 
+.payments {
+    width: 100vh;
+}
+
 .payments-layout {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100vh;
     gap: 1rem;
 }
 
@@ -18,7 +23,7 @@
 .pay-card {
     background: white;
     border: 1px solid #e0e0e0;
-    border-left: 5px solid #6610f2;
+    border-left: 5px solid var(--accent-color);
     border-radius: 8px;
     padding: 1.5rem;
     display: flex;
@@ -29,7 +34,7 @@
 
 .pay-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 16, 242, 0.1);
+    box-shadow: 5px 5px 0 var(--accent-color);
 }
 
 .pay-header {
@@ -59,12 +64,12 @@
     text-transform: uppercase;
 }
 
-.badge.currency-ARS { background-color: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
-.badge.currency-USD { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-.badge.currency-USDT { background-color: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
+.badge.currency-ARS { background-color: #e3f2fd; color: var(--accent-blue); border: 1px solid #bbdefb; }
+.badge.currency-USD { background-color: #e8f5e9; color: var(--accent-green); border: 1px solid #c8e6c9; }
+.badge.currency-USDT { background-color: #f3e5f5; color: var(--accent-violet); border: 1px solid #e1bee7; }
 
 .badge.type { background-color: #f5f5f5; color: #666; border: 1px solid #ddd; }
-.badge.surcharge { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+.badge.surcharge { background-color: var(--accent-color-quat-opacity); color: var(--accent-color); border: 1px solid var(--accent-color); }
 
 /* Botones */
 .pay-actions {
@@ -82,14 +87,14 @@
     color: #888;
     transition: color 0.2s;
 }
-.icon-btn-sm:hover { color: #6610f2; }
-.icon-btn-sm.delete:hover { color: #dc3545; }
+.icon-btn-sm:hover { color: var(--accent-color); }
+.icon-btn-sm.delete:hover { color: var(--accent-red); }
 
 /* Modales */
 #create-payment-modal .modal-content,
 #edit-payment-modal .modal-content {
     background-color: #ffffff !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    box-shadow: 8px 8px 0px var(--accent-color);
     border: 1px solid #ddd;
     border-radius: 8px;
 }

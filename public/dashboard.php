@@ -181,7 +181,7 @@
 
                 <div class="accordion-item">
                     <button class="accordion-header" aria-expanded="false">
-                        <span><i class="ph ph-magnifying-glass"></i> Identificación de Columnas</span>
+                        <span><i class="ph-bold ph-magnifying-glass"></i> Identificación de Columnas</span>
                         <i class="ph ph-caret-down"></i>
                     </button>
                     <div class="accordion-content" style="max-height: 0px; overflow: hidden;">
@@ -216,38 +216,34 @@
 
                 <div class="accordion-item">
                     <button class="accordion-header" aria-expanded="false">
-                        <span><i class="ph ph-lightning"></i> Funcionalidades Extra</span>
+                        <span><i class="ph-bold ph-lightning"></i> Funcionalidades Extra</span>
                         <i class="ph ph-caret-down"></i>
                     </button>
                     <div class="accordion-content">
                         <form id="automated-features-form">
                             <div class="config-list">
 
-                                <div class="rustic-block">
-                                    <div class="block-header">
-                                        <label class="modal-option">
-                                            <input type="checkbox" id="feature-min-stock">
-                                            <span class="option-label">Control de Stock Mínimo</span>
-                                        </label>
+                                <div class="rustic-block" style="margin-bottom: 1.5rem;">
+                                    <div class="block-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem;">
+                                        <input type="checkbox" id="feature-min-stock" style="margin: 0;">
+                                        <span id="option-label-CSM" class="option-label" style="font-weight: bold; font-size: 1.1rem; color: var(--accent-color);">Control de Stock Mínimo</span>
                                     </div>
-                                    <div class="reveal-wrapper" id="wrap-min-stock">
-                                        <div class="reveal-inner" style="padding-top: 10px;">
-                                            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">
-                                                Crea una columna <b>"Stock Mínimo"</b>. Si tu stock real baja de este número, recibirás una alerta.
-                                            </p>
-                                            <div class="input-group-vertical">
-                                                <label class="micro-label">Valor por defecto (nuevos productos):</label>
-                                                <input type="number" id="default-min-stock" class="rustic-input" value="5" style="width: 100px;">
-                                            </div>
 
-                                            <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
-                                                <label class="micro-label" style="color: var(--accent-color);">Importar datos iniciales</label>
-                                                <p style="font-size: 0.8rem; color:#888;">¿Ya tenés una columna con estos valores? Copialos aquí:</p>
-                                                <div class="flex-row" style="gap: 10px; align-items: center;">
-                                                    <select id="import-min-stock-source" class="rustic-select" style="width: auto; flex-grow: 1;">
+                                    <div class="reveal-wrapper" id="wrap-min-stock">
+                                        <div class="reveal-inner" style="padding-left: 25px;">
+                                            <p style="font-size: 0.9rem; color: #666; margin-top: 0; margin-bottom: 1rem; line-height: 1.4;">
+                                                Crea una columna <b>"Stock Mínimo"</b>. Si tu stock real baja de este número, recibirás una alerta visual en la tabla.
+                                            </p>
+
+                                            <div style="border-top: 1px dashed #ccc; padding-top: 15px;">
+                                                <label class="micro-label" style="color: var(--accent-color); display:block; margin-bottom: 8px;">Importar datos iniciales</label>
+                                                <p style="font-size: 0.85rem; color:#888; margin-bottom: 10px;">¿Ya tenés una columna con estos valores? Copialos aquí:</p>
+
+                                                <div class="flex-row" style="gap: 0; align-items: center;">
+                                                    <select id="import-min-stock-source" class="rustic-select" style="flex-grow: 1; height: 38px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
                                                         <option value="">-- Elegir columna origen --</option>
                                                     </select>
-                                                    <button type="button" id="btn-import-min-stock" class="btn btn-secondary btn-sm">Importar</button>
+                                                    <button type="button" id="btn-import-min-stock" class="btn btn-secondary btn-sm" style="height: 38px; margin: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none;">Importar</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -255,25 +251,29 @@
                                 </div>
 
                                 <div class="rustic-block">
-                                    <div class="block-header">
-                                        <label class="modal-option">
-                                            <input type="checkbox" id="feature-gain">
-                                            <span class="option-label">Cálculo de Margen de Ganancia</span>
-                                        </label>
+                                    <div class="block-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem;">
+                                        <input type="checkbox" id="feature-gain" style="margin: 0;">
+                                        <span id="option-label-CMG" class="option-label" style="font-weight: bold; font-size: 1.1rem; color: var(--accent-color);">Cálculo de Margen de Ganancia</span>
                                     </div>
+
                                     <div class="reveal-wrapper" id="wrap-gain">
-                                        <div class="reveal-inner" style="padding-top: 10px;">
-                                            <p style="font-size: 0.85rem; color: #666;">
+                                        <div class="reveal-inner" style="padding-left: 25px;">
+                                            <p style="font-size: 0.9rem; color: #666; margin-top: 0; margin-bottom: 1rem; line-height: 1.4;">
                                                 Muestra automáticamente la diferencia entre tu Precio de Venta y Compra.
-                                                <br><i>Requiere tener mapeados ambos precios arriba.</i>
+                                                <br><i style="color: var(--accent-color)">Requiere tener mapeados ambos precios arriba.</i>
                                             </p>
-                                            <div class="radio-inline" style="margin-top: 10px;">
-                                                <label class="micro-label" style="margin-right: 10px;">Formato:</label>
-                                                <label class="modal-option">
-                                                    <input type="radio" name="gain-type" value="percent" checked> <span>Porcentaje (%)</span>
+
+                                            <div class="radio-inline" style="display: flex; align-items: center; gap: 15px;">
+                                                <label class="micro-label" style="margin-right: 5px;">Formato:</label>
+
+                                                <label class="modal-option" style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                                    <input type="radio" name="gain-type" value="percent" checked style="margin: 0;">
+                                                    <span>Porcentaje (%)</span>
                                                 </label>
-                                                <label class="modal-option">
-                                                    <input type="radio" name="gain-type" value="fixed"> <span>Dinero ($)</span>
+
+                                                <label class="modal-option" style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                                    <input type="radio" name="gain-type" value="fixed" style="margin: 0;">
+                                                    <span>Dinero ($)</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -429,8 +429,8 @@
     </div>
 </div>
 
-<div id="delete-confirm-modal" class="modal-overlay hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-    <div class="modal-content view-container" style="max-width: 450px;">
+<div id="delete-confirm-modal" class="modal-overlay hidden">
+    <div class="modal-content view-container">
         <button id="close-delete-modal-btn" class="modal-close-btn">&times;</button>
 
         <div class="modal-header">
@@ -439,9 +439,9 @@
         </div>
 
         <div class="modal-body">
-            <p style="text-align: left; color: var(--color-gray);">Para confirmar, escribí el nombre exacto de la base de datos:</p>
+            <p style="text-align: left; color: var(--accent-red-50);">Para confirmar, escribí el nombre exacto de la base de datos:</p>
             <input type="text" id="delete-confirm-input" placeholder="Nombre de la Base de Datos" style="margin-bottom: 1rem;">
-            <div id="delete-error-message" style="color: var(--accent-red); font-weight: 500;"></div>
+            <div id="delete-error-message" style="color: var(--accent-red); font-weight: 600;"></div>
         </div>
 
         <div class="modal-footer">

@@ -1,14 +1,15 @@
 ﻿/**
  * public/assets/js/employees/employees.js
- * Módulo de Gestión de Empleados.
+ * Módulo de Gestión de Empleados (CRUD Completo)
  */
-import { getEmployeeList, createEmployeeNew } from '../api.js';
+import { getEmployeeList } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
 
 export class EmployeeModule {
     constructor() {
         this.containerId = 'employees';
         this.isInitialized = false;
+        this.editingId = null; // Para saber si estamos editando
     }
 
     init() {
@@ -29,7 +30,7 @@ export class EmployeeModule {
         return `
             <div class="employees-layout">
                 <div class="table-header">
-                    <h2>Empleados</h2>
+                    <h2>Gestión de Empleados</h2>
                     <div class="table-controls">
                         <button id="emp-create-btn" class="btn btn-primary">+ Nuevo Empleado</button>
                     </div>
@@ -41,18 +42,35 @@ export class EmployeeModule {
                 </div>
 
                 <div id="create-employee-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1000;">
-                    <div class="modal-content" style="width: 400px; max-width: 90%;">
+                    <div class="modal-content" style="width: 600px; max-width: 95%;">
                         <div class="modal-header">
-                            <h3>Nuevo Empleado</h3>
+                            <h3 id="modal-emp-title">Registrar Nuevo Empleado</h3>
                             <button class="modal-close-btn" id="close-emp-modal">&times;</button>
                         </div>
                         <div class="modal-body" style="padding: 1.5rem;">
-                            <form id="create-emp-form">
-                                <div style="margin-bottom: 15px;">
-                                    <label style="display:block; margin-bottom:5px; font-weight:600;">Nombre Completo</label>
-                                    <input type="text" id="emp-name" class="rustic-input" style="width:100%; padding:10px;" required placeholder="Ej: María Gonzalez">
+                            <form id="create-emp-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                
+                                <div style="grid-column: span 2;">
+                                    <label class="micro-label">Nombre Completo *</label>
+                                    <input type="text" id="emp-name" class="rustic-input" style="width:100%;" required placeholder="Ej: María Gonzalez">
                                 </div>
-                                <div style="text-align: right;">
+
+                                <div>
+                                    <label class="micro-label">DNI / Identificación</label>
+                                    <input type="text" id="emp-dni" class="rustic-input" style="width:100%;" placeholder="Solo números">
+                                </div>
+                                <div>
+                                    <label class="micro-label">Teléfono</label>
+                                    <input type="text" id="emp-phone" class="rustic-input" style="width:100%;" placeholder="Ej: 11 1234 5678">
+                                </div>
+
+                                <div style="grid-column: span 2;">
+                                    <label class="micro-label">Correo Electrónico</label>
+                                    <input type="email" id="emp-email" class="rustic-input" style="width:100%;" placeholder="contacto@empleado.com">
+                                </div>
+
+                                <div style="grid-column: span 2; text-align: right; margin-top: 10px; border-top: 1px solid #eee; padding-top: 15px;">
+                                    <button type="button" id="cancel-emp-btn" class="btn btn-secondary">Cancelar</button>
                                     <button type="submit" id="submit-emp-btn" class="btn btn-primary">Guardar</button>
                                 </div>
                             </form>
@@ -64,41 +82,129 @@ export class EmployeeModule {
     }
 
     attachEvents() {
-        // Modal Crear
+        const modal = document.getElementById('create-employee-modal');
+        const form = document.getElementById('create-emp-form');
+
+        // Cerrar Modal
+        const closeModal = () => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            form.reset();
+            this.editingId = null; // Limpiamos ID de edición
+        };
+
+        // Abrir Modal (Crear)
         document.getElementById('emp-create-btn')?.addEventListener('click', () => {
-            document.getElementById('create-emp-form').reset();
-            const m = document.getElementById('create-employee-modal'); m.classList.remove('hidden'); m.style.display='flex';
-        });
-        document.getElementById('close-emp-modal')?.addEventListener('click', () => {
-            const m = document.getElementById('create-employee-modal'); m.classList.add('hidden'); m.style.display='none';
+            this.editingId = null;
+            document.getElementById('modal-emp-title').textContent = "Registrar Nuevo Empleado";
+            document.getElementById('submit-emp-btn').textContent = "Guardar";
+            form.reset();
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
         });
 
-        // Submit
-        document.getElementById('create-emp-form')?.addEventListener('submit', (e) => {
+        document.getElementById('close-emp-modal')?.addEventListener('click', closeModal);
+        document.getElementById('cancel-emp-btn')?.addEventListener('click', closeModal);
+
+        // Submit (Crear o Editar)
+        form?.addEventListener('submit', (e) => {
             e.preventDefault();
-            this.submitEmployee();
+            this.handleFormSubmit();
+        });
+
+        // Delegación de eventos para botones Editar/Borrar en las tarjetas
+        document.getElementById('emp-list-body')?.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.btn-edit-emp');
+            const deleteBtn = e.target.closest('.btn-delete-emp');
+
+            if (editBtn) {
+                const empData = JSON.parse(editBtn.dataset.employee);
+                this.openEditModal(empData);
+            }
+            if (deleteBtn) {
+                const empId = deleteBtn.dataset.id;
+                this.deleteEmployee(empId);
+            }
         });
     }
 
-    async submitEmployee() {
+    openEditModal(emp) {
+        this.editingId = emp.id;
+        document.getElementById('modal-emp-title').textContent = "Editar Empleado";
+        document.getElementById('submit-emp-btn').textContent = "Actualizar Cambios";
+
+        document.getElementById('emp-name').value = emp.full_name || '';
+        document.getElementById('emp-dni').value = emp.dni || '';
+        document.getElementById('emp-phone').value = emp.phone || '';
+        document.getElementById('emp-email').value = emp.email || '';
+
+        const modal = document.getElementById('create-employee-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+
+    async handleFormSubmit() {
         const btn = document.getElementById('submit-emp-btn');
         btn.disabled = true;
-        btn.textContent = "Guardando...";
+        const originalText = btn.textContent;
+        btn.textContent = "Procesando...";
 
-        const name = document.getElementById('emp-name').value;
+        const data = {
+            id: this.editingId, // Si es null, es creación
+            name: document.getElementById('emp-name').value,
+            dni: document.getElementById('emp-dni').value,
+            phone: document.getElementById('emp-phone').value,
+            email: document.getElementById('emp-email').value
+        };
+
+        const endpoint = this.editingId ? '/api/employees/update.php' : '/api/employees/create.php';
 
         try {
-            const response = await createEmployeeNew(name);
-            if (response.success) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+
+            if (result.success) {
                 document.getElementById('create-employee-modal').classList.add('hidden');
-                document.getElementById('create-employee-modal').style.display='none';
+                document.getElementById('create-employee-modal').style.display = 'none';
                 await this.loadEmployees();
-                pop_ups.success('Empleado registrado');
+                pop_ups.success(this.editingId ? 'Empleado actualizado.' : 'Empleado creado.');
             } else {
-                pop_ups.error(response.message || 'Error');
+                pop_ups.error(result.message || 'Error en la operación');
             }
-        } catch (e) { console.error(e); }
-        finally { btn.disabled = false; btn.textContent = "Guardar"; }
+        } catch (e) {
+            console.error(e);
+            pop_ups.error("Error de conexión");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+
+    async deleteEmployee(id) {
+        const confirmed = await pop_ups.confirm("Eliminar Empleado", "¿Estás seguro? Esta acción no se puede deshacer.");
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('/api/employees/delete.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                await this.loadEmployees();
+                pop_ups.info("Empleado eliminado.");
+            } else {
+                pop_ups.error(result.message || "No se pudo eliminar.");
+            }
+        } catch (e) {
+            pop_ups.error("Error de conexión");
+        }
     }
 
     async loadEmployees() {
@@ -109,26 +215,48 @@ export class EmployeeModule {
         try {
             const data = await getEmployeeList();
             if (!data.success || !data.employees.length) {
-                container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:2rem; color:#999;">No hay empleados registrados.<br>Agregá uno nuevo para comenzar.</div>';
+                container.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:#888;">
+                        <i class="ph ph-users" style="font-size: 3rem; margin-bottom: 10px;"></i>
+                        <p>No hay empleados registrados aún.</p>
+                    </div>`;
                 return;
             }
 
-            container.innerHTML = data.employees.map(e => `
+            container.innerHTML = data.employees.map(e => {
+                const empJson = JSON.stringify(e).replace(/"/g, '&quot;');
+
+                const phoneHtml = e.phone ? `<div title="Teléfono"><i class="ph ph-phone"></i> ${e.phone}</div>` : '';
+                const emailHtml = e.email ? `<div title="Email"><i class="ph ph-envelope"></i> ${e.email}</div>` : '';
+                const dniHtml = e.dni ? `<div title="DNI"><i class="ph ph-identification-card"></i> ${e.dni}</div>` : '';
+
+                return `
                 <div class="emp-card">
+                    <div class="emp-card-actions">
+                        <button class="btn-icon btn-edit-emp" data-employee="${empJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                        <button class="btn-icon btn-delete-emp" data-id="${e.id}" title="Eliminar"><i class="ph ph-trash" style="color:var(--accent-red)"></i></button>
+                    </div>
+
                     <div class="emp-avatar">
                         ${e.full_name.charAt(0).toUpperCase()}
                     </div>
                     <div class="emp-name">${e.full_name}</div>
-                    <div class="emp-id">ID: ${e.id}</div>
-                    <div style="font-size:0.75rem; color:#aaa; margin-top:10px;">
-                        Desde: ${new Date(e.created_at).toLocaleDateString()}
+                    
+                    <div class="emp-details">
+                        ${dniHtml}
+                        ${phoneHtml}
+                        ${emailHtml}
+                    </div>
+
+                    <div class="emp-footer">
+                         Registrado: ${new Date(e.created_at).toLocaleDateString()}
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
         } catch (e) {
             console.error(e);
-            container.innerHTML = '<p style="color:red; text-align:center;">Error al cargar</p>';
+            container.innerHTML = '<p style="color:red; text-align:center;">Error al cargar lista.</p>';
         }
     }
 }

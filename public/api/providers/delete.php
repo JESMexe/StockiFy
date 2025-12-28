@@ -16,16 +16,19 @@ try {
 
     $input = json_decode(file_get_contents('php://input'), true);
 
-    if (empty($input['id']) || empty($input['name'])) {
-        echo json_encode(['success'=>false, 'message'=>'Datos incompletos']); exit;
+    if (empty($input['id'])) {
+        echo json_encode(['success'=>false, 'message'=>'ID faltante']); exit;
     }
 
     $model = new ProviderModel();
-    $success = $model->updateProvider($input['id'], $user['id'], $input);
+    $success = $model->deleteProvider($input['id'], $user['id']);
 
-    echo json_encode(['success' => $success]);
+    if($success) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'No se pudo eliminar. Verifica que no tenga compras asociadas.']);
+    }
 
 } catch (Throwable $e) {
-    http_response_code(500);
     echo json_encode(['success'=>false, 'message'=>$e->getMessage()]);
 }

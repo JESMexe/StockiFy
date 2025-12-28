@@ -14,14 +14,51 @@ class EmployeeModel {
         $this->db = Database::getInstance();
     }
 
-    public function createEmployee($userId, $name): bool|string
+    public function createEmployee($userId, $name, $dni = null, $phone = null, $email = null): bool|string
     {
         try {
-            $stmt = $this->db->prepare("INSERT INTO employees (user_id, full_name, created_at) VALUES (:user, :name, NOW())");
-            $stmt->execute([':user' => $userId, ':name' => $name]);
+            $stmt = $this->db->prepare("INSERT INTO employees (user_id, full_name, dni, phone, email, created_at) VALUES (:user, :name, :dni, :phone, :email, NOW())");
+            $stmt->execute([
+                ':user' => $userId,
+                ':name' => $name,
+                ':dni' => $dni,
+                ':phone' => $phone,
+                ':email' => $email
+            ]);
             return $this->db->lastInsertId();
         } catch (Exception $e) {
             error_log("EmployeeModel Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // --- NUEVO: Actualizar ---
+    public function updateEmployee($id, $userId, $name, $dni, $phone, $email): bool
+    {
+        try {
+            // Verificamos que pertenezca al usuario para seguridad
+            $stmt = $this->db->prepare("UPDATE employees SET full_name = :name, dni = :dni, phone = :phone, email = :email WHERE id = :id AND user_id = :user");
+            return $stmt->execute([
+                ':id' => $id,
+                ':user' => $userId,
+                ':name' => $name,
+                ':dni' => $dni,
+                ':phone' => $phone,
+                ':email' => $email
+            ]);
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    // --- NUEVO: Eliminar ---
+    public function deleteEmployee($id, $userId): bool
+    {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM employees WHERE id = :id AND user_id = :user");
+            $stmt->execute([':id' => $id, ':user' => $userId]);
+            return $stmt->rowCount() > 0;
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -30,7 +67,6 @@ class EmployeeModel {
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         try {
-            // Verificar tabla para evitar fatal error
             $check = $this->db->query("SHOW TABLES LIKE 'employees'");
             if($check->rowCount() == 0) return [];
 

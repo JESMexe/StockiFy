@@ -1,16 +1,25 @@
 ﻿/* public/assets/css/employees.css */
 
+.employees {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100vh;
+    gap: 1rem;
+}
+
 .employees-layout {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100vh;
     gap: 1rem;
 }
 
 /* Modales */
 #create-employee-modal .modal-content {
     background-color: #ffffff !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    box-shadow: 8px 8px 0px var(--accent-color);
     border: 1px solid #ddd;
     border-radius: 8px;
 }
@@ -18,13 +27,14 @@
 /* Grid de Tarjetas */
 .emp-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 15px;
     padding: 10px;
 }
 
 /* Tarjeta Individual */
 .emp-card {
+    width: 300px;
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
@@ -36,16 +46,53 @@
 
 .emp-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border-color: #7c4dff; /* Acento Violeta */
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+    border-color: var(--accent-color); /* Acento Violeta */
+}
+
+/* Botones de acción flotantes en la tarjeta */
+.emp-card {
+    position: relative; /* Necesario para posicionar los botones */
+}
+
+.emp-card-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 5px;
+    opacity: 0; /* Ocultos por defecto */
+    transition: opacity 0.2s ease;
+}
+
+.emp-card:hover .emp-card-actions {
+    opacity: 1; /* Aparecen al pasar el mouse */
+}
+
+.emp-card-actions button {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.emp-card-actions button:hover {
+    background: #f0f0f0;
+    transform: scale(1.1);
 }
 
 /* Avatar */
 .emp-avatar {
     width: 60px;
     height: 60px;
-    background: #ede7f6;
-    color: #5e35b1;
+    background: rgba(var(--accent-color-rgb), 0.3);
+    color: var(--accent-color);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -65,4 +112,48 @@
 .emp-id {
     font-size: 0.8rem;
     color: #888;
+}
+
+/* Estilos nuevos para detalles del empleado */
+.emp-details {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #555;
+    text-align: left;
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.emp-details div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.emp-details i {
+    color: var(--accent-color); /* O el color violeta #5e35b1 */
+}
+
+.emp-footer {
+    font-size: 0.75rem;
+    color:#aaa;
+    margin-top:15px;
+    border-top: 1px solid #eee;
+    padding-top: 5px;
+}
+
+/* Ajuste de inputs en el modal */
+.micro-label {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 4px;
+    display: block;
 }

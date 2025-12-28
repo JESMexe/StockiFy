@@ -28,7 +28,7 @@ export class PaymentsModule {
                 <div class="table-header">
                     <h2>Métodos de Pago</h2>
                     <div class="table-controls">
-                        <button id="pay-create-btn" class="btn btn-primary" style="background-color: #6610f2; border-color: #6610f2;">+ Nuevo Método</button>
+                        <button id="pay-create-btn" class="btn btn-primary" >+ Nuevo Método</button>
                     </div>
                 </div>
 
@@ -39,7 +39,7 @@ export class PaymentsModule {
                 </div>
 
                 <div id="create-payment-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1000;">
-                    <div class="modal-content" style="width: 500px; max-width: 95%;">
+                    <div class="modal-content" style="width: 700px; max-width: 95%;">
                         <div class="modal-header"><h3>Nuevo Método</h3><button class="modal-close-btn" id="close-pay-modal">&times;</button></div>
                         <div class="modal-body" style="padding: 1.5rem;">
                             <form id="create-pay-form">
@@ -72,14 +72,14 @@ export class PaymentsModule {
                                     <input type="number" id="pay-surcharge" class="rustic-input" style="width:100%;" value="0" step="0.01" placeholder="Ej: 10 para 10%">
                                     <small style="color:#888;">Si cobrás un extra por usar este método (ej: Tarjeta).</small>
                                 </div>
-                                <div style="text-align: right;"><button type="submit" id="submit-pay-btn" class="btn btn-primary" style="background-color: #6610f2;">Guardar</button></div>
+                                <div style="text-align: right;"><button type="submit" id="submit-pay-btn" class="btn btn-primary" >Guardar</button></div>
                             </form>
                         </div>
                     </div>
                 </div>
 
                 <div id="edit-payment-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1000;">
-                    <div class="modal-content" style="width: 500px; max-width: 95%;">
+                    <div class="modal-content" style="width: 700px; max-width: 95%;">
                         <div class="modal-header"><h3>Editar Método</h3><button class="modal-close-btn" id="close-edit-pay-modal">&times;</button></div>
                         <div class="modal-body" style="padding: 1.5rem;">
                             <form id="edit-pay-form">
@@ -105,10 +105,28 @@ export class PaymentsModule {
                                     </div>
                                 </div>
                                 <div style="margin-bottom:15px;"><label>Recargo (%)</label><input type="number" id="edit-pay-surcharge" class="rustic-input" style="width:100%;" step="0.01"></div>
-                                <div style="text-align: right;"><button type="submit" id="update-pay-btn" class="btn btn-primary" style="background-color: #6610f2;">Actualizar</button></div>
+                                <div style="text-align: right;"><button type="submit" id="update-pay-btn" class="btn btn-primary" >Actualizar</button></div>
                             </form>
                         </div>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Método</label>
+                    <input type="text" id="pay-name" class="form-input" required placeholder="Ej: Mercado Pago">
+                </div>
+                
+                <div class="form-group">
+                    <label>Moneda</label>
+                    <select id="pay-currency" class="rustic-select" style="width:100%;">
+                        <option value="ARS" selected>Pesos Argentinos (ARS)</option>
+                        <option value="USD">Dólar (USD)</option>
+                        <option value="USDT">Cripto (USDT)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Recargo (%)</label>
+                    <input type="number" id="pay-surcharge" class="form-input" placeholder="0" step="0.1">
                 </div>
             </div>
         `;

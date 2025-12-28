@@ -1,16 +1,11 @@
 <?php
 header('Content-Type: application/json');
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
+require_once dirname(__DIR__, 3) . '/src/helpers/auth_helper.php';
+require_once dirname(__DIR__, 3) . '/src/Models/EmployeeModel.php';
 
-use App\Models\ProviderModel;
+use App\Models\EmployeeModel;
 
 try {
-    $root = dirname(__DIR__, 3);
-    require_once $root . '/vendor/autoload.php';
-    require_once $root . '/src/helpers/auth_helper.php';
-    require_once $root . '/src/Models/ProviderModel.php';
-
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
 
@@ -20,12 +15,18 @@ try {
         echo json_encode(['success'=>false, 'message'=>'Datos incompletos']); exit;
     }
 
-    $model = new ProviderModel();
-    $success = $model->updateProvider($input['id'], $user['id'], $input);
+    $model = new EmployeeModel();
+    $success = $model->updateEmployee(
+        $input['id'],
+        $user['id'],
+        $input['name'],
+        $input['dni'] ?? null,
+        $input['phone'] ?? null,
+        $input['email'] ?? null
+    );
 
     echo json_encode(['success' => $success]);
 
 } catch (Throwable $e) {
-    http_response_code(500);
     echo json_encode(['success'=>false, 'message'=>$e->getMessage()]);
 }

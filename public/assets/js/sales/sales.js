@@ -1,53 +1,56 @@
-/**
- * public/assets/js/sales/sales.js
- * Version 3.3: Corrección de carga de recursos y mapeo dinámico de columnas.
- */
-// 1. IMPORTAMOS LAS FUNCIONES QUE SÍ EXISTEN EN TU API.JS
-import { getAllProducts, getAllClients, getAllProviders, createSale, getSalesHistory, getSaleDetailsNew, updateSaleCustomer } from '../api.js';
+/* public/assets/js/sales/sales.js */
+import {
+    getSaleResources,
+    createSale,
+    getSalesHistory,
+    getEmployeeList,
+    getCurrentInventoryPreferences,
+    getSaleDetails
+} from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
 
-// Función auxiliar para métodos de pago (puedes moverla a api.js si prefieres)
-async function createPaymentMethodApi(name) {
-    // Nota: Verifica que esta ruta exista, no estaba en tu lista de archivos subidos.
-    const res = await fetch('/api/payment-methods/create.php', { method:'POST', body:JSON.stringify({name}) });
-    return res.json();
-}
+/* --- UTILIDAD: FORMATO DE MONEDA ARGENTINA --- */
+const fmtMoney = (amount) => {
+    return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        minimumFractionDigits: 2
+    }).format(amount);
+};
+
+const fmtDate = (dateString) => {
+    if (!dateString) return '-';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '-'; // Previene Invalid Date
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+};
 
 export class SalesModule {
     constructor() {
         this.containerId = 'sales';
         this.isInitialized = false;
-        this.currentSale = { clientId: null, clientName: null, items: [], subtotal: 0, total: 0, surcharge: 0 };
-        this.availableProducts = [];
-        this.availableClients = [];
-        this.availableEmployees = [];
-        this.paymentMethods = [
-            { id: 'efectivo', name: 'Efectivo', surcharge: 0 },
-            { id: 'tarjeta', name: 'Tarjeta', surcharge: 10 },
-            { id: 'transferencia', name: 'Transferencia', surcharge: 0 }
-        ];
-        this.viewingSaleId = null;
+        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, total_final: 0 };
+        this.resources = { products: [], customers: [], paymentMethods: [], employees: [], config: null };
+        this.currentSortOrder = 'DESC';
     }
 
     init() {
-        if (this.isInitialized) { this.loadSalesHistory(); return; }
+        if (this.isInitialized) { this.loadHistory(this.currentSortOrder); return; }
         const container = document.getElementById(this.containerId);
         if (!container) return;
         container.innerHTML = this.renderBaseStructure();
         this.attachEvents();
-        this.loadSalesHistory();
+        this.loadHistory(this.currentSortOrder);
         this.isInitialized = true;
     }
 
-    // ... (renderBaseStructure SE MANTIENE IGUAL, no es necesario cambiarlo) ...
     renderBaseStructure() {
         return `
             <div class="sales-layout">
                 <div class="table-header">
-                    <h2>Ventas</h2>
-                    <div class="table-controls" style="gap:10px;">
-                        <button id="sales-sort-btn" class="btn btn-secondary"><i class="ph ph-arrows-clockwise"></i></button>
-                        <button id="quick-sale-btn" class="btn btn-secondary" style="border: 2px solid var(--accent-color); color: var(--accent-color);"> <i class="ph ph-lightning"></i> Venta Rápida</button>
+                    <h2>Gestión de Ventas</h2>
+                    <div class="table-controls">
+                        <button id="sales-sort-btn" class="btn btn-secondary" title="Ordenar"><i class="ph ph-sort-ascending"></i></button>
                         <button id="sales-create-btn" class="btn btn-primary">+ Nueva Venta</button>
                     </div>
                 </div>
@@ -57,10 +60,9 @@ export class SalesModule {
                         <thead style="position:sticky; top:0; background:white; z-index:10; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
                             <tr>
                                 <th style="padding:12px;">Fecha</th>
-                                <th style="padding:12px;">Detalle</th>
-                                <th style="padding:12px;">Vendedor</th>
+                                <th style="padding:12px;">Cliente / Vendedor</th>
                                 <th style="padding:12px; text-align:right;">Total</th>
-                                <th style="padding:12px; text-align:center;"></th>
+                                <th style="padding:12px; text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="sales-list-body"></tbody>
@@ -68,101 +70,134 @@ export class SalesModule {
                 </div>
 
                 <div id="create-sale-modal" class="modal-overlay hidden" style="display:none; z-index:1000;">
-                    <div class="modal-content" style="width: 98%; max-width: 1300px; height: 90vh;">
-                        <div class="modal-header"><h3><i class="ph ph-shopping-cart"></i> Nueva Venta</h3><button class="modal-close-btn" id="close-sale-modal">&times;</button></div>
-                        <div class="sale-modal-body" style="display:grid; grid-template-columns: 1.5fr 1fr; gap:0;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3><i class="ph ph-shopping-cart"></i> Registrar Venta</h3>
+                            <button class="modal-close-btn" id="close-sale-modal">&times;</button>
+                        </div>
+                        
+                        <div id="config-warning-overlay" style="display:none; padding:20px; text-align:center;">
+                            <p>Falta configuración de columnas.</p>
+                            <a href="/dashboard.php" class="btn btn-sm btn-secondary">Ir a Configuración</a>
+                        </div>
+
+                        <div class="purchase-modal-body" id="sale-modal-body">
                             
-                            <div class="sale-col" style="border-right:1px solid #eee;">
-                                <div style="margin-bottom:15px;">
-                                    <input type="text" id="sale-search-product" class="big-amount-input" style="font-size:1.2rem; text-align:left; border:1px solid #ccc; border-radius:8px;" placeholder="Buscar producto...">
-                                </div>
-                                <div id="sale-products-list" class="resource-list" style="height: calc(100% - 60px);"></div>
+                            <div class="purchase-col" style="flex: 1.2;">
+                                <h4>1. Productos</h4>
+                                <input type="text" id="sale-search-product" class="rustic-input" placeholder="Buscar o Escanear..." autocomplete="off" style="margin-bottom:15px;">
+                                <div id="sale-products-list" class="scrollable-list"></div>
                             </div>
 
-                            <div class="sale-col" style="background:#f9f9f9; display:flex; flex-direction:column; gap:10px; overflow-y:auto;">
-                                <div id="sale-cart-items" class="resource-list" style="max-height: 200px; min-height:100px; border:1px solid #ddd;"></div>
+                            <div class="purchase-col" style="flex: 1;">
+                                <h4>2. Carrito</h4>
+                                <div id="sale-cart-items" class="scrollable-list" style="background: #FFF; border-radius: 8px;">
+                                    <div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>
+                                </div>
+                                <div style="text-align:right; padding-top:10px; font-weight:bold; border-top:2px dashed var(--color-black); flex-shrink:0;">
+                                    Subtotal: <span id="cart-subtotal-display">$0,00</span>
+                                </div>
+                            </div>
+
+                            <div class="purchase-col" style="flex: 1.1;">
+                                <h4>3. Cierre y Pagos</h4>
                                 
-                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                                    <div>
-                                        <label class="quick-label">Cliente</label>
-                                        <input type="text" id="sale-search-client" class="rustic-input" placeholder="Buscar..." style="margin-bottom:5px;">
-                                        <div id="selected-client-display" style="padding:5px; background:#e3f2fd; border-radius:4px; font-size:0.8rem; display:none;"></div>
-                                        <div id="sale-clients-list" class="resource-list" style="max-height:100px; display:none; position:absolute; z-index:100; background:white; border:1px solid #ccc; width:200px;"></div>
+                                <div class="scrollable-list" style="padding-right: 5px; overflow-x: visible;">
+                                    
+                                    <div class="form-section">
+                                        <label class="form-section-title">Notas de Venta</label>
+                                        <textarea id="sale-notes" class="rustic-input" placeholder="Comentarios opcionales..." style="height:50px;"></textarea>
                                     </div>
-                                    <div>
-                                        <label class="quick-label">Vendedor</label>
-                                        <select id="sale-employee-select" class="rustic-select" style="width:100%;"><option value="">-- Yo --</option></select>
+
+                                    <div class="form-section">
+                                        <label class="form-section-title">Cliente</label>
+                                        <select id="sale-customer" class="rustic-select"></select>
+                                    </div>
+
+                                    <div class="form-section">
+                                        <div style="display:flex; gap:10px; align-items: flex-end;">
+                                            <div style="flex:1;">
+                                                <label class="form-section-title">Vendedor</label>
+                                                <select id="sale-seller" class="rustic-select"></select>
+                                            </div>
+                                            <div style="width: 80px;">
+                                                <label class="form-section-title">Comisión %</label>
+                                                <input type="number" id="sale-commission-pct" class="rustic-input" value="0">
+                                            </div>
+                                        </div>
+                                        <div id="commission-display" style="text-align:right; font-size:0.75rem; color:#666; margin-top:5px; font-weight:600;">Comisión: $0,00</div>
+                                    </div>
+
+                                    <div class="form-section">
+                                        <label class="form-section-title">Agregar Pago</label>
+                                        <div class="payment-row">
+                                            <input type="number" id="pay-input-amount" class="rustic-input" placeholder="Monto" style="flex:1;">
+                                            <select id="pay-method-select" class="rustic-select" style="flex:1.2;"></select>
+                                            <button id="btn-add-payment">
+                                                <i class="ph ph-plus" style="font-weight:bold; font-size: 1.1rem;"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="payments-list" style="margin-top:10px;">
+                                            <p style="color:#999; text-align:center; font-size:0.8rem;">Sin pagos registrados</p>
+                                        </div>
+                                    </div>
+
+                                </div> 
+
+                                <div class="totals-box">
+                                    <div class="flex-row total-line"><span>Total Productos:</span> <span id="checkout-subtotal">$0,00</span></div>
+                                    <div class="flex-row total-line" style="color:var(--accent-color);"><span>Total Recargos:</span> <span id="checkout-surcharges">$0,00</span></div>
+                                    
+                                    <div class="flex-row total-line total-final">
+                                        <span>Total a Pagar:</span> <span id="checkout-total-final">$0,00</span>
+                                    </div>
+                                    
+                                    <div class="flex-row total-line" style="margin-top:10px; color:var(--sale-green);">
+                                        <span>Pagado:</span> <span id="checkout-paid">$0,00</span>
+                                    </div>
+                                    <div class="flex-row total-line" style="font-weight:bold;" id="change-row">
+                                        <span>Falta:</span> <span id="checkout-diff">$0,00</span>
                                     </div>
                                 </div>
 
-                                <div style="background:white; padding:15px; border-radius:8px; border:2px solid #1b1b1b;">
-                                    <h4 style="margin:0 0 10px 0; border:none; font-size:0.9rem;">Pago</h4>
-                                    <div style="margin-bottom:10px;">
-                                        <label class="quick-label">Método de Pago</label>
-                                        <select id="sale-pay-method" class="rustic-select" style="width:100%;"></select>
-                                    </div>
-                                    <div style="display:flex; gap:10px; margin-bottom:10px;">
-                                        <div style="flex:1;">
-                                            <label class="quick-label">Paga con ($)</label>
-                                            <input type="text" id="sale-tendered" class="rustic-input" placeholder="0.00" style="font-weight:bold;">
-                                        </div>
-                                        <div style="flex:1; background:#e8f5e9; border-radius:4px; padding:5px; text-align:center;">
-                                            <span style="display:block; font-size:0.8rem; color:#2e7d32;">Vuelto</span>
-                                            <span id="sale-change-display" style="font-weight:bold; font-size:1.2rem; color:#2e7d32;">$0.00</span>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex; gap:10px;">
-                                        <div style="flex:1;">
-                                            <label class="quick-label">Nota</label>
-                                            <input type="text" id="sale-notes" class="rustic-input" placeholder="Opcional...">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mt-auto">
-                                    <div class="flex-row justify-between" style="font-size:1.8rem; font-weight:bold; margin-bottom:1rem; color:#007bff;">
-                                        <span>Total:</span><span id="sale-total-display">$0.00</span>
-                                    </div>
-                                    <button id="confirm-sale-btn" class="btn btn-primary w-full" style="padding:15px; font-size:1.2rem;" disabled>CONFIRMAR VENTA</button>
-                                </div>
+                                <button id="confirm-sale-btn" disabled>CONFIRMAR VENTA</button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div id="quick-sale-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1000;">
-                     <div class="modal-content" style="width: 400px; max-width: 90%;">
-                        <div class="modal-header" style="background: #f1f8ff;">
-                            <h3 style="color: #007bff;"><i class="ph ph-lightning"></i> Venta Rápida</h3>
-                            <button class="modal-close-btn" id="close-quick-sale-modal">&times;</button>
+                <div id="detail-sale-modal" class="modal-overlay hidden" style="display:none; z-index:1050;">
+                    <div class="modal-content" style="height:auto; max-height:90vh;">
+                        <div class="modal-header">
+                            <h3><i class="ph ph-receipt"></i> Detalle de Venta #<span id="detail-id"></span></h3>
+                            <button class="modal-close-btn" id="close-detail-modal">&times;</button>
                         </div>
-                        <div class="modal-body" style="padding: 1.5rem;">
-                            <form id="quick-sale-form">
-                                <div style="margin-bottom: 10px; text-align: center;">
-                                    <label class="quick-label">Monto Base ($)</label>
-                                    <input type="text" id="quick-sale-amount" class="big-amount-input" placeholder="0" required autocomplete="off">
-                                </div>
-                                <div class="quick-form-group">
-                                    <label class="quick-label">Método de Pago</label>
-                                    <select id="quick-sale-method" class="rustic-select" style="width:100%;"></select>
-                                    <small id="quick-surcharge-msg" style="color:#e65100; display:none; font-weight:bold; text-align:right; margin-top:5px; display:block;">+0% Recargo</small>
-                                </div>
-                                <div class="quick-form-group" style="text-align:right; margin-bottom:20px; border-top:1px solid #eee; padding-top:10px;">
-                                    <span style="font-size:1.4rem; font-weight:bold; color:#007bff;">Total: <span id="quick-final-total">$0.00</span></span>
-                                </div>
-                                <div class="quick-form-group">
-                                    <select id="quick-sale-client" class="rustic-select" style="width:100%; margin-bottom:5px;"><option value="">-- Consumidor Final --</option></select>
+                        <div class="purchase-modal-body" style="flex-direction:column; overflow-y:auto;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:2px dashed #000; padding-bottom:10px;">
+                                <div>
+                                    <div style="font-weight:bold; font-size:1.1rem;" id="detail-date"></div>
+                                    <div style="color:#666;" id="detail-customer"></div>
                                 </div>
                                 <div style="text-align:right;">
-                                    <button type="submit" id="btn-confirm-quick" class="btn btn-primary w-full" style="padding:12px;">Registrar</button>
+                                    <div style="font-weight:800; font-size:1.5rem; color:var(--sale-green);" id="detail-total"></div>
+                                    <div style="color:#666;" id="detail-seller"></div>
                                 </div>
-                            </form>
+                            </div>
+                            
+                            <h4 style="font-size:0.9rem; text-transform:uppercase; border-bottom:1px solid #ccc;">Productos</h4>
+                            <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+                                <thead><tr style="text-align:left; color:#666; font-size:0.85rem;"><th>Producto</th><th style="text-align:center;">Cant</th><th style="text-align:right;">Precio</th><th style="text-align:right;">Subtotal</th></tr></thead>
+                                <tbody id="detail-items-list"></tbody>
+                            </table>
+
+                            <h4 style="font-size:0.9rem; text-transform:uppercase; border-bottom:1px solid #ccc;">Pagos</h4>
+                            <table style="width:100%; border-collapse:collapse;">
+                                <tbody id="detail-payments-list"></tbody>
+                            </table>
+                            
+                            <div id="detail-notes" style="margin-top:20px; font-style:italic; color:#666; background:#eee; padding:10px; border-radius:4px; display:none;"></div>
                         </div>
                     </div>
-                </div>
-                
-                <div id="detail-sale-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1001;">
-                    <div class="modal-content" style="width: 500px; max-width: 90%;"><div class="modal-header"><h3>Detalle de Venta</h3><button class="modal-close-btn" id="close-detail-sale-modal">&times;</button></div><div class="modal-body" id="detail-sale-content" style="padding: 1.5rem;"></div></div>
                 </div>
             </div>
         `;
@@ -170,345 +205,561 @@ export class SalesModule {
 
     attachEvents() {
         document.getElementById('sales-create-btn')?.addEventListener('click', () => this.openCreateModal());
-        document.getElementById('quick-sale-btn')?.addEventListener('click', () => this.openQuickModal());
-        document.getElementById('sales-sort-btn')?.addEventListener('click', () => this.loadSalesHistory());
-
         document.getElementById('close-sale-modal')?.addEventListener('click', () => this.closeModal('create-sale-modal'));
-        document.getElementById('close-quick-sale-modal')?.addEventListener('click', () => this.closeModal('quick-sale-modal'));
-        document.getElementById('close-detail-sale-modal')?.addEventListener('click', () => this.closeModal('detail-sale-modal'));
+        document.getElementById('close-detail-modal')?.addEventListener('click', () => this.closeModal('detail-sale-modal'));
 
-        document.getElementById('sale-search-product')?.addEventListener('input', (e) => this.filterProducts(e.target.value));
+        // --- LÓGICA DE BÚSQUEDA Y ESCÁNER ---
+        const searchInput = document.getElementById('sale-search-product');
+        if(searchInput) {
+            // Filtrado visual mientras escriben
+            searchInput.addEventListener('input', (e) => this.filterProducts(e.target.value));
 
-        const clientInput = document.getElementById('sale-search-client');
-        clientInput.addEventListener('input', (e) => {
-            this.filterClients(e.target.value);
-            document.getElementById('sale-clients-list').style.display = 'block';
-        });
-        document.addEventListener('click', (e) => {
-            if (!clientInput.contains(e.target)) document.getElementById('sale-clients-list').style.display = 'none';
-        });
+            // DETECTOR DE "ENTER" (Escáner de código de barras)
+            searchInput.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') {
+                    e.preventDefault(); // Evitar submit si hubiera form
+                    this.handleScan(e.target.value);
+                }
+            });
+        }
 
-        document.getElementById('sale-tendered')?.addEventListener('input', () => this.updateChangeCalc());
-        document.getElementById('sale-pay-method')?.addEventListener('change', () => this.calcTotal());
-
-        document.getElementById('quick-sale-method')?.addEventListener('change', () => this.calcQuickTotal());
-        document.getElementById('quick-sale-amount')?.addEventListener('input', () => this.calcQuickTotal());
-
+        document.getElementById('btn-add-payment')?.addEventListener('click', () => this.addPayment());
+        document.getElementById('pay-input-amount')?.addEventListener('keypress', (e) => { if(e.key==='Enter') this.addPayment(); });
+        document.getElementById('sale-commission-pct')?.addEventListener('input', () => this.calculateCommission());
         document.getElementById('confirm-sale-btn')?.addEventListener('click', () => this.submitSale());
-        document.getElementById('quick-sale-form')?.addEventListener('submit', (e) => this.submitQuickSale(e));
-
-        this.setupCurrencyInput('quick-sale-amount');
-        this.setupCurrencyInput('sale-tendered');
-    }
-
-    setupCurrencyInput(id) {
-        const input = document.getElementById(id); if(!input) return;
-        input.addEventListener('input', (e) => {
-            let raw = e.target.value.replace(/\D/g, '');
-            if (raw.length > 9) raw = raw.substring(0, 9);
-            e.target.value = raw ? new Intl.NumberFormat('es-AR').format(raw) : '';
-        });
     }
 
     closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).style.display='none'; }
 
     async fetchResources() {
         try {
-            const [productsRes, clientsRes] = await Promise.all([
-                getAllProducts().catch(e => ({ success: false })),
-                getAllClients().catch(e => ({ success: false }))
+            const [prefRes, data, empRes] = await Promise.all([
+                getCurrentInventoryPreferences(),
+                getSaleResources(),
+                getEmployeeList()
             ]);
 
-            if(clientsRes.success || Array.isArray(clientsRes)) {
-                this.availableClients = clientsRes.clients || clientsRes || [];
+            this.resources.config = prefRes.mapping || {};
+            if(data.success) {
+                this.resources.products = data.products || [];
+                this.resources.customers = data.customers || [];
+                this.resources.paymentMethods = data.payment_methods || [];
+            }
+            if(empRes.success) this.resources.employees = empRes.employees || [];
+        } catch(e) { console.error(e); }
+    }
+
+    async openCreateModal() {
+        await this.fetchResources();
+        const map = this.resources.config;
+        if (!map || !map.name || !map.sale_price) {
+            document.getElementById('config-warning-overlay').style.display = 'block';
+            document.getElementById('sale-modal-body').style.display = 'none';
+        } else {
+            document.getElementById('config-warning-overlay').style.display = 'none';
+            document.getElementById('sale-modal-body').style.display = 'flex';
+        }
+
+        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, total_final: 0 };
+        this.renderProducts(this.resources.products);
+        this.fillSelect('sale-customer', this.resources.customers, 'id', 'full_name', 'Cliente General');
+        this.fillSelect('sale-seller', this.resources.employees, 'id', 'full_name', 'Sin Vendedor');
+        this.fillSelect('pay-method-select', this.resources.paymentMethods, 'id', 'name', null);
+
+        // Enfocar buscador automáticamente al abrir para escanear rápido
+        setTimeout(() => document.getElementById('sale-search-product').focus(), 100);
+
+        this.updateCartUI();
+        this.recalcSale();
+
+        const modal = document.getElementById('create-sale-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+
+    /* --- REEMPLAZAR ESTA FUNCIÓN EN SALES.JS --- */
+    async showDetails(id) {
+        try {
+            const res = await getSaleDetails(id);
+            if(!res.success) throw new Error(res.message || "Error al cargar detalles");
+            const s = res.sale;
+
+            const bodyContainer = document.querySelector('#detail-sale-modal .purchase-modal-body');
+
+            // --- A. Cabecera ---
+            let html = `
+                <div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;">
+                    <div style="font-size:1.3rem; font-weight:900; letter-spacing:1px;">TICKET #${s.id}</div>
+                    <div style="font-size:0.9rem; margin-top:5px;">${fmtDate(s.created_at)}</div>
+                </div>
+            `;
+
+            // --- B. Cliente ---
+            html += `
+                <div class="ticket-row" style="margin-bottom:10px;">
+                    <div style="display:flex; flex-direction:column; width:100%;">
+                        <span style="font-size:0.7rem; text-transform:uppercase; color:#666; font-weight:bold;">CLIENTE:</span>
+                        <span style="font-size:1rem; font-weight:800;">${s.customer_name || 'Consumidor Final'}</span>
+                    </div>
+                </div>
+            `;
+
+            // --- C. Vendedor (LÓGICA CORREGIDA) ---
+            // Definimos qué mostrar
+            let sellerDisplay = "No especificado";
+            let commissionDisplay = ""; // Por defecto oculto
+
+            if (s.seller_name && s.seller_name !== '-') {
+                sellerDisplay = s.seller_name;
+                const comm = s.commission_amount ? parseFloat(s.commission_amount) : 0;
+                // Solo mostramos la etiqueta de comisión si hay vendedor real
+                commissionDisplay = `
+                    <span style="font-size:0.8rem; background:#eee; padding:2px 6px; border-radius:4px; margin-left: auto;">
+                        Com: ${fmtMoney(comm)}
+                    </span>`;
             }
 
-            if(productsRes.success) {
-                this.availableProducts = productsRes.productList || [];
-                this.renderProducts(this.availableProducts);
+            html += `
+                <div class="ticket-row" style="margin-bottom:15px; border-bottom:1px dotted #ccc; padding-bottom:10px;">
+                    <div style="display:flex; flex-direction:column; width:100%;">
+                        <span style="font-size:0.7rem; text-transform:uppercase; color:#666; font-weight:bold;">ATENDIDO POR:</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:1rem; font-weight:800;">${sellerDisplay}</span>
+                            ${commissionDisplay}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            bodyContainer.innerHTML = html;
+
+            // --- D. Productos ---
+            bodyContainer.insertAdjacentHTML('beforeend', '<h4>PRODUCTOS</h4>');
+            const productsTable = document.createElement('table');
+            productsTable.innerHTML = `
+                <thead>
+                    <tr>
+                        <th style="text-align:left;">DESCRIPCIÓN</th>
+                        <th style="text-align:center; width:40px;">CANT</th>
+                        <th style="text-align:right;">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody id="detail-items-list"></tbody>
+            `;
+            bodyContainer.appendChild(productsTable);
+
+            document.getElementById('detail-items-list').innerHTML = s.items.map(i => `
+                <tr>
+                    <td style="text-align:left; line-height:1.2;">
+                        ${i.product_name}
+                        <div style="font-size:0.75rem; color:#666;">Unit: ${fmtMoney(i.price)}</div>
+                    </td>
+                    <td style="text-align:center; font-weight:bold; vertical-align:top;">${parseFloat(i.quantity)}</td>
+                    <td style="text-align:right; font-weight:800; vertical-align:top;">${fmtMoney(i.subtotal)}</td>
+                </tr>`).join('');
+
+            // --- E. Total ---
+            bodyContainer.insertAdjacentHTML('beforeend', `
+                <div id="detail-total-section">
+                    <span id="detail-total-label">TOTAL A PAGAR</span>
+                    <span id="detail-total">${fmtMoney(s.total_final)}</span>
+                </div>
+            `);
+
+            // --- F. Pagos ---
+            bodyContainer.insertAdjacentHTML('beforeend', '<h4>FORMA DE PAGO</h4>');
+            const paymentsTable = document.createElement('table');
+            paymentsTable.innerHTML = '<tbody id="detail-payments-list"></tbody>';
+            bodyContainer.appendChild(paymentsTable);
+            document.getElementById('detail-payments-list').innerHTML = s.payments.map(p => `
+                <tr class="ticket-row" style="border:none;">
+                    <td style="text-align:left; font-weight:600;">${p.payment_method_name}</td>
+                    <td style="text-align:right; font-weight:800;">${fmtMoney(p.amount)}</td>
+                </tr>`).join('');
+
+            // --- G. Notas ---
+            if(s.notes) {
+                bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-notes"><strong>NOTAS:</strong><br>${s.notes}</div>`);
             }
 
-            this.fillSelects();
-        } catch(e){ console.error("Error cargando recursos:", e); }
+            const modal = document.getElementById('detail-sale-modal');
+            modal.classList.remove('hidden'); modal.style.display = 'flex';
+
+        } catch(e) {
+            pop_ups.error("Error visualizando ticket: " + e.message);
+        }
     }
 
-    fillSelects() {
-        const fill = (id, list, defaultText) => {
-            const sel = document.getElementById(id);
-            if(!sel) return;
-            sel.innerHTML = `<option value="">${defaultText}</option>`;
-            list.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item.id;
-                if(item.surcharge !== undefined) {
-                    const sur = parseFloat(item.surcharge);
-                    opt.textContent = `${item.name} ${sur>0 ? `(+${sur}%)` : ''}`;
-                    opt.dataset.surcharge = sur;
-                } else {
-                    opt.textContent = item.full_name || item.name;
-                }
-                sel.appendChild(opt);
-            });
-        };
-
-        fill('sale-employee-select', this.availableEmployees, '-- Yo --');
-        fill('sale-pay-method', this.paymentMethods, '-- Seleccionar --');
-        fill('quick-sale-method', this.paymentMethods, '-- Seleccionar --');
-    }
-
-    // --- VENTA RÁPIDA (Se mantiene lógica, solo update de select de cliente) ---
-    async openQuickModal() {
-        document.getElementById('quick-sale-form').reset();
-        document.getElementById('quick-final-total').textContent = '$0.00';
-        document.getElementById('quick-surcharge-msg').style.display = 'none';
-        const m = document.getElementById('quick-sale-modal'); m.classList.remove('hidden'); m.style.display='flex';
-
-        // Si no se cargaron productos, intentamos cargar recursos igual
-        if(this.availableClients.length === 0) await this.fetchResources();
-
-        this.fillClientSelect('quick-sale-client');
-        this.fillSelects(); // Asegurar métodos de pago
-        document.getElementById('quick-sale-amount').focus();
-    }
-
-    fillClientSelect(id) {
-        const s = document.getElementById(id);
-        s.innerHTML='<option value="">-- Consumidor Final --</option>';
-        this.availableClients.forEach(c => {
-            const o = document.createElement('option');
-            o.value=c.id;
-            // Manejamos posible diferencia de nombres de propiedades en clientes
-            o.textContent = c.full_name || c.nombre || c.name || 'Cliente sin nombre';
-            s.appendChild(o);
-        });
-    }
-
-    calcQuickTotal() {
-        const rawAmount = document.getElementById('quick-sale-amount').value.replace(/\./g, '').replace(',', '.');
-        const baseAmount = parseFloat(rawAmount) || 0;
-        const sel = document.getElementById('quick-sale-method');
-        const selectedOpt = sel.options[sel.selectedIndex];
-        const surchargePercent = selectedOpt ? parseFloat(selectedOpt.dataset.surcharge || 0) : 0;
-        const surcharge = baseAmount * (surchargePercent / 100);
-        document.getElementById('quick-final-total').textContent = `$${(baseAmount + surcharge).toFixed(2)}`;
-        const msg = document.getElementById('quick-surcharge-msg');
-        if(surchargePercent > 0) { msg.style.display='block'; msg.textContent=`+${surchargePercent}% Recargo`; }
-        else msg.style.display='none';
-    }
-
-    async submitQuickSale(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btn-confirm-quick');
-        btn.disabled=true; btn.textContent='Procesando...';
-
-        const rawBase = document.getElementById('quick-sale-amount').value.replace(/\./g, '').replace(',', '.');
-        const baseAmount = parseFloat(rawBase);
-
-        if(isNaN(baseAmount) || baseAmount <= 0) { pop_ups.warning("Monto inválido"); btn.disabled=false; btn.textContent='Registrar'; return; }
-
-        const sel = document.getElementById('quick-sale-method');
-        const methodId = sel.value;
-        const selectedOpt = sel.options[sel.selectedIndex];
-        const surchargePercent = selectedOpt ? parseFloat(selectedOpt.dataset.surcharge || 0) : 0;
-        const total = baseAmount * (1 + surchargePercent/100);
-
-        const payload = {
-            total: total,
-            client_id: document.getElementById('quick-sale-client').value || null,
-            employee_id: null,
-            payment_method_id: methodId || 'efectivo',
-            items: [] // Venta rápida no tiene items
-        };
+    // NUEVA FUNCIÓN: Editar (Re-abrir)
+    async editSale(id) {
+        if(!await pop_ups.confirm("¿Editar Venta?", "Esto ELIMINARÁ la venta actual, devolverá el stock y cargará los productos en el carrito.")) return;
 
         try {
-            const res = await createSale(payload);
-            if(res.success) { this.closeModal('quick-sale-modal'); this.loadSalesHistory(); pop_ups.success('Venta registrada'); }
-            else pop_ups.error(res.message);
-        } catch(err) { console.error(err); }
-        btn.disabled=false; btn.textContent='Registrar';
+            // 1. Obtener datos de la venta a editar
+            const res = await getSaleDetails(id);
+            if(!res.success) throw new Error("No se pudo leer la venta");
+            const oldSale = res.sale;
+
+            // 2. Eliminar la venta antigua (revertir stock)
+            await fetch('/api/sales/delete.php', {
+                method: 'POST',
+                body: JSON.stringify({id})
+            });
+
+            // 3. Abrir el modal de creación (limpio)
+            await this.openCreateModal();
+
+            // 4. Llenar el formulario con los datos viejos
+            if(oldSale.customer_id) document.getElementById('sale-customer').value = oldSale.customer_id;
+            if(oldSale.seller_id) document.getElementById('sale-seller').value = oldSale.seller_id;
+            document.getElementById('sale-notes').value = oldSale.notes || '';
+
+            // 5. Reconstruir el carrito
+            this.currentSale.items = oldSale.items.map(i => ({
+                id: i.product_id,
+                nombre: i.product_name,
+                cantidad: parseFloat(i.quantity),
+                precio: parseFloat(i.price), // Precio histórico
+                max_stock: 9999 // Asumimos stock disponible ya que acabamos de devolverlo
+            }));
+
+            // 6. Recalcular todo
+            this.updateCartUI();
+            this.recalcSale();
+
+            pop_ups.info("Venta cargada para edición");
+
+        } catch(e) {
+            pop_ups.error("Error al editar: " + e.message);
+        }
     }
 
-    // --- VENTA INVENTARIO ---
-    async openCreateModal() {
-        this.currentSale = { clientId: null, clientName: null, items: [], subtotal: 0, total: 0, surcharge: 0 };
-        this.updateCartUI();
-        document.getElementById('create-sale-modal').classList.remove('hidden');
-        document.getElementById('create-sale-modal').style.display='flex';
-        document.getElementById('sale-search-product').focus();
-        await this.fetchResources();
-    }
-
-    // 5. RENDER PRODUCTOS USANDO EL MAPEO DINÁMICO
     renderProducts(list) {
         const c = document.getElementById('sale-products-list');
-        if(list.length===0){c.innerHTML='<p style="padding:10px; color:#999">Sin resultados</p>'; return;}
-
-        c.innerHTML = list.slice(0, 50).map(p => {
-            // 1. Verificamos Nombre (Identificado como 'name')
-            // Se puede obviar identificación de nombre para VENTA (según tu lógica), pero visualmente se necesita algo.
-            // Si el backend no envía 'name', mostramos 'No identificado'.
-            const displayName = p.hasOwnProperty('name') ? p.name : '<span style="color:red;">Nombre No Identificado</span>';
-
-            // 2. Verificamos Stock (Identificado como 'stock')
-            const displayStock = p.hasOwnProperty('stock') ? p.stock : '<span style="color:red;">?</span>';
-
-            // 3. Verificamos Precio de Venta (Identificado como 'sale_price')
-            // ESTO ES CRÍTICO. Si no hay sale_price identificado, no podemos vender.
-            const isPriceIdentified = p.hasOwnProperty('sale_price');
-            const displayPrice = isPriceIdentified ? `$${parseFloat(p.sale_price).toFixed(2)}` : '<span style="color:red; font-size:0.8rem;">Precio No Identificado</span>';
-
-            // El botón solo funciona si tenemos los datos mínimos (especialmente precio)
-            // Si prefieres bloquear totalmente el item si falta nombre, agrega la condición p.hasOwnProperty('name')
-            const canAdd = isPriceIdentified;
-            const itemClass = canAdd ? 'resource-item pr-trig' : 'resource-item disabled-item';
-            const cursorStyle = canAdd ? 'cursor:pointer;' : 'cursor:not-allowed; opacity:0.6;';
+        c.innerHTML = list.map(p => {
+            const stock = parseFloat(p.stock);
+            const style = stock > 0 ? '' : 'opacity:0.6; pointer-events:none; filter:grayscale(1);';
+            const badge = stock > 0
+                ? `<span style="font-size:0.75rem; color:#666;">Stock: ${stock}</span>`
+                : `<span style="font-size:0.75rem; color:red; font-weight:bold;">AGOTADO</span>`;
 
             return `
-            <div class="${itemClass}" data-id="${p.pID}" style="${cursorStyle}">
-                <div>
-                    <b style="font-size:1.1rem;">${displayName}</b><br>
-                    <small style="color:#666;">Stock: ${displayStock}</small>
+            <div class="resource-item prod-trigger" data-id="${p.id}" style="${style}">
+                <div style="flex:1; overflow:hidden; padding-right:10px;">
+                    <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                    ${badge}
                 </div>
-                <div class="text-right">
-                    <b class="text-green" style="font-size:1.2rem;">${displayPrice}</b>
+                <div style="font-weight:700; color:var(--sale-green); font-size:1rem;">
+                    ${fmtMoney(p.price)}
                 </div>
             </div>`;
         }).join('');
 
-        // Solo agregamos evento click a los elementos válidos
-        c.querySelectorAll('.pr-trig').forEach(b => {
-            b.addEventListener('click', () => {
-                const prod = this.availableProducts.find(x => x.pID == b.dataset.id);
-                // Doble chequeo antes de agregar
-                if (prod && prod.hasOwnProperty('sale_price')) {
-                    this.addToCart(prod);
-                } else {
-                    pop_ups.warning("Este producto no tiene Precio de Venta identificado.");
-                }
-            });
-        });
-    }
-
-    renderClients(l) {
-        document.getElementById('sale-clients-list').innerHTML = l.map(c =>
-            `<div class="resource-item cl-trig" data-id="${c.id}"><b>${c.full_name || c.nombre || 'Cliente'}</b></div>`
-        ).join('');
-        document.querySelectorAll('.cl-trig').forEach(b =>
-            b.addEventListener('click',()=>this.selectClient(this.availableClients.find(x=>x.id==b.dataset.id)))
+        c.querySelectorAll('.prod-trigger').forEach(b =>
+            b.addEventListener('click', () => this.addToCart(this.resources.products.find(x=>x.id==b.dataset.id)))
         );
     }
 
-    filterProducts(t) {
-        const term = t.toLowerCase();
-        const f = this.availableProducts.filter(p => {
-            // Solo filtramos si existe la propiedad 'name'. Si no, no se puede buscar por nombre.
-            if (!p.hasOwnProperty('name')) return false;
-            return p.name.toLowerCase().includes(term);
+    /* --- NUEVA LÓGICA DE BÚSQUEDA PROFUNDA Y ESCÁNER --- */
+
+    // Filtro visual (Input event)
+    filterProducts(term) {
+        const t = term.toLowerCase().trim();
+        if(!t) {
+            this.renderProducts(this.resources.products);
+            return;
+        }
+
+        const filtered = this.resources.products.filter(p => {
+            // Buscamos en el nombre
+            if (p.name && p.name.toLowerCase().includes(t)) return true;
+
+            // Buscamos en CUALQUIER otra propiedad (Barcode, SKU, ID, etc.)
+            // Esto es agnóstico a la base de datos, si la API trae la columna, la busca.
+            return Object.values(p).some(val =>
+                val && String(val).toLowerCase().includes(t)
+            );
         });
-        this.renderProducts(f);
+
+        this.renderProducts(filtered);
     }
 
-    filterClients(t) {
-        this.renderClients(this.availableClients.filter(c => (c.full_name||'').toLowerCase().includes(t.toLowerCase())));
-    }
+    // Acción al presionar ENTER (Lector de barras)
+    handleScan(term) {
+        const t = term.toLowerCase().trim();
+        if(!t) return;
 
-    selectClient(c) {
-        this.currentSale.clientId=c.id;
-        document.getElementById('selected-client-display').innerHTML=`Cliente: <b>${c.full_name || c.nombre}</b>`;
-        document.getElementById('selected-client-display').style.display='block';
-        document.getElementById('sale-clients-list').style.display='none';
+        // 1. Buscar coincidencia EXACTA primero (prioridad código de barras)
+        let match = this.resources.products.find(p => {
+            // Verificamos coincidencia exacta en cualquier valor del objeto (barcode, codigo, nombre exacto)
+            return Object.values(p).some(val => val && String(val).toLowerCase() === t);
+        });
+
+        // 2. Si no hay exacta, mirar si el filtro visual arrojó UN solo resultado
+        if (!match) {
+            const visualMatches = this.resources.products.filter(p => {
+                if (p.name && p.name.toLowerCase().includes(t)) return true;
+                return Object.values(p).some(val => val && String(val).toLowerCase().includes(t));
+            });
+            if (visualMatches.length === 1) {
+                match = visualMatches[0];
+            }
+        }
+
+        // 3. Acción
+        if (match) {
+            this.addToCart(match);
+
+            // UX: Limpiar input y reiniciar lista para el siguiente escaneo
+            const input = document.getElementById('sale-search-product');
+            input.value = '';
+            input.focus(); // Mantener foco para escanear en ráfaga
+            this.filterProducts(''); // Restaurar lista completa
+
+            // Feedback sutil
+            pop_ups.success(`Agregado: ${match.name}`);
+        } else {
+            pop_ups.warning("Producto no encontrado");
+        }
     }
 
     addToCart(p) {
-        // Normalizamos el item al agregarlo al carrito para que tenga name y price fijos internamente
-        const itemData = {
-            id: p[this.colMap.id] || p.id,
-            name: p[this.colMap.name] || 'Item',
-            price: parseFloat(p[this.colMap.price]) || 0,
-            quantity: 1
-        };
-
-        const ex = this.currentSale.items.find(i => i.id == itemData.id);
-        if(ex) ex.quantity++;
-        else this.currentSale.items.push(itemData);
-
-        this.calcTotal();
-    }
-
-    calcTotal() {
-        this.currentSale.subtotal = this.currentSale.items.reduce((s,i)=>s+(i.price*i.quantity),0);
-        const sel = document.getElementById('sale-pay-method');
-        const selectedOpt = sel.options[sel.selectedIndex];
-        const surchargePercent = selectedOpt ? parseFloat(selectedOpt.dataset.surcharge || 0) : 0;
-
-        this.currentSale.surcharge = this.currentSale.subtotal * (surchargePercent / 100);
-        this.currentSale.total = this.currentSale.subtotal + this.currentSale.surcharge;
-
-        document.getElementById('sale-total-display').textContent=`$${this.currentSale.total.toFixed(2)}`;
-
-
-        this.updateCartUI();
-        this.updateChangeCalc();
+        const exist = this.currentSale.items.find(i => i.id == p.id);
+        if (exist) {
+            if (exist.cantidad >= p.stock) return pop_ups.warning("Stock máximo alcanzado");
+            exist.cantidad++;
+        } else {
+            this.currentSale.items.push({ id: p.id, nombre: p.name, cantidad: 1, precio: parseFloat(p.price), max_stock: parseFloat(p.stock) });
+        }
+        this.recalcSale();
     }
 
     updateCartUI() {
-        const c=document.getElementById('sale-cart-items');
-        if(!this.currentSale.items.length){ c.innerHTML='<p class="text-center" style="color:#999; margin-top:2rem;">Vacío</p>'; document.getElementById('confirm-sale-btn').disabled=true; return; }
-        document.getElementById('confirm-sale-btn').disabled=false;
-        c.innerHTML=this.currentSale.items.map((i,x)=>`<div class="cart-item"><div class="flex-row justify-between"><b>${i.name}</b> <span>$${(i.price*i.quantity).toFixed(2)}</span></div><div class="flex-row justify-between align-center" style="margin-top:5px;"><small>$${i.price}</small><div class="cart-controls"><button class="qty-btn sub" data-x="${x}">-</button><span>${i.quantity}</span><button class="qty-btn add" data-x="${x}">+</button></div></div></div>`).join('');
+        const c = document.getElementById('sale-cart-items');
+        if(this.currentSale.items.length === 0) {
+            c.innerHTML = '<div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>';
+        } else {
+            c.innerHTML = this.currentSale.items.map((item, idx) => `
+                <div class="cart-item">
+                    <div class="cart-left">
+                        <div class="cart-title">${item.nombre}</div>
+                        <div class="cart-total-price">${fmtMoney(item.precio * item.cantidad)}</div>
+                    </div>
+                    
+                    <div class="cart-right">
+                        <div class="cart-unit-price">${fmtMoney(item.precio)} c/u</div>
+                        <div class="cart-controls">
+                            <button class="btn-xs sub" data-idx="${idx}">-</button>
+                            <span style="font-weight:600; font-size:0.9rem; min-width:24px; text-align:center;">${item.cantidad}</span>
+                            <button class="btn-xs add" data-idx="${idx}">+</button>
+                            <button class="btn-xs del" data-idx="${idx}" style="margin-left:4px;"><i class="ph ph-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
 
-        c.querySelectorAll('.sub').forEach(b=>b.addEventListener('click',()=>{const i=this.currentSale.items[b.dataset.x]; i.quantity--; if(i.quantity<1)this.currentSale.items.splice(b.dataset.x,1); this.calcTotal();}));
-        c.querySelectorAll('.add').forEach(b=>b.addEventListener('click',()=>{this.currentSale.items[b.dataset.x].quantity++; this.calcTotal();}));
+            c.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => {
+                const item = this.currentSale.items[b.dataset.idx];
+                if (item.cantidad >= item.max_stock) return pop_ups.warning("Stock insuficiente");
+                item.cantidad++; this.recalcSale();
+            }));
+            c.querySelectorAll('.sub').forEach(b => b.addEventListener('click', () => {
+                const item = this.currentSale.items[b.dataset.idx];
+                item.cantidad--; if(item.cantidad < 1) this.currentSale.items.splice(b.dataset.idx, 1);
+                this.recalcSale();
+            }));
+            c.querySelectorAll('.del').forEach(b => b.addEventListener('click', () => {
+                this.currentSale.items.splice(b.dataset.idx, 1);
+                this.recalcSale();
+            }));
+        }
+        document.getElementById('cart-subtotal-display').textContent = fmtMoney(this.currentSale.subtotal_items);
     }
 
-    updateChangeCalc() {
-        const rawTendered = document.getElementById('sale-tendered').value.replace(/\./g, '').replace(',', '.');
-        const tendered = parseFloat(rawTendered) || 0;
-        const total = this.currentSale.total;
-        const change = tendered - total;
-        const el = document.getElementById('sale-change-display');
-        el.textContent = tendered > 0 ? `$${change.toFixed(2)}` : '$0.00';
+    addPayment() {
+        const amtInput = document.getElementById('pay-input-amount');
+        const methodSelect = document.getElementById('pay-method-select');
+        const amount = parseFloat(amtInput.value);
+        const methodId = methodSelect.value;
+
+        if (isNaN(amount) || amount <= 0) return pop_ups.warning("Ingresá un monto válido");
+        if (!methodId) return pop_ups.warning("Elegí un método de pago");
+
+        const methodObj = this.resources.paymentMethods.find(m => m.id == methodId);
+        const surchargePct = parseFloat(methodObj.surcharge) || 0;
+        const surchargeVal = amount * (surchargePct / 100);
+
+        this.currentSale.payments.push({
+            method_id: methodId,
+            name: methodObj.name,
+            amount: amount,
+            surcharge_percent: surchargePct,
+            surcharge_val: surchargeVal
+        });
+
+        amtInput.value = '';
+        this.recalcSale();
+    }
+
+    removePayment(idx) {
+        this.currentSale.payments.splice(idx, 1);
+        this.recalcSale();
+    }
+
+    updatePaymentUI() {
+        const c = document.getElementById('payments-list');
+        if (this.currentSale.payments.length === 0) {
+            c.innerHTML = '<p style="color:#999; text-align:center; font-size:0.8rem; margin-top:10px;">Sin pagos registrados</p>';
+        } else {
+            c.innerHTML = this.currentSale.payments.map((p, idx) => `
+                <div style="background:#FFF; border:1px solid var(--color-black); border-radius:4px; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:600;">${fmtMoney(p.amount)} <span style="font-weight:normal; font-size:0.85rem; color:#555;">(${p.name})</span></div>
+                        ${p.surcharge_val > 0 ? `<div style="font-size:0.75rem; color:var(--accent-color);">+ Recargo: ${fmtMoney(p.surcharge_val)}</div>` : ''}
+                    </div>
+                    <span style="cursor:pointer; color:var(--accent-red);" class="rm-pay" data-idx="${idx}"><i class="ph ph-x-circle" style="font-size:1.2rem;"></i></span>
+                </div>
+            `).join('');
+            c.querySelectorAll('.rm-pay').forEach(b => b.addEventListener('click', () => this.removePayment(b.dataset.idx)));
+        }
+    }
+
+    recalcSale() {
+        this.currentSale.subtotal_items = this.currentSale.items.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+        this.currentSale.total_surcharges = this.currentSale.payments.reduce((sum, p) => sum + p.surcharge_val, 0);
+        this.currentSale.total_final = this.currentSale.subtotal_items + this.currentSale.total_surcharges;
+        const totalPaid = this.currentSale.payments.reduce((sum, p) => sum + p.amount + p.surcharge_val, 0);
+        const diff = totalPaid - this.currentSale.total_final;
+
+        document.getElementById('checkout-subtotal').textContent = fmtMoney(this.currentSale.subtotal_items);
+        document.getElementById('checkout-surcharges').textContent = fmtMoney(this.currentSale.total_surcharges);
+        document.getElementById('checkout-total-final').textContent = fmtMoney(this.currentSale.total_final);
+        document.getElementById('checkout-paid').textContent = fmtMoney(totalPaid);
+
+        const diffEl = document.getElementById('checkout-diff');
+        const rowDiff = document.getElementById('change-row');
+
+        if (diff >= 0) {
+            rowDiff.style.color = 'var(--color-gray)';
+            rowDiff.querySelector('span:first-child').textContent = "Vuelto:";
+            diffEl.textContent = fmtMoney(diff);
+            document.getElementById('confirm-sale-btn').disabled = (this.currentSale.items.length === 0);
+        } else {
+            rowDiff.style.color = 'var(--accent-red)';
+            rowDiff.querySelector('span:first-child').textContent = "Falta:";
+            diffEl.textContent = fmtMoney(Math.abs(diff));
+            document.getElementById('confirm-sale-btn').disabled = true;
+        }
+
+        this.updateCartUI();
+        this.updatePaymentUI();
+        this.calculateCommission();
+    }
+
+    calculateCommission() {
+        const pct = parseFloat(document.getElementById('sale-commission-pct').value) || 0;
+        const commVal = this.currentSale.subtotal_items * (pct / 100);
+        document.getElementById('commission-display').textContent = `Comisión: ${fmtMoney(commVal)}`;
+    }
+
+    fillSelect(id, list, valKey, textKey, placeholder) {
+        const s = document.getElementById(id);
+        s.innerHTML = placeholder ? `<option value="">${placeholder}</option>` : '';
+        list.forEach(i => {
+            const op = document.createElement('option');
+            op.value = i[valKey];
+            let txt = i[textKey];
+            if(id === 'pay-method-select' && i.surcharge > 0) txt += ` (+${parseFloat(i.surcharge)}%)`;
+            op.textContent = txt;
+            s.appendChild(op);
+        });
     }
 
     async submitSale() {
-        const btn = document.getElementById('confirm-sale-btn'); btn.textContent = 'Procesando...'; btn.disabled = true;
+        const btn = document.getElementById('confirm-sale-btn');
+        btn.disabled = true; btn.textContent = 'Procesando...';
+
+        const pct = parseFloat(document.getElementById('sale-commission-pct').value) || 0;
+        const commAmount = this.currentSale.subtotal_items * (pct / 100);
 
         const payload = {
-            total: this.currentSale.total,
-            client_id: this.currentSale.clientId,
-            employee_id: document.getElementById('sale-employee-select').value,
-            payment_method_id: document.getElementById('sale-pay-method').value,
-            items: this.currentSale.items.map(i=>({ id: i.id, nombre: i.name, cantidad: i.quantity, precio: i.price, subtotal: i.price*i.quantity })),
-            notes: document.getElementById('sale-notes').value
+            customer_id: document.getElementById('sale-customer').value || null,
+            seller_id: document.getElementById('sale-seller').value || null,
+            commission_amount: commAmount,
+            total_final: this.currentSale.total_final,
+            notes: document.getElementById('sale-notes').value,
+            items: this.currentSale.items.map(i => ({
+                id: i.id, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio, subtotal: i.precio * i.cantidad
+            })),
+            payments: this.currentSale.payments
         };
 
         try {
             const res = await createSale(payload);
-            if (res.success) { this.closeModal('create-sale-modal'); this.loadSalesHistory(); pop_ups.success('Venta registrada con éxito'); }
-            else { pop_ups.error(res.message); }
-        } catch(e) { console.error(e); pop_ups.error('Error de conexión'); }
-        btn.textContent = 'CONFIRMAR VENTA'; btn.disabled = false;
+            if (res.success) {
+                this.closeModal('create-sale-modal');
+                await this.fetchResources();
+                await this.loadHistory(this.currentSortOrder);
+                pop_ups.success("Venta Exitosa");
+            } else {
+                pop_ups.error(res.message || "Error al procesar venta");
+            }
+        } catch(e) {
+            console.error(e);
+            pop_ups.error("Error de conexión");
+        }
+        btn.disabled = false; btn.textContent = 'CONFIRMAR VENTA';
     }
 
-    async loadSalesHistory() {
-        // ... (Esta parte se ve bien, si tienes la función importada)
+    /* --- HISTORIAL (Visualización actualizada) --- */
+    async loadHistory(order='desc') {
         const b = document.getElementById('sales-list-body');
-        b.innerHTML = '<tr><td colspan="5" class="text-center">Cargando...</td></tr>';
+        b.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Cargando...</td></tr>';
         try {
-            // Nota: getSalesHistory debe estar en api.js o importada
-            const data = await getSalesHistory();
-            if(!data || !data.sales || !data.sales.length) { b.innerHTML='<tr><td colspan="5" class="text-center" style="padding:2rem; color:#999;">Sin movimientos</td></tr>'; return; }
-            b.innerHTML = data.sales.map(s => {
-                return `<tr style="border-bottom:1px solid #eee;">
-                    <td style="padding:10px;">${new Date(s.fecha_hora).toLocaleDateString()}</td>
-                    <td style="padding:10px;">Venta #${s.id}</td>
-                    <td style="padding:10px;">${s.nombre_empleado || '-'}</td>
-                    <td style="padding:10px; text-align:right;"><b>$${parseFloat(s.total).toFixed(2)}</b></td>
-                    <td style="padding:10px; text-align:center;"><button class="btn btn-secondary btn-sm"><i class="ph ph-eye"></i></button></td>
-                </tr>`;
-            }).join('');
-        } catch(e){ b.innerHTML='<tr><td colspan="5" class="text-center">Error cargando historial</td></tr>'; }
+            const data = await getSalesHistory(order);
+            if(!data.success || !data.sales || data.sales.length === 0) {
+                b.innerHTML='<tr><td colspan="4" style="text-align:center; padding:20px;">Sin ventas registradas</td></tr>';
+                return;
+            }
+            // AQUI ESTA EL CAMBIO PRINCIPAL EN EL HTML GENERADO:
+            b.innerHTML = data.sales.map(s => ` 
+                <tr style="border-bottom:1px solid #eee;"> 
+                    <td style="padding:12px;">
+                        ${fmtDate(s.created_at)}
+                        <div style="font-size:0.75rem; color:#999;">#${s.id}</div>
+                    </td> 
+                    <td style="padding:12px;"> 
+                        <div style="font-weight:600;">${s.customer_name || 'Cliente General'}</div> 
+                    </td> 
+                    <td style="padding:12px; text-align:right; vertical-align:top;">
+                        <div style="font-weight:800; color:var(--sale-green); font-size:1.1rem;">${fmtMoney(s.total)}</div>
+                        ${s.seller_name && s.seller_name !== '-' ?
+                `<div style="font-size:0.8rem; color:#666; margin-top:4px; line-height:1.2;">
+                                <i class="ph ph-user-circle"></i> ${s.seller_name} <br>
+                                <span style="color:var(--accent-color); font-weight:600;">(Com: ${fmtMoney(s.commission)})</span>
+                             </div>`
+                : ''} 
+                    </td> 
+                    <td style="padding:12px; text-align:center;"> 
+                        <div class="btn-icon-group" style="justify-content:center;"> 
+                            <button class="action-btn view" title="Ver Ticket" onclick="window.salesModuleInstance.showDetails('${s.id}')"><i class="ph ph-receipt"></i></button> 
+                            <button class="action-btn edit" title="Editar (Reabrir en Carrito)" onclick="window.salesModuleInstance.editSale('${s.id}')"><i class="ph ph-pencil-simple"></i></button> 
+                            <button class="action-btn delete" title="Eliminar" onclick="window.salesModuleInstance.deleteSale('${s.id}')"><i class="ph ph-trash"></i></button> 
+                        </div> 
+                    </td> 
+                </tr>`).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    async deleteSale(id) {
+        if(!await pop_ups.confirm("Eliminar Venta", "Se devolverá el stock y anulará el registro. ¿Seguro?")) return;
+        try {
+            await fetch('/api/sales/delete.php', {method:'POST', body:JSON.stringify({id})});
+            this.loadHistory();
+            pop_ups.info("Venta eliminada.");
+        } catch(e){ pop_ups.error("Error al eliminar."); }
     }
 }
 
-export const salesModuleInstance = new SalesModule();
+window.salesModuleInstance = new SalesModule();
+export const salesModuleInstance = window.salesModuleInstance;

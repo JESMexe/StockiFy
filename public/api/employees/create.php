@@ -16,10 +16,15 @@ try {
     if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
 
     $input = json_decode(file_get_contents('php://input'), true);
+
     if (empty($input['name'])) { echo json_encode(['success'=>false, 'message'=>'Nombre obligatorio']); exit; }
 
+    $dni = $input['dni'] ?? null;
+    $phone = $input['phone'] ?? null;
+    $email = $input['email'] ?? null;
+
     $model = new EmployeeModel();
-    $id = $model->createEmployee($user['id'], $input['name']);
+    $id = $model->createEmployee($user['id'], $input['name'], $dni, $phone, $email);
 
     if ($id) echo json_encode(['success'=>true, 'id'=>$id]);
     else echo json_encode(['success'=>false, 'message'=>'Error al crear']);

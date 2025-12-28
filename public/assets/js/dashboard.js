@@ -22,6 +22,7 @@ let selectedSearchColumn = 'all'; // 'all' es el valor por defecto
 let searchColumnBtn, searchColumnBtnText, searchColumnDropdown;
 let isCriticalFilterActive = false; // Estado del filtro de peligro
 let isActionsHidden = true; // false = Visible, true = Oculto (Pestaña activa)
+let currentDollarRate = 0;
 const protectedColumns = ['id', 'created_at'];
 
 let deleteModal, deleteConfirmInput, confirmDeleteBtn, deleteDbNameConfirmSpan, deleteErrorMsg;
@@ -157,21 +158,24 @@ async function handleStockUpdate(event) {
 }
 
 
+
 /**
- * REEMPLAZAR renderTable
- * Calcula Ganancia y Stock Mínimo usando el Mapeo
- */
-/**
- * renderTable ACTUALIZADA (Ordenamiento de columnas especiales al final)
+ * renderTable
  */
 async function renderTable(columns, data) {
+    // Definimos las constantes para las claves meta
+    const currencySaleKey = '_meta_currency_sale';
+    const currencyBuyKey = '_meta_currency_buy';
+
     const tableHead = document.querySelector('#data-table thead');
     const tableBody = document.querySelector('#data-table tbody');
 
+    // Validación de seguridad
     if (!tableHead || !tableBody) return;
 
+    // Carga de preferencias si no existen
     try {
-        if (!columnMapping.name) {
+        if (!columnMapping.name && !columnMapping.stock) {
             const prefs = await api.getCurrentInventoryPreferences();
             if (prefs && prefs.success) {
                 if(prefs.mapping) columnMapping = prefs.mapping;
@@ -180,45 +184,43 @@ async function renderTable(columns, data) {
         }
     } catch (e) { console.warn("Usando prefs por defecto"); }
 
+    // Definir columnas si no vienen
     if ((!columns || columns.length === 0) && data && data.length > 0) {
         columns = Object.keys(data[0]);
         currentTableColumns = columns;
     }
 
+    // --- FILTRADO Y ORDEN DE COLUMNAS ---
+    const systemHiddenCols = ['created_at', 'user_id', 'inventory_id', 'updated_at', 'min_stock'];
 
-    const specialCols = ['min_stock', 'sale_price', 'receipt_price'];
+    const mappedBuyCol = columnMapping.buy_price;
+    const mappedSaleCol = columnMapping.sale_price;
+    const minStockCol = 'min_stock';
+
     const normalColumns = columns.filter(col => {
-        const c = col.toLowerCase();
-        return !['created_at', 'user_id', 'inventory_id', 'updated_at', ...specialCols].includes(c);
+        const colLower = col.toLowerCase();
+        const isBuyCol = mappedBuyCol && colLower === mappedBuyCol.toLowerCase();
+        const isSaleCol = mappedSaleCol && colLower === mappedSaleCol.toLowerCase();
+        return !systemHiddenCols.includes(colLower) && !isBuyCol && !isSaleCol;
     });
 
     const orderedSpecialColumns = [];
-
-    if (columns.includes('receipt_price')) orderedSpecialColumns.push('receipt_price');
-    if (columns.includes('sale_price')) orderedSpecialColumns.push('sale_price');
-
-    if (columns.includes('min_stock') && activeFeatures.min_stock) {
-        orderedSpecialColumns.push('min_stock');
-    }
+    if (mappedBuyCol && columns.includes(mappedBuyCol)) orderedSpecialColumns.push(mappedBuyCol);
+    if (mappedSaleCol && columns.includes(mappedSaleCol)) orderedSpecialColumns.push(mappedSaleCol);
+    if (activeFeatures.min_stock && columns.includes(minStockCol)) orderedSpecialColumns.push(minStockCol);
 
     const displayColumns = [...normalColumns, ...orderedSpecialColumns];
 
-    let actionsHeaderContent = '';
-    let actionsHeaderClass = 'actions-header';
-
+    // --- HEADER ---
     let actionsTh = '';
     if (!isActionsHidden) {
-        // Solo si NO está oculta, la dibujamos
         actionsTh = `<th class="actions-header" onclick="window.toggleActionsColumn()" title="Ocultar columna">Acciones <i class="ph ph-caret-right" style="vertical-align: middle; margin-left: 5px;"></i></th>`;
     }
 
-
     const headerHTML = displayColumns.map(col => {
-
         let niceName = formatColumnName(col);
         let label = niceName;
 
-        // Iconos
         if (col === columnMapping.stock) label += ' <i class="ph-bold ph-package"></i>';
         if (col === columnMapping.sale_price) label += ' <i class="ph-bold ph-coin-vertical"></i>';
         if (col === columnMapping.buy_price) label += ' <i class="ph-bold ph-shopping-cart"></i>';
@@ -241,101 +243,199 @@ async function renderTable(columns, data) {
 
     tableHead.innerHTML = `<tr>${headerHTML}${gainHeader}${actionsTh}</tr>`;
 
-    // --- GENERACIÓN DEL BODY ---
+    // --- BODY ---
     if (!data || data.length === 0) {
         tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Descripción de la imagen" style="width: 100%; height: 100%;">`
     } else {
         tableBody.innerHTML = data.map(row => {
+            // Normalización de ID
             const rowId = row['id'] ?? row['Id'] ?? row['ID'];
             const isEditing = (editingRowId == rowId);
 
-            // Iteramos sobre displayColumns (el orden nuevo)
             const cellsHTML = displayColumns.map(col => {
                 let value = row[col] ?? '-';
                 let cellClass = '';
 
-                // Lógica de Stock Mínimo (Alerta visual)
+                const isSale = (col.toLowerCase() === columnMapping.sale_price?.toLowerCase());
+                const isBuy = (col.toLowerCase() === columnMapping.buy_price?.toLowerCase());
+
+                // Lógica de alerta de Stock Mínimo
                 if (col === columnMapping.stock && activeFeatures.min_stock) {
                     const min = parseFloat(row['min_stock']) || 0;
                     const current = parseFloat(value) || 0;
                     if (current <= min) cellClass = 'status-critical';
                 }
 
-                // Formato Moneda
-                if ((col === 'sale_price' || col === 'receipt_price') && !isNaN(value) && value !== '-') {
-                    value = `$${parseFloat(value).toFixed(2)}`;
+                // Lógica de Moneda (USD / ARS)
+                let currency = 'ARS';
+                if (isSale) currency = row[currencySaleKey] || 'ARS';
+                if (isBuy) currency = row[currencyBuyKey] || 'ARS';
+
+                const symbol = (currency === 'USD') ? 'US$' : '$';
+
+                // Formateo visual del valor
+                if ((isSale || isBuy) && !isNaN(value) && value !== '-') {
+                    value = `${symbol} ${parseFloat(value).toFixed(2)}`;
                 }
 
+                // MODO EDICIÓN
                 if (isEditing) {
+                    if (isSale || isBuy) {
+                        return `
+                            <td>
+                                <div class="flex-row" style="gap:0;">
+                                    <button type="button" class="btn-currency-toggle" 
+                                            onclick="window.toggleRowCurrency(this, '${rowId}', '${isSale?'sale':'buy'}', '${currency}')"
+                                            title="Cambiar a ${currency==='ARS'?'USD':'ARS'}"
+                                            style="padding: 0 5px; font-size: 0.7rem; background: #eee; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; cursor: pointer;">
+                                        ${currency}
+                                    </button>
+                                    <input type="text" 
+                                           class="editing-input form-control" 
+                                           data-col="${col}" 
+                                           value="${row[col] ?? ''}" 
+                                           data-currency-type="${isSale ? 'sale' : 'buy'}"
+                                           data-current-currency="${currency}"
+                                           style="width:100%; border-radius: 0 4px 4px 0;">
+                                </div>
+                            </td>`;
+                    }
                     return `<td><input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" style="width:100%"></td>`;
                 }
 
                 return `<td class="${cellClass}">${value}</td>`;
             }).join('');
 
-            // Cálculo de Ganancia (si aplica)
+
+            // --- LÓGICA DE GANANCIA (INTEGRADA CON CONVERSIÓN) ---
             let gainHTML = '';
             if (activeFeatures.gain) {
-                const sale = parseFloat(row['sale_price']) || 0; // Usamos nombres estándar
-                const buy = parseFloat(row['receipt_price']) || 0;
+                const saleColName = columnMapping.sale_price;
+                const buyColName = columnMapping.buy_price;
+
+                // 1. Obtenemos valores crudos (raw) y monedas
+                const rawSale = (saleColName && row[saleColName]) ? parseFloat(row[saleColName]) : 0;
+                const rawBuy = (buyColName && row[buyColName]) ? parseFloat(row[buyColName]) : 0;
+                const saleCurrency = row[currencySaleKey] || 'ARS';
+                const buyCurrency = row[currencyBuyKey] || 'ARS';
+
                 let profit = 0;
                 let displayProfit = '-';
                 let profitClass = '';
 
-                if (sale > 0 && buy > 0) {
+                // 2. Aplicamos la lógica de conversión que pediste
+                if (currentDollarRate > 0 && rawSale > 0 && rawBuy > 0) {
+                    // Normalización a Pesos (ARS) para el cálculo interno
+                    const saleInArs = (saleCurrency === 'USD') ? rawSale * currentDollarRate : rawSale;
+                    const buyInArs = (buyCurrency === 'USD') ? rawBuy * currentDollarRate : rawBuy;
+
                     if (activeFeatures.gain_type === 'fixed') {
-                        profit = sale - buy;
-                        displayProfit = `$${profit.toFixed(2)}`;
+                        if (saleCurrency === 'USD' && buyCurrency === 'USD') {
+                            profit = rawSale - rawBuy;
+                            displayProfit = `US$ ${profit.toFixed(2)}`;
+                        } else {
+                            profit = saleInArs - buyInArs;
+                            displayProfit = `$${profit.toFixed(2)}`;
+                        }
                     } else {
-                        profit = ((sale - buy) / sale) * 100;
-                        displayProfit = `${profit.toFixed(1)}%`;
+                        if (buyInArs > 0) {
+                            profit = ((saleInArs - buyInArs) / buyInArs) * 100;
+                            displayProfit = `${profit.toFixed(2)}%`;
+                        } else if (saleInArs > 0) {
+                            profit = 100;
+                            displayProfit = `100%`;
+                        } else {
+                            profit = 0;
+                            displayProfit = `0%`;
+                        }
                     }
 
+                    // Colores
+                    if (profit > 0) profitClass = 'text-green-600 font-bold';
+                    else if (profit < 0) profitClass = 'status-critical';
+
+                } else if (currentDollarRate === 0 && (saleCurrency === 'USD' || buyCurrency === 'USD')) {
+                    // Si no hay cotización y hay columnas en dólares, mostramos error
+                    displayProfit = 'Err Cotiz.';
+                    profitClass = 'text-gray-500';
+
+                } else if (rawSale > 0 && rawBuy > 0) {
+                    // Fallback para cuando todo es ARS y no depende del dólar
+                    if (activeFeatures.gain_type === 'fixed') {
+                        profit = rawSale - rawBuy;
+                        displayProfit = `$${profit.toFixed(2)}`;
+                    } else {
+                        profit = ((rawSale - rawBuy) / rawSale) * 100;
+                        displayProfit = `${profit.toFixed(1)}%`;
+                    }
                     if (profit > 0) profitClass = 'text-green-600 font-bold';
                     else if (profit < 0) profitClass = 'status-critical';
                 }
-                gainHTML = `<td class="${profitClass}">${displayProfit}</td>`;
+
+                // Renderizado final de la celda
+                const style = profit > 0 ? 'color: var(--accent-green); font-weight: bold;' : '';
+                gainHTML = `<td class="${profitClass}" style="${style}">${displayProfit}</td>`;
             }
 
-
-            // Botones de Acción
+            // Lógica de Acciones
             let actionsHTML = '';
             if (!isActionsHidden) {
                 if (isEditing) {
                     actionsHTML = `
                     <td class="actions-cell">
                         <div class="flex-row">
-                            <button class="btn-icon action-save" onclick="window.saveRowChanges(this, '${rowId}')" title="Guardar">
-                                <i class="ph ph-check" style="color: var(--accent-green); font-weight: bold;"></i>
-                            </button>
-                            <button class="btn-icon action-cancel" onclick="window.cancelEditRow('${rowId}')" title="Cancelar">
-                                <i class="ph ph-x" style="color: var(--accent-red); font-weight: bold;"></i>
-                            </button>
+                            <button class="btn-icon action-save" onclick="window.saveRowChanges(this, '${rowId}')" title="Guardar"><i class="ph ph-check" style="color: var(--accent-green); font-weight: bold;"></i></button>
+                            <button class="btn-icon action-cancel" onclick="window.cancelEditRow('${rowId}')" title="Cancelar"><i class="ph ph-x" style="color: var(--accent-red); font-weight: bold;"></i></button>
                         </div>
                     </td>`;
                 } else {
                     actionsHTML = `
                     <td class="actions-cell">
                         <div class="flex-row">
-                            <button class="btn-icon action-edit" title="Editar Fila" onclick="window.enableEditRow(this, '${rowId}')">
-                                <i class="ph ph-pencil-simple"></i>
-                            </button>
-                            <button class="btn-icon action-history" title="Ver Fecha Creación" onclick="window.showRowHistory('${row.created_at}', '${rowId}')">
-                                <i class="ph ph-clock"></i>
-                            </button>
-                            <button class="btn-icon action-delete" title="Eliminar Fila" onclick="window.confirmDeleteRow('${rowId}')">
-                                <i class="ph ph-trash" style="color: var(--accent-red);"></i>
-                            </button>
+                            <button class="btn-icon action-edit" title="Editar Fila" onclick="window.enableEditRow(this, '${rowId}')"><i class="ph ph-pencil-simple"></i></button>
+                            <button class="btn-icon action-history" title="Ver Fecha Creación" onclick="window.showRowHistory('${row.created_at}', '${rowId}')"><i class="ph ph-clock"></i></button>
+                            <button class="btn-icon action-delete" title="Eliminar Fila" onclick="window.confirmDeleteRow('${rowId}')"><i class="ph ph-trash" style="color: var(--accent-red);"></i></button>
                         </div>
                     </td>`;
                 }
             }
 
-
-            return `<tr id="row-${rowId}">${cellsHTML}${gainHTML}${actionsHTML}</tr>`;
+            return `<tr id="row-${rowId}" data-id="${rowId}">${cellsHTML}${gainHTML}${actionsHTML}</tr>`;
         }).join('');
     }
 }
+
+window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
+    const targetCurr = (currentCurr === 'ARS') ? 'USD' : 'ARS';
+    const input = btn.nextElementSibling;
+    let val = parseFloat(input.value);
+
+    if (isNaN(val)) return;
+
+    btn.textContent = "Wait...";
+
+    try {
+        const res = await fetch('/api/table/get-rate.php');
+        const rateData = await res.json();
+
+        let newVal = val;
+        if (currentCurr === 'ARS' && targetCurr === 'USD') newVal = val / rateData.sell;
+        else if (currentCurr === 'USD' && targetCurr === 'ARS') newVal = val * rateData.buy;
+
+        input.value = newVal.toFixed(2);
+
+        btn.textContent = targetCurr;
+        btn.onclick = () => window.toggleRowCurrency(btn, rowId, type, targetCurr);
+
+        input.dataset.newCurrency = targetCurr;
+        input.dataset.currencyType = type; // 'sale' o 'buy'
+
+    } catch(e) {
+        console.error(e);
+        btn.textContent = currentCurr; // Revertir
+        pop_ups.error("Error al cotizar");
+    }
+};
 
 // --- FUNCIONES DE ACCIONES DE LA TABLA ---
 
@@ -443,64 +543,94 @@ window.enableEditRow = (btn, id) => {
     renderTable(filterableColumns, allData);
 };
 
+/* =========================================
+   2. GUARDAR CAMBIOS (VERSIÓN DEFINITIVA)
+   ========================================= */
+// Recibimos (btn, id) porque así está escrito en tu onclick
 window.saveRowChanges = async (btn, id) => {
-    const row = btn.closest('tr');
 
+    console.log("Iniciando guardado...", { btn, id });
+
+    // MÉTODO 1: Buscar por ID (Estándar)
+    let row = document.querySelector(`tr[data-id="${id}"]`);
+
+    // MÉTODO 2: Fallback (Si falla el selector, usamos el botón para encontrar su fila padre)
+    if (!row && btn) {
+        console.warn("Selector por ID falló, intentando buscar fila padre...");
+        row = btn.closest('tr');
+    }
+
+    // Si ambos fallan, ahí sí damos error
     if (!row) {
-        pop_ups.error("No se pudo encontrar la fila para guardar.", "Error UI");
+        console.error("ERROR CRÍTICO: No se pudo localizar la fila.", { idProvided: id });
+        pop_ups.error("Error interno: No se encuentra la fila a editar.");
         return;
     }
 
+    // 2. Recolectar datos
     const inputs = row.querySelectorAll('.editing-input');
-    const dataToUpdate = {};
-    let hasData = false;
+    const updates = {};
+    const metaUpdates = {};
 
-    const numericColumns = ['stock', 'min_stock', 'sale_price', 'receipt_price', 'percentage_gain', 'hard_gain'];
+    if (inputs.length === 0) {
+        console.warn("La fila se encontró pero no tiene inputs .editing-input");
+        pop_ups.warning("No hay datos editables detectados.");
+        return;
+    }
 
     inputs.forEach(input => {
-        const colName = input.dataset.col;
-        let value = input.value.trim();
+        const col = input.dataset.col;
+        const val = input.value;
 
-        if (value === '' && numericColumns.includes(colName.toLowerCase())) {
-            value = 0;
-        }
-        if (value === '' && !(numericColumns.includes(colName.toLowerCase()))) {
-            value = "-";
-        }
+        // Guardamos dato normal
+        updates[col] = val;
 
-        dataToUpdate[colName] = value;
-        hasData = true;
+        // Guardamos metadata de moneda (si hubo cambio)
+        if (input.dataset.newCurrency) {
+            const type = input.dataset.currencyType; // 'sale' o 'buy'
+            const key = (type === 'sale') ? '_meta_currency_sale' : '_meta_currency_buy';
+            metaUpdates[key] = input.dataset.newCurrency;
+        }
     });
 
-    if (!hasData) {
-        pop_ups.error("No se encontraron datos para actualizar.", "Error de Datos");
-        return;
-    }
+    // 3. Bloquear botón visualmente para evitar doble clic
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
 
+    // 4. Enviar al Backend
     try {
-        console.log("Enviando actualización:", { itemId: id, dataToUpdate });
+        const response = await fetch('/api/table/update-row.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: id,
+                data: updates,
+                meta: metaUpdates
+            })
+        });
 
-        const result = await api.updateTableRow(id, dataToUpdate);
+        const result = await response.json();
 
         if (result.success) {
-            pop_ups.success("Fila actualizada correctamente.", "Éxito");
-
-            const idx = allData.findIndex(r => (r.id ?? r.Id ?? r.ID) == id);
-            if(idx !== -1) {
-                Object.assign(allData[idx], dataToUpdate);
-            }
-
-            checkCriticalStatus();
+            pop_ups.success("Guardado correctamente");
             editingRowId = null;
-
-            filterTable();
+            await loadTableData(); // Recargar tabla
         } else {
-            throw new Error(result.message);
+            console.error("Error Backend:", result);
+            pop_ups.error(result.message || "Error al guardar");
+            // Restaurar botón si falló
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
         }
     } catch (error) {
-        pop_ups.error("Error al guardar: " + error.message, "Error");
+        console.error("Error Fetch:", error);
+        pop_ups.error("Error de conexión");
+        // Restaurar botón
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
     }
-};
+}
 
 window.cancelEditRow = (id) => {
     editingRowId = null;
@@ -832,11 +962,17 @@ function openDeleteModal() {
     deleteConfirmInput.value = '';
     confirmDeleteBtn.disabled = true;
     deleteErrorMsg.textContent = '';
+
     deleteModal.classList.remove('hidden');
+
+    // --- NUEVO: Bloquear Scroll del Body ---
+    document.body.style.overflow = 'hidden';
 }
 
 function closeDeleteModal() {
-    if (deleteModal) deleteModal.classList.add('hidden');
+    if (deleteModal)
+        deleteModal.classList.add('hidden');
+        document.body.style.overflow = '';
 }
 
 function handleDeleteConfirmInput() {
@@ -3105,8 +3241,6 @@ function getForm(transactionType){
 }
 
 
-
-// REEMPLAZAR esta función en dashboard.js
 function getReceiptForm() {
     return `<form class="flex-column" style="height: 100%;" method="get" action="/dashboard.php">
                 <h4 class="transaction-error-message hidden" style="color: var(--accent-red); padding: 0 2rem; margin-top: 1.5rem;"></h4>
@@ -3256,10 +3390,11 @@ window.updateCartQty = (index, delta) => {
 };
 
 
-// REEMPLAZA LA FUNCIÓN setupRecomendedColumns COMPLETA
-
+/* =========================================
+   CONFIGURACIÓN RECOMENDADA (COMPLETA)
+   ========================================= */
 async function setupRecomendedColumns() {
-    // 1. Cargar Preferencias Actuales
+    // 1. Cargar Preferencias Actuales desde el Backend
     let prefs = {};
     try {
         const res = await api.getCurrentInventoryPreferences();
@@ -3268,12 +3403,11 @@ async function setupRecomendedColumns() {
             if(res.mapping) columnMapping = res.mapping;
             if(res.features) activeFeatures = res.features;
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("Error cargando prefs:", e); }
 
-    // --- FORMULARIO 1: MAPEO ---
+    // --- A. FORMULARIO DE MAPEO (Identificación de Columnas) ---
     const mapForm = document.getElementById('mapping-columns-form');
     if (mapForm) {
-        // Llenar selects
         const systemFields = [
             { key: 'name', label: 'Nombre del Producto', id: 'map-name-col' },
             { key: 'stock', label: 'Stock Actual', id: 'map-stock-col' },
@@ -3289,7 +3423,6 @@ async function setupRecomendedColumns() {
         `;
 
         systemFields.forEach(field => {
-            // Valor guardado actualmente
             const currentValue = (prefs.mapping && prefs.mapping[field.key]) ? prefs.mapping[field.key] : '';
 
             html += `
@@ -3297,20 +3430,18 @@ async function setupRecomendedColumns() {
                     <div class="db-field-wrapper">
                         <span class="db-field-name">${field.label}</span>
                     </div>
-
                     <div class="arrow-wrapper">
                         <i class="ph ph-arrow-right" style="color: var(--accent-color)"></i>
                     </div>
-
                     <div class="input-wrapper">
                         <select id="${field.id}" class="rustic-select">
                             <option value="">-- Sin Asignar --</option>
                             ${currentTableColumns.map(col => {
-                // Filtramos columnas de sistema que no deberían mapearse
+                // Filtramos columnas internas del sistema para que no molesten
                 if(['id','created_at','min_stock'].includes(col.toLowerCase())) return '';
 
-                const isSelected = (col === currentValue) ? 'selected' : '';
-                // Usamos formatColumnName para que se vea lindo en el dropdown también
+                // Marcamos como seleccionada si coincide con lo guardado
+                const isSelected = (col.toLowerCase() === String(currentValue).toLowerCase()) ? 'selected' : '';
                 return `<option value="${col}" ${isSelected}>${formatColumnName(col)}</option>`;
             }).join('')}
                         </select>
@@ -3320,35 +3451,18 @@ async function setupRecomendedColumns() {
         });
 
         html += `</div>`; // Cierre grid
-
-        // Agregamos el botón de guardar al final
         html += `
             <div class="flex-row" style="justify-content: flex-end; margin-top: 1rem;">
-                <button type="submit" class="btn btn-primary" 
-                    style="
-                        width: auto;
-                        padding: 1px 30px;         /* MENOS ALTO: Bajado de 12px a 8px */
-                        font-size: 0.95rem;        /* Letra apenas más chica para acompañar */
-                        line-height: 1.2;          /* Evita espacios extra arriba/abajo */
-                        font-weight: 700;
-                        letter-spacing: 1px;
-                        white-space: nowrap;
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        border-radius: 5px;
-                        cursor: pointer;
-                    ">
+                <button type="submit" class="btn btn-primary" style="width: auto; padding: 8px 30px;">
                     GUARDAR REFERENCIAS
                 </button>
             </div>
         `;
 
-        // Inyectamos todo el HTML nuevo en el formulario
         mapForm.innerHTML = html;
 
-        // Listener del Submit (Igual que antes, pero ahora los IDs existen gracias al HTML de arriba)
-        mapForm.addEventListener('submit', async (e) => {
+        // Guardar Mapeo
+        mapForm.onsubmit = async (e) => {
             e.preventDefault();
             const newMap = {
                 name: document.getElementById('map-name-col').value,
@@ -3360,72 +3474,189 @@ async function setupRecomendedColumns() {
             if(res.success) {
                 columnMapping = newMap;
                 pop_ups.success("Referencias guardadas correctamente.", "Éxito");
-                await loadTableData(); // Recargar para actualizar iconos y lógica
+                await loadTableData();
             }
-        });
+        };
     }
 
-    // --- B. FEATURES ---
+    // --- B. FEATURES (Alertas y Ganancias) ---
     const featForm = document.getElementById('automated-features-form');
     if (featForm) {
         const chkMin = document.getElementById('feature-min-stock');
         const chkGain = document.getElementById('feature-gain');
-        const inpDefMin = document.getElementById('default-min-stock');
         const radiosGain = document.getElementsByName('gain-type');
 
-        // Restaurar estado
+        // Cargar estado actual de los checkbox
         if(prefs.features) {
             chkMin.checked = !!prefs.features.min_stock;
             chkGain.checked = !!prefs.features.gain;
-            if(prefs.features.min_stock_val) inpDefMin.value = prefs.features.min_stock_val;
             radiosGain.forEach(r => { if(r.value === prefs.features.gain_type) r.checked = true; });
         }
 
-        // Importar Datos Min Stock
+        // Lógica de importación de Min Stock
         const selImport = document.getElementById('import-min-stock-source');
         const btnImport = document.getElementById('btn-import-min-stock');
 
-        currentTableColumns.forEach(col => {
-            if(['id','created_at','min_stock'].includes(col.toLowerCase())) return;
-            const opt = document.createElement('option');
-            opt.value = col;
-            opt.textContent = formatColumnName(col); // Usamos formatColumnName aquí también
-            selImport.appendChild(opt);
-        });
+        if(selImport) {
+            selImport.innerHTML = '<option value="">-- Elegir columna origen --</option>';
+            currentTableColumns.forEach(col => {
+                if(['id','created_at','min_stock'].includes(col.toLowerCase())) return;
+                const opt = document.createElement('option');
+                opt.value = col;
+                opt.textContent = formatColumnName(col);
+                selImport.appendChild(opt);
+            });
+        }
 
-        btnImport.addEventListener('click', async () => {
-            const source = selImport.value;
-            if(!source) return pop_ups.warning("Elegí una columna.");
-            // Usamos la API de gestión de columnas para copiar data
-            const res = await api.manageTableColumn('copy_data', { source: source, target: 'min_stock' });
-            if(res.success) pop_ups.success("Datos importados.");
-        });
+        if(btnImport) {
+            btnImport.onclick = async () => {
+                const source = selImport.value;
+                if(!source) return pop_ups.warning("Elegí una columna.");
+                const res = await api.manageTableColumn('copy_data', { source: source, target: 'min_stock' });
+                if(res.success) pop_ups.success("Datos importados.");
+            };
+        }
 
-        // Guardar
-        featForm.addEventListener('submit', async (e) => {
+        // Guardar Features
+        featForm.onsubmit = async (e) => {
             e.preventDefault();
             const newFeat = {
                 min_stock: chkMin.checked,
-                min_stock_val: inpDefMin.value,
+                min_stock_val: 0,
                 gain: chkGain.checked,
-                gain_type: document.querySelector('input[name="gain-type"]:checked').value
+                gain_type: document.querySelector('input[name="gain-type"]:checked')?.value || 'fixed'
             };
             const res = await api.setCurrentInventoryPreferences({ features: newFeat });
             if(res.success) {
                 activeFeatures = newFeat;
                 pop_ups.success("Configuración aplicada.");
-                await loadTableData(); // Recargar tabla
+                await loadTableData();
             }
-        });
-
-        // Reveal visual
-        const toggle = (chk, id) => {
-            const el = document.getElementById(id);
-            if(chk.checked) el.classList.add('open');
-            chk.addEventListener('change', () => el.classList.toggle('open', chk.checked));
         };
-        toggle(chkMin, 'wrap-min-stock');
-        toggle(chkGain, 'wrap-gain');
+
+        // Lógica visual para desplegar opciones (Toggle)
+        const setupToggle = (chk, id) => {
+            const el = document.getElementById(id);
+            if (!chk || !el) return;
+
+            if(chk.checked) el.classList.add('open');
+            else el.classList.remove('open'); // Asegurar estado inicial correcto
+
+            if (!chk.dataset.toggleAttached) {
+                chk.addEventListener('change', () => el.classList.toggle('open', chk.checked));
+                chk.dataset.toggleAttached = 'true';
+            }
+        };
+        setupToggle(chkMin, 'wrap-min-stock');
+        setupToggle(chkGain, 'wrap-gain');
+    }
+
+    // --- C. CONVERSIÓN DE MONEDA (NUEVO MÓDULO) ---
+    const currencyForm = document.getElementById('currency-conversion-form');
+
+    // Si no existe el div en el HTML, intentamos crearlo dinámicamente al final del contenedor principal
+    if (!currencyForm) {
+        // Fallback por si te olvidaste de agregarlo en dashboard.php
+        const parent = document.getElementById('mapping-columns-form')?.parentNode;
+        if(parent) {
+            const newDiv = document.createElement('div');
+            newDiv.id = 'currency-conversion-form';
+            newDiv.style.marginTop = '20px';
+            parent.appendChild(newDiv);
+            // Volvemos a llamar recursivamente para que ahora sí entre al if de abajo
+            // O simplemente continuamos con la variable newDiv
+        }
+    }
+
+    const targetDiv = document.getElementById('currency-conversion-form');
+    if (targetDiv) {
+        targetDiv.innerHTML = `
+        <div class="rustic-block" style="padding-top: 20px; margin-top: 20px;">
+            <div class="block-header" style="color: var(--accent-color); font-weight: bold; margin-bottom: 10px;">
+                <i class="ph ph-currency-circle-dollar"></i> Conversión Masiva de Precios
+            </div>
+            <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">
+                Esta herramienta convierte <b>toda la columna</b> seleccionada de una moneda a otra (ej: de Pesos a Dólares) usando la cotización Blue del día.
+                <br><small style="color: var(--accent-color);">* Todos los valores de tu tabla se verán afectados.</small>
+            </p>
+            
+            <div class="flex-row" style="gap:15px; align-items:flex-end; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                <div style="flex:1;">
+                    <label class="micro-label" style="display:block; margin-bottom:5px;">Columna a Convertir</label>
+                    <select id="curr-conv-col" class="rustic-select" style="width:100%;">
+                        <option value="sale_price">Precio de Venta</option>
+                        <option value="buy_price">Precio de Compra</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label class="micro-label" style="display:block; margin-bottom:5px;">Moneda Destino</label>
+                    <select id="curr-conv-target" class="rustic-select" style="width:100%;">
+                        <option value="USD">Dólar (USD)</option>
+                        <option value="ARS">Pesos (ARS)</option>
+                    </select>
+                </div>
+                <button id="btn-start-conversion" class="btn btn-primary" style="height:38px; display: flex; align-items: center; gap: 6px;">
+                    <i class="ph ph-arrows-left-right"></i> Convertir
+                </button>
+            </div>
+            <div id="conv-result" style="margin-top:10px; font-size:0.85rem; font-weight:bold; color: var(--accent-green);"></div>
+        </div>
+        `;
+
+        const btnConv = document.getElementById('btn-start-conversion');
+        if (btnConv) {
+            btnConv.onclick = async () => {
+                const colSelect = document.getElementById('curr-conv-col');
+                const targetSelect = document.getElementById('curr-conv-target');
+
+                const colType = colSelect.value;
+                const targetCurr = targetSelect.value;
+
+                // Texto amigable para la confirmación
+                const colName = colSelect.options[colSelect.selectedIndex].text;
+
+                if(!await pop_ups.confirm(
+                    "¿Confirmar Conversión Masiva?",
+
+                    `Vas a convertir TODOS los valores de "${colName}" a ${targetCurr}. Esta acción no se puede deshacer.`
+                )) return;
+
+                btnConv.disabled = true;
+                btnConv.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...';
+
+                try {
+                    const res = await fetch('/api/table/convert-currency.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ column_type: colType, target_currency: targetCurr })
+                    });
+                    const data = await res.json();
+
+                    if(data.success) {
+                        pop_ups.success(data.message || "Conversión finalizada.");
+                        // Mostrar detalle técnico (cotización usada)
+                        let rateText = "";
+                        if(data.rate_used) {
+                            // rate_used puede venir como objeto o float simple según tu PHP
+                            const val = (typeof data.rate_used === 'object') ? data.rate_used.sell : data.rate_used;
+                            rateText = `(Cotización aplicada: $${val})`;
+                        }
+                        document.getElementById('conv-result').textContent = `✅ Conversión exitosa. ${rateText}`;
+
+                        await loadTableData(); // Recargar tabla para ver los cambios
+                    } else {
+                        pop_ups.error(data.message || "Error al convertir.");
+                        document.getElementById('conv-result').textContent = '';
+                    }
+                } catch(e) {
+                    console.error(e);
+                    pop_ups.error("Error de conexión con el servidor.");
+                }
+
+                btnConv.disabled = false;
+                btnConv.innerHTML = '<i class="ph ph-arrows-left-right"></i> Convertir';
+            };
+        }
     }
 }
 
@@ -3904,35 +4135,35 @@ export async function loadTableData() {
 
         if (result && result.success === true) {
             allData = result.data || [];
-
             originalData = [...allData];
-
-
             currentTableColumns = result.columns || [];
 
-            const filterTableColumns = currentTableColumns.filter(
+            const filterableColumns = currentTableColumns.filter(
                 col => col.toLowerCase() !== 'created_at'
             );
 
             document.getElementById('table-title').textContent = result.inventoryName || 'Inventario';
 
             console.log("[loadTableData] Llamando a renderTable...");
-            await renderTable(filterTableColumns, allData);
+            await renderTable(filterableColumns, allData);
+
             console.log("[loadTableData] Llamando a renderColumnList...");
             if(typeof renderColumnList === 'function') renderColumnList();
-            checkCriticalStatus();
-            console.log("[loadTableData] renderColumnList y renderTable llamados...");
 
+            // --- NUEVO: Actualizar Listas de Configuración ---
+            // Esto refresca los dropdowns de "Identificación de Columnas" automáticamente
+            if(typeof setupRecomendedColumns === 'function') {
+                await setupRecomendedColumns();
+            }
+
+            checkCriticalStatus();
+            console.log("[loadTableData] UI actualizada completamente.");
 
             if (searchColumnDropdown) {
                 searchColumnDropdown.innerHTML = `
                   <button class="search-dropdown-item ${selectedSearchColumn === 'all' ? 'active' : ''}" data-column="all">
                     <i class="ph ph-check"></i> Todas las Columnas
                   </button>`;
-
-                const filterableColumns = currentTableColumns.filter(
-                    col => col.toLowerCase() !== 'created_at'
-                );
 
                 filterableColumns.forEach(col => {
                     const item = document.createElement('button');
@@ -3951,15 +4182,70 @@ export async function loadTableData() {
         }
     } catch (error) {
         console.error("🛑 ¡ERROR CRÍTICO CAPTURADO!", error);
-        console.log("Mensaje de error:", error.message);
-        console.log("Pila de llamadas (Stack):", error.stack);
         pop_ups.error(error.message || String(error), "[loadTableData] Error CATCH");
-        pop_ups.warning(`Error al cargar datos: ${error.message} Serás redirigido.`);
         if (error.message.includes('No autorizado')) {
             window.location.href = '/login.php';
         } else {
             window.location.href = '/select-db.php';
         }
+    }
+}
+
+/* =========================================
+   LISTENERS GENERALES (Búsqueda, Paginación, etc.)
+   ========================================= */
+function setupEventListeners() {
+    // 1. Buscador
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value;
+            currentPage = 1; // Volver a primera página al buscar
+            loadTableData();
+        });
+    }
+
+    // 2. Selector de Filas por página
+    const rowCountSelect = document.getElementById('row-count');
+    if (rowCountSelect) {
+        rowCountSelect.addEventListener('change', (e) => {
+            rowsPerPage = parseInt(e.target.value);
+            currentPage = 1;
+            loadTableData();
+        });
+    }
+
+    // 3. Paginación (Anterior / Siguiente)
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                loadTableData();
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            // La validación de si hay más páginas se hace visualmente en updatePagination
+            // pero aquí intentamos avanzar y loadTableData manejará los límites
+            currentPage++;
+            loadTableData();
+        });
+    }
+
+    // 4. Checkbox "Seleccionar Todo" (Si existe en tu HTML estático, aunque renderTable lo suele recrear)
+    const selectAll = document.getElementById('select-all-rows');
+    if (selectAll) {
+        selectAll.addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.row-select');
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+            // Si tenés una función para mostrar el botón de borrar masivo, llámala acá
+            // toggleBulkDeleteButton();
+        });
     }
 }
 
@@ -3971,4 +4257,29 @@ if (document.getElementById('data-table')) {
     document.addEventListener('DOMContentLoaded', init);
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', async () => {
+
+    setupEventListeners();
+
+    const ratePromise = fetch('/api/table/get-rate.php')
+        .then(res => res.json())
+        .catch(err => { console.warn("Fallo cotización", err); return null; });
+
+    try {
+        const rateData = await ratePromise;
+
+        if(rateData && rateData.success && rateData.sell) {
+            currentDollarRate = parseFloat(rateData.sell);
+            console.log(`Cotización (Cached): $${currentDollarRate}`);
+        }
+    } catch(e) {
+        console.error("Error crítico obteniendo cotización:", e);
+    }
+
+    await loadTableData();
+
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});

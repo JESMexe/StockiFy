@@ -3,13 +3,13 @@ header('Content-Type: application/json');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-use App\Models\ProviderModel;
+use App\Models\CustomerModel;
 
 try {
     $root = dirname(__DIR__, 3);
     require_once $root . '/vendor/autoload.php';
     require_once $root . '/src/helpers/auth_helper.php';
-    require_once $root . '/src/Models/ProviderModel.php';
+    require_once $root . '/src/Models/CustomerModel.php';
 
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
@@ -20,8 +20,8 @@ try {
         echo json_encode(['success'=>false, 'message'=>'Datos incompletos']); exit;
     }
 
-    $model = new ProviderModel();
-    $success = $model->updateProvider($input['id'], $user['id'], $input);
+    $model = new CustomerModel();
+    $success = $model->updateCustomer($input['id'], $user['id'], $input);
 
     echo json_encode(['success' => $success]);
 

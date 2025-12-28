@@ -59,7 +59,7 @@ export class AnalyticsModule {
                     </div>
 
                     <div class="top-list-card">
-                        <h4>🏆 Productos Más Vendidos</h4>
+                        <h4><i class="ph-bold ph-trophy"></i> Productos Más Vendidos</h4>
                         <div id="top-products-list" style="margin-top:15px;">Cargando...</div>
                     </div>
                 </div>

@@ -14,16 +14,10 @@ class PurchaseModel {
         $this->db = Database::getInstance();
     }
 
-    /**
-     * Crea una compra. Puede ser una compra de inventario (con items)
-     * o un gasto rápido (sin items, con categoría/notas).
-     */
     public function createPurchase($userId, $data) {
         try {
             $this->db->beginTransaction();
 
-            // 1. Insertar Cabecera (purchases)
-            // El proveedor puede ser null. Category y notes son opcionales.
             $stmt = $this->db->prepare("
                 INSERT INTO purchases (user_id, provider_id, total, category, notes, created_at) 
                 VALUES (:user, :prov, :total, :cat, :notes, NOW())
@@ -43,7 +37,6 @@ class PurchaseModel {
 
             $purchaseId = $this->db->lastInsertId();
 
-            // 2. Insertar Detalles (Si existen) - Para compras de inventario
             if (!empty($data['items']) && is_array($data['items'])) {
                 $stmtDetail = $this->db->prepare("
                     INSERT INTO purchase_details (purchase_id, product_id, product_name, quantity, unit_price, subtotal)
@@ -53,13 +46,12 @@ class PurchaseModel {
                 foreach ($data['items'] as $item) {
                     $stmtDetail->execute([
                         ':pid' => $purchaseId,
-                        ':prod_id' => $item['id'], // ID original del producto (puede ser numérico o string según tu mapeo)
+                        ':prod_id' => $item['id'],
                         ':name' => $item['nombre_producto'],
                         ':qty' => $item['cantidad'],
                         ':price' => $item['precio_unitario'],
                         ':subtotal' => $item['subtotal']
                     ]);
-                    // AQUÍ A FUTURO: Lógica para aumentar stock en la tabla de inventario
                 }
             }
 
@@ -69,6 +61,81 @@ class PurchaseModel {
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log("Purchase Creation Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // --- NUEVO: Actualizar ---
+    public function updatePurchase($id, $userId, $data): bool
+    {
+        try {
+            // Si es gasto rápido, permitimos cambiar el total y categoría.
+            // Si es compra de inventario, el total suele ser calculado, pero aquí permitiremos editar la cabecera.
+
+            $sql = "UPDATE purchases SET 
+                    provider_id = :prov, 
+                    category = :cat, 
+                    notes = :notes,
+                    created_at = :date
+                    WHERE id = :id AND user_id = :user";
+
+            // Si viene el total (solo para gastos rápidos usualmente), lo agregamos al SQL
+            if (isset($data['total'])) {
+                $sql = "UPDATE purchases SET 
+                        provider_id = :prov, 
+                        category = :cat, 
+                        notes = :notes,
+                        created_at = :date,
+                        total = :total
+                        WHERE id = :id AND user_id = :user";
+            }
+
+            $stmt = $this->db->prepare($sql);
+
+            $params = [
+                ':id'    => $id,
+                ':user'  => $userId,
+                ':prov'  => !empty($data['provider_id']) ? $data['provider_id'] : null,
+                ':cat'   => !empty($data['category']) ? $data['category'] : null,
+                ':notes' => !empty($data['notes']) ? $data['notes'] : null,
+                ':date'  => !empty($data['created_at']) ? $data['created_at'] : date('Y-m-d H:i:s')
+            ];
+
+            if (isset($data['total'])) {
+                $params[':total'] = $data['total'];
+            }
+
+            return $stmt->execute($params);
+
+        } catch (Exception $e) {
+            error_log("Update Purchase Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // --- NUEVO: Eliminar ---
+    public function deletePurchase($id, $userId): bool
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Borrar detalles primero (Foreign Key cascade debería hacerlo, pero aseguramos)
+            $stmtDet = $this->db->prepare("DELETE FROM purchase_details WHERE purchase_id = :id");
+            $stmtDet->execute([':id' => $id]);
+
+            // 2. Borrar cabecera verificando usuario
+            $stmt = $this->db->prepare("DELETE FROM purchases WHERE id = :id AND user_id = :user");
+            $stmt->execute([':id' => $id, ':user' => $userId]);
+
+            if ($stmt->rowCount() > 0) {
+                $this->db->commit();
+                return true;
+            } else {
+                $this->db->rollBack();
+                return false;
+            }
+        } catch (Exception $e) {
+            $this->db->rollBack();
             return false;
         }
     }
@@ -97,7 +164,6 @@ class PurchaseModel {
     public function getDetails($purchaseId, $userId): ?array
     {
         try {
-            // Cabecera
             $stmt = $this->db->prepare("
                 SELECT p.*, pr.full_name as provider_name 
                 FROM purchases p
@@ -109,7 +175,6 @@ class PurchaseModel {
 
             if (!$purchase) return null;
 
-            // Items
             $stmtDet = $this->db->prepare("SELECT * FROM purchase_details WHERE purchase_id = :id");
             $stmtDet->execute([':id' => $purchaseId]);
             $items = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
@@ -117,28 +182,6 @@ class PurchaseModel {
             return ['purchase' => $purchase, 'items' => $items];
         } catch (Exception $e) {
             return null;
-        }
-    }
-
-    public function updateProvider($purchaseId, $userId, $newProviderId): bool
-    {
-        try {
-            // Si el ID es "null" string o vacío, lo guardamos como NULL SQL
-            $provIdToSave = (!empty($newProviderId) && $newProviderId !== 'null') ? $newProviderId : null;
-
-            $stmt = $this->db->prepare("
-                UPDATE purchases SET provider_id = :provId 
-                WHERE id = :purchId AND user_id = :userId
-            ");
-            $stmt->execute([
-                ':provId' => $provIdToSave,
-                ':purchId' => $purchaseId,
-                ':userId' => $userId
-            ]);
-            return $stmt->rowCount() > 0; // Devuelve true si se actualizó algo
-        } catch (Exception $e) {
-            error_log("Update Provider Error: " . $e->getMessage());
-            return false;
         }
     }
 }

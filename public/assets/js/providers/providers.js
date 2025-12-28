@@ -1,19 +1,21 @@
 ﻿/**
  * public/assets/js/providers/providers.js
- * Módulo de Gestión de Proveedores.
+ * Módulo de Gestión de Proveedores (CRUD + Sorting + UI Mejorada)
  */
-import { getProviderList, createProviderNew, getProviderDetails } from '../api.js';
+import { getProviderList, getProviderDetails } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
 
 export class ProviderModule {
     constructor() {
         this.containerId = 'providers';
         this.isInitialized = false;
+        this.editingId = null;
+        this.currentSortOrder = 'DESC'; // Estado inicial del ordenamiento
     }
 
     init() {
         if (this.isInitialized) {
-            this.loadProviders();
+            this.loadProviders(this.currentSortOrder);
             return;
         }
         const container = document.getElementById(this.containerId);
@@ -21,7 +23,7 @@ export class ProviderModule {
 
         container.innerHTML = this.renderBaseStructure();
         this.attachEvents();
-        this.loadProviders();
+        this.loadProviders(this.currentSortOrder);
         this.isInitialized = true;
     }
 
@@ -33,12 +35,10 @@ export class ProviderModule {
                 #create-provider-modal .modal-content, 
                 #detail-provider-modal .modal-content {
                     background-color: #ffffff !important;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                    box-shadow: 8px 8px 0px var(--accent-color);
                     border: 1px solid #ddd;
                     border-radius: 8px;
                 }
-
-                .prov-col-accent { color: #f57c00; font-weight: bold; } /* Orange accent */
 
                 .form-group { margin-bottom: 15px; }
                 .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; font-size: 0.9rem; }
@@ -47,23 +47,28 @@ export class ProviderModule {
                 .form-col { flex: 1; }
 
                 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-                .detail-item { background: #fff3e0; padding: 10px; border-radius: 4px; border: 1px solid #ffe0b2; }
-                .detail-label { display: block; font-size: 0.8rem; color: #e65100; margin-bottom: 2px; }
+                .detail-item { background: var(--accent-color-quat-opacity); padding: 10px; border-radius: 4px; border: 1px solid var(--accent-color); }
+                .detail-label { display: block; font-size: 0.8rem; color: var(--accent-color); margin-bottom: 2px; }
                 .detail-value { font-weight: 600; color: #333; }
+                
+                /* Estilos específicos para este módulo inyectados aquí o en CSS global */
+                .btn-icon-group { display: flex; gap: 8px; justify-content: center; }
             </style>
 
             <div class="providers-layout">
                 <div class="table-header">
                     <h2>Proveedores</h2>
                     <div class="table-controls">
-                        <button id="prov-sort-btn" class="btn btn-secondary"><i class="ph ph-sort-ascending"></i></button>
+                        <button id="prov-sort-btn" class="btn btn-secondary" title="Ordenar por ID (Mayor/Menor)">
+                            <i class="ph ph-sort-ascending" id="sort-icon"></i>
+                        </button>
                         <button id="prov-create-btn" class="btn btn-primary">+ Nuevo Proveedor</button>
                     </div>
                 </div>
 
                 <div class="table-wrapper" style="flex-grow:1; overflow-y:auto;">
                     <table id="prov-table" style="width:100%; border-collapse:collapse;">
-                        <thead style="position:sticky; top:0; background:white; z-index:10; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                        <thead style="position:sticky; top:0; background:white; z-index:10; box-shadow:0 1px 2px var(--accent-color);">
                             <tr>
                                 <th style="padding:12px; text-align:left;">Nombre</th>
                                 <th style="padding:12px; text-align:left;">Contacto</th>
@@ -78,32 +83,32 @@ export class ProviderModule {
                 <div id="create-provider-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1000;">
                     <div class="modal-content" style="width: 600px; max-width: 95%;">
                         <div class="modal-header">
-                            <h3>Nuevo Proveedor</h3>
+                            <h3 id="modal-prov-title">Nuevo Proveedor</h3>
                             <button class="modal-close-btn" id="close-prov-modal">&times;</button>
                         </div>
                         <div class="modal-body" style="padding: 1.5rem;">
                             <form id="create-prov-form">
                                 <div class="form-group">
                                     <label>Nombre / Razón Social (Obligatorio)</label>
-                                    <input type="text" id="prov-name" class="form-input" required>
+                                    <input type="text" id="prov-name" class="form-input" required placeholder="Ej: Distribuidora Central S.A.">
                                 </div>
                                 <div class="form-row">
                                     <div class="form-col form-group">
                                         <label>Whatsapp / Tel</label>
-                                        <input type="text" id="prov-phone" class="form-input">
+                                        <input type="text" id="prov-phone" class="form-input" placeholder="Ej: 11 5555 1234">
                                     </div>
                                     <div class="form-col form-group">
                                         <label>CUIT / Tax ID</label>
-                                        <input type="text" id="prov-tax" class="form-input">
+                                        <input type="text" id="prov-tax" class="form-input" placeholder="Ej: 20-12345678-9">
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label>Email</label>
-                                    <input type="email" id="prov-email" class="form-input">
+                                    <input type="email" id="prov-email" class="form-input" placeholder="ventas@proveedor.com">
                                 </div>
                                 <div class="form-group">
                                     <label>Dirección</label>
-                                    <input type="text" id="prov-address" class="form-input">
+                                    <input type="text" id="prov-address" class="form-input" placeholder="Ej: Av. Corrientes 1234, CABA">
                                 </div>
                                 <div style="margin-top: 2rem; text-align: right;">
                                     <button type="submit" id="submit-prov-btn" class="btn btn-primary">Guardar Proveedor</button>
@@ -127,68 +132,176 @@ export class ProviderModule {
     }
 
     attachEvents() {
+        // --- EVENTO ORDENAR ---
+        const sortBtn = document.getElementById('prov-sort-btn');
+        if(sortBtn) {
+            sortBtn.addEventListener('click', () => {
+                // Alternar orden
+                this.currentSortOrder = (this.currentSortOrder === 'DESC') ? 'ASC' : 'DESC';
+
+                // Actualizar icono visualmente
+                const icon = document.getElementById('sort-icon');
+                if(this.currentSortOrder === 'ASC') {
+                    icon.classList.replace('ph-sort-ascending', 'ph-sort-descending');
+                } else {
+                    icon.classList.replace('ph-sort-descending', 'ph-sort-ascending');
+                }
+
+                // Recargar lista
+                this.loadProviders(this.currentSortOrder);
+            });
+        }
+
+        // Abrir Modal Crear
         document.getElementById('prov-create-btn')?.addEventListener('click', () => {
+            this.editingId = null;
+            document.getElementById('modal-prov-title').textContent = "Nuevo Proveedor";
+            document.getElementById('submit-prov-btn').textContent = "Guardar Proveedor";
             document.getElementById('create-prov-form').reset();
-            const m = document.getElementById('create-provider-modal'); m.classList.remove('hidden'); m.style.display='flex';
+            const m = document.getElementById('create-provider-modal');
+            m.classList.remove('hidden');
+            m.style.display='flex';
         });
+
         document.getElementById('close-prov-modal')?.addEventListener('click', () => {
             const m = document.getElementById('create-provider-modal'); m.classList.add('hidden'); m.style.display='none';
         });
-        document.getElementById('create-prov-form')?.addEventListener('submit', (e) => { e.preventDefault(); this.submitProvider(); });
         document.getElementById('close-detail-prov-modal')?.addEventListener('click', () => {
             const m = document.getElementById('detail-provider-modal'); m.classList.add('hidden'); m.style.display='none';
         });
-        const sortBtn = document.getElementById('prov-sort-btn');
-        if(sortBtn) sortBtn.addEventListener('click', () => this.loadProviders());
+
+        document.getElementById('create-prov-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleFormSubmit();
+        });
     }
 
-    async submitProvider() {
-        const btn = document.getElementById('submit-prov-btn'); btn.disabled = true; btn.textContent = "Guardando...";
+    async handleFormSubmit() {
+        const btn = document.getElementById('submit-prov-btn');
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = "Procesando...";
+
         const data = {
+            id: this.editingId,
             name: document.getElementById('prov-name').value,
             phone: document.getElementById('prov-phone').value,
             tax_id: document.getElementById('prov-tax').value,
             email: document.getElementById('prov-email').value,
             address: document.getElementById('prov-address').value
         };
+
+        const endpoint = this.editingId ? '/api/providers/update.php' : '/api/providers/create.php';
+
         try {
-            const response = await createProviderNew(data);
-            if (response.success) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+
+            if (result.success) {
                 document.getElementById('create-provider-modal').classList.add('hidden');
                 document.getElementById('create-provider-modal').style.display='none';
-                await this.loadProviders();
-                pop_ups.success('Proveedor creado');
+                await this.loadProviders(this.currentSortOrder); // Mantenemos el orden actual
+                pop_ups.success(this.editingId ? 'Proveedor actualizado' : 'Proveedor creado');
+            } else {
+                pop_ups.error(result.message || "Error en la operación");
             }
-        } catch (e) { console.error(e); }
-        finally { btn.disabled = false; btn.textContent = "Guardar Proveedor"; }
+        } catch (e) { console.error(e); pop_ups.error("Error de conexión"); }
+        finally { btn.disabled = false; btn.textContent = originalText; }
     }
 
-    async loadProviders(order='desc') {
+    async loadProviders(order) {
         const tbody = document.getElementById('prov-list-body');
         if(!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:20px;">Cargando...</td></tr>';
+
         try {
             const data = await getProviderList(order);
-            if (!data.success || !data.providers.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:2rem; color:#999;">Sin proveedores</td></tr>'; return; }
+            if (!data.success || !data.providers.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center" style="padding:3rem; color:#888;">
+                            <i class="ph ph-truck" style="font-size:2rem; margin-bottom:10px;"></i>
+                            <p>No hay proveedores registrados.</p>
+                        </td>
+                    </tr>`;
+                return;
+            }
 
-            tbody.innerHTML = data.providers.map(p => `
+            tbody.innerHTML = data.providers.map(p => {
+                const pJson = JSON.stringify(p).replace(/"/g, '&quot;');
+
+                return `
                 <tr style="border-bottom:1px solid #eee;">
                     <td style="padding:12px;">
-                        <div style="font-weight:600;">${p.full_name}</div>
+                        <div style="font-weight:600; color:#333;">${p.full_name}</div>
                         <small style="color:#888;">ID: ${p.id}</small>
                     </td>
                     <td style="padding:12px;">
-                        ${p.phone ? `<div><i class="ph ph-whatsapp-logo" style="color:green;"></i> ${p.phone}</div>` : ''}
-                        ${p.email ? `<small style="color:#666;">${p.email}</small>` : ''}
+                        ${p.phone ? `<div style="display:flex; align-items:center; gap:5px;"><i class="ph-fill ph-chats" style="color:var(--accent-color);"></i> ${p.phone}</div>` : ''}
+                        ${p.email ? `<small style="color:#666; display:block; margin-top:2px;">${p.email}</small>` : ''}
                     </td>
-                    <td style="padding:12px;">${p.address || '-'}</td>
+                    <td style="padding:12px; color:#555;">${p.address || '-'}</td>
                     <td style="padding:12px; text-align:center;">
-                        <button class="btn btn-secondary btn-sm view-prov" data-id="${p.id}"><i class="ph ph-eye"></i></button>
+                        <div class="btn-icon-group">
+                            <button class="action-btn view" data-id="${p.id}" title="Ver Detalles"><i class="ph ph-eye"></i></button>
+                            <button class="action-btn edit" data-provider="${pJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                            <button class="action-btn delete" data-id="${p.id}" title="Eliminar"><i class="ph ph-trash"></i></button>
+                        </div>
                     </td>
                 </tr>
-            `).join('');
-            tbody.querySelectorAll('.view-prov').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
-        } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:red">Error</td></tr>'; }
+            `}).join('');
+
+            // Asignar eventos
+            tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
+            tbody.querySelectorAll('.edit').forEach(b => {
+                b.addEventListener('click', () => {
+                    const data = JSON.parse(b.dataset.provider);
+                    this.openEditModal(data);
+                });
+            });
+            tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => this.deleteProvider(b.dataset.id)));
+
+        } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:red">Error al cargar</td></tr>'; }
+    }
+
+    openEditModal(p) {
+        this.editingId = p.id;
+        document.getElementById('modal-prov-title').textContent = "Editar Proveedor";
+        document.getElementById('submit-prov-btn').textContent = "Guardar Cambios";
+
+        document.getElementById('prov-name').value = p.full_name || '';
+        document.getElementById('prov-phone').value = p.phone || '';
+        document.getElementById('prov-tax').value = p.tax_id || '';
+        document.getElementById('prov-email').value = p.email || '';
+        document.getElementById('prov-address').value = p.address || '';
+
+        const m = document.getElementById('create-provider-modal');
+        m.classList.remove('hidden');
+        m.style.display='flex';
+    }
+
+    async deleteProvider(id) {
+        const confirm = await pop_ups.confirm("Eliminar Proveedor", "¿Estás seguro? Si tiene historial de compras, no se podrá borrar.");
+        if(!confirm) return;
+
+        try {
+            const response = await fetch('/api/providers/delete.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const res = await response.json();
+            if(res.success) {
+                pop_ups.success("Proveedor eliminado");
+                this.loadProviders(this.currentSortOrder);
+            } else {
+                pop_ups.error(res.message || "No se pudo eliminar");
+            }
+        } catch(e) { pop_ups.error("Error de conexión"); }
     }
 
     async showDetails(id) {
@@ -202,7 +315,7 @@ export class ProviderModule {
                 const p = data.provider;
                 c.innerHTML = `
                     <div style="text-align:center; margin-bottom:1.5rem;">
-                        <div style="width:60px; height:60px; background:#fff3e0; color:#e65100; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 10px auto;">
+                        <div style="width:60px; height:60px; background: var(--accent-color-quat-opacity);  ; color: var(--accent-color); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 10px auto;">
                             <i class="ph ph-truck"></i>
                         </div>
                         <h2 style="margin:0;">${p.full_name}</h2>

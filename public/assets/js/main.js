@@ -87,6 +87,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(cycleText, 2200);
     initEntranceAnimations();
 
+    setInterval(cycleText, 2200);
+    initEntranceAnimations();
+
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    if (deleteModal && deleteModal.parentElement !== document.body) {
+        document.body.appendChild(deleteModal);
+    }
+
     const isLoggedIn = await api.checkSessionStatus();
 
     if (isLoggedIn) {

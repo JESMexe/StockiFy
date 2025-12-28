@@ -3,29 +3,32 @@ header('Content-Type: application/json');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-use App\Models\ProviderModel;
+use App\Models\SalesModel;
 
 try {
     $root = dirname(__DIR__, 3);
     require_once $root . '/vendor/autoload.php';
     require_once $root . '/src/helpers/auth_helper.php';
-    require_once $root . '/src/Models/ProviderModel.php';
+    require_once $root . '/src/Models/SalesModel.php';
 
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
 
     $input = json_decode(file_get_contents('php://input'), true);
 
-    if (empty($input['id']) || empty($input['name'])) {
-        echo json_encode(['success'=>false, 'message'=>'Datos incompletos']); exit;
+    if (empty($input['id'])) {
+        echo json_encode(['success'=>false, 'message'=>'ID faltante']); exit;
     }
 
-    $model = new ProviderModel();
-    $success = $model->updateProvider($input['id'], $user['id'], $input);
+    $model = new SalesModel();
+    $success = $model->deleteSale($input['id'], $user['id']);
 
-    echo json_encode(['success' => $success]);
+    if($success) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'No se pudo eliminar la venta.']);
+    }
 
 } catch (Throwable $e) {
-    http_response_code(500);
     echo json_encode(['success'=>false, 'message'=>$e->getMessage()]);
 }

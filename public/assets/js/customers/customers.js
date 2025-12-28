@@ -1,6 +1,6 @@
 ﻿/**
  * public/assets/js/customers/customers.js
- * Módulo Refactorizado: Usa api.js
+ * Módulo de Clientes (CRUD Completo + UI Mejorada)
  */
 import * as api from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
@@ -9,11 +9,13 @@ export class CustomerModule {
     constructor() {
         this.containerId = 'customers';
         this.isInitialized = false;
+        this.editingId = null;
+        this.currentSortOrder = 'DESC';
     }
 
     init() {
         if (this.isInitialized) {
-            this.loadCustomers();
+            this.loadCustomers(this.currentSortOrder);
             return;
         }
         const container = document.getElementById(this.containerId);
@@ -21,7 +23,7 @@ export class CustomerModule {
 
         container.innerHTML = this.renderBaseStructure();
         this.attachEvents();
-        this.loadCustomers();
+        this.loadCustomers(this.currentSortOrder);
         this.isInitialized = true;
     }
 
@@ -32,7 +34,7 @@ export class CustomerModule {
                 #create-customer-modal .modal-content, 
                 #detail-customer-modal .modal-content {
                     background-color: #ffffff !important;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                    box-shadow: 8px 8px 0px var(--accent-color);
                     border: 1px solid #ddd;
                     border-radius: 8px;
                 }
@@ -41,26 +43,43 @@ export class CustomerModule {
                 .form-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
                 .form-row { display: flex; gap: 15px; }
                 .form-col { flex: 1; }
+                
+                /* Detalles Estilizados */
                 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-                .detail-item { background: #f9fafb; padding: 10px; border-radius: 4px; border: 1px solid #eee; }
-                .detail-label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 2px; }
+                .detail-item { 
+                    background-color: var(--accent-color-quat-opacity); 
+                    padding: 10px; 
+                    border-radius: 4px; 
+                    border: 1px solid var(--accent-color); 
+                }
+                .detail-label { 
+                    display: block; 
+                    font-size: 0.8rem; 
+                    color: var(--accent-color); 
+                    margin-bottom: 2px; 
+                }
                 .detail-value { font-weight: 600; color: #333; }
+                
+                /* Grupo de botones de acción */
+                .btn-icon-group { display: flex; gap: 8px; justify-content: center; }
             </style>
 
             <div class="customers-layout">
                 <div class="table-header">
                     <h2>Clientes</h2>
                     <div class="table-controls">
-                        <button id="customers-sort-btn" class="btn btn-secondary" title="Ordenar"><i class="ph ph-sort-ascending"></i></button>
+                        <button id="customers-sort-btn" class="btn btn-secondary" title="Ordenar por ID (Mayor/Menor)">
+                            <i class="ph ph-sort-ascending" id="cust-sort-icon"></i>
+                        </button>
                         <button id="customers-create-btn" class="btn btn-primary">+ Nuevo Cliente</button>
                     </div>
                 </div>
                 <div class="table-wrapper" style="flex-grow:1; overflow-y:auto;">
                     <table id="customers-table" style="width:100%; border-collapse:collapse;">
-                        <thead style="position:sticky; top:0; background:white; z-index:10; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                        <thead style="position:sticky; top:0; background:white; z-index:10; box-shadow:0 1px 2px var(--accent-color);">
                             <tr>
                                 <th style="padding:12px; text-align:left;">Nombre</th>
-                                <th style="padding:12px; text-align:left;">Whatsapp / Email</th>
+                                <th style="padding:12px; text-align:left;">Contacto</th>
                                 <th style="padding:12px; text-align:left;">Ubicación</th>
                                 <th style="padding:12px; text-align:center;">Acciones</th>
                             </tr>
@@ -68,10 +87,11 @@ export class CustomerModule {
                         <tbody id="customers-list-body"></tbody>
                     </table>
                 </div>
+                
                 <div id="create-customer-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1000;">
                     <div class="modal-content" style="width: 600px; max-width: 95%;">
                         <div class="modal-header">
-                            <h3>Nuevo Cliente</h3>
+                            <h3 id="modal-cust-title">Nuevo Cliente</h3>
                             <button class="modal-close-btn" id="close-customer-modal">&times;</button>
                         </div>
                         <div class="modal-body" style="padding: 1.5rem;">
@@ -109,6 +129,7 @@ export class CustomerModule {
                         </div>
                     </div>
                 </div>
+                
                 <div id="detail-customer-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1001;">
                     <div class="modal-content" style="width: 500px; max-width: 90%;">
                         <div class="modal-header">
@@ -123,20 +144,35 @@ export class CustomerModule {
     }
 
     attachEvents() {
+        // --- Ordenamiento ---
+        const sortBtn = document.getElementById('customers-sort-btn');
+        if(sortBtn) {
+            sortBtn.addEventListener('click', () => {
+                this.currentSortOrder = (this.currentSortOrder === 'DESC') ? 'ASC' : 'DESC';
+                const icon = document.getElementById('cust-sort-icon');
+                if(this.currentSortOrder === 'ASC') {
+                    icon.classList.replace('ph-sort-ascending', 'ph-sort-descending');
+                } else {
+                    icon.classList.replace('ph-sort-descending', 'ph-sort-ascending');
+                }
+                this.loadCustomers(this.currentSortOrder);
+            });
+        }
+
+        // --- Botón Nuevo Cliente ---
         document.getElementById('customers-create-btn')?.addEventListener('click', () => {
+            this.editingId = null;
+            document.getElementById('modal-cust-title').textContent = "Nuevo Cliente";
+            document.getElementById('submit-customer-btn').textContent = "Guardar Cliente";
             document.getElementById('create-customer-form').reset();
             const m = document.getElementById('create-customer-modal');
             m.classList.remove('hidden'); m.style.display='flex';
         });
 
+        // --- Cerrar Modales ---
         document.getElementById('close-customer-modal')?.addEventListener('click', () => {
             const m = document.getElementById('create-customer-modal');
             m.classList.add('hidden'); m.style.display='none';
-        });
-
-        document.getElementById('create-customer-form')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.submitCustomer();
         });
 
         document.getElementById('close-detail-cust-modal')?.addEventListener('click', () => {
@@ -144,82 +180,160 @@ export class CustomerModule {
             m.classList.add('hidden'); m.style.display='none';
         });
 
-        const sortBtn = document.getElementById('customers-sort-btn');
-        if(sortBtn) sortBtn.addEventListener('click', () => this.loadCustomers());
+        // --- Submit ---
+        document.getElementById('create-customer-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleFormSubmit();
+        });
     }
 
-    async submitCustomer() {
+    async handleFormSubmit() {
         const btn = document.getElementById('submit-customer-btn');
         btn.disabled = true;
-        btn.textContent = "Guardando...";
+        const originalText = btn.textContent;
+        btn.textContent = "Procesando...";
 
         const data = {
+            id: this.editingId,
             name: document.getElementById('cust-name').value,
             phone: document.getElementById('cust-phone').value,
             dni: document.getElementById('cust-dni').value,
             email: document.getElementById('cust-email').value,
             address: document.getElementById('cust-address').value,
-            birth_date: document.getElementById('cust-birth').value
+            birth_date: document.getElementById('cust-birth').value,
+            currency: document.getElementById('pay-currency').value,
         };
 
-        try {
-            // USAMOS LA API CENTRALIZADA
-            const response = await api.createCustomerNew(data);
+        // Decidimos endpoint
+        const endpoint = this.editingId ? '/api/customers/update.php' : '/api/customers/create.php';
 
-            if (response.success) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+
+            if (result.success) {
                 document.getElementById('create-customer-modal').classList.add('hidden');
                 document.getElementById('create-customer-modal').style.display='none';
-                await this.loadCustomers();
-                pop_ups.success('Cliente creado correctamente');
+                await this.loadCustomers(this.currentSortOrder);
+                pop_ups.success(this.editingId ? 'Cliente actualizado' : 'Cliente creado');
+            } else {
+                pop_ups.error(result.message || 'Error en la operación');
             }
         } catch (e) {
-            console.error(e); // El error ya lo maneja api.js (pop_ups) pero lo logueamos
+            console.error(e);
+            pop_ups.error('Error de conexión');
         } finally {
             btn.disabled = false;
-            btn.textContent = "Guardar Cliente";
+            btn.textContent = originalText;
         }
     }
 
-    async loadCustomers(order='desc') {
+    async loadCustomers(order) {
         const tbody = document.getElementById('customers-list-body');
         if(!tbody) return;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
 
         try {
-            // USAMOS LA API CENTRALIZADA
-            const data = await api.getCustomerList(order);
+            // Nota: Aquí llamamos a la API pero pasamos el orden manualmente si la función lo soporta,
+            // o usamos la API directa de clientes si getCustomerList no admite parámetros aún.
+            // Asumiremos que api.getCustomerList acepta 'order' o haremos el fetch directo para asegurar.
+
+            // Opción Fetch directo para asegurar el ordenamiento:
+            const response = await fetch('/api/customers/get-all.php?order=' + order);
+            const data = await response.json();
 
             if (!data.success || !data.customers.length) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:2rem; color:#999;">No hay clientes registrados</td></tr>';
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center" style="padding:3rem; color:#888;">
+                            <i class="ph ph-users" style="font-size:2rem; margin-bottom:10px;"></i>
+                            <p>No hay clientes registrados.</p>
+                        </td>
+                    </tr>`;
                 return;
             }
 
-            tbody.innerHTML = data.customers.map(c => `
+            tbody.innerHTML = data.customers.map(c => {
+                const cJson = JSON.stringify(c).replace(/"/g, '&quot;');
+
+                return `
                 <tr style="border-bottom:1px solid #eee;">
                     <td style="padding:12px;">
-                        <div style="font-weight:600;">${c.full_name}</div>
+                        <div style="font-weight:600; color:#333;">${c.full_name}</div>
                         <small style="color:#888;">ID: ${c.id}</small>
                     </td>
                     <td style="padding:12px;">
-                        ${c.phone ? `<div><i class="ph ph-whatsapp-logo" style="color:green;"></i> ${c.phone}</div>` : ''}
-                        ${c.email ? `<small style="color:#666;">${c.email}</small>` : ''}
+                        ${c.phone ? `<div style="display:flex; align-items:center; gap:5px;"><i class="ph-fill ph-chats" style="color:var(--accent-color);"></i> ${c.phone}</div>` : ''}
+                        ${c.email ? `<small style="color:#666; display:block; margin-top:2px;">${c.email}</small>` : ''}
                         ${!c.phone && !c.email ? '<span style="color:#ccc;">-</span>' : ''}
                     </td>
                     <td style="padding:12px;">${c.address || '<span style="color:#ccc;">-</span>'}</td>
                     <td style="padding:12px; text-align:center;">
-                        <button class="btn btn-secondary btn-sm view-cust" data-id="${c.id}"><i class="ph ph-eye"></i></button>
+                         <div class="btn-icon-group">
+                            <button class="action-btn view" data-id="${c.id}" title="Ver Detalles"><i class="ph ph-eye"></i></button>
+                            <button class="action-btn edit" data-customer="${cJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                            <button class="action-btn delete" data-id="${c.id}" title="Eliminar"><i class="ph ph-trash"></i></button>
+                        </div>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
 
-            tbody.querySelectorAll('.view-cust').forEach(b => {
-                b.addEventListener('click', () => this.showDetails(b.dataset.id));
+            // Listeners
+            tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
+            tbody.querySelectorAll('.edit').forEach(b => {
+                b.addEventListener('click', () => {
+                    const data = JSON.parse(b.dataset.customer);
+                    this.openEditModal(data);
+                });
             });
+            tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => this.deleteCustomer(b.dataset.id)));
 
         } catch (e) {
             console.error(e);
             tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:red">Error al cargar</td></tr>';
         }
+    }
+
+    openEditModal(c) {
+        this.editingId = c.id;
+        document.getElementById('modal-cust-title').textContent = "Editar Cliente";
+        document.getElementById('submit-customer-btn').textContent = "Guardar Cambios";
+
+        document.getElementById('cust-name').value = c.full_name || '';
+        document.getElementById('cust-phone').value = c.phone || '';
+        document.getElementById('cust-dni').value = c.tax_id || '';
+        document.getElementById('cust-email').value = c.email || '';
+        document.getElementById('cust-address').value = c.address || '';
+        document.getElementById('cust-birth').value = c.birth_date || '';
+        document.getElementById('pay-currency').value = method.currency || 'ARS';
+
+        const m = document.getElementById('create-customer-modal');
+        m.classList.remove('hidden');
+        m.style.display='flex';
+    }
+
+    async deleteCustomer(id) {
+        const confirm = await pop_ups.confirm("Eliminar Cliente", "¿Estás seguro? Si tiene ventas registradas, no se podrá borrar.");
+        if(!confirm) return;
+
+        try {
+            const response = await fetch('/api/customers/delete.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const res = await response.json();
+            if(res.success) {
+                pop_ups.success("Cliente eliminado");
+                this.loadCustomers(this.currentSortOrder);
+            } else {
+                pop_ups.error(res.message || "No se pudo eliminar");
+            }
+        } catch(e) { pop_ups.error("Error de conexión"); }
     }
 
     async showDetails(id) {
@@ -229,14 +343,13 @@ export class CustomerModule {
         c.innerHTML = 'Cargando...';
 
         try {
-            // USAMOS LA API CENTRALIZADA
             const data = await api.getCustomerDetails(id);
 
             if(data.success) {
                 const cust = data.customer;
                 c.innerHTML = `
                     <div style="text-align:center; margin-bottom:1.5rem;">
-                        <div style="width:60px; height:60px; background:#e3f2fd; color:#1976d2; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 10px auto;">
+                        <div style="width:60px; height:60px; background:var(--accent-color-quat-opacity); color:var(--accent-color); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 10px auto;">
                             ${cust.full_name.charAt(0).toUpperCase()}
                         </div>
                         <h2 style="margin:0;">${cust.full_name}</h2>

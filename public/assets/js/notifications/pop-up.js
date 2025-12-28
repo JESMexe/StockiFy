@@ -111,7 +111,9 @@ function _showConfirm(title, message) {
         }
 
         titleEl.textContent = title;
+        titleEl.style.paddingBottom = '5px';
         messageEl.textContent = message;
+        messageEl.style.paddingTop = '15px';
 
         inputEl.style.display = 'none';
         inputEl.value = 'CONFIRMADO';
