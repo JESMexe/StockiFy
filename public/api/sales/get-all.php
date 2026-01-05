@@ -1,36 +1,34 @@
 <?php
-// public/api/sales/get-all.php
 header('Content-Type: application/json');
 
-// Manejo de errores para evitar respuestas HTML en caso de fallo
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
+// Ajusta la ruta al autoloader según tu estructura
+require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
+require_once __DIR__ . '/../../../src/Models/SalesModel.php';
 
 use App\Models\SalesModel;
 
 try {
-    require_once __DIR__ . '/../../../vendor/autoload.php';
-    require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
-    require_once __DIR__ . '/../../../src/Models/SalesModel.php';
-
+    // 1. Auth
     $user = getCurrentUser();
     if (!$user) {
-        http_response_code(401);
         echo json_encode(['success' => false, 'message' => 'No autorizado']);
         exit;
     }
 
-    $userId = $user['id'];
-    $order = $_GET['order'] ?? 'desc';
+    // 2. Modelo
+    $model = new SalesModel();
 
-    $salesModel = new SalesModel();
+    // 3. OBTENER DATOS
+    // AQUÍ ESTABA EL ERROR: Cambiamos getAll() por getHistory()
+    // getHistory es el método potente que creamos en el modelo nuevo.
+    $sales = $model->getHistory($user['id'], $_GET['order'] ?? 'desc');
 
-    // CORRECCIÓN: Usamos 'getAll' que es el nombre real en el SalesModel.php
-    $sales = $salesModel->getAll($userId, $order);
+    // 4. Responder
+    // El modelo ya devuelve los datos limpios, solo los enviamos.
+    echo json_encode(['success' => true, 'sales' => $sales]); // Nota: El JS espera "sales", no "purchases"
 
-    echo json_encode(['success' => true, 'sales' => $sales]);
-
-} catch (Throwable $e) {
+} catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

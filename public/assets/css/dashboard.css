@@ -1497,7 +1497,7 @@ table {
 .action-btn {
     width: 32px;
     height: 32px;
-    border: none;
+    border: 1px solid var(--color-black);
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -1511,20 +1511,20 @@ table {
 
 .action-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 2px 2px 0 var(--accent-color-medium-opacity);
+    border: 1px solid var(--color-black);
+    box-shadow: 2px 2px 0 var(--color-black);
 }
 
 .action-btn.view:hover {
     color: var(--accent-color);
-    background-color: var(--accent-color-quat-opacity);
 }
 
 .action-btn.edit:hover {
     color: var(--accent-color);
-    background-color: var(--accent-color-quat-opacity);
 }
 
 .action-btn.delete {
+    border: 1px solid var(--accent-red);
     color: var(--accent-red);
 }
 .action-btn.delete:hover {

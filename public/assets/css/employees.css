@@ -36,7 +36,7 @@
 .emp-card {
     width: 300px;
     background: white;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-black);
     border-radius: 8px;
     padding: 1.5rem;
     text-align: center;
@@ -46,8 +46,8 @@
 
 .emp-card:hover {
     transform: translateY(-2px);
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
-    border-color: var(--accent-color); /* Acento Violeta */
+    box-shadow: 4px 4px 0px var(--accent-color);
+    /*border-color: var(--accent-color); */
 }
 
 /* Botones de acción flotantes en la tarjeta */

@@ -17,7 +17,7 @@ try {
 
     // Variables de cabecera
     $customerId = !empty($data['customer_id']) ? $data['customer_id'] : null;
-    $sellerId = !empty($data['seller_id']) ? $data['seller_id'] : null;
+    $sellerId = (!empty($data['seller_id']) && $data['seller_id'] !== 'null') ? $data['seller_id'] : null;
     $commission = !empty($data['commission_amount']) ? $data['commission_amount'] : 0;
     $totalFinal = $data['total_final'];
     $notes = !empty($data['notes']) ? $data['notes'] : null;

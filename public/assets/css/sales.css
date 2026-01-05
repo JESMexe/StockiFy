@@ -37,6 +37,13 @@
     overflow: hidden;
 }
 
+.purchases-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 1rem;
+}
+
 .modal-header {
     background: transparent;
     padding: 20px 25px 10px;
@@ -70,7 +77,7 @@
     border-radius: var(--sale-radius);
 
     /* CAMBIO: Sombra negra por defecto */
-    box-shadow: 4px 4px 0 var(--sale-shadow-color-base);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
     transition: box-shadow 0.3s ease;
 
     display: flex;
@@ -130,8 +137,9 @@ textarea.rustic-input {
 
 /* --- AGRUPACIONES VISUALES --- */
 .form-section {
-    background-color: rgba(0,0,0, 0.03);
-    border-radius: 8px;
+    background-color: rgba(175,175,175, 0.1);
+    border-radius: 8px ;
+    border: 1px dashed var(--accent-color-medium-opacity);
     padding: 12px;
     margin-bottom: 12px;
 }
@@ -152,6 +160,7 @@ textarea.rustic-input {
     overflow-x: visible;
     padding-right: 5px;
     margin-bottom: 10px;
+    scrollbar-color: var(--color-gray);
 }
 .scrollable-list::-webkit-scrollbar { width: 6px; }
 .scrollable-list::-webkit-scrollbar-track { background: transparent; }
@@ -253,8 +262,8 @@ textarea.rustic-input {
     transform: translate(-1px, -1px);
 }
 .btn-xs.del {
-    color: #d32f2f;
-    border-color: #d32f2f;
+    color: var(--accent-red);
+    border-color: var(--accent-red);
 }
 .btn-xs.del:hover {
     background-color: #ffebee;
@@ -304,7 +313,7 @@ textarea.rustic-input {
     background: var(--sale-green); color: white;
     border: 1px solid var(--sale-border-color);
     border-radius: 8px; height: 50px;
-    font-weight: 800; text-transform: uppercase;
+    font-weight: 700; text-transform: uppercase;
     width: 100%; margin-top: 15px; cursor: pointer;
     flex-shrink: 0;
     box-shadow: none; /* Base plana */
@@ -325,6 +334,7 @@ textarea.rustic-input {
 
 sale-products-list {
     z-index: 1;
+    scrollbar-color: var(--color-gray);
 }
 
 .flex-row span {
@@ -356,34 +366,48 @@ sale-products-list {
     padding: 12px 15px; border-bottom: 1px solid #eee; vertical-align: middle;
     color: #333; font-size: 0.95rem; transition: background 0.2s;
 }
-#sales-table tr:hover td { background-color: var(--sale-green-light); }
 
 .btn-icon-group { display: flex; gap: 8px; justify-content: center; }
+
+/* --- 1. TABLA DE HISTORIAL PRINCIPAL (Estilo unificado) --- */
+#purchases-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+}
+#purchases-table th {
+    background-color: #f9f9f9; color: #444; font-weight: 700; text-transform: uppercase;
+    font-size: 0.8rem; letter-spacing: 0.5px; border-bottom: 2px solid var(--accent-color);
+    padding: 15px; text-align: left; position: sticky; top: 0; z-index: 10;
+}
+#purchases-table td {
+    padding: 12px 15px; border-bottom: 1px solid #eee; vertical-align: middle;
+    color: #333; font-size: 0.95rem; transition: background 0.2s;
+}
 
 
 /* --- 2. MODAL DE DETALLE TIPO TICKET (REDITADO PROFUNDO) --- */
 
 /* Contenedor Principal del Ticket */
 #detail-sale-modal .modal-content {
-    width: var(--ticket-width) !important; /* MÁS ANCHO */
     max-width: 95vw;
     height: auto !important;
     max-height: 85vh; /* Un poco menos para dejar ver el zigzag abajo */
-    background-color: var(--ticket-bg);
     color: var(--ticket-color);
     font-family: var(--ticket-font); /* Tipografía Monospace Realista */
     font-size: 0.95rem; /* Letra más grande para legibilidad */
 
     border: none; /* Sin borde estándar */
     border-top: 1px solid #e0e0e0; /* Solo borde arriba */
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    border-radius: 0; /* Bordes rectos de papel */
 
     padding: 0;
-    position: relative;
     /* IMPORTANTE PARA EL EFECTO DE CORTE: Permite que el zigzag salga del contenedor */
+    width: var(--ticket-width) !important;
+    background-color: var(--ticket-bg);
+    /* CLAVE: Permitir que los triángulos salgan del cajón */
     overflow: visible !important;
-    margin-bottom: 50px; /* Espacio para que se vea el corte */
+    margin-bottom: 50px;
+    border-radius: 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    position: relative;
 }
 
 /* --- EFECTO DE CORTE EN ZIGZAG (MEJORADO CON SVG) --- */
@@ -400,9 +424,10 @@ sale-products-list {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 15'%3E%3Cpolygon points='0,0 10,15 20,0' fill='%23fffdfc'/%3E%3C/svg%3E");
     background-size: 20px 15px; /* Tamaño de cada diente */
     background-repeat: repeat-x;
-    /* Quitamos el filtro de sombra anterior porque ensucia el SVG */
-    filter: none;
-    z-index: 1; /* Asegura que quede por encima de la sombra del contenedor */
+    /* Quitamos el filtro de sombra anterior porque ensucia el SVG
+    filter: none; */
+    z-index: 10; /* Asegura que quede por encima de la sombra del contenedor */
+    display: block;
 }
 
 /* Cabecera del Ticket */
@@ -502,4 +527,186 @@ sale-products-list {
 #detail-notes {
     font-size: 0.85rem; text-align: center; margin-top: 20px;
     border-top: 1px dashed #999; padding-top: 15px; font-style: italic;
+}
+
+/* public/assets/css/sales.css (o donde tengas tus estilos de ventas) */
+
+#sales-table {
+    width: 100%;
+    border-collapse: collapse; /* Crucial para que las lineas se toquen */
+    font-family: inherit; /* Heredar fuente del sistema */
+}
+
+/* ESTILO DE CABECERA IDÉNTICO A COMPRAS */
+#sales-table thead th {
+    /* 1. La línea de color (la clave para que se parezcan) */
+    border-bottom: 2px solid var(--accent-color);
+
+    /* 2. Tipografía */
+    text-transform: none; /* Quitamos forzado de mayúsculas por si acaso */
+    color: #333; /* Negro suave, no gris claro */
+    font-weight: 700; /* Negrita marcada */
+    font-size: 1rem; /* Un poco más grande que antes */
+
+    /* 3. Espaciado */
+    padding: 12px 15px; /* Más aire */
+    text-align: left; /* Alineación por defecto */
+}
+
+/* Ajustes específicos para columnas alineadas diferente */
+#sales-table thead th:nth-child(4) { /* Columna Total */
+    text-align: right;
+}
+#sales-table thead th:nth-child(5) { /* Columna Acciones */
+    text-align: center;
+}
+
+/* ESTILO DEL CUERPO (Para que combine) */
+#sales-table tbody tr {
+    border-bottom: 1px solid #eee; /* Líneas divisorias sutiles entre filas */
+    transition: background-color 0.2s;
+}
+
+#sales-table tbody tr:hover {
+    background-color: #f9f9f9; /* Hover suave */
+}
+
+#sales-table tbody td {
+    padding: 12px 15px;
+    color: var(--color-black);
+    vertical-align: middle;
+}
+
+.purchases-table {
+    /* 1. El borde sólido igual a Sales */
+    border: 1px solid var(--color-gray);
+
+    /* 2. Las esquinas redondeadas */
+    border-radius: 8px;
+
+    /* 3. ¡IMPORTANTE! Esto hace que las esquinas recorten a la tabla */
+    overflow: hidden;
+
+    background-color: #fff;
+    margin-bottom: 20px; /* Un poco de aire abajo */
+}
+
+.table-wrapper {
+    /* 1. El borde sólido igual a Sales */
+    border: 1px solid var(--color-gray);
+
+    /* 2. Las esquinas redondeadas */
+    border-radius: 8px;
+
+    /* 3. ¡IMPORTANTE! Esto hace que las esquinas recorten a la tabla */
+    overflow: hidden;
+
+    background-color: #fff;
+    margin-bottom: 20px; /* Un poco de aire abajo */
+}
+
+/* Asegura que la tabla ocupe todo el espacio del wrapper */
+#purchases-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0; /* Quitar márgenes para que pegue al borde */
+}
+
+/* Quitar bordes duplicados de las celdas externas para que no se vea doble línea */
+#purchases-table th:first-child, #purchases-table td:first-child { padding-left: 20px; }
+#purchases-table th:last-child, #purchases-table td:last-child { padding-right: 20px; }
+
+/* =========================================
+   ESTILOS VENTA MANUAL / SERVICIO
+   ========================================= */
+
+/* 1. Botón "Manual" (al lado del buscador) */
+#btn-toggle-manual {
+    height: 41px;
+    padding: 0 12px;
+    width: auto;
+    background-color: #fff;
+    border: 2px solid var(--sale-green);
+    color: var(--sale-green);
+    font-weight: 700;
+    margin: 0;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    text-shadow: none !important;
+    -webkit-font-smoothing: antialiased;
+    transform: translateZ(0);
+}
+
+#btn-toggle-manual:hover {
+    background-color: var(--sale-green-light);
+    box-shadow: 3px 3px 0 var(--sale-green-light);
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-shadow: none !important;
+}
+
+#btn-toggle-manual:active {
+    transform: translate(0, 0);
+    box-shadow: none;
+}
+
+/* 2. La Ventana / Formulario Desplegable */
+#manual-item-form {
+    background-color: #fafafa; /* Un gris muy tenue para diferenciar del fondo blanco */
+    border: 2px dashed var(--sale-green); /* Borde punteado = "Concepto Manual" */
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+
+    /* Animación suave de aparición */
+    animation: slideDown 0.2s ease-out;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Título chiquito dentro de la ventana manual */
+#manual-item-form .manual-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--sale-green);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Inputs específicos del manual para que encajen bien */
+#manual-item-form .rustic-input {
+    background: #fff;
+    height: 38px; /* Un pelín más chicos que los normales */
+}
+
+/* El botón de "+" dentro del formulario manual */
+#btn-add-manual {
+    width: 40px;
+    height: 38px;
+    border: 1px solid var(--sale-green);
+    background-color: var(--sale-green);
+    margin: 0;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* Que no se aplaste */
+}
+
+#btn-add-manual:hover {
+    box-shadow: 2px 2px 0 var(--sale-shadow-color-base);
+    filter: brightness(1.1);
 }

@@ -14,7 +14,8 @@ class PurchaseModel {
         $this->db = Database::getInstance();
     }
 
-    public function createPurchase($userId, $data) {
+    public function createPurchase($userId, $data): bool|string
+    {
         try {
             $this->db->beginTransaction();
 
@@ -140,24 +141,95 @@ class PurchaseModel {
         }
     }
 
+    // En src/Models/PurchaseModel.php
+
     public function getHistory($userId, $order = 'DESC'): array
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         try {
-            $check = $this->db->query("SHOW TABLES LIKE 'purchases'");
-            if ($check->rowCount() === 0) return [];
+            // ESTRATEGIA SEGURA:
+            // 1. Traemos p.* (todas las columnas) para no fallar si falta alguna específica.
+            // 2. Traemos el nombre del proveedor con JOIN.
+            // 3. Ordenamos por ID (que siempre existe) para evitar errores con fechas mal nombradas.
 
-            $stmt = $this->db->prepare("
-                SELECT p.*, pr.full_name as provider_name 
+            $sql = "
+                SELECT 
+                    p.*,
+                    pr.full_name as provider_real_name
                 FROM purchases p
                 LEFT JOIN providers pr ON p.provider_id = pr.id
-                WHERE p.user_id = :user 
-                ORDER BY p.created_at $order
-            ");
+                WHERE p.user_id = :user
+                ORDER BY p.id $order 
+                LIMIT 50
+            ";
+
+            $stmt = $this->db->prepare($sql);
             $stmt->execute([':user' => $userId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return array_map(function($row) {
+                // DETECTIVE DE FECHAS: Buscamos cuál es la columna de fecha real
+                $date = $row['created_at']
+                    ?? $row['purchase_date']
+                    ?? $row['date']
+                    ?? $row['fecha']
+                    ?? date('Y-m-d H:i:s'); // Fallback final
+
+                // DETECTIVE DE NOMBRE:
+                // Si hay proveedor en la tabla relacionada, úsalo.
+                // Si no, busca si existe columna 'provider_name' en compras.
+                // Si no, usa la categoría.
+                $provName = '-';
+                if (!empty($row['provider_real_name'])) {
+                    $provName = $row['provider_real_name'];
+                } elseif (!empty($row['provider_name'])) {
+                    $provName = $row['provider_name'];
+                } elseif (!empty($row['category'])) {
+                    $provName = $row['category'];
+                }
+
+                return [
+                    'id' => $row['id'],
+                    'created_at' => $date, // Ahora siempre tendrá un valor
+                    'total' => (float)($row['total'] ?? $row['total_amount'] ?? 0),
+                    'notes' => $row['notes'] ?? '',
+                    'category' => $row['category'] ?? '',
+                    'provider_name' => $provName
+                ];
+            }, $results);
+
         } catch (Exception $e) {
+            // Si falla, escribimos el error en el log de PHP para poder verlo
+            error_log("PurchaseModel Error: " . $e->getMessage());
             return [];
+        }
+    }
+
+    public function resetIds(): bool
+    {
+        try {
+            // MÉTODO ATÓMICO (CROSS JOIN)
+            // Este es el método más robusto. Inicializa el contador dentro de la misma consulta
+            // para que PHP no pierda la conexión entre líneas.
+
+            $sql = "
+                UPDATE receipts
+                CROSS JOIN (SELECT @cnt := 0) AS dummy
+                SET receipts.id = (@cnt := @cnt + 1)
+                ORDER BY receipt_date ASC
+            ";
+
+            // Ejecutamos la actualización masiva
+            $this->db->exec($sql);
+
+            // Reseteamos el autoincrement para que la próxima compra sea la siguiente
+            $this->db->exec("ALTER TABLE receipts AUTO_INCREMENT = 1");
+
+            return true;
+
+        } catch (Exception $e) {
+            error_log("Error resetIds Compras: " . $e->getMessage());
+            return false;
         }
     }
 

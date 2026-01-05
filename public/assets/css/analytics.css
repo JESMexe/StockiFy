@@ -18,7 +18,7 @@
     background: white;
     padding: 20px;
     border-radius: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -27,7 +27,7 @@
 
 .stat-card:hover {
     transform: translateY(-4px);
-    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
+    /* box-shadow: 5px 5px 0 var(--accent-color); */
 }
 
 .stat-title {
@@ -41,26 +41,44 @@
 .stat-card.revenue { border-left: 4px solid var(--accent-green, #28a745); }
 .stat-card.revenue .stat-title i { color: var(--accent-green, #28a745); }
 
+.stat-card.revenue:hover {
+    box-shadow: 5px 5px 0 var(--accent-green);
+}
+
 .stat-card.expenses { border-left: 4px solid var(--accent-red, #dc3545); }
 .stat-card.expenses .stat-title i { color: var(--accent-red, #dc3545); }
+
+.stat-card.expenses:hover {
+    box-shadow: 5px 5px 0 var(--accent-red);
+}
 
 /* Balance y Stock usan el color de acento principal (Azul/Tema) */
 .stat-card.balance { border-left: 4px solid var(--accent-blue); }
 .stat-card.balance .stat-title i { color: var(--accent-blue); }
 
+.stat-card.balance:hover {
+    box-shadow: 5px 5px 0 var(--accent-blue);
+}
+
 .stat-card.inventory { border-left: 4px solid var(--accent-yellow); }
 .stat-card.inventory .stat-title i { color: var(--accent-yellow); }
+
+.stat-card.inventory:hover {
+    box-shadow: 5px 5px 0 var(--accent-yellow);
+}
 
 /* Gráficos y Tablas */
 .charts-section, .top-list-card {
     background: white;
     border-radius: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-black);
     padding: 20px;
+    transition: transform 0.2s;
 }
 
 .charts-section:hover, .top-list-card:hover {
     border: 1px solid var(--accent-color);
+    transition: transform 0.2s;
 }
 
 .top-list-item {

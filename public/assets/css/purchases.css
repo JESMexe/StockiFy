@@ -1,178 +1,161 @@
 ﻿/* public/assets/css/purchases.css */
 
-.purchases-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    gap: 1rem;
+/* --- VARIABLES (Idénticas a Sales) --- */
+:root {
+    --ticket-bg: #fffdfc;
+    --ticket-color: #000000;
+    --ticket-width: 600px;
+    --ticket-font: 'Courier New', Courier, 'Lucida Sans Typewriter', monospace;
 }
 
-/* Modales */
-#create-purchase-modal .modal-content,
-#detail-purchase-modal .modal-content,
-#quick-expense-modal .modal-content {
-    background-color: #ffffff !important;
-    box-shadow: 8px 8px 0px var(--accent-color);
-    border: 1px solid #ddd;
-    border-radius: 8px;
+.purchases-layout { display: flex; flex-direction: column; height: 100%; gap: 1rem; }
+
+/* --- 1. TABLA UNIFICADA (Idéntica a Sales) --- */
+#purchases-table {
+    width: 100%; border-collapse: separate; border-spacing: 0; font-family: inherit;
 }
 
-
-/* Layout de Columnas (Crear Compra) */
-.purchase-modal-body {
-    display: flex;
-    flex-direction: row;
-    height: calc(80vh - 60px);
-    overflow: hidden;
-}
-
-.purchase-col {
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #eee;
-}
-
-.purchase-col:last-child {
-    border-right: none;
-    background-color: var(--accent-color-quat-opacity); /* Fondo naranja muy suave */
-}
-
-.purchase-col h4 {
-    margin-bottom: 1rem;
-    color: var(--accent-color);
-    font-weight: 600;
+/* HEADER (Estilo Sales) */
+#purchases-table th {
+    background-color: #f9f9f9;
+    color: #333;
+    font-weight: 700;
     font-size: 1rem;
+    text-transform: none; /* Sin mayúsculas forzadas */
     border-bottom: 2px solid var(--accent-color);
-    padding-bottom: 0.5rem;
-    display: inline-block;
-    width: fit-content;
+    padding: 12px 15px;
+    text-align: left;
+    position: sticky; top: 0; z-index: 10;
 }
 
-/* Listas de Recursos */
-.resource-list {
-    flex-grow: 1;
-    overflow-y: auto;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    background: white;
+tbody td {
+    padding: 12px 15px;
+    color: var(--color-black);
+    vertical-align: middle;
 }
 
-.resource-item {
-    padding: 10px;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
+/* BODY (Estilo Purchases/Compacto) */
+#purchases-table td {
+    padding: 10px 15px; /* Altura compacta */
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+    color: #333;
+    font-size: 0.95rem;
     transition: background 0.2s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+}
+#purchases-table tr:hover td { background-color: #fafafa; }
+
+#purchases-table thead th {
+    /* 1. La línea de color (la clave para que se parezcan) */
+    border-bottom: 2px solid var(--accent-color);
+
+    /* 2. Tipografía */
+    text-transform: none; /* Quitamos forzado de mayúsculas por si acaso */
+    color: #333; /* Negro suave, no gris claro */
+    font-weight: 700; /* Negrita marcada */
+    font-size: 1rem; /* Un poco más grande que antes */
+
+    /* 3. Espaciado */
+    padding: 12px 15px; /* Más aire */
+    text-align: left; /* Alineación por defecto */
 }
 
-.resource-item:hover {
-    background-color: var(--accent-color-quat-opacity);
-}
+/* --- 2. MODAL DETALLE (TICKET REPLICADO EXACTO) --- */
+#detail-purchase-modal .modal-content {
+    max-width: 95vw;
+    height: auto !important;
+    max-height: 85vh; /* Un poco menos para dejar ver el zigzag abajo */
+    color: var(--ticket-color);
+    font-family: var(--ticket-font); /* Tipografía Monospace Realista */
+    font-size: 0.95rem; /* Letra más grande para legibilidad */
 
-.resource-item.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    background: #fbe9e7;
-}
+    border: none; /* Sin borde estándar */
+    border-top: 1px solid #e0e0e0; /* Solo borde arriba */
 
-/* Badges y Textos */
-.warning-badge {
-    background: var(--accent-red-20) !important;;
-    color: var(--accent-color);
-    padding: 2px 5px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    border: 1px solid var(--accent-color);
-}
-
-.error-text { color: var(--accent-red); font-size: 0.8rem; font-weight: bold; }
-.text-right { text-align: right; }
-.text-bold { font-weight: bold; }
-.text-orange { color: var(--accent-color); }
-.w-full { width: 100%; }
-.mt-auto { margin-top: auto; }
-
-/* Carrito */
-.cart-item {
-    background: white;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    margin-bottom: 8px;
-    box-shadow: 0 1px 3px var(--accent-color);
-}
-
-.cart-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #eee;
-    border-radius: 4px;
-    padding: 2px;
-}
-
-.qty-btn {
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: white;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.qty-btn:hover { background: #ddd; }
-
-/* Estilos Gasto Rápido */
-.big-amount-input {
-    font-size: 2.5rem;
-    font-weight: bold;
-    text-align: center;
-    color: var(--accent-color);
-    border: none;
-    border-bottom: 3px solid #eee;
-    background: transparent;
-    width: 100%;
-    padding: 10px;
-}
-.big-amount-input:focus { outline: none; border-bottom-color: var(--accent-color); }
-.quick-form-group { margin-bottom: 15px; }
-.quick-label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
-
-/* --- NUEVO: Estilos para el Botón Fantasma (Lápiz) --- */
-.detail-relative-container {
+    padding: 0;
+    /* IMPORTANTE PARA EL EFECTO DE CORTE: Permite que el zigzag salga del contenedor */
+    width: var(--ticket-width) !important;
+    background-color: var(--ticket-bg);
+    /* CLAVE: Permitir que los triángulos salgan del cajón */
+    overflow: visible !important;
+    margin-bottom: 50px;
+    border-radius: 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     position: relative;
 }
 
-.btn-ghost-edit {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background: transparent;
-    border: none;
-    color: #bbb; /* Gris muy suave */
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 5px;
-    transition: all 0.2s ease;
-    z-index: 10;
+/* ZIGZAG SVG */
+#detail-purchase-modal .modal-content::after {
+    content: ""; position: absolute; left: 0; bottom: -14px; width: 100%; height: 15px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 15'%3E%3Cpolygon points='0,0 10,15 20,0' fill='%23fffdfc'/%3E%3C/svg%3E");
+    background-size: 20px 15px; background-repeat: repeat-x; z-index: 10;
 }
 
-.btn-ghost-edit:hover {
-    color: var(--accent-color); /* Se ilumina al pasar el mouse */
-    transform: scale(1.1);
+/* Cabecera */
+#detail-purchase-modal .modal-header {
+    flex-direction: column; align-items: center; border-bottom: 2px dashed var(--ticket-color);
+    padding: 20px 20px 15px; background: transparent; position: relative;
+}
+#detail-purchase-modal .modal-header h3 {
+    font-family: var(--ticket-font); font-size: 1.4rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 2px; margin: 0; text-align: center; color: var(--ticket-color); text-shadow: none;
+}
+#detail-purchase-modal .modal-close-btn { position: absolute; top: 10px; right: 15px; color: #999; font-size: 1.5rem; background:none; border:none; }
+#detail-purchase-modal .modal-close-btn:hover { color: #000; }
+
+/* Cuerpo */
+#detail-purchase-modal .purchase-modal-body {
+    display: flex; flex-direction: column; gap: 15px; padding: 20px 25px 30px;
+    overflow-y: auto; max-height: 75vh; background: transparent;
 }
 
-/* Cuando estamos editando, mostramos controles más visibles */
-.edit-controls-wrapper {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    justify-content: center;
-    margin-top: 10px;
+/* Elementos */
+.ticket-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; border-bottom: 1px dotted #ccc; padding-bottom: 4px; }
+.ticket-label { font-weight: 600; color: #444; }
+.ticket-value { font-weight: 700; text-align: right; max-width: 60%; }
+
+#detail-purchase-modal h4 {
+    font-family: var(--ticket-font); font-size: 1rem; text-transform: uppercase; text-align: center;
+    border-top: 2px dashed var(--ticket-color); border-bottom: 2px dashed var(--ticket-color);
+    margin: 20px 0 15px; padding: 8px 0; font-weight: 800; background: rgba(0,0,0,0.02); color: var(--ticket-color);
 }
+
+#detail-purchase-modal table { width: 100%; border-collapse: collapse; margin-bottom: 10px;}
+#detail-purchase-modal table th { text-transform: uppercase; font-size: 0.85rem; border-bottom: 1px dashed var(--ticket-color); padding: 5px 0; color: #333; font-family: var(--ticket-font); }
+#detail-purchase-modal table td { padding: 8px 0; border-bottom: 1px dotted #ccc; vertical-align: top; font-family: var(--ticket-font); color: var(--ticket-color); }
+
+#detail-total-section {
+    margin: 25px 0 15px; border: 3px double var(--ticket-color); padding: 15px; text-align: center; background: rgba(0,0,0,0.03);
+}
+#detail-total-section span:first-child { font-size: 1.1rem; text-transform: uppercase; display: block; margin-bottom: 5px; font-weight: bold; color: #444; }
+#detail-total-section span:last-child { font-size: 2.2rem !important; font-weight: 900; display: block; color: var(--ticket-color) !important; font-family: var(--ticket-font); }
+#detail-notes { font-size: 0.85rem; text-align: center; margin-top: 20px; border-top: 1px dashed #999; padding-top: 15px; font-style: italic; font-family: var(--ticket-font); }
+
+
+/* --- OTROS MODALES (Mantenidos "Modernos") --- */
+#create-purchase-modal .modal-content, #quick-expense-modal .modal-content, #edit-inventory-modal .modal-content {
+    background-color: #ffffff !important; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #ddd; border-radius: 8px; width: 100%;
+}
+/* Estilos columnas crear */
+#create-purchase-modal .purchase-modal-body { display: flex; flex-direction: row; height: calc(80vh - 60px); overflow: hidden; }
+.purchase-col { padding: 1rem; display: flex; flex-direction: column; border-right: 1px solid #eee; }
+.purchase-col:last-child { border-right: none; background-color: var(--accent-color-quat-opacity); }
+.purchase-col h4 { margin-bottom: 1rem; color: var(--accent-color); font-weight: 600; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block; width: fit-content; }
+/* Recursos */
+.resource-list { flex-grow: 1; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px; background: white; }
+.resource-item { padding: 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.resource-item:hover { background-color: var(--accent-color-quat-opacity); }
+.resource-item.disabled { opacity: 0.6; cursor: not-allowed; background: #fbe9e7; }
+.warning-badge { background: #ffebee; color: #d32f2f; padding: 2px 5px; border-radius: 4px; font-size: 0.75rem; border: 1px solid #d32f2f; }
+.error-text { color: #d32f2f; font-size: 0.8rem; font-weight: bold; }
+.text-right { text-align: right; }
+.text-bold { font-weight: bold; }
+.text-orange { color: var(--accent-color); }
+.w-full { width: 100%; } .mt-auto { margin-top: auto; }
+/* Gasto Rápido */
+.big-amount-input { font-size: 2.5rem; font-weight: bold; text-align: center; color: var(--accent-color); border: none; border-bottom: 3px solid #eee; background: transparent; width: 100%; padding: 10px; }
+.big-amount-input:focus { outline: none; border-bottom-color: var(--accent-color); }
+.quick-form-group { margin-bottom: 15px; } .quick-label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+.cart-item { background: white; padding: 10px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 8px; }
+.cart-controls { display: flex; align-items: center; gap: 8px; background: #eee; border-radius: 4px; padding: 2px; }
+.qty-btn { width: 24px; height: 24px; border: none; background: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
