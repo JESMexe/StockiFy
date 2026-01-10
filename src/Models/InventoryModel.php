@@ -451,31 +451,33 @@ class InventoryModel
     /**
      * Aumenta el stock de un producto (para Compras).
      */
-    public function increaseStock(int $userId, $productId, int $quantity): bool
+    public function increaseStock(int $userId, $productId, int $quantity, $inventoryId = null): bool
     {
-        // 1. Buscar tabla activa
-        $sqlTable = "SELECT ut.table_name 
-                     FROM user_tables ut
-                     JOIN inventories i ON ut.inventory_id = i.id
-                     WHERE i.user_id = :user_id 
-                     LIMIT 1";
-
-        $stmt = $this->db->prepare($sqlTable);
-        $stmt->execute([':user_id' => $userId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row) return false;
-
-        $tableName = $row['table_name'];
-        $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
-
-        // 2. Aumentar Stock
         try {
+            // Si nos dan el ID del inventario, buscamos la tabla exacta
+            if ($inventoryId) {
+                $sqlTable = "SELECT table_name FROM user_tables WHERE inventory_id = :inv_id LIMIT 1";
+                $params = [':inv_id' => $inventoryId];
+            } else {
+                // Fallback (Peligroso si tiene varias DBs, pero compatible hacia atrás)
+                $sqlTable = "SELECT ut.table_name FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1";
+                $params = [':uid' => $userId];
+            }
+
+            $stmt = $this->db->prepare($sqlTable);
+            $stmt->execute($params);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) return false;
+
+            $safeTable = "`" . str_replace("`", "``", $row['table_name']) . "`";
+
+            // Asumimos columna 'stock'
             $sql = "UPDATE {$safeTable} SET stock = stock + :qty WHERE id = :id";
             $stmtUpdate = $this->db->prepare($sql);
             return $stmtUpdate->execute([':qty' => $quantity, ':id' => $productId]);
         } catch (Exception $e) {
-            error_log("InventoryModel: Error al aumentar stock: " . $e->getMessage());
+            error_log("InventoryModel Error: " . $e->getMessage());
             return false;
         }
     }
@@ -487,36 +489,36 @@ class InventoryModel
      * @param int $quantity Cantidad a descontar.
      * @return bool True si se actualizó, False si falló.
      */
-    public function decreaseStock(int $userId, $productId, int $quantity): bool
+    public function decreaseStock(int $userId, $productId, int $quantity, $inventoryId = null): bool
     {
-        // 1. Buscar la tabla activa del usuario
-        // (Simplificación: buscamos la primera tabla asociada al inventario del usuario)
-        $sqlTable = "SELECT ut.table_name 
-                     FROM user_tables ut
-                     JOIN inventories i ON ut.inventory_id = i.id
-                     WHERE i.user_id = :user_id 
-                     LIMIT 1"; // OJO: Idealmente deberíamos recibir el inventoryId desde la venta
-
-        $stmt = $this->db->prepare($sqlTable);
-        $stmt->execute([':user_id' => $userId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row) {
-            error_log("InventoryModel: No se encontró tabla activa para el usuario $userId");
-            return false;
-        }
-
-        $tableName = $row['table_name'];
-        // Sanitizamos por seguridad, aunque viene de DB
-        $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
-
-        // 2. Descontar Stock
-        // Asumimos que la columna se llama 'stock'. Si tu usuario le puso 'cantidad', esto fallará.
-        // Para esta versión v1.0, asumiremos 'stock'.
         try {
+            // 1. Identificar la tabla correcta
+            if ($inventoryId) {
+                // Búsqueda precisa por ID de inventario
+                $sqlTable = "SELECT table_name FROM user_tables WHERE inventory_id = :inv_id LIMIT 1";
+                $params = [':inv_id' => $inventoryId];
+            } else {
+                // Búsqueda "a ciegas" por usuario (Legacy)
+                $sqlTable = "SELECT ut.table_name FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1";
+                $params = [':uid' => $userId];
+            }
+
+            $stmt = $this->db->prepare($sqlTable);
+            $stmt->execute($params);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                error_log("InventoryModel: No se encontró tabla para descontar stock (User: $userId, Inv: $inventoryId)");
+                return false;
+            }
+
+            $safeTable = "`" . str_replace("`", "``", $row['table_name']) . "`";
+
+            // 2. Ejecutar descuento
             $sql = "UPDATE {$safeTable} SET stock = stock - :qty WHERE id = :id";
             $stmtUpdate = $this->db->prepare($sql);
             return $stmtUpdate->execute([':qty' => $quantity, ':id' => $productId]);
+
         } catch (Exception $e) {
             error_log("InventoryModel: Error al descontar stock: " . $e->getMessage());
             return false;

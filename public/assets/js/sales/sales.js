@@ -281,6 +281,7 @@ export class SalesModule {
             const [prefRes, data, empRes] = await Promise.all([
                 getCurrentInventoryPreferences(), getSaleResources(), getEmployeeList()
             ]);
+            this.resources.inventoryId = prefRes.id || prefRes.inventory_id || null;
             this.resources.config = prefRes.mapping || {};
             if(data.success) {
                 this.resources.products = data.products || [];
@@ -328,6 +329,8 @@ export class SalesModule {
             const res = await getSaleDetails(id);
             if(!res.success) throw new Error(res.message || "Error al cargar detalles");
             const s = res.sale;
+            s.items = res.items || [];
+            s.payments = res.payments || [];
             const bodyContainer = document.querySelector('#detail-sale-modal .purchase-modal-body');
 
             let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;"><div style="font-size:1.3rem; font-weight:900; letter-spacing:1px;">TICKET #${s.id}</div><div style="font-size:0.9rem; margin-top:5px;">${fmtDate(s.created_at)}</div></div>`;
@@ -577,6 +580,7 @@ export class SalesModule {
         const btn = document.getElementById('confirm-sale-btn'); btn.disabled = true; btn.textContent = 'Procesando...';
         const pct = parseFloat(document.getElementById('sale-commission-pct').value) || 0;
         const payload = {
+            inventory_id: this.resources.inventoryId || null,
             customer_id: document.getElementById('sale-customer').value || null,
             seller_id: document.getElementById('sale-seller').value || null,
             commission_amount: this.currentSale.subtotal_items * (pct / 100),

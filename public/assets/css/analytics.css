@@ -98,3 +98,20 @@
 @media (max-width: 768px) {
     .bottom-section { grid-template-columns: 1fr; }
 }
+
+/* Nueva Tarjeta: Ticket Promedio (Color Púrpura/Indigo) */
+.stat-card.average {
+    border-left: 4px solid var(--accent-violet); /* Púrpura */
+}
+.stat-card.average .stat-title i {
+    color: var(--accent-violet);
+}
+.stat-card.average:hover {
+    box-shadow: 5px 5px 0 var(--accent-violet);
+}
+
+@media (max-width: 992px) {
+    .charts-grid-wrapper {
+        grid-template-columns: 1fr !important; /* Pila vertical en tablets/móviles */
+    }
+}

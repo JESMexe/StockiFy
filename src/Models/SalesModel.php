@@ -2,8 +2,10 @@
 namespace App\Models;
 
 require_once dirname(__DIR__) . '/core/Database.php';
+require_once __DIR__ . '/InventoryModel.php';
 
 use App\core\Database;
+use App\Models\InventoryModel;
 use PDO;
 use Exception;
 
@@ -12,69 +14,6 @@ class SalesModel {
 
     public function __construct() {
         $this->db = Database::getInstance();
-    }
-
-    /* =========================================================
-       MÉTODO NUEVO: HISTORIAL ROBUSTO (Estilo Compras)
-       ========================================================= */
-    public function getHistory($userId, $order = 'DESC'): array
-    {
-        $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
-        try {
-            // USAMOS SUBCONSULTAS PARA EVITAR QUE EL 'LEFT JOIN' ROMPA LOS DATOS
-            // Y RENOMBRAMOS LAS COLUMNAS PARA QUE COINCIDAN CON LO QUE ESPERA JS
-            $sql = "
-                SELECT 
-                    s.id,
-                    s.sale_date as created_at,  -- Alias directo para JS
-                    s.total_amount as total,    -- Alias directo para JS
-                    s.commission_amount as commission,
-                    
-                    -- 1. Nombre Cliente
-                    COALESCE(c.full_name, 'Cliente General') as customer_name,
-                    
-                    -- 2. Nombre Vendedor (Busca en Empleados -> Usuarios -> ID)
-                    COALESCE(
-                        (SELECT full_name FROM employees WHERE id = s.seller_id),
-                        (SELECT full_name FROM users WHERE id = s.seller_id),
-                        CASE WHEN s.seller_id IS NOT NULL THEN CONCAT('ID: ', s.seller_id) ELSE NULL END,
-                        '-'
-                    ) as seller_name,
-
-                    -- 3. Métodos de Pago (Lista separada por coma)
-                    (
-                        SELECT GROUP_CONCAT(pm.name SEPARATOR ', ')
-                        FROM sale_payments sp
-                        JOIN payment_methods pm ON sp.payment_method_id = pm.id
-                        WHERE sp.sale_id = s.id
-                    ) as payment_methods_str
-
-                FROM sales s
-                LEFT JOIN customers c ON s.customer_id = c.id
-                WHERE s.user_id = :user
-                ORDER BY s.sale_date $order
-                LIMIT 100
-            ";
-
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':user' => $userId]);
-
-            // Procesamos los pagos aquí mismo para devolver un array limpio
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            return array_map(function($row) {
-                // Convertir string de pagos en array
-                $row['payments'] = !empty($row['payment_methods_str']) ? explode(', ', $row['payment_methods_str']) : [];
-                // Asegurar tipos numéricos
-                $row['total'] = (float)$row['total'];
-                $row['commission'] = (float)$row['commission'];
-                return $row;
-            }, $results);
-
-        } catch (Exception $e) {
-            error_log("SalesModel::getHistory Error: " . $e->getMessage());
-            return [];
-        }
     }
 
     /* =========================================================
@@ -92,82 +31,72 @@ class SalesModel {
         return ['inventory_id' => $res['inventory_id'], 'table' => "`" . str_replace("`", "``", $res['table_name']) . "`", 'stock_col' => "`" . str_replace("`", "``", $stockCol) . "`"];
     }
 
-    public function createSale($userId, $data): bool|string {
+    /**
+     * Registra una venta en la tabla SALES (Estándar Profesional)
+     * Reemplaza a la antigua 'registrarVenta'
+     */
+    public function createSale($userId, $inventoryId, $clientId, $data): bool|string
+    {
         try {
-            $this->db->beginTransaction();
+            if (!$this->db->inTransaction()) $this->db->beginTransaction();
 
-            // Contexto del inventario (solo si hay items de stock)
-            $ctx = null;
-            try { $ctx = $this->getInventoryContext($userId); } catch(Exception $e) { /* Si no hay inventario, permitimos venta manual igual */ }
+            // 1. Insertar Venta
+            $sql = "INSERT INTO sales 
+                    (user_id, inventory_id, customer_id, seller_id, payment_method_id, sale_date, total_amount, amount_tendered, change_returned, commission_amount, notes, proof_file) 
+                    VALUES 
+                    (:user, :inv, :client, :seller, :pay_method, NOW(), :total, :tendered, :change, :comm, :notes, :file)";
 
-            $dynamicTable = $ctx ? $ctx['table'] : null;
-            $stockCol = $ctx ? $ctx['stock_col'] : null;
-            $inventoryId = $ctx ? $ctx['inventory_id'] : null;
-
-            // 1. VALIDAR STOCK (Solo para productos reales con ID)
-            if (!empty($data['items']) && $dynamicTable) {
-                $checkStock = $this->db->prepare("SELECT $stockCol FROM $dynamicTable WHERE id = :id");
-                foreach ($data['items'] as $item) {
-                    // Si tiene ID, es un producto de inventario -> Validamos Stock
-                    if (!empty($item['id'])) {
-                        $checkStock->execute([':id' => $item['id']]);
-                        $current = $checkStock->fetchColumn();
-                        if ($current === false) throw new Exception("Prod ID {$item['id']} no existe.");
-                        if ($current < $item['cantidad']) throw new Exception("Stock insuficiente para '{$item['nombre']}'");
-                    }
-                }
-            }
-
-            // 2. INSERTAR CABECERA VENTA
-            $stmt = $this->db->prepare("INSERT INTO sales (user_id, customer_id, seller_id, total_amount, commission_amount, notes, sale_date) VALUES (:user, :cust, :seller, :total, :comm, :notes, NOW())");
+            $stmt = $this->db->prepare($sql);
             $stmt->execute([
-                ':user' => $userId,
-                ':cust' => $data['customer_id'] ?: null,
-                ':seller' => $data['seller_id'] ?: null,
-                ':total' => $data['total_final'],
-                ':comm' => $data['commission_amount'] ?: 0,
-                ':notes' => $data['notes'] ?? null
+                ':user'       => $userId,
+                ':inv'        => $inventoryId,
+                ':client'     => $clientId,
+                ':seller'     => !empty($data['employee_id']) ? $data['employee_id'] : null,
+                ':pay_method' => !empty($data['payment_method_id']) ? $data['payment_method_id'] : null,
+                ':total'      => $data['total_final'] ?? $data['total'],
+                ':tendered'   => $data['amount_tendered'] ?? 0,
+                ':change'     => $data['change_returned'] ?? 0,
+                ':comm'       => $data['commission_amount'] ?? 0,
+                ':notes'      => $data['notes'] ?? null,
+                ':file'       => $data['proof_file'] ?? null
             ]);
+
             $saleId = $this->db->lastInsertId();
 
-            // 3. INSERTAR ITEMS
-            if (!empty($data['items'])) {
-                // Preparamos consultas
-                $stmtDet = $this->db->prepare("INSERT INTO sale_items (sale_id, inventory_id, item_id, product_name, quantity, unit_price, total_price) VALUES (:sid, :inv, :pid, :name, :qty, :price, :sub)");
+            // 2. Detalles y Stock
+            if (!empty($data['items']) && is_array($data['items'])) {
+                $inventoryModel = new InventoryModel();
 
-                if ($dynamicTable) {
-                    $stmtStock = $this->db->prepare("UPDATE $dynamicTable SET $stockCol = $stockCol - :qty WHERE id = :pid");
-                }
+                $stmtDet = $this->db->prepare("
+                    INSERT INTO sale_details 
+                    (sale_id, product_id, product_name, quantity, unit_price, subtotal) 
+                    VALUES (:sid, :pid, :name, :qty, :price, :sub)
+                ");
 
                 foreach ($data['items'] as $item) {
-                    // Es producto real?
-                    $isRealProduct = !empty($item['id']);
+                    $productId = !empty($item['id']) ? $item['id'] : null;
 
                     $stmtDet->execute([
-                        ':sid' => $saleId,
-                        ':inv' => $isRealProduct ? $inventoryId : null, // NULL si es manual
-                        ':pid' => $isRealProduct ? $item['id'] : null,  // NULL si es manual
-                        ':name' => $item['nombre'],
-                        ':qty' => $item['cantidad'],
-                        ':price' => $item['precio'],
-                        ':sub' => $item['subtotal']
+                        ':sid'   => $saleId,
+                        ':pid'   => $productId,
+                        ':name'  => $item['nombre'] ?? $item['nombre_producto'] ?? 'Item',
+                        ':qty'   => $item['cantidad'],
+                        ':price' => $item['precio'] ?? $item['precio_unitario'],
+                        ':sub'   => ($item['precio'] ?? $item['precio_unitario']) * $item['cantidad']
                     ]);
 
-                    // Solo descontamos stock si es producto real
-                    if ($isRealProduct && $dynamicTable) {
-                        $stmtStock->execute([':qty' => $item['cantidad'], ':pid' => $item['id']]);
+                    if ($productId) {
+                        // AQUÍ ESTÁ EL CAMBIO CLAVE: Pasamos inventoryId
+                        $inventoryModel->decreaseStock($userId, $productId, $item['cantidad'], $inventoryId);
                     }
                 }
             }
 
-            // 4. INSERTAR PAGOS
-            if (!empty($data['payments'])) {
-                $checkTable = $this->db->query("SHOW TABLES LIKE 'sale_payments'");
-                if($checkTable->rowCount() > 0) {
-                    $stmtPay = $this->db->prepare("INSERT INTO sale_payments (sale_id, payment_method_id, amount, surcharge_amount) VALUES (:sid, :pmid, :amt, :sur)");
-                    foreach ($data['payments'] as $pay) {
-                        $stmtPay->execute([':sid'=>$saleId,':pmid'=>$pay['method_id'],':amt'=>$pay['amount'],':sur'=>$pay['surcharge_val']]);
-                    }
+            // 3. Pagos
+            if (!empty($data['payments']) && is_array($data['payments'])) {
+                $stmtPay = $this->db->prepare("INSERT INTO sale_payments (sale_id, payment_method_id, amount, surcharge) VALUES (:sid, :pmid, :amt, :sur)");
+                foreach ($data['payments'] as $pay) {
+                    $stmtPay->execute([':sid'=>$saleId, ':pmid'=>$pay['method_id'], ':amt'=>$pay['amount'], ':sur'=>$pay['surcharge_val']??0]);
                 }
             }
 
@@ -175,7 +104,8 @@ class SalesModel {
             return $saleId;
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log("SalesModel Error: " . $e->getMessage());
             throw $e;
         }
     }
@@ -226,19 +156,96 @@ class SalesModel {
         } catch (Exception $e) { $this->db->rollBack(); return false; }
     }
 
+    public function getHistory($userId, $order = 'DESC'): array
+    {
+        $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+        try {
+            $sql = "
+                SELECT 
+                    s.id,
+                    s.sale_date as created_at,
+                    s.total_amount as total,
+                    s.commission_amount as commission,
+                    COALESCE(c.full_name, 'Cliente General') as customer_name,
+                    COALESCE(
+                        (SELECT full_name FROM employees WHERE id = s.seller_id),
+                        (SELECT full_name FROM users WHERE id = s.seller_id),
+                        '-'
+                    ) as seller_name
+                FROM sales s
+                LEFT JOIN customers c ON s.customer_id = c.id
+                WHERE s.user_id = :user
+                ORDER BY s.sale_date $order
+                LIMIT 100
+            ";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':user' => $userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
     public function getDetails($saleId, $userId): ?array {
         try {
-            $stmt = $this->db->prepare("SELECT s.*, c.full_name as customer_name, (SELECT full_name FROM employees WHERE id = s.seller_id) as seller_name FROM sales s LEFT JOIN customers c ON s.customer_id = c.id WHERE s.id = :id AND s.user_id = :user");
+            // 1. Cabecera (Traemos datos de la tabla nueva 'sales')
+            $stmt = $this->db->prepare("
+                SELECT 
+                    s.*, 
+                    s.sale_date as created_at,         -- JS usa 'created_at'
+                    s.total_amount as total_final,     -- JS usa 'total_final'
+                    c.full_name as customer_name,
+                    c.full_name as nombre_cliente,     -- Compatibilidad
+                    COALESCE(e.full_name, u.full_name, 'Sistema') as seller_name
+                FROM sales s
+                LEFT JOIN customers c ON s.customer_id = c.id
+                LEFT JOIN employees e ON s.seller_id = e.id
+                LEFT JOIN users u ON s.seller_id = u.id
+                WHERE s.id = :id AND s.user_id = :user
+            ");
             $stmt->execute([':id' => $saleId, ':user' => $userId]);
             $sale = $stmt->fetch(PDO::FETCH_ASSOC);
+
             if (!$sale) return null;
-            $stmtDet = $this->db->prepare("SELECT * FROM sale_items WHERE sale_id = :id");
+
+            // 2. Items (Buscamos en 'sale_details' y renombramos para JS)
+            // Tu JS usa: i.product_name, i.quantity, i.price, i.subtotal
+            $stmtDet = $this->db->prepare("
+                SELECT 
+                    id,
+                    sale_id,
+                    product_id,
+                    product_name, 
+                    product_name as nombre,    -- Para edición
+                    quantity, 
+                    quantity as cantidad,      -- Para edición
+                    unit_price as price,       -- <--- IMPORTANTE: JS usa 'price'
+                    unit_price as precio,      -- Para edición
+                    subtotal
+                FROM sale_details 
+                WHERE sale_id = :id
+            ");
             $stmtDet->execute([':id' => $saleId]);
             $items = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
-            $stmtPay = $this->db->prepare("SELECT sp.*, pm.name as payment_method_name FROM sale_payments sp LEFT JOIN payment_methods pm ON sp.payment_method_id = pm.id WHERE sp.sale_id = :id");
-            $stmtPay->execute([':id' => $saleId]);
-            $sale['payments'] = $stmtPay->fetchAll(PDO::FETCH_ASSOC);
-            return ['sale' => $sale, 'items' => $items];
-        } catch (Exception $e) { return null; }
+
+            // 3. Pagos (Tabla 'sale_payments')
+            $payments = [];
+            try {
+                $stmtPay = $this->db->prepare("
+                    SELECT sp.*, pm.name as payment_method_name 
+                    FROM sale_payments sp
+                    LEFT JOIN payment_methods pm ON sp.payment_method_id = pm.id
+                    WHERE sp.sale_id = :id
+                ");
+                $stmtPay->execute([':id' => $saleId]);
+                $payments = $stmtPay->fetchAll(PDO::FETCH_ASSOC);
+            } catch(Exception $ex) { /* Ignorar si no hay pagos */ }
+
+            return ['sale' => $sale, 'items' => $items, 'payments' => $payments];
+
+        } catch (Exception $e) {
+            error_log("Error SalesModel::getDetails: " . $e->getMessage());
+            return null;
+        }
     }
 }

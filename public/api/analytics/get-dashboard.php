@@ -1,44 +1,55 @@
 ﻿<?php
-header('Content-Type: application/json');
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
+// public/api/analytics/get-dashboard.php
+
+// 1. CARGAR EL AUTOLOADER DE COMPOSER (¡CRÍTICO!)
+require_once dirname(__DIR__, 3) . '/vendor/autoload.php';
+
+// 2. Cargar dependencias del proyecto
+require_once dirname(__DIR__, 3) . '/src/core/Database.php';
+require_once dirname(__DIR__, 3) . '/src/Models/AnalyticsModel.php';
 
 use App\Models\AnalyticsModel;
 
+header('Content-Type: application/json');
+
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+$userId = $_SESSION['user_id'] ?? null;
+$inventoryId = $_SESSION['inventory_id'] ?? null;
+
+if (!$userId) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
 try {
-    $root = dirname(__DIR__, 3);
-    require_once $root . '/vendor/autoload.php';
-    require_once $root . '/src/helpers/auth_helper.php';
-    require_once $root . '/src/Models/AnalyticsModel.php';
-
-    if (!function_exists('getCurrentUser')) throw new Exception('Auth error');
-    $user = getCurrentUser();
-    if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
-
     $model = new AnalyticsModel();
-    $userId = $user['id'];
 
-    // 1. Totales Generales
-    $financials = $model->getFinancialTotals($userId);
+    // 1. Totales Financieros (Ingresos, Gastos, Ticket Promedio)
+    $financials = $model->getFinancialTotals($userId, $inventoryId);
 
     // 2. Valor del Inventario
-    $inventoryValue = $model->getInventoryValuation($userId);
+    $inventoryVal = $model->getInventoryValuation($userId, $inventoryId);
 
-    // 3. Datos para Gráficos
-    $chartData = $model->getChartData($userId);
+    // 3. Gráfico Principal (Líneas - Flujo de Caja)
+    $chartData = $model->getChartData($userId, $inventoryId);
 
     // 4. Top Productos
-    $topProducts = $model->getTopProducts($userId);
+    $topProducts = $model->getTopProducts($userId, $inventoryId);
+
+    // 5. Distribución de Pagos (Gráfico de Dona)
+    $paymentDist = $model->getPaymentDistribution($userId, $inventoryId);
 
     echo json_encode([
         'success' => true,
         'financials' => $financials,
-        'inventory_value' => $inventoryValue,
+        'inventory_value' => $inventoryVal,
         'chart_data' => $chartData,
-        'top_products' => $topProducts
+        'top_products' => $topProducts,
+        'payment_distribution' => $paymentDist
     ]);
 
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['success'=>false, 'message'=>$e->getMessage()]);
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

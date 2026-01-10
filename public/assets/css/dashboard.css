@@ -244,6 +244,7 @@
 /* Vistas dentro del contenido principal */
 .dashboard-view { height: 100%;/* Ocultas por defecto con .hidden */ }
 
+
 /* Contenedor de la Tabla */
 .table-container {
     width: 100%;
@@ -440,7 +441,7 @@ table {
 
 #config-db,
 #notifications, #providers, #customers, #receipts, #sales, #analysis {
-    width: 70%;
+    width: 90%;
     background-color: var(--color-white);
     border: var(--border-strong);
     border-radius: var(--border-radius);

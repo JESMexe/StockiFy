@@ -4182,7 +4182,7 @@ export async function loadTableData() {
         }
     } catch (error) {
         console.error("🛑 ¡ERROR CRÍTICO CAPTURADO!", error);
-        pop_ups.error(error.message || String(error), "[loadTableData] Error CATCH");
+        //pop_ups.error(error.message || String(error), "[loadTableData] Error CATCH");
         if (error.message.includes('No autorizado')) {
             window.location.href = '/login.php';
         } else {
