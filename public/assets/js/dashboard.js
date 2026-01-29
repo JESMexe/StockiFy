@@ -14,6 +14,7 @@ import { paymentsModuleInstance } from './payment/payment.js';
 import {initializeImportModal, openImportModal, setStockifyColumns} from './import.js';
 
 // --- 2. VARIABLES GLOBALES ---
+let activeInventoryId = null;
 let allData = []; // Guardo todos los datos para filtrar
 let currentTableColumns = []; // Guardo las columnas de la tabla actual
 let originalData = []; // COPIA DE SEGURIDAD PARA EL ORDEN ORIGINAL
@@ -24,6 +25,7 @@ let isCriticalFilterActive = false; // Estado del filtro de peligro
 let isActionsHidden = true; // false = Visible, true = Oculto (Pestaña activa)
 let currentDollarRate = 0;
 const protectedColumns = ['id', 'created_at'];
+let activeDisplayColumns = [];
 
 let deleteModal, deleteConfirmInput, confirmDeleteBtn, deleteDbNameConfirmSpan, deleteErrorMsg;
 let currentDbNameToDelete = '';
@@ -210,6 +212,7 @@ async function renderTable(columns, data) {
     if (activeFeatures.min_stock && columns.includes(minStockCol)) orderedSpecialColumns.push(minStockCol);
 
     const displayColumns = [...normalColumns, ...orderedSpecialColumns];
+    activeDisplayColumns = displayColumns;
 
     // --- HEADER ---
     let actionsTh = '';
@@ -221,9 +224,12 @@ async function renderTable(columns, data) {
         let niceName = formatColumnName(col);
         let label = niceName;
 
+        let iconHtml = '';
+
         if (col === columnMapping.stock) label += ' <i class="ph-bold ph-package"></i>';
         if (col === columnMapping.sale_price) label += ' <i class="ph-bold ph-coin-vertical"></i>';
         if (col === columnMapping.buy_price) label += ' <i class="ph-bold ph-shopping-cart"></i>';
+        if (col === columnMapping.name) label += '<i class="ph-bold ph-article"></i>';
         if (col === 'min_stock') label += ' <i class="ph-bold ph-folder-simple-minus"></i>';
 
         let sortIcon = '';
@@ -274,8 +280,14 @@ async function renderTable(columns, data) {
                 const symbol = (currency === 'USD') ? 'US$' : '$';
 
                 // Formateo visual del valor
+                // Formateo visual del valor inteligente
                 if ((isSale || isBuy) && !isNaN(value) && value !== '-') {
-                    value = `${symbol} ${parseFloat(value).toFixed(2)}`;
+                    const numVal = parseFloat(value);
+                    if (Math.abs(numVal) < 10 && numVal % 1 !== 0) {
+                        value = `${symbol} ${parseFloat(numVal.toFixed(6))}`;
+                    } else {
+                        value = `${symbol} ${numVal.toFixed(2)}`;
+                    }
                 }
 
                 // MODO EDICIÓN
@@ -412,28 +424,54 @@ window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
 
     if (isNaN(val)) return;
 
-    btn.textContent = "Wait...";
+    const originalText = btn.textContent;
+    btn.textContent = "...";
 
     try {
         const res = await fetch('/api/table/get-rate.php');
         const rateData = await res.json();
 
-        let newVal = val;
-        if (currentCurr === 'ARS' && targetCurr === 'USD') newVal = val / rateData.sell;
-        else if (currentCurr === 'USD' && targetCurr === 'ARS') newVal = val * rateData.buy;
+        // LÓGICA DE PROMEDIO (Simétrica)
+        let rate = 0;
 
-        input.value = newVal.toFixed(2);
+        // Si la API ya devuelve avg, usalo. Si no, calculalo.
+        if (rateData.avg) {
+            rate = parseFloat(rateData.avg);
+        } else if (rateData.buy && rateData.sell) {
+            rate = (parseFloat(rateData.buy) + parseFloat(rateData.sell)) / 2;
+        } else {
+            rate = parseFloat(rateData.sell || 1200);
+        }
+
+        let newVal = val;
+
+        if (currentCurr === 'ARS' && targetCurr === 'USD') {
+            newVal = val / rate;
+        } else if (currentCurr === 'USD' && targetCurr === 'ARS') {
+            newVal = val * rate;
+        }
+
+        // VISUALIZACIÓN: Si es chico, mostrar hasta 6 decimales. Si es grande, 2.
+        if (Math.abs(newVal) < 10 && newVal !== 0) {
+            // Cortamos ceros innecesarios (ej: 0.005000 -> 0.005)
+            input.value = parseFloat(newVal.toFixed(6));
+        } else {
+            input.value = newVal.toFixed(2);
+        }
 
         btn.textContent = targetCurr;
+
+        // Reconfigurar botón para permitir volver
         btn.onclick = () => window.toggleRowCurrency(btn, rowId, type, targetCurr);
 
+        // Guardar metadata para el saveRowChanges
         input.dataset.newCurrency = targetCurr;
-        input.dataset.currencyType = type; // 'sale' o 'buy'
+        input.dataset.currencyType = type;
 
     } catch(e) {
         console.error(e);
-        btn.textContent = currentCurr; // Revertir
-        pop_ups.error("Error al cotizar");
+        btn.textContent = originalText;
+        pop_ups.error("Error obteniendo cotización");
     }
 };
 
@@ -544,70 +582,72 @@ window.enableEditRow = (btn, id) => {
 };
 
 /* =========================================
-   2. GUARDAR CAMBIOS (VERSIÓN DEFINITIVA)
+   2. GUARDAR CAMBIOS (VERSIÓN BLINDADA)
    ========================================= */
-// Recibimos (btn, id) porque así está escrito en tu onclick
 window.saveRowChanges = async (btn, id) => {
-
-    console.log("Iniciando guardado...", { btn, id });
-
-    // MÉTODO 1: Buscar por ID (Estándar)
+    // 1. Localizar la fila
     let row = document.querySelector(`tr[data-id="${id}"]`);
+    if (!row && btn) row = btn.closest('tr');
 
-    // MÉTODO 2: Fallback (Si falla el selector, usamos el botón para encontrar su fila padre)
-    if (!row && btn) {
-        console.warn("Selector por ID falló, intentando buscar fila padre...");
-        row = btn.closest('tr');
-    }
-
-    // Si ambos fallan, ahí sí damos error
     if (!row) {
-        console.error("ERROR CRÍTICO: No se pudo localizar la fila.", { idProvided: id });
-        pop_ups.error("Error interno: No se encuentra la fila a editar.");
+        pop_ups.error("Error interno: No se encuentra la fila.");
         return;
     }
 
     // 2. Recolectar datos
+    // Buscamos por la clase 'editing-input' que pusimos en renderTable
     const inputs = row.querySelectorAll('.editing-input');
     const updates = {};
     const metaUpdates = {};
-
-    if (inputs.length === 0) {
-        console.warn("La fila se encontró pero no tiene inputs .editing-input");
-        pop_ups.warning("No hay datos editables detectados.");
-        return;
-    }
+    let hasData = false;
 
     inputs.forEach(input => {
-        const col = input.dataset.col;
+        // Intentamos leer data-column (nuevo estándar) o data-col (viejo)
+        const colName = input.dataset.column || input.dataset.col;
         const val = input.value;
 
-        // Guardamos dato normal
-        updates[col] = val;
+        // --- FILTRO DE SEGURIDAD ---
+        // Si colName es undefined, vacío, o la cadena literal "undefined", LO SALTAMOS.
+        if (!colName || colName === 'undefined' || colName === 'null') {
+            console.warn("Input ignorado por falta de nombre de columna:", input);
+            return;
+        }
+
+        // Guardamos dato
+        updates[colName] = val;
+        hasData = true;
 
         // Guardamos metadata de moneda (si hubo cambio)
         if (input.dataset.newCurrency) {
-            const type = input.dataset.currencyType; // 'sale' o 'buy'
+            const type = input.dataset.currencyType;
             const key = (type === 'sale') ? '_meta_currency_sale' : '_meta_currency_buy';
             metaUpdates[key] = input.dataset.newCurrency;
         }
     });
 
-    // 3. Bloquear botón visualmente para evitar doble clic
+    if (!hasData) {
+        pop_ups.warning("No se detectaron datos válidos para guardar.");
+        return;
+    }
+
+    // 3. UI Feedback
     const originalContent = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
 
     // 4. Enviar al Backend
     try {
+        const payload = {
+            id: id,
+            inventory_id: activeInventoryId,
+            data: updates,
+            meta: metaUpdates
+        };
+
         const response = await fetch('/api/table/update-row.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: id,
-                data: updates,
-                meta: metaUpdates
-            })
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();
@@ -615,20 +655,18 @@ window.saveRowChanges = async (btn, id) => {
         if (result.success) {
             pop_ups.success("Guardado correctamente");
             editingRowId = null;
-            await loadTableData(); // Recargar tabla
+            await loadTableData();
         } else {
-            console.error("Error Backend:", result);
-            pop_ups.error(result.message || "Error al guardar");
-            // Restaurar botón si falló
-            btn.disabled = false;
-            btn.innerHTML = originalContent;
+            throw new Error(result.message || "Error al guardar");
         }
     } catch (error) {
         console.error("Error Fetch:", error);
-        pop_ups.error("Error de conexión");
-        // Restaurar botón
-        btn.disabled = false;
-        btn.innerHTML = originalContent;
+        pop_ups.error("Error al guardar: " + error.message);
+    } finally {
+        if(btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
     }
 }
 
@@ -872,80 +910,100 @@ function handleEditClick(button) {
 }
 
 async function handleSaveClick(button) {
-    const row = button.closest('tr.editing-row');
+    // Buscar la fila (Soporte para tr.editing-row o tr normal en edición)
+    const row = button.closest('tr');
     if (!row) return;
-    const itemId = row.dataset.itemId;
+
+    // Obtener ID (Soporte para data-itemId o data-id)
+    const itemId = row.dataset.itemId || row.dataset.id;
+
     const dataToUpdate = {};
+    const metaUpdates = {}; // Para monedas (ARS/USD)
     let allInputsValid = true;
 
-    row.querySelectorAll('input[data-column]').forEach(input => {
+    // Usamos el selector corregido: input[data-column]
+    const inputs = row.querySelectorAll('input[data-column]');
+
+    if (inputs.length === 0) {
+        console.warn("No se encontraron inputs editables en la fila", row);
+        return;
+    }
+
+    inputs.forEach(input => {
         const colName = input.dataset.column;
         const value = input.value;
-        if (input.type === 'number' && isNaN(parseFloat(value))) {
+
+        // Validación básica de números
+        if (input.type === 'number' && isNaN(parseFloat(value)) && value !== '') {
             allInputsValid = false;
         }
+
         dataToUpdate[colName] = value;
+
+        // Capturar cambios de moneda (_meta_currency)
+        if (input.dataset.newCurrency) {
+            const type = input.dataset.currencyType; // 'sale' o 'buy'
+            const key = (type === 'sale') ? '_meta_currency_sale' : '_meta_currency_buy';
+            metaUpdates[key] = input.dataset.newCurrency;
+        }
     });
 
     if (!allInputsValid) {
         pop_ups.warning("Verificá que todos los campos numéricos tengan un número válido.", "¡Cuidado!");
         return;
     }
+
+    // Feedback visual
     button.disabled = true;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
 
     try {
-        const result = await api.updateTableRow(itemId, dataToUpdate);
-        if (result.success && result.updatedItem) {
-            const rowIndex = allData.findIndex(r => (r.id ?? r.Id ?? r.ID) == itemId);
-            if (rowIndex > -1) {
-                allData[rowIndex] = result.updatedItem; // Actualizo datos locales
+        // Enviamos data y meta (si existe)
+        const payload = {
+            id: itemId, // Aseguramos enviar el ID en el cuerpo también
+            ...dataToUpdate,
+            ...metaUpdates
+        };
+
+        // NOTA: Tu API espera (itemId, dataToUpdate). Si necesitas enviar meta,
+        // revisa si api.updateTableRow soporta un 3er argumento o si debes meterlo en dataToUpdate.
+        // Asumo envío estándar según tu código original:
+        const result = await api.updateTableRow(itemId, payload);
+
+        if (result.success) {
+            // Actualizar datos locales
+            if (result.updatedItem) {
+                const rowIndex = allData.findIndex(r => (r.id ?? r.Id ?? r.ID) == itemId);
+                if (rowIndex > -1) {
+                    allData[rowIndex] = result.updatedItem;
+                }
             }
-            editingRowId = null; // Salgo modo edición
+
+            pop_ups.success("Guardado correctamente");
+            editingRowId = null;
+
+            // Recargar tabla manteniendo filtros
             const filterableColumns = currentTableColumns.filter(
                 col => col.toLowerCase() !== 'created_at'
             );
-            renderTable(filterableColumns, allData); // Re-renderizo
+            renderTable(filterableColumns, allData);
+
         } else {
-            throw new Error(result.message);
+            throw new Error(result.message || "Error desconocido");
         }
     } catch (error) {
+        console.error(error);
         pop_ups.error(`Error al guardar: ${error.message}`);
+    } finally {
         button.disabled = false;
+        button.innerHTML = originalIcon || '<i class="ph ph-check"></i>'; // Fallback icon
     }
 }
 
 function handleCancelClick() {
     editingRowId = null;
     renderTable(currentTableColumns, allData);
-}
-
-async function handleSaveNewRow(event) {
-    const saveButton = event.target;
-    const newRowElement = saveButton.closest('.editing-row');
-    if (!newRowElement) return;
-
-    const newItemData = {};
-    newRowElement.querySelectorAll('input[data-column]').forEach(input => {
-        const colName = input.dataset.column;
-        newItemData[colName] = input.value.trim();
-    });
-
-    saveButton.disabled = true;
-    saveButton.textContent = 'Guardando...';
-
-    try {
-        const result = await api.addItemToTable(newItemData);
-        if (result.success && result.newItem) {
-            allData.unshift(result.newItem);
-            await renderTable(currentTableColumns, allData);
-        } else {
-            throw new Error(result.message || "Error al guardar la fila.");
-        }
-    } catch (error) {
-        pop_ups.error(`Error al guardar: ${error.message}`);
-        saveButton.disabled = false;
-        saveButton.textContent = 'Guardar';
-    }
 }
 
 function handleCancelNewRow(event) {
@@ -1233,148 +1291,94 @@ function getRelativeDateGroup(dateString) {
     });
 }
 
-// --- Fila editable (Se adoptó la lógica de Nano con correcciones) ---
+
+
 async function createEditableRow(columns) {
     const tr = document.createElement('tr');
     tr.classList.add('editing-row');
 
-    // Consigo preferencias y defaults para columnas recomendadas de la tabla actual (LÓGICA DE NANO)
-    const inventoryPreferencesResult = await api.getCurrentInventoryPreferences();
-    if (!inventoryPreferencesResult.success) {
-        console.error("Error crítico: No se encontraron las preferencias del inventario.");
-        return;
-    }
-    var inventoryPreferences = inventoryPreferencesResult;
+    // 1. Defaults de Precios
+    let inventoryDefaults = {};
+    try {
+        const res = await api.getCurrentInventoryDefaults();
+        if(res.success) inventoryDefaults = res;
+    } catch(e) {}
 
-    const inventoryDefaultsResult = await api.getCurrentInventoryDefaults();
-    if (!inventoryDefaultsResult.success) {
-        console.error("Error crítico: No se encontraron los defaults del inventario.");
-        return;
-    }
-    let inventoryDefaults = inventoryDefaultsResult;
-
-    // Declaro variables para la asignación automatica de precio de Compra
-    let receiptPrice = parseFloat(inventoryDefaults.receipt_price);
-    let salePrice = parseFloat(inventoryDefaults.sale_price);
-    let gainValue = parseFloat(inventoryDefaults.hard_gain);
-
-    let receiptPriceInput = null;
-    let salePriceInput = null;
-    let gainValueInput = null;
-
-    // Lógica de cálculo de precio de Nano (adoptada)
-    inventoryDefaults = getAutoPrice(inventoryPreferences, inventoryDefaults, salePrice, gainValue);
-    // FIN Lógica de cálculo de precio de Nano
-
-
-    // SWITCH para cada columna (LÓGICA DE NANO)
+    // 2. Iteramos las columnas VISUALES
     columns.forEach(col => {
         const td = document.createElement('td');
+        const colName = col;
         const colLower = col.toLowerCase();
-        let shouldAppend = true;
 
-        switch (colLower) {
-            case 'id':
-            case 'created_at':
-                td.textContent = '';
-                shouldAppend = false;
-                break;
-            case 'stock':
-                td.classList.add('stock-cell');
-                td.innerHTML = `
-                 <button class="stock-btn minus" disabled>-</button>
-                 <input type="number" class="stock-input" value="0" min="0" data-column="${col}"> 
-                 <button class="stock-btn plus" disabled>+</button>`;
-                break;
-            case 'name':
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
-                nameInput.placeholder = 'Nombre';
-                nameInput.dataset.column = col;
-                td.appendChild(nameInput);
-                break;
-            case 'min_stock':
-                if (inventoryPreferences.min_stock === 1) {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.placeholder = 'Stock Mínimo';
-                    input.value = inventoryDefaults.min_stock;
-                    input.dataset.column = col;
-                    td.appendChild(input);
-                }
-                else{shouldAppend = false;}
-                break;
-            case 'sale_price':
-                if (inventoryPreferences.sale_price === 1) {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.placeholder = 'Precio de Venta';
-                    input.value = salePrice;
-                    input.dataset.column = col;
-                    td.appendChild(input);
-                    salePriceInput = input;
-                }
-                else{shouldAppend = false;}
-                break;
-            case 'receipt_price':
-                if (inventoryPreferences.receipt_price === 1) {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.placeholder = 'Precio de Compra';
-                    input.value = receiptPrice;
-                    receiptPriceInput = input;
-                    input.dataset.column = col;
-                    td.appendChild(input);
-                }
-                else{shouldAppend = false;}
-                break;
-            case 'hard_gain':
-            case 'percentage_gain':
-                if (inventoryPreferences.hard_gain === 1 || inventoryPreferences.percentage_gain === 1) {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.placeholder = 'Margen de Ganancia';
-                    input.value = inventoryDefaults.hard_gain;
-                    gainValueInput = input;
-                    input.dataset.column = col;
-                    td.appendChild(input);
-                }
-                else{shouldAppend = false;}
-                break;
-            default:
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.placeholder = col.charAt(0).toUpperCase() + col.slice(1);
-                input.dataset.column = col;
-                td.appendChild(input);
-                break;
-        }
-        if (shouldAppend) {
+        // --- A. Columnas de Sistema (Solo lectura - Guion) ---
+        if (['id', 'created_at', 'updated_at', 'ganancia', 'percentage_gain', 'hard_gain'].includes(colLower)) {
+            td.textContent = '-';
+            td.style.textAlign = 'center';
+            td.style.color = '#ccc';
+            td.style.verticalAlign = 'middle';
             tr.appendChild(td);
+            return;
         }
+
+        // --- B. Definir Inputs ---
+        let inputType = 'text';
+        let align = 'left';
+        let val = '';
+        let extraAttrs = '';
+
+        // Lógica Numérica
+        if (columnMapping.stock === colName || ['stock', 'min_stock', 'cantidad', 'amount'].includes(colLower)) {
+            inputType = 'number';
+            align = 'center';
+            val = (colLower === 'min_stock') ? (inventoryDefaults.min_stock || 0) : 0;
+        }
+        else if (columnMapping.sale_price === colName || ['precio', 'price', 'costo', 'cost'].some(k => colLower.includes(k))) {
+            inputType = 'number';
+            align = 'left';
+            extraAttrs = 'step="0.01"';
+            if (colName === columnMapping.sale_price) val = inventoryDefaults.sale_price || 0;
+            if (colName === columnMapping.buy_price) val = inventoryDefaults.receipt_price || 0;
+        }
+
+        // Excepción de Texto
+        if (['nombre', 'name', 'categoria', 'category', 'sku', 'detalle', 'codigo'].includes(colLower)) {
+            inputType = 'text';
+            align = 'left';
+            val = '';
+            extraAttrs = '';
+        }
+
+        td.innerHTML = `<input type="${inputType}" class="form-control" value="${val}" data-column="${colName}" ${extraAttrs} style="width:100%; text-align:${align}">`;
+        tr.appendChild(td);
     });
 
-    // Lógica de Listener de Precio Automático (LÓGICA DE NANO)
-    if (inventoryPreferences.auto_price === 1 && salePriceInput && receiptPriceInput && gainValueInput) {
-        const updateReceiptPrice = () => {
-            salePrice = salePriceInput.value;
-            gainValue = gainValueInput.value;
+    // 3. Celda Virtual para Ganancia (Si existe en la tabla visual)
+    const headers = document.querySelectorAll('#data-table thead th');
+    const hasGainHeader = Array.from(headers).some(th => th.textContent.includes('Ganancia'));
 
-            receiptPrice = getAutoPrice();
-            receiptPriceInput.value = receiptPrice.toFixed(2);
-        };
-
-        salePriceInput.addEventListener('input', updateReceiptPrice);
-        gainValueInput.addEventListener('input', updateReceiptPrice);
-        updateReceiptPrice();
+    if (hasGainHeader) {
+        const tdGain = document.createElement('td');
+        tdGain.textContent = '-';
+        tdGain.style.textAlign = 'center';
+        tdGain.style.verticalAlign = 'middle';
+        tdGain.style.color = '#ccc';
+        tr.appendChild(tdGain);
     }
 
+    // 4. BOTONES DE ACCIÓN (ESTILO IDÉNTICO A EDICIÓN)
     const actionTd = document.createElement('td');
-    actionTd.classList.add('action-buttons');
+    actionTd.classList.add('actions-cell'); // Usamos la misma clase que en tu ejemplo
+    actionTd.style.verticalAlign = 'middle';
+
     actionTd.innerHTML = `
-        <button class="btn btn-primary save-new-row-btn">Guardar</button>
-        <button class="btn btn-secondary cancel-new-row-btn">Cancelar</button>
-    `;
+        <div class="flex-row">
+            <button class="btn-icon save-new-row-btn" title="Guardar" style="border: none; cursor: pointer;">
+                <i class="ph ph-check" style="color: var(--accent-green); font-weight: bold;"></i>
+            </button>
+            <button class="btn-icon cancel-new-row-btn" title="Cancelar" style="border: none; cursor: pointer;">
+                <i class="ph ph-x" style="color: var(--accent-red); font-weight: bold;"></i>
+            </button>
+        </div>`;
     tr.appendChild(actionTd);
 
     return tr;
@@ -1412,17 +1416,90 @@ function getAutoPrice(inventoryPreferences, inventoryDefaults, salePrice, gainVa
     }
 }
 
-// **handleAddRowClick (Adaptada para la nueva función createEditableRow)**
-function handleAddRowClick() {
+
+async function handleAddRowClick() {
     const tableBody = document.querySelector('#data-table tbody');
     if (!tableBody || tableBody.querySelector('.editing-row')) return;
-    const newRow = createEditableRow(currentTableColumns);
-    tableBody.prepend(newRow); // Inserto al principio
-    newRow.querySelector('.save-new-row-btn')?.addEventListener('click', handleSaveNewRow);
-    newRow.querySelector('.cancel-new-row-btn')?.addEventListener('click', handleCancelNewRow);
+
+    // Abrir columna de acciones si está cerrada para ver el botón Guardar
+    if (isActionsHidden && typeof toggleActionsColumn === 'function') {
+        toggleActionsColumn();
+    }
+
+    const addBtn = document.getElementById('add-row-btn');
+    if(addBtn) addBtn.disabled = true;
+
+    try {
+        // CORRECCIÓN: Usamos activeDisplayColumns para respetar el orden visual (Nombre, Precio, Stock...)
+        // Si por alguna razón está vacía, usamos currentTableColumns como respaldo.
+        const colsToUse = (activeDisplayColumns && activeDisplayColumns.length > 0)
+            ? activeDisplayColumns
+            : currentTableColumns;
+
+        const newRow = await createEditableRow(colsToUse);
+
+        tableBody.prepend(newRow);
+
+        newRow.querySelector('.save-new-row-btn')?.addEventListener('click', handleSaveNewRow);
+        newRow.querySelector('.cancel-new-row-btn')?.addEventListener('click', handleCancelNewRow);
+
+        // Foco en el primer input real
+        const firstInput = newRow.querySelector('input:not([disabled]):not([type="hidden"])');
+        if(firstInput) firstInput.focus();
+
+    } catch (error) {
+        console.error("Error:", error);
+    } finally {
+        if(addBtn) addBtn.disabled = false;
+    }
 }
 
-// **--- INICIO: FUNCIONES AUXILIARES NECESARIAS (De Nano) ---**
+
+async function handleSaveNewRow(event) {
+    const saveButton = event.target;
+    const newRowElement = saveButton.closest('.editing-row');
+    if (!newRowElement) return;
+
+    const newItemData = {};
+    newRowElement.querySelectorAll('input[data-column]').forEach(input => {
+        const colName = input.dataset.column;
+        newItemData[colName] = input.value.trim();
+    });
+
+    saveButton.disabled = true;
+    saveButton.textContent = 'Guardando...';
+
+    try {
+        const payload = {
+            data: newItemData,
+            inventory_id: activeInventoryId
+        }
+
+        const response = await fetch('/api/table/add-item.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.newItem) {
+            allData.unshift(result.newItem);
+            newRowElement.remove();
+            await renderTable(currentTableColumns, allData);
+
+            if(typeof pop_ups !== 'undefined') pop_ups.success("Fila creada exitosamente.");
+        } else {
+            throw new Error(result.message || "Error al guardar la fila.");
+        }
+    } catch (error) {
+        if(typeof pop_ups !== 'undefined') pop_ups.error(`Error al guardar: ${error.message}`);
+        saveButton.disabled = false;
+        saveButton.textContent = 'Guardar';
+    }
+}
+
+// **--- INICIO: FUNCIONES AUXILIARES NECESARIAS ---**
 function setupGreyBg(){
     const greyBg = document.getElementById('grey-background');
     const transactionModal = document.getElementById('transaction-picker-modal');
@@ -1520,6 +1597,21 @@ async function init() {
             handleDropColumn(e);
         } else if (e.target.classList.contains('rename-col-btn')) {
             handleRenameColumn(e);
+        }
+    });
+
+
+    window.addEventListener('open-column-config', () => {
+        const btn = document.getElementById('identify-columns-btn');
+        if(btn) btn.click();
+
+        const mainConfigBtn = document.getElementById('config-table-btn');
+        if(mainConfigBtn) {
+            mainConfigBtn.click();
+            setTimeout(() => {
+                const tabBtn = document.querySelector('[data-tab="identification"]');
+                if(tabBtn) tabBtn.click();
+            }, 300);
         }
     });
 
@@ -3625,10 +3717,17 @@ async function setupRecomendedColumns() {
                 btnConv.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...';
 
                 try {
+                    const rateToSend = (currentDollarRate && currentDollarRate > 0) ? currentDollarRate : 1;
+
                     const res = await fetch('/api/table/convert-currency.php', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ column_type: colType, target_currency: targetCurr })
+                        body: JSON.stringify({
+                            inventory_id: activeInventoryId,
+                            column_type: colType,
+                            target_currency: targetCurr,
+                            rate: rateToSend // <--- AGREGAMOS ESTO
+                        })
                     });
                     const data = await res.json();
 
@@ -4138,6 +4237,9 @@ export async function loadTableData() {
             originalData = [...allData];
             currentTableColumns = result.columns || [];
 
+            activeInventoryId = result.inventoryId || result.inventory_id;
+            console.log("Inventario Activo ID:", activeInventoryId);
+
             const filterableColumns = currentTableColumns.filter(
                 col => col.toLowerCase() !== 'created_at'
             );
@@ -4182,7 +4284,7 @@ export async function loadTableData() {
         }
     } catch (error) {
         console.error("🛑 ¡ERROR CRÍTICO CAPTURADO!", error);
-        //pop_ups.error(error.message || String(error), "[loadTableData] Error CATCH");
+        pop_ups.error(error.message || String(error), "[loadTableData] Error CATCH");
         if (error.message.includes('No autorizado')) {
             window.location.href = '/login.php';
         } else {

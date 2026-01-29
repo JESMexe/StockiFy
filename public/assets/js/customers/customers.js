@@ -34,9 +34,12 @@ export class CustomerModule {
                 #create-customer-modal .modal-content, 
                 #detail-customer-modal .modal-content {
                     background-color: #ffffff !important;
-                    box-shadow: 8px 8px 0px var(--accent-color);
+                    box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
                     border: 1px solid #ddd;
                     border-radius: 8px;
+                }
+                #detail-customer-modal .modal-content:hover {
+                    box-shadow: 8px 8px 0 var(--accent-color);
                 }
                 .form-group { margin-bottom: 15px; }
                 .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; font-size: 0.9rem; }
@@ -47,9 +50,13 @@ export class CustomerModule {
                 /* Detalles Estilizados */
                 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
                 .detail-item { 
-                    background-color: var(--accent-color-quat-opacity); 
+                    background-color: rgba(0,0,0,0.1); 
                     padding: 10px; 
                     border-radius: 4px; 
+                    border: 1px solid rgba(0,0,0); 
+                }
+                .detail-item:hover { 
+                    background-color: var(--accent-color-quat-opacity); 
                     border: 1px solid var(--accent-color); 
                 }
                 .detail-label { 
@@ -133,7 +140,7 @@ export class CustomerModule {
                 <div id="detail-customer-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1001;">
                     <div class="modal-content" style="width: 500px; max-width: 90%;">
                         <div class="modal-header">
-                            <h3>Ficha de Cliente</h3>
+                            <h3><i class="ph-bold ph-user-focus"></i>  Ficha de Cliente</h3>
                             <button class="modal-close-btn" id="close-detail-cust-modal">&times;</button>
                         </div>
                         <div class="modal-body" id="detail-cust-content" style="padding: 1.5rem;"></div>
@@ -349,7 +356,7 @@ export class CustomerModule {
                 const cust = data.customer;
                 c.innerHTML = `
                     <div style="text-align:center; margin-bottom:1.5rem;">
-                        <div style="width:60px; height:60px; background:var(--accent-color-quat-opacity); color:var(--accent-color); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 10px auto;">
+                        <div style="width:60px; height:60px; background:var(--accent-color-quat-opacity); color:var(--accent-color); border-radius:50%; border: 1px solid var(--accent-color); display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 10px auto;">
                             ${cust.full_name.charAt(0).toUpperCase()}
                         </div>
                         <h2 style="margin:0;">${cust.full_name}</h2>

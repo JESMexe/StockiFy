@@ -60,6 +60,28 @@ tbody td {
     text-align: left; /* Alineación por defecto */
 }
 
+#confirm-purchase-btn {
+    background: var(--sale-green); color: white;
+    border: 1px solid var(--sale-border-color);
+    border-radius: 8px; height: 50px;
+    width: 100%; margin-top: 15px; cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: none;
+    transition: all 0.1s;
+}
+#confirm-purchase-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--color-black); /* Sombra hover */
+}
+#confirm-purchase-btn:active:not(:disabled) {
+    transform: translate(0, 0);
+    box-shadow: none;
+}
+#confirm-purchase-btn:disabled {
+    background: #ccc; border-color: #999; color: #666;
+    cursor: not-allowed;
+}
+
 /* --- 2. MODAL DETALLE (TICKET REPLICADO EXACTO) --- */
 #detail-purchase-modal .modal-content {
     max-width: 95vw;
@@ -102,6 +124,10 @@ tbody td {
 }
 #detail-purchase-modal .modal-close-btn { position: absolute; top: 10px; right: 15px; color: #999; font-size: 1.5rem; background:none; border:none; }
 #detail-purchase-modal .modal-close-btn:hover { color: #000; }
+
+#quick-expense-btn:hover{
+    background: var(--accent-color-quat-opacity);
+}
 
 /* Cuerpo */
 #detail-purchase-modal .purchase-modal-body {

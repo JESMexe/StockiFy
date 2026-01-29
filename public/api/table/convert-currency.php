@@ -2,94 +2,120 @@
 header('Content-Type: application/json');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
+set_time_limit(300);
+
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
-require_once __DIR__ . '/../../../src/Services/ExchangeService.php';
+require_once __DIR__ . '/../../../src/Services/ExchangeService.php'; // Necesitamos el servicio real
 
 use App\core\Database;
 use App\Services\ExchangeService;
 
 try {
     $user = getCurrentUser();
-    if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
+    if (!$user) { echo json_encode(['success'=>false, 'message'=>'Sesión expirada']); exit; }
 
     $input = json_decode(file_get_contents('php://input'), true);
-    $targetCurrency = $input['target_currency'] ?? 'ARS'; // 'USD' o 'ARS'
-    $columnType = $input['column_type'] ?? 'sale_price';  // 'sale_price' o 'buy_price'
+
+    $columnType = $input['column_type'] ?? null;
+    $targetCurrency = $input['target_currency'] ?? null;
+    $inventoryId = $input['inventory_id'] ?? $_SESSION['active_inventory_id'] ?? null;
+
+    if (!$inventoryId || !$columnType || !$targetCurrency) throw new Exception("Faltan datos.");
 
     $db = Database::getInstance();
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // 1. Obtener Tabla y Preferencias
-    $stmt = $db->prepare("SELECT i.id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.user_id = ? ORDER BY i.created_at DESC LIMIT 1");
-    $stmt->execute([$user['id']]);
-    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmtInv = $db->prepare("SELECT t.table_name, i.preferences FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId AND i.user_id = :uid");
+    $stmtInv->execute([':invId' => $inventoryId, ':uid' => $user['id']]);
+    $invData = $stmtInv->fetch(PDO::FETCH_ASSOC);
 
-    if (!$data) throw new Exception("No hay inventario activo.");
+    if (!$invData) throw new Exception("Inventario no encontrado.");
 
-    $prefs = json_decode($data['preferences'], true);
-    // Buscamos el nombre real de la columna en la BD (ej: 'col_2')
-    $colName = $prefs['mapping'][$columnType] ?? null;
+    $tableName = "`" . str_replace("`", "``", $invData['table_name']) . "`";
 
-    if (!$colName) throw new Exception("Esta columna no está identificada en la configuración.");
+    // 2. Resolver Columna
+    $prefs = json_decode($invData['preferences'] ?? '{}', true);
+    $mapping = $prefs['mapping'] ?? [];
+    $realColumnName = $mapping[$columnType] ?? $columnType;
 
-    $tableName = "`" . str_replace("`", "``", $data['table_name']) . "`";
-    $safeColName = "`" . str_replace("`", "``", $colName) . "`";
+    $cols = $db->query("SHOW COLUMNS FROM $tableName")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array($realColumnName, $cols)) throw new Exception("La columna '$realColumnName' no existe.");
 
-    // Definimos cuál es la columna META a modificar
-    $metaColName = ($columnType === 'sale_price') ? '_meta_currency_sale' : '_meta_currency_buy';
+    $safeCol = "`" . str_replace("`", "``", $realColumnName) . "`";
 
-    // 2. Asegurar que existe la columna META (si no, la creamos)
+    // ---------------------------------------------------------
+    // SOLUCIÓN RAÍZ 1: ESTRUCTURA (Precisión)
+    // ---------------------------------------------------------
+    // Antes de convertir, el sistema GARANTIZA que la columna soporte 6 decimales.
+    // Esto aplica hoy y para cualquier tabla futura que use esta función.
     try {
-        $db->exec("ALTER TABLE $tableName ADD COLUMN $metaColName VARCHAR(5) DEFAULT 'ARS'");
-    } catch (Exception $e) { /* Ya existe */ }
-
-    // 3. Obtener Cotización
-    $service = new ExchangeService();
-    $rates = $service->getRates();
-    // $rates['buy'] = Compra (te pagan pesos por dolares) -> Usar para USD a ARS
-    // $rates['sell'] = Venta (te cuesta pesos comprar dolares) -> Usar para ARS a USD
-
-    // 4. Leer datos actuales para convertir uno por uno
-    $rows = $db->query("SELECT id, $safeColName, $metaColName FROM $tableName")->fetchAll(PDO::FETCH_ASSOC);
-
-    $db->beginTransaction();
-    $stmtUpdate = $db->prepare("UPDATE $tableName SET $safeColName = :val, $metaColName = :curr WHERE id = :id");
-
-    $count = 0;
-
-    foreach ($rows as $row) {
-        $currentVal = (float)$row[$colName];
-        $currentCurr = $row[$metaColName] ?: 'ARS'; // Si es null es ARS
-
-        // Si ya es la moneda destino, no hacemos nada
-        if ($currentCurr === $targetCurrency) continue;
-
-        $newVal = $currentVal;
-
-        // LÓGICA DE CONVERSIÓN
-        if ($currentCurr === 'ARS' && $targetCurrency === 'USD') {
-            // Pasamos de Pesos a Dólares (Dividimos por Venta)
-            if ($rates['sell'] > 0) $newVal = $currentVal / $rates['sell'];
-        }
-        elseif ($currentCurr === 'USD' && $targetCurrency === 'ARS') {
-            // Pasamos de Dólares a Pesos (Multiplicamos por Compra, o Venta según criterio contable. Usaremos Venta para reposición segura)
-            $newVal = $currentVal * $rates['sell'];
-        }
-
-        $stmtUpdate->execute([
-            ':val' => round($newVal, 2),
-            ':curr' => $targetCurrency,
-            ':id' => $row['id']
-        ]);
-        $count++;
+        $db->exec("ALTER TABLE $tableName MODIFY COLUMN $safeCol DECIMAL(20, 6) DEFAULT '0.000000'");
+    } catch (Exception $e) {
+        // Si hay basura, limpiamos y reintentamos. Es la única forma de garantizar la integridad matemática.
+        $db->exec("UPDATE $tableName SET $safeCol = '0' WHERE $safeCol NOT REGEXP '^[0-9]+(\.[0-9]+)?$'");
+        $db->exec("ALTER TABLE $tableName MODIFY COLUMN $safeCol DECIMAL(20, 6) DEFAULT '0.000000'");
     }
 
+    // 3. Preparar Metadata
+    $metaCol = ($columnType === 'sale_price') ? '_meta_currency_sale' : '_meta_currency_buy';
+    if (!in_array($metaCol, $cols)) {
+        $db->exec("ALTER TABLE $tableName ADD COLUMN $metaCol VARCHAR(10) DEFAULT 'ARS'");
+    }
+
+    // ---------------------------------------------------------
+    // SOLUCIÓN RAÍZ 2: MATEMÁTICA (Eliminar Brecha)
+    // ---------------------------------------------------------
+    // Obtenemos la tasa real desde el Backend directamente
+    $service = new ExchangeService();
+    $rates = $service->getRates();
+
+    // Calculamos el PROMEDIO. Esto hace que la operación sea simétrica.
+    // (Compra + Venta) / 2
+    $buy = floatval($rates['buy']);
+    $sell = floatval($rates['sell']);
+
+    if ($buy > 0 && $sell > 0) {
+        $rate = ($buy + $sell) / 2;
+    } else {
+        $rate = $sell > 0 ? $sell : 1200; // Fallback
+    }
+
+    // 4. TRANSACCIÓN
+    $db->beginTransaction();
+
+    if ($targetCurrency === 'USD') {
+        // ARS -> USD (División por Promedio)
+        $sql = "UPDATE $tableName 
+                SET $safeCol = (CAST($safeCol AS DECIMAL(65,30)) / :rate), $metaCol = 'USD' 
+                WHERE $metaCol != 'USD' AND $safeCol > 0";
+    } else {
+        // USD -> ARS (Multiplicación por Promedio)
+        $sql = "UPDATE $tableName 
+                SET $safeCol = (CAST($safeCol AS DECIMAL(65,30)) * :rate), $metaCol = 'ARS' 
+                WHERE $metaCol = 'USD' AND $safeCol > 0";
+    }
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute([':rate' => $rate]);
+    $rowsAffected = $stmt->rowCount();
+
+    $db->exec("UPDATE $tableName SET $metaCol = '$targetCurrency' WHERE $metaCol != '$targetCurrency'");
+
     $db->commit();
-    echo json_encode(['success' => true, 'message' => "Se actualizaron $count filas a $targetCurrency", 'rate_used' => $rates['sell']]);
+
+    echo json_encode([
+        'success' => true,
+        'message' => "Conversión Simétrica Realizada (Tasa Promedio: $$rate). Filas: $rowsAffected",
+        'rate_used' => $rate
+    ]);
 
 } catch (Throwable $e) {
-    if (isset($db)) $db->rollBack();
+    if (isset($db) && $db->inTransaction()) $db->rollBack();
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

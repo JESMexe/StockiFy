@@ -1498,7 +1498,7 @@ table {
 .action-btn {
     width: 32px;
     height: 32px;
-    border: 1px solid var(--color-black);
+    border: 1px solid var(--color-black) !important;
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -1517,10 +1517,12 @@ table {
 }
 
 .action-btn.view:hover {
+    border: 1px solid var(--color-black);
     color: var(--accent-color);
 }
 
 .action-btn.edit:hover {
+    border: 1px solid var(--color-black);
     color: var(--accent-color);
 }
 

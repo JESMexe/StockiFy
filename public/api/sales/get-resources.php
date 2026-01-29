@@ -18,7 +18,7 @@ try {
     $userId = $user['id'];
     $db = Database::getInstance();
 
-    // 1. CLIENTES (Corregido nombre de variable para el return)
+    // 1. CLIENTES
     $customers = [];
     $checkTable = $db->query("SHOW TABLES LIKE 'customers'");
     if ($checkTable->rowCount() > 0) {
@@ -36,14 +36,14 @@ try {
         $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // 3. MÉTODOS DE PAGO (NUEVO: Agregado 'surcharge')
+    // 3. MÉTODOS DE PAGO (MODIFICADO: Agregamos 'currency')
     $paymentMethods = [];
-    // Verificamos si existe la columna surcharge para evitar error si la tabla es vieja
-    $stmtPM = $db->prepare("SELECT id, name, surcharge FROM payment_methods WHERE user_id = ? AND is_active = 1");
+    // Seleccionamos 'currency' explícitamente. Asumimos que la tabla ya tiene la columna como indicaste.
+    $stmtPM = $db->prepare("SELECT id, name, surcharge, currency FROM payment_methods WHERE user_id = ? AND is_active = 1");
     $stmtPM->execute([$userId]);
     $paymentMethods = $stmtPM->fetchAll(PDO::FETCH_ASSOC);
 
-    // 4. PRODUCTOS (Con búsqueda universal)
+    // 4. PRODUCTOS
     $products = [];
     $stmtInv = $db->prepare("SELECT id, preferences FROM inventories WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
     $stmtInv->execute([$userId]);
@@ -62,9 +62,9 @@ try {
 
         if ($tableRow) {
             $tableName = $tableRow['table_name'];
-            // Sanitizamos nombre de tabla por seguridad (aunque viene de la DB)
             $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
 
+            // SELECT * trae todas las columnas, incluidas las _meta
             $query = "SELECT * FROM $safeTable";
             $stmtProd = $db->query($query);
 
@@ -73,7 +73,9 @@ try {
                 $finalPrice = ($colPrice && isset($row[$colPrice])) ? (float)$row[$colPrice] : 0;
                 $finalStock = ($colStock && isset($row[$colStock])) ? (int)$row[$colStock] : 0;
 
-                // String de búsqueda
+                // MODIFICADO: Capturamos la moneda original si existe
+                $metaCurrency = $row['_meta_currency_sale'] ?? 'ARS';
+
                 $searchString = implode(' ', array_values($row));
 
                 $products[] = [
@@ -81,6 +83,7 @@ try {
                     'name' => $finalName,
                     'price' => $finalPrice,
                     'stock' => $finalStock,
+                    'currency' => $metaCurrency, // Pasamos este dato vital al frontend
                     'search_data' => strtolower($searchString)
                 ];
             }
@@ -89,7 +92,6 @@ try {
 
     echo json_encode([
         'success' => true,
-        // CORRECCIÓN: 'customers' para que coincida con el JS
         'customers' => $customers,
         'employees' => $employees,
         'payment_methods' => $paymentMethods,

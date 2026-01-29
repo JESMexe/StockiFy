@@ -12,103 +12,64 @@ try {
     require_once $root . '/src/helpers/auth_helper.php';
     require_once $root . '/src/Models/SalesModel.php';
 
-    // ---------------------------------------------------------
-    // 1. CAPTURA DE DATOS (FIX JSON VS POST)
-    // ---------------------------------------------------------
-    $input = [];
-    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-    if (strpos($contentType, 'application/json') !== false) {
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    }
-
-    function getParam($key, $post, $input, $default = null) {
-        return $input[$key] ?? $post[$key] ?? $default;
-    }
-
-    // ---------------------------------------------------------
-    // 2. AUTENTICACIÓN
-    // ---------------------------------------------------------
-    if (session_status() === PHP_SESSION_NONE) session_start();
     if (!function_exists('getCurrentUser')) throw new Exception('Auth error');
     $user = getCurrentUser();
+    if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
 
-    if (!$user) {
-        echo json_encode(['success'=>false, 'message'=>'No autorizado']);
-        exit;
+    // Leer Input
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    // Mapeo de Datos Principal
+    $primaryMethodId = null;
+    if (!empty($input['payments']) && is_array($input['payments'])) {
+        $primaryMethodId = $input['payments'][0]['method_id'] ?? null;
     }
 
-    // ---------------------------------------------------------
-    // 3. OBTENER INVENTARIO (CRÍTICO)
-    // ---------------------------------------------------------
-    $inventoryId = $_SESSION['active_inventory_id']
-        ?? $_SESSION['inventory_id']
-        ?? getParam('inventory_id', $_POST, $input)
-        ?? null;
-
-    if (!$inventoryId) {
-        echo json_encode(['success'=>false, 'message'=>'Error: No hay inventario seleccionado.']);
-        exit;
-    }
-
-    // ---------------------------------------------------------
-    // 4. PROCESAR ITEMS
-    // ---------------------------------------------------------
-    $rawItems = getParam('items', $_POST, $input);
-    $items = [];
-    if (is_array($rawItems)) {
-        $items = $rawItems;
-    } elseif (is_string($rawItems)) {
-        $items = json_decode($rawItems, true) ?? [];
-    }
-
-    // ---------------------------------------------------------
-    // 5. ARMAR DATOS
-    // ---------------------------------------------------------
     $data = [
-        'total'             => (float)getParam('total', $_POST, $input, 0),
-        'amount_tendered'   => (float)getParam('amount_tendered', $_POST, $input, 0),
-        'change_returned'   => (float)getParam('change_returned', $_POST, $input, 0),
-        'commission_amount' => (float)getParam('commission_amount', $_POST, $input, 0),
-        'total_final'       => (float)getParam('total_final', $_POST, $input, 0),
+        'total'             => (float)($input['total_final'] ?? $input['total'] ?? 0),
+        'amount_tendered'   => (float)($input['amount_tendered'] ?? 0),
+        'change_returned'   => (float)($input['change_returned'] ?? 0),
+        'commission_amount' => (float)($input['commission_amount'] ?? 0),
 
-        'employee_id'       => !empty(getParam('employee_id', $_POST, $input)) ? (int)getParam('employee_id', $_POST, $input) : null,
-        'payment_method_id' => !empty(getParam('payment_method_id', $_POST, $input)) ? (int)getParam('payment_method_id', $_POST, $input) : null,
-        'category'          => getParam('category', $_POST, $input),
-        'notes'             => getParam('notes', $_POST, $input),
-        'payments'          => getParam('payments', $_POST, $input) ?? [],
-        'items'             => $items
+        // DATO NUEVO: Snapshot de la cotización global del momento
+        'exchange_rate_snapshot' => (float)($input['exchange_rate_snapshot'] ?? 1),
+
+        'seller_id'         => !empty($input['seller_id']) ? (int)$input['seller_id'] : null,
+        'payment_method_id' => $primaryMethodId,
+
+        'notes'             => $input['notes'] ?? null,
+        'items'             => $input['items'] ?? [],
+
+        // PAGOS ENRIQUECIDOS: Pasamos el array tal cual viene del JS,
+        // que ya incluye currency_id, original_amount, etc.
+        // El SalesModel debe estar preparado para leer estos keys en su bucle de inserción.
+        'payments'          => $input['payments'] ?? []
     ];
 
-    $clientIdParam = getParam('client_id', $_POST, $input) ?? getParam('customer_id', $_POST, $input);
-    $clientId = !empty($clientIdParam) ? (int)$clientIdParam : null;
+    $clientId = !empty($input['customer_id']) ? (int)$input['customer_id'] : null;
 
-    // Archivo Comprobante
-    if (isset($_FILES['proof_file']) && $_FILES['proof_file']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = $root . '/public/uploads/proofs/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-        $ext = pathinfo($_FILES['proof_file']['name'], PATHINFO_EXTENSION);
-        $filename = 'proof_' . $user['id'] . '_' . time() . '.' . $ext;
-        if (move_uploaded_file($_FILES['proof_file']['tmp_name'], $uploadDir . $filename)) {
-            $data['proof_file'] = 'uploads/proofs/' . $filename;
-        }
+    // Obtener inventario activo (Fallback)
+    $model = new SalesModel();
+    $inventoryId = $input['inventory_id'] ?? null;
+    if (!$inventoryId) {
+        try {
+            $ctx = $model->getInventoryContext($user['id']);
+            $inventoryId = $ctx['inventory_id'];
+        } catch (Exception $e) { $inventoryId = 1; }
     }
 
-    if (empty($data['items']) && empty($data['category'])) {
-        echo json_encode(['success' => false, 'message' => 'Error: Sin items ni categoría.']);
+    if (empty($data['items'])) {
+        echo json_encode(['success' => false, 'message' => 'Error: Carrito vacío.']);
         exit;
     }
 
-    // ---------------------------------------------------------
-    // 6. GUARDAR (CORREGIDO)
-    // ---------------------------------------------------------
-    $model = new SalesModel();
-
-    // ¡AQUÍ ESTABA EL ERROR!
-    // Ahora llamamos a createSale con 4 argumentos, incluyendo el inventoryId
     $saleId = $model->createSale($user['id'], $inventoryId, $clientId, $data);
 
-    if ($saleId) echo json_encode(['success' => true, 'sale_id' => $saleId]);
-    else echo json_encode(['success' => false, 'message' => 'Error al guardar en base de datos']);
+    if ($saleId) {
+        echo json_encode(['success' => true, 'sale_id' => $saleId]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error al guardar en BD']);
+    }
 
 } catch (Throwable $e) {
     http_response_code(500);

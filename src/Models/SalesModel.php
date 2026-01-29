@@ -20,7 +20,7 @@ class SalesModel {
        HELPERS Y MÉTODOS EXISTENTES (Preservados)
        ========================================================= */
 
-    private function getInventoryContext($userId) {
+    public function getInventoryContext($userId) {
         $stmt = $this->db->prepare("SELECT i.id as inventory_id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1");
         $stmt->execute([':uid' => $userId]);
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -31,16 +31,11 @@ class SalesModel {
         return ['inventory_id' => $res['inventory_id'], 'table' => "`" . str_replace("`", "``", $res['table_name']) . "`", 'stock_col' => "`" . str_replace("`", "``", $stockCol) . "`"];
     }
 
-    /**
-     * Registra una venta en la tabla SALES (Estándar Profesional)
-     * Reemplaza a la antigua 'registrarVenta'
-     */
     public function createSale($userId, $inventoryId, $clientId, $data): bool|string
     {
         try {
             if (!$this->db->inTransaction()) $this->db->beginTransaction();
 
-            // 1. Insertar Venta
             $sql = "INSERT INTO sales 
                     (user_id, inventory_id, customer_id, seller_id, payment_method_id, sale_date, total_amount, amount_tendered, change_returned, commission_amount, notes, proof_file) 
                     VALUES 
@@ -51,7 +46,10 @@ class SalesModel {
                 ':user'       => $userId,
                 ':inv'        => $inventoryId,
                 ':client'     => $clientId,
-                ':seller'     => !empty($data['employee_id']) ? $data['employee_id'] : null,
+
+                // --- CORRECCIÓN AQUÍ: Usar seller_id o employee_id ---
+                ':seller'     => !empty($data['seller_id']) ? $data['seller_id'] : ($data['employee_id'] ?? null),
+
                 ':pay_method' => !empty($data['payment_method_id']) ? $data['payment_method_id'] : null,
                 ':total'      => $data['total_final'] ?? $data['total'],
                 ':tendered'   => $data['amount_tendered'] ?? 0,
@@ -61,12 +59,12 @@ class SalesModel {
                 ':file'       => $data['proof_file'] ?? null
             ]);
 
+            // ... resto del código igual (Items y Pagos) ...
             $saleId = $this->db->lastInsertId();
 
             // 2. Detalles y Stock
             if (!empty($data['items']) && is_array($data['items'])) {
-                $inventoryModel = new InventoryModel();
-
+                $inventoryModel = new InventoryModel(); // Asegúrate de tener esto importado o instanciado
                 $stmtDet = $this->db->prepare("
                     INSERT INTO sale_details 
                     (sale_id, product_id, product_name, quantity, unit_price, subtotal) 
@@ -85,18 +83,23 @@ class SalesModel {
                         ':sub'   => ($item['precio'] ?? $item['precio_unitario']) * $item['cantidad']
                     ]);
 
+                    // IMPORTANTE: Decrementar Stock solo si hay ID de producto
                     if ($productId) {
-                        // AQUÍ ESTÁ EL CAMBIO CLAVE: Pasamos inventoryId
                         $inventoryModel->decreaseStock($userId, $productId, $item['cantidad'], $inventoryId);
                     }
                 }
             }
 
-            // 3. Pagos
+            // 3. Pagos (Tabla detalle)
             if (!empty($data['payments']) && is_array($data['payments'])) {
                 $stmtPay = $this->db->prepare("INSERT INTO sale_payments (sale_id, payment_method_id, amount, surcharge) VALUES (:sid, :pmid, :amt, :sur)");
                 foreach ($data['payments'] as $pay) {
-                    $stmtPay->execute([':sid'=>$saleId, ':pmid'=>$pay['method_id'], ':amt'=>$pay['amount'], ':sur'=>$pay['surcharge_val']??0]);
+                    $stmtPay->execute([
+                        ':sid' => $saleId,
+                        ':pmid' => $pay['method_id'],
+                        ':amt' => $pay['amount'],
+                        ':sur' => $pay['surcharge_val'] ?? 0
+                    ]);
                 }
             }
 
@@ -160,6 +163,7 @@ class SalesModel {
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         try {
+            // Agregamos una subconsulta (payment_names_str) para traer los nombres de los pagos
             $sql = "
                 SELECT 
                     s.id,
@@ -171,17 +175,40 @@ class SalesModel {
                         (SELECT full_name FROM employees WHERE id = s.seller_id),
                         (SELECT full_name FROM users WHERE id = s.seller_id),
                         '-'
-                    ) as seller_name
+                    ) as seller_name,
+                    -- Subconsulta para obtener los métodos de pago separados por '|||'
+                    (
+                        SELECT GROUP_CONCAT(pm.name SEPARATOR '|||') 
+                        FROM sale_payments sp 
+                        LEFT JOIN payment_methods pm ON sp.payment_method_id = pm.id 
+                        WHERE sp.sale_id = s.id
+                    ) as payment_names_str
                 FROM sales s
                 LEFT JOIN customers c ON s.customer_id = c.id
                 WHERE s.user_id = :user
                 ORDER BY s.sale_date $order
                 LIMIT 100
             ";
+
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':user' => $userId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Procesamos el string para convertirlo en el array que espera tu JS
+            foreach ($results as &$row) {
+                if (!empty($row['payment_names_str'])) {
+                    // Convertimos "Efectivo|||Mercado Pago" -> ['Efectivo', 'Mercado Pago']
+                    $row['payments'] = explode('|||', $row['payment_names_str']);
+                } else {
+                    $row['payments'] = [];
+                }
+                // Limpiamos la variable temporal para no ensuciar el JSON
+                unset($row['payment_names_str']);
+            }
+
+            return $results;
         } catch (Exception $e) {
+            error_log("Error getHistory: " . $e->getMessage());
             return [];
         }
     }

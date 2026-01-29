@@ -269,6 +269,47 @@ textarea.rustic-input {
     background-color: #ffebee;
 }
 
+.stock-tag { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.7rem; color: #555; }
+.stock-tag.critical { background: #ffebee; color: #c62828; }
+
+/* Tarjeta de Ítem en Carrito (REDISEÑADO) */
+.cart-card {
+    background: #fff; border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 10px;
+    display: flex; flex-direction: column; gap: 10px; position: relative;
+}
+
+.cart-row-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.cart-name { font-weight: 700; font-size: 1rem; color: #000; line-height: 1.2; flex: 1; padding-right: 10px; }
+.cart-unit-price { font-size: 0.85rem; color: #666; white-space: nowrap; }
+
+.cart-row-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+.cart-total { font-weight: 800; font-size: 1.2rem; color: var(--accent-color); letter-spacing: -0.5px; }
+
+.cart-controls-wrapper {
+    display: flex; align-items: center;
+    border: 1px solid #ccc; border-radius: 6px; background: #fff;
+    overflow: hidden; height: 32px;
+}
+
+.ctrl-btn {
+    width: 32px; height: 100%; border: none; background: transparent;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-weight: bold; color: #444; font-size: 1rem; transition: background 0.2s;
+}
+.ctrl-btn:hover { background: #f0f0f0; }
+
+.qty-val {
+    min-width: 30px; text-align: center; font-weight: 600; font-size: 0.95rem;
+    line-height: 32px; padding: 0 5px; cursor: default;
+}
+
+.del-btn {
+    width: 32px; height: 100%; border: none; background: transparent;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: #d65b5b; border-left: 1px solid #eee; transition: background 0.2s;
+}
+.del-btn:hover { background: #fff0f0; }
+
 /* --- CIERRE Y PAGOS --- */
 .payment-row {
     display: flex;
@@ -313,10 +354,9 @@ textarea.rustic-input {
     background: var(--sale-green); color: white;
     border: 1px solid var(--sale-border-color);
     border-radius: 8px; height: 50px;
-    font-weight: 700; text-transform: uppercase;
     width: 100%; margin-top: 15px; cursor: pointer;
     flex-shrink: 0;
-    box-shadow: none; /* Base plana */
+    box-shadow: none;
     transition: all 0.1s;
 }
 #confirm-sale-btn:hover:not(:disabled) {

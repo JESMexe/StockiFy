@@ -39,7 +39,19 @@ try {
     $topProducts = $model->getTopProducts($userId, $inventoryId);
 
     // 5. Distribución de Pagos (Gráfico de Dona)
-    $paymentDist = $model->getPaymentDistribution($userId, $inventoryId);
+    $paymentDist = $model->getPaymentDistribution($userId);
+
+    // 6. Distribución por Moneda
+    $currencyDist = $model->getCurrencyDistribution($userId);
+
+    // 7. Top Clientes
+    $topClients = $model->getTopClients($userId);
+
+    // 8. Horarios Pico
+    $peakHours = $model->getPeakHours($userId);
+
+    // 9. Top Vendedores
+    $topSellers = $model->getTopSellers($userId);
 
     echo json_encode([
         'success' => true,
@@ -47,9 +59,14 @@ try {
         'inventory_value' => $inventoryVal,
         'chart_data' => $chartData,
         'top_products' => $topProducts,
-        'payment_distribution' => $paymentDist
+        'payment_distribution' => $paymentDist,
+        'currency_distribution' => $currencyDist,
+        'top_clients' => $topClients,
+        'peak_hours' => $peakHours,
+        'top_sellers' => $topSellers
     ]);
 
 } catch (Exception $e) {
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

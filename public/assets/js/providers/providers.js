@@ -35,9 +35,12 @@ export class ProviderModule {
                 #create-provider-modal .modal-content, 
                 #detail-provider-modal .modal-content {
                     background-color: #ffffff !important;
-                    box-shadow: 8px 8px 0px var(--accent-color);
+                    box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
                     border: 1px solid #ddd;
                     border-radius: 8px;
+                }
+                #detail-provider-modal .modal-content:hover {
+                    box-shadow: 8px 8px 0 var(--accent-color);
                 }
 
                 .form-group { margin-bottom: 15px; }
@@ -47,7 +50,8 @@ export class ProviderModule {
                 .form-col { flex: 1; }
 
                 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-                .detail-item { background: var(--accent-color-quat-opacity); padding: 10px; border-radius: 4px; border: 1px solid var(--accent-color); }
+                .detail-item { background: rgba(0,0,0,0.1); padding: 10px; border-radius: 4px; border: 1px solid rgba(0,0,0); }
+                .detail-item:hover { background: var(--accent-color-quat-opacity); padding: 10px; border-radius: 4px; border: 1px solid var(--accent-color); }
                 .detail-label { display: block; font-size: 0.8rem; color: var(--accent-color); margin-bottom: 2px; }
                 .detail-value { font-weight: 600; color: #333; }
                 
@@ -315,7 +319,7 @@ export class ProviderModule {
                 const p = data.provider;
                 c.innerHTML = `
                     <div style="text-align:center; margin-bottom:1.5rem;">
-                        <div style="width:60px; height:60px; background: var(--accent-color-quat-opacity);  ; color: var(--accent-color); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 10px auto;">
+                        <div style="width:60px; height:60px; background:var(--accent-color-quat-opacity); color:var(--accent-color); border-radius:50%; border: 1px solid var(--accent-color); display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 10px auto;">
                             <i class="ph ph-truck"></i>
                         </div>
                         <h2 style="margin:0;">${p.full_name}</h2>

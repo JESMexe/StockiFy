@@ -67,6 +67,13 @@
     box-shadow: 5px 5px 0 var(--accent-yellow);
 }
 
+.stat-card.ticket { border-left: 4px solid var(--accent-violet); }
+.stat-card.ticket .stat-title i { color: var(--accent-violet); }
+
+.stat-card.ticket:hover {
+    box-shadow: 5px 5px 0 var(--accent-violet);
+}
+
 /* Gráficos y Tablas */
 .charts-section, .top-list-card {
     background: white;
@@ -115,3 +122,4 @@
         grid-template-columns: 1fr !important; /* Pila vertical en tablets/móviles */
     }
 }
+

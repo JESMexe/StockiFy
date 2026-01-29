@@ -52,7 +52,8 @@ class TableController
                 'success' => true,
                 'inventoryName' => $inventoryName,
                 'columns' => $cleanColumns,
-                'data' => $data
+                'data' => $data,
+                'inventoryId' => $activeInventoryId,
             ];
             $jsonData = json_encode($responseArray);
 

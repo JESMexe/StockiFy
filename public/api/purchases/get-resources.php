@@ -2,7 +2,7 @@
 // public/api/purchases/get-resources.php
 header('Content-Type: application/json');
 
-// Desactivar errores HTML
+// Desactivar errores HTML para no romper el JSON
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -22,7 +22,7 @@ try {
     $userId = $user['id'];
     $db = Database::getInstance();
 
-    // 2. OBTENER PROVEEDORES (Estándar)
+    // 2. OBTENER PROVEEDORES
     $providers = [];
     $checkTable = $db->query("SHOW TABLES LIKE 'providers'");
     if ($checkTable->rowCount() > 0) {
@@ -31,10 +31,10 @@ try {
         $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // 3. OBTENER PRODUCTOS (Usando Mapeo Inteligente)
+    // 3. OBTENER PRODUCTOS
     $products = [];
 
-    // A. Buscar inventario activo y sus preferencias
+    // A. Buscar inventario activo
     $stmtInv = $db->prepare("SELECT id, preferences FROM inventories WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
     $stmtInv->execute([$userId]);
     $inv = $stmtInv->fetch(PDO::FETCH_ASSOC);
@@ -44,9 +44,9 @@ try {
         $prefs = json_decode($inv['preferences'] ?? '{}', true);
         $mapping = $prefs['mapping'] ?? [];
 
-        // Columnas mapeadas por el usuario
+        // Columnas mapeadas
         $colName = $mapping['name'] ?? null;
-        $colPrice = $mapping['buy_price'] ?? null; // Costo (Precio Compra)
+        $colPrice = $mapping['receipt_price'] ?? $mapping['buy_price'] ?? null; // Intentamos receipt_price primero
         $colStock = $mapping['stock'] ?? null;
 
         // C. Buscar tabla física
@@ -58,14 +58,13 @@ try {
             $tableName = $tableRow['table_name'];
             $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
 
-            // D. Consultar datos reales
+            // D. Consultar datos
             $query = "SELECT * FROM $safeTable";
             $stmtProd = $db->query($query);
 
             while ($row = $stmtProd->fetch(PDO::FETCH_ASSOC)) {
-                // LOGICA DE FALLBACKS (Lo que pediste)
 
-                // 1. Nombre: Si no hay columna o está vacío -> Usar ID
+                // 1. Nombre
                 $finalName = null;
                 if ($colName && !empty($row[$colName])) {
                     $finalName = $row[$colName];
@@ -73,7 +72,7 @@ try {
                     $finalName = "Producto ID: " . ($row['id'] ?? '?');
                 }
 
-                // 2. Precio: Crítico. Si no hay columna -> Error
+                // 2. Precio (Costo)
                 $finalPrice = 0;
                 $canBuy = true;
                 $priceError = null;
@@ -81,28 +80,33 @@ try {
                 if ($colPrice && isset($row[$colPrice])) {
                     $finalPrice = (float)$row[$colPrice];
                 } else {
-                    $canBuy = false; // BLOQUEAR COMPRA
+                    $canBuy = false;
                     $priceError = "Sin columna de Costo configurada.";
                 }
 
-                // 3. Stock: Informativo. Si no hay columna -> Warning
+                // 3. Stock
                 $finalStock = 0;
                 $stockWarning = false;
 
                 if ($colStock && isset($row[$colStock])) {
                     $finalStock = (int)$row[$colStock];
                 } else {
-                    $stockWarning = true; // ADVERTENCIA VISUAL
+                    $stockWarning = true;
                 }
+
+                // 4. METADATA DE MONEDA (NUEVO)
+                // Verificamos si existe la columna _meta_currency_buy en la fila
+                $currencyBuy = $row['_meta_currency_buy'] ?? 'ARS';
 
                 $products[] = [
                     'id' => $row['id'],
                     'name' => $finalName,
                     'price' => $finalPrice,
                     'stock' => $finalStock,
-                    'can_buy' => $canBuy,       // Flag para bloquear
+                    'can_buy' => $canBuy,
                     'price_error' => $priceError,
-                    'stock_warning' => $stockWarning // Flag para advertir
+                    'stock_warning' => $stockWarning,
+                    '_meta_currency_buy' => $currencyBuy // ¡ESTO ES LO QUE FALTABA!
                 ];
             }
         }
