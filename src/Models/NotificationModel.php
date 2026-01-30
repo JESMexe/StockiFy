@@ -16,29 +16,22 @@ class NotificationModel
     /**
      * Guarda una nueva notificación para un usuario.
      */
-    public function create(int $userId, string $type, string $title, string $message): bool
+    public function create(int $userId, $inventoryId, string $type, string $title, string $message): bool
     {
-        $stmt = $this->db->prepare(
-            "INSERT INTO notifications (user_id, type, title, message) VALUES (:user_id, :type, :title, :message)"
-        );
-        return $stmt->execute([
-            ':user_id' => $userId,
-            ':type' => $type,
-            ':title' => $title,
-            ':message' => $message
-        ]);
+        $stmt = $this->db->prepare("INSERT INTO notifications (user_id, inventory_id, type, title, message) VALUES (?, ?, ?, ?, ?)");
+        return $stmt->execute([$userId, $inventoryId, $type, $title, $message]);
     }
 
     /**
      * Obtiene todas las notificaciones de un usuario.
      */
-    public function getByUser(int $userId): array|false
+    public function getByUser($userId): array
     {
-        $stmt = $this->db->prepare(
-            "SELECT * FROM notifications WHERE user_id = :user_id ORDER BY created_at DESC"
-        );
-        $stmt->execute([':user_id' => $userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $inventoryId = $_SESSION['active_inventory_id'] ?? 0;
+
+        $stmt = $this->db->prepare("SELECT * FROM notifications WHERE user_id = ? AND inventory_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$userId, $inventoryId]);
+        return $stmt->fetchAll();
     }
 
     /**

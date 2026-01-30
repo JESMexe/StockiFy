@@ -124,6 +124,12 @@
                 <p>¿Ya tienes una cuenta? <a href="login.php">Inicia sesión aquí</a></p>
             </footer>
         </div>
+        <div class="google-btn-container" style="margin-top: 20px; text-align: center;">
+            <a href="./api/auth/google-login.php" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" alt="Google">
+                Continuar con Google
+            </a>
+        </div>
     </div>
 </div>
 

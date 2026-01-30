@@ -12,9 +12,10 @@ import { employeeModuleInstance } from './employees/employees.js';
 import { analyticsModuleInstance } from './analytics/analytics.js';
 import { paymentsModuleInstance } from './payment/payment.js';
 import {initializeImportModal, openImportModal, setStockifyColumns} from './import.js';
+import {ui_helper} from "./ui-helper.js";
 
 // --- 2. VARIABLES GLOBALES ---
-let activeInventoryId = null;
+export let activeInventoryId = null;
 let allData = []; // Guardo todos los datos para filtrar
 let currentTableColumns = []; // Guardo las columnas de la tabla actual
 let originalData = []; // COPIA DE SEGURIDAD PARA EL ORDEN ORIGINAL
@@ -232,13 +233,13 @@ async function renderTable(columns, data) {
         if (col === columnMapping.name) label += '<i class="ph-bold ph-article"></i>';
         if (col === 'min_stock') label += ' <i class="ph-bold ph-folder-simple-minus"></i>';
 
-        let sortIcon = '';
+        let sortIcon = ' <i class="ph-fill ph-caret-up-down" style="font-size: 1.4em; color: var(--color-gray);"></i>';;
         if (currentSort.column === col) {
-            if (currentSort.state === 1) sortIcon = ' <i class="ph-fill ph-caret-up" style="font-size: 1.5em; color: var(--accent-color);"></i>';
-            if (currentSort.state === 2) sortIcon = ' <i class="ph-fill ph-caret-down" style="font-size: 1.5em; color: var(--accent-color);"></i>';
+            if (currentSort.state === 1) sortIcon = ' <i class="ph-fill ph-caret-up" style="font-size: 1.3em; color: var(--accent-color);"></i>';
+            if (currentSort.state === 2) sortIcon = ' <i class="ph-fill ph-caret-down" style="; font-size: 1.3em; color: var(--accent-color);"></i>';
         }
 
-        return `<th onclick="window.handleSort('${col}')" style="cursor: pointer; user-select: none;" title="Ordenar por ${niceName}">${sortIcon}${label}</th>`;
+        return `<th onclick="window.handleSort('${col}')" style="border-radius: 0; cursor: pointer; user-select: none;" title="Ordenar por ${niceName}">${sortIcon}${label}</th>`;
     }).join('');
 
     let gainHeader = '';
@@ -251,7 +252,7 @@ async function renderTable(columns, data) {
 
     // --- BODY ---
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Descripción de la imagen" style="width: 100%; height: 100%;">`
+        tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Descripción de la imagen" style="margin: 0; padding: 0; min-width: 100%; min-height: 100%;">`
     } else {
         tableBody.innerHTML = data.map(row => {
             // Normalización de ID
@@ -1208,6 +1209,7 @@ async function handleRenameColumn(e) {
     }
 }
 
+// dashboard.js - Función loadNotifications
 async function loadNotifications() {
     const listContainer = document.getElementById('notifications-list');
     if (!listContainer) return;
@@ -1219,50 +1221,63 @@ async function loadNotifications() {
         const data = await response.json();
 
         if (!data.success) throw new Error(data.message);
-
         if (data.notifications.length === 0) {
-            listContainer.innerHTML = '<p>No tenés notificaciones guardadas.</p>';
+            listContainer.innerHTML = '<p>No tenés notificaciones en este inventario.</p>';
             return;
         }
 
-        let html = '';
-        let currentGroup = '';
-
+        const groups = {};
         data.notifications.forEach(n => {
-            const dateGroup = getRelativeDateGroup(n.created_at);
-
-            if (dateGroup !== currentGroup) {
-                html += `<h3 class="notification-date-header">${dateGroup}</h3>`;
-                currentGroup = dateGroup;
-            }
-
-            const config = notificationConfig[n.type] || notificationConfig.info;
-            html += `
-            <div class="toast-notification show" 
-                 style="--toast-color: ${config.color}; position: relative; opacity: 1; transform: none; transition: none; margin-bottom: 1rem; max-width: 100%;"
-                 data-notification-id="${n.id}">
-                
-                <i class="toast-icon ph ${config.icon}"></i>
-                
-                <div class="toast-content">
-                    <strong class="toast-title">${n.title}</strong>
-                    <p class="toast-message">${n.message || ''}</p>
-                    <small style="color: var(--color-gray); font-size: 0.8rem; margin-top: 5px; display: block;">
-                        ${new Date(n.created_at).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
-                    </small>
-                </div>
-                
-                <button class="toast-close-btn" title="Eliminar notificación">
-                    <i class="ph ph-x"></i>
-                </button>
-            </div>
-            `;
+            const dateLabel = getRelativeDateGroup(n.created_at);
+            if (!groups[dateLabel]) groups[dateLabel] = [];
+            groups[dateLabel].push(n);
         });
 
-        listContainer.innerHTML = html;
+        let html = '';
 
+        for (const [label, items] of Object.entries(groups)) {
+            html += `<h3 class="notification-date-header">${label}</h3>`;
+            items.forEach(n => {
+                // 1. Buscamos config conocida (success, warning, etc.)
+                const config = notificationConfig[n.type];
+
+                let icon, color;
+
+                if (config) {
+                    // SISTEMA: Es una alerta real (guardada como 'success', 'warning')
+                    // Respetamos ícono de sistema (Check, Alerta)
+                    icon = config.icon;
+                    color = config.color;
+                } else {
+                    // MANUAL: Es una nota guardada con color (ej: 'var(--accent-green)' o '#ff0000')
+                    // Forzamos ícono de nota y usamos el tipo como color
+                    icon = 'ph-note';
+                    color = n.type;
+                }
+
+                html += `
+                <div class="toast-notification show" 
+                     style="--toast-color: ${color}; position: relative; margin-bottom: 1rem; max-width: 100%;"
+                     data-notification-id="${n.id}">
+                    
+                    <i class="toast-icon ph ${icon}"></i>
+                    
+                    <div class="toast-content">
+                        <strong class="toast-title" style="color: ${color}">${n.title}</strong>
+                        <p class="toast-message">${n.message || ''}</p>
+                        <small style="color: var(--color-gray); font-size: 0.8rem; margin-top: 5px; display: block;">
+                            ${new Date(n.created_at).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                        </small>
+                    </div>
+                    
+                    <button class="toast-close-btn" title="Eliminar"><i class="ph ph-x"></i></button>
+                </div>
+                `;
+            });
+        }
+        listContainer.innerHTML = html;
     } catch (error) {
-        listContainer.innerHTML = `<p style="color: var(--accent-red);">Error al cargar notificaciones: ${error.message}</p>`;
+        listContainer.innerHTML = `<p style="color: var(--accent-red);">Error: ${error.message}</p>`;
     }
 }
 
@@ -1538,19 +1553,7 @@ async function init() {
     const isAdmin = response.isAdmin;
 
     console.log("[INIT] Iniciando nav-bar...");
-
-    const nav = document.getElementById('header-nav');
-    if (nav) nav.innerHTML = `
-        <a href="/statistics.php" class="btn btn-secondary">Estadisticas</a>
-        <div id="dropdown-container">
-            <div class="btn btn-secondary" id="mi-cuenta-btn">Mi Cuenta</div>
-            <div class="flex-column hidden" id="mi-cuenta-dropdown">
-                <a href="/configuration.php" class="btn btn-secondary">Configuración</a>
-                <a href="/configuration.php" class="btn btn-secondary">Modificaciones de Stock</a>
-                <a href="/configuration.php" class="btn btn-secondary">Soporte</a>
-                <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
-            </div>
-        </div>`;
+    ui_helper.renderHeader('dashboard');
 
     // PREPARA LOS FONDOS GRISES DE LOS MODALES
     setupGreyBg();
@@ -1686,16 +1689,45 @@ async function init() {
     });
 
     // Debug Toast y Notificaciones
-    document.getElementById('debug-toast-form')?.addEventListener('submit', (e) => {
+    // dashboard.js - Evento de crear nota
+    document.getElementById('create-note-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const type = document.getElementById('debug-toast-type').value;
-        const title = document.getElementById('debug-toast-title').value;
-        const message = document.getElementById('debug-toast-message').value;
 
-        pop_ups[type](message || 'Este es un mensaje de prueba.', title);
+        const rawType = document.getElementById('note-type').value; // Ej: 'success', 'warning' o '#ff0000'
+        const title = document.getElementById('note-title').value;
+        const message = document.getElementById('note-message').value;
 
-        document.getElementById('debug-toast-title').value = '';
-        document.getElementById('debug-toast-message').value = '';
+        // --- EL TRUCO ---
+        // Si el usuario eligió un tipo de sistema (ej: 'success'), extraemos su COLOR.
+        // Guardamos el COLOR como 'type'. Así el lector lo tratará como nota personalizada (Ícono Nota + Color).
+        const config = notificationConfig[rawType];
+        const finalType = config ? config.color : rawType;
+
+        const payload = {
+            type: finalType, // Enviamos 'var(--accent-green)' en vez de 'success'
+            title: title,
+            message: message,
+            inventory_id: activeInventoryId
+        };
+
+        try {
+            const response = await fetch('/api/notifications/create.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const res = await response.json();
+
+            if (res.success) {
+                e.target.reset();
+                await loadNotifications();
+            } else {
+                pop_ups.error(res.message || "Error al guardar");
+            }
+        } catch (error) {
+            pop_ups.error("Error de conexión al servidor");
+        }
     });
 
     document.getElementById('notifications-list')?.addEventListener('click', async (e) => {
@@ -4238,6 +4270,7 @@ export async function loadTableData() {
             currentTableColumns = result.columns || [];
 
             activeInventoryId = result.inventoryId || result.inventory_id;
+            window.activeInventoryId = activeInventoryId;
             console.log("Inventario Activo ID:", activeInventoryId);
 
             const filterableColumns = currentTableColumns.filter(
@@ -4267,7 +4300,21 @@ export async function loadTableData() {
                     <i class="ph ph-check"></i> Todas las Columnas
                   </button>`;
 
+                // 1. DEFINIMOS LAS COLUMNAS A EXCLUIR DEL BUSCADOR
+                // Usamos columnMapping para detectar cuáles son Precio Venta y Compra en esta DB específica
+                const saleCol = columnMapping.sale_price ? columnMapping.sale_price.toLowerCase() : null;
+                const buyCol = columnMapping.buy_price ? columnMapping.buy_price.toLowerCase() : null;
+
+                const excludedSystemCols = ['percentage_gain', 'hard_gain', 'ganancia'];
+
                 filterableColumns.forEach(col => {
+                    const colLower = col.toLowerCase();
+
+                    // 2. FILTRO: Si es precio venta, compra o ganancia, NO lo agregamos
+                    if (colLower === saleCol || colLower === buyCol || excludedSystemCols.includes(colLower)) {
+                        return; // Saltamos esta iteración
+                    }
+
                     const item = document.createElement('button');
                     item.className = 'search-dropdown-item';
                     if (selectedSearchColumn === col) {

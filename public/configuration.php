@@ -3,116 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StockiFy</title>
+    <title>Configuración | StockiFy</title>
+
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/configuration.css">
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="assets/js/theme.js"></script>
-    <script src="assets/js/show_password.js"></script>
-    <script src="assets/js/config-changes-monitoring.js"></script>
-    <script src="assets/js/config-option-selection.js"></script>
-    <script src="assets/js/modif-buttons-controls.js"></script>
+    <script type="module" src="./assets/js/configuration.js"></script>
     <script type="module" src="assets/js/email-change-handler.js"></script>
     <script type="module" src="assets/js/change-password-handler.js"></script>
-    <script src="assets/js/modif-reg-handler.js"></script>
-    <link rel="stylesheet" href="assets/css/main.css">
 </head>
 
 <?php
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../src/helpers/auth_helper.php';
 
-    require_once __DIR__ . '/../vendor/autoload.php';
-    require_once __DIR__ . '/../src/helpers/auth_helper.php';
-    $currentUser = getCurrentUser();
+if (session_status() === PHP_SESSION_NONE) session_start();
+$currentUser = getCurrentUser();
 
-    if (!isset($_SESSION['user_id'])) {
-        header('Location: index.php');
-    }
+if (!$currentUser) {
+    header('Location: index.php');
+    exit;
+}
 ?>
 
-<body id="page-index">
-    <div id="grey-background" class="hidden">
-        <p id="msj-bubble" class="view-container"></p>
-    </div>
-    <header>
-        <a href="index.php" id="header-logo">
-            <img src="assets/img/LogoE.png" alt="Stocky Logo">
-        </a>
-        <nav id="header-nav">
-        </nav>
-    </header>
+<body id="page-configuration">
+<div id="grey-background" class="hidden"></div>
 
-    <main class="text-left">
-        <div class="flex-row" style="margin: 3rem 0 3rem 0;">
-            <div id="options-config-container">
-                <div class="btn btn-option-selected" id="btn-config-cuenta">
-                    <p>Mi Cuenta</p>
-                </div>
-                <div class="btn" id="btn-config-modifs">
-                    <p>Registro de Modificaciones</p>
-                </div>
-                <div class="btn" id="btn-config-soporte">
-                    <p>Soporte</p>
-                </div>
+<header>
+    <a href="dashboard.php" id="header-logo">
+        <img src="assets/img/LogoE.png" alt="Stocky Logo">
+    </a>
+    <nav id="header-nav">
+        <a href="dashboard.php" class="btn btn-secondary"><i class="ph ph-arrow-left"></i> Volver al Dashboard</a>
+    </nav>
+</header>
+
+<main class="text-left">
+    <div class="flex-row" style="margin: 3rem 0; gap: 2rem; align-items: flex-start; justify-content: center;">
+        <div class="config-layout-wrapper">
+
+        <div id="options-config-container">
+            <div class="btn btn-option-selected" id="btn-config-cuenta">
+                <p><i class="ph ph-user-gear"></i> Mi Cuenta</p>
             </div>
-            <div class="flex-column all-center" id="config-container">
-                <form class="flex-column justify-left align-center" method="post" action="configuration.php" id="form-micuenta">
-                    <label for="nombre" style="margin-top: 0">Nombre</label>
-                    <input class="config-input" type="text" id="nombre" name="name" value=<?php echo $currentUser['full_name']?>>
+            <div class="btn" id="btn-config-soporte">
+                <p><i class="ph ph-lifebuoy"></i> Soporte</p>
+            </div>
+        </div>
 
-                    <label for="apellido">Apellido</label>
-                    <input class="config-input" type="text" id="apellido" name="surname" value=<?php echo $currentUser['full_name']?>>
+        <div id="config-container">
 
-                    <label for="email">Email</label>
-                    <input class="input-locked config-input" type="email" id="email" name="email" value=<?php echo $currentUser['email']?> readonly>
-                    <p class="btn btn-modificar" style="margin-bottom: 0" id="btn-modif-email">Modificar Email</p>
+            <div id="config-container-cuenta">
+                <form class="flex-column" id="form-micuenta">
+                    <h3 class="config-section-title">Información del Perfil</h3>
 
-                    <label for="contraseña-hidden">Contraseña</label>
-                    <div class="flex-row all-center" style="gap: 0.3rem;">
-                        <input class="input-locked" type="text" id="contraseña-fake" value="************" disabled>
-                        <input class="input-locked hidden config-input" type="text" id="contraseña" name="password" value=<?php echo $currentUser['password']?> readonly>
-                        <div id='btn-password' class="btn flex-row all-center"><img src="./assets/img/password-hidden.png" id="pass-img"></div>
+                    <div class="config-grid">
+                        <div class="rustic-block">
+                            <label class="option-label" for="username">Nombre de Usuario</label>
+                            <input class="config-input" type="text" id="username" name="username"
+                                   value="<?php echo htmlspecialchars($currentUser['username'] ?? ''); ?>">
+                        </div>
+                        <div class="rustic-block">
+                            <label class="option-label" for="full_name">Nombre Completo</label>
+                            <input class="config-input" type="text" id="full_name" name="full_name"
+                                   value="<?php echo htmlspecialchars($currentUser['full_name'] ?? ''); ?>">
+                        </div>
+                        <div class="rustic-block">
+                            <label class="option-label" for="dni">DNI / Identificación</label>
+                            <input class="config-input" type="text" id="dni" name="dni"
+                                   value="<?php echo htmlspecialchars($currentUser['dni'] ?? ''); ?>" placeholder="(Colocar sin puntos)">
+                        </div>
+                        <div class="rustic-block">
+                            <label class="option-label" for="cell">Teléfono / Celular</label>
+                            <input class="config-input" type="text" id="cell" name="cell"
+                                   value="<?php echo htmlspecialchars($currentUser['cell'] ?? ''); ?>" placeholder="(Todo junto)">
+                        </div>
                     </div>
-                    <p class="btn btn-modificar" id="btn-modif-pass">Modificar Contraseña</p>
 
-                    <button class="btn" id="btn-guardar" disabled >Guardar Cambios</button>
+                    <h3 class="config-section-title">Seguridad</h3>
+
+                    <div class="rustic-block locked-field" style="margin-bottom: 1.5rem;">
+                        <label class="option-label">Email de la cuenta <span class="helper-tag">Identificador único</span></label>
+                        <input class="config-input input-locked" type="email" value="<?php echo $currentUser['email']; ?>" readonly>
+                    </div>
+
+                    <div class="rustic-block">
+                        <label class="option-label">Contraseña</label>
+                        <div class="input-with-lock" style="display: flex; gap: 1rem; align-items: center;">
+                            <input class="config-input input-locked" type="text" value="••••••••••••" disabled style="flex: 1; margin: 0;">
+                            <button type="button" class="btn btn-secondary" id="btn-change-password" style="width: auto; padding: 0 2rem; height: 50px;">
+                                Cambiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="btn-guardar" disabled>Guardar Cambios de Perfil</button>
                 </form>
-                <div id="registro-modifs-container" class="flex-column all-center hidden">
-                </div>
-                <div id="soporte-container" class="hidden">
-                    <div class="view-container">Soporte</div>
-                </div>
             </div>
-        </div>
-        <div class="view-container flex-column justify-left align-center hidden" id="modif-form-container">
-            <p id="return-btn" class="return-btn">Volver</p>
-            <form style="margin-top: 2rem" id="email-form" class="hidden">
-                <label for="new-email" class="text-left"><h2>Nuevo E-Mail</h2></label>
-                <input type="email" id="new-email" name='new-email' placeholder="ejemplo@gmail.com" required>
-                <button type="submit" class="btn" style="margin-top: 8rem;">Confirmar</button>
-            </form>
-            <form style="margin-top: 2rem" id="code-form" class="hidden">
-                <label for="code" class="text-left"><h2>Codigo Recibido (Seis dígitos)</h2></label>
-                <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" minlength="6" placeholder="......" required>
-                <button type="submit" class="btn" style="margin-top: 8rem;">Confirmar</button>
-            </form>
-            <div class="hidden" id="save-email-container">
-                <h2>¿Desea modificar el email asociado a su cuenta?</h2>
-                <h3 style="margin-top: 2rem">Nuevo email: </h3><span id="new-email-text"></span>
-                <button style="margin-top: 3rem" class="btn btn-primary" id="save-email-btn">Confirmar</button>
-            </div>
-            <form class="hidden" id="change-password-form">
-                <label style= "margin-top: 0" for="old-password"><h2>Contraseña Actual</h2></label>
-                <input type="password" id="old-password">
-                <label for="new-password"><h2>Contraseña Nueva</h2></label>
-                <input type="password" id="new-password" name="new-password">
-                <label for="confirm-new-password"><h2>Confirmar Contraseña Nueva</h2></label>
-                <input type="password" id="confirm-new-password">
-                <label for="confirm-new-password" style="font-size: 0.7rem; margin-top: 0.5rem">Verificar que la contraseña nueva sea distinta a la ya existente y que todos los campos sean correctos.</label>
-                <button type="submit" style="margin-top: 5rem" class="btn btn-primary" id="save-password-btn" disabled>Confirmar</button>
-            </form>
-        </div>
-    </main>
-    <div class="flex-column hidden" id="info-modif-container">
-        <div class="flex-row justify-right" style="width: 100%"><p id="reg-return" class="return-btn">Volver</p></div>
 
+            <div id="soporte-container" class="hidden">
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="ph ph-envelope-simple-open" style="font-size: 3rem; color: var(--accent-color);"></i>
+                    <h3>Centro de Ayuda</h3>
+                    <p style="color: #64748b; margin-bottom: 2rem;">¿Tenés algún problema? Estamos para ayudarte.</p>
+                    <a href="mailto:soporte@stockify.app" class="btn btn-primary">Contactar Soporte</a>
+                </div>
+            </div>
+
+        </div>
+        </div>
     </div>
-</body>
+
+    <div class="view-container flex-column justify-left align-center hidden" id="modif-form-container" style="z-index: 1001;">
+        <p id="return-btn" class="return-btn" style="cursor:pointer; align-self: flex-end;">&times;</p>
+
+        <form style="margin-top: 1rem; width: 100%;" id="email-form" class="hidden">
+            <h3 style="margin-bottom: 1rem;">Nuevo E-Mail</h3>
+            <input class="config-input" type="email" id="new-email" name='new-email' placeholder="nuevo@ejemplo.com" required>
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Enviar Código</button>
+        </form>
+
+        <form style="margin-top: 1rem; width: 100%;" id="code-form" class="hidden">
+            <h3 style="margin-bottom: 1rem;">Código de Verificación</h3>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 1rem;">Enviamos un código de 6 dígitos a tu nuevo correo.</p>
+            <input class="config-input" type="text" name="code" inputmode="numeric" maxlength="6" placeholder="123456" required style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;">
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Verificar y Cambiar</button>
+        </form>
+
+        <div class="hidden" id="save-email-container" style="text-align: center;">
+            <i class="ph ph-check-circle" style="font-size: 3rem; color: var(--accent-green);"></i>
+            <h3 style="margin-top: 1rem">¡Email Verificado!</h3>
+            <p>Tu nuevo email será: <br><strong id="new-email-text" style="color:var(--accent-color)"></strong></p>
+            <button style="margin-top: 2rem; width: 100%;" class="btn btn-primary" id="save-email-btn">Confirmar Cambio</button>
+        </div>
+
+        <form class="hidden" id="change-password-form" style="width: 100%;">
+            <h3 style="margin-bottom: 1.5rem;">Cambiar Contraseña</h3>
+
+            <label for="old-password">Contraseña Actual</label>
+            <input type="password" id="old-password" class="config-input" required>
+
+            <label for="new-password">Nueva Contraseña</label>
+            <input type="password" id="new-password" class="config-input" required>
+
+            <label for="confirm-new-password">Repetir Nueva</label>
+            <input type="password" id="confirm-new-password" class="config-input" required>
+
+            <button type="submit" style="margin-top: 1rem; width: 100%;" class="btn btn-primary" id="save-password-btn">Actualizar Contraseña</button>
+        </form>
+    </div>
+</main>
+
+<script>
+    window.userData = {
+        username: "<?php echo addslashes($currentUser['username'] ?? ''); ?>",
+        full_name: "<?php echo addslashes($currentUser['full_name'] ?? ''); ?>",
+        dni: "<?php echo addslashes($currentUser['dni'] ?? ''); ?>",
+        cell: "<?php echo addslashes($currentUser['cell'] ?? ''); ?>"
+    };
+</script>
 </body>
 </html>

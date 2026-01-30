@@ -1,5 +1,6 @@
 import * as api from './api.js';
 import { pop_ups } from './notifications/pop-up.js';
+import {ui_helper} from "./ui-helper.js";
 
 /* ===============================
    Texto animado de portada
@@ -178,10 +179,15 @@ function setupContactForm(){
     });
 }
 
+function setupHeader(){
+    ui_helper.renderHeader('stats');
+}
+
 function innit(){
     setupAboutSection();
     setupOtherInfoSection();
     setupContactForm();
+    setupHeader();
 }
 
 document.addEventListener('DOMContentLoaded', innit);

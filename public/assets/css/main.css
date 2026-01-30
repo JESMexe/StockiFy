@@ -43,6 +43,7 @@
 /* ---- Reseteo y Estilos Generales ---- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
+    scroll-behavior: smooth;
     font-family: var(--font-body);
     background-color: var(--color-white);
     color: var(--color-black);
@@ -1123,6 +1124,7 @@ body.tour-active {
     right: 100%;
     pointer-events: none;
     justify-content: flex-end;
+    overflow: hidden;
 }
 
 /* Aseguramos que el SVG ocupe el div contenedor */
@@ -1132,6 +1134,7 @@ body.tour-active {
     position: relative;
     display: block;
     justify-content: flex-end;
+    overflow: hidden;
 }
 
 /* Caja 2: Derecha Abajo (Más grande) */
@@ -1144,6 +1147,7 @@ body.tour-active {
     max-width: 700px;
     max-height: 700px;
     animation: float-rotate-reverse 25s ease-in-out infinite;
+    overflow: hidden;
 }
 
 /* Animaciones */
@@ -1199,6 +1203,47 @@ body.tour-active {
     background-color: var(--color-black);
     top: 50%;
     z-index: 1;
+}
+
+/* public/assets/css/main.css */
+
+#dropdown-container {
+    position: relative;
+}
+
+#mi-cuenta-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    /* CAMBIO CLAVE: Anclamos a la derecha */
+    right: 0;
+    left: auto;
+
+    min-width: 220px;
+    background: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 6px 6px 0px var(--accent-color);
+    z-index: 9999; /* Máxima prioridad */
+}
+
+#mi-cuenta-dropdown .btn {
+    border: none;
+    border-bottom: 1px solid #eee;
+    border-radius: 0;
+    text-align: left;
+    justify-content: flex-start;
+    padding: 12px 20px;
+    box-shadow: none;
+    transform: none;
+}
+
+#mi-cuenta-dropdown .btn:last-child {
+    border-bottom: none;
+}
+
+#mi-cuenta-dropdown .btn:hover {
+    background-color: var(--accent-color);
+    color: var(--color-white);
 }
 
 @media (max-width: 420px) {

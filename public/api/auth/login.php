@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
+// public/api/auth/login.php
+
 use App\Controllers\AuthController;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

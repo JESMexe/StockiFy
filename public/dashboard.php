@@ -113,7 +113,7 @@
 
             <h3>Usuario</h3>
             <ul>
-                <li><button class="menu-btn" data-target-view="analysis"><i class="ph ph-chart-line"></i> Estadísticas Diarias</button></li>
+                <li><button class="menu-btn" data-target-view="analysis"><i class="ph ph-chart-line"></i> Analíticas</button></li>
                 <li><button class="menu-btn" data-target-view="notifications"><i class="ph ph-bell"></i> Notificaciones</button></li>
                 <li><button class="menu-btn" data-target-view="payments"><i class="ph ph-wallet"></i> Métodos de Pago</button></li>
             </ul>
@@ -332,34 +332,36 @@
 
         <!-- ===================== NOTIFICACIONES ===================== -->
         <div id="notifications" class="dashboard-view hidden">
-            <h2><i class="ph ph-bell"></i>Notificaciones</h2>
-            <p>Historial de todos los avisos importantes de tu cuenta.</p>
+            <h2><i class="ph ph-bell"></i> Notificaciones</h2>
+            <p>Gestioná tus avisos y recordatorios del inventario actual.</p>
 
             <div class="accordion" style="margin-top: 2rem;">
                 <div class="accordion-item">
                     <button class="accordion-header" aria-expanded="false">
-                        <span><i class="ph ph-bug"></i> Herramienta de Debug</span>
+                        <span><i class="ph ph-note"></i> Creador de Notas Rápidas</span>
                         <i class="ph ph-caret-down"></i>
                     </button>
                     <div class="accordion-content">
-                        <form id="debug-toast-form" style="display: grid; gap: 1rem;">
-                            <select id="debug-toast-type" class="btn" style="width: 100%; border-radius: 4px; padding: 12px; border: 2px solid black; background: white;">
-                                <option value="success">Success (Éxito)</option>
-                                <option value="error">Error (Rojo)</option>
-                                <option value="warning">Warning (Amarillo)</option>
-                                <option value="info">Info (Azul)</option>
-                                <option value="system">System (Violeta)</option>
-                            </select>
-                            <input type="text" id="debug-toast-title" placeholder="Título de la Notificación" required>
-                            <textarea id="debug-toast-message" placeholder="Mensaje de la Notificación..." style="min-height: 80px;"></textarea>
-                            <button type="submit" class="btn btn-primary" style="width: auto;">Lanzar Notificación de Prueba</button>
+                        <form id="create-note-form" style="display: grid; gap: 1rem;">
+                            <div class="flex-row" style="gap: 1rem;">
+                                <select id="note-type" class="rustic-select" style="flex: 1;">
+                                    <option value="info">Azul (Nota)</option>
+                                    <option value="success">Verde (Éxito)</option>
+                                    <option value="warning">Amarillo (Aviso)</option>
+                                    <option value="error">Rojo (Urgente)</option>
+                                    <option value="system">Violeta (Sistema)</option>
+                                </select>
+                                <input type="text" id="note-title" placeholder="Título de la nota..." style="flex: 2;" required>
+                            </div>
+                            <textarea id="note-message" placeholder="Escribí tu mensaje aquí..." style="min-height: 80px;"></textarea>
+                            <button type="submit" class="btn btn-primary" style="width: auto;">Guardar Nota</button>
                         </form>
                     </div>
                 </div>
             </div>
 
             <div id="notifications-list" style="margin-top: 2rem;">
-                <p>Cargando historial...</p>
+                <p>Cargando notificaciones...</p>
             </div>
         </div>
         <!-- ===================== FIN NOTIFICACIONES ===================== -->

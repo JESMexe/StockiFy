@@ -3,8 +3,9 @@ export const notificationConfig = {
     error: { icon: 'ph-warning-circle', color: 'var(--accent-red)' },
     warning: { icon: 'ph-warning', color: 'var(--accent-yellow)' },
     info: { icon: 'ph-info', color: 'var(--accent-blue)' },
-    system: { icon: 'ph-hard-drives', color: 'var(--accent-purple)' },
-    dev: { icon: 'ph ph-code', color: 'var(--accent-purple)' }
+    system: { icon: 'ph-hard-drives', color: 'var(--accent-violet)' },
+    dev: { icon: 'ph ph-code', color: 'var(--accent-violet)' },
+    note: { icon: 'ph-note', color: 'var(--color-black)' }
 };
 
 function _showToast(type, title, message, duration = 5000) {
@@ -29,7 +30,12 @@ function _showToast(type, title, message, duration = 5000) {
     fetch('/api/notifications/create.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, title, message })
+        body: JSON.stringify({
+            type,
+            title,
+            message,
+            inventory_id: window.activeInventoryId
+        })
     })
         .then(response => response.json())
         .then(data => {

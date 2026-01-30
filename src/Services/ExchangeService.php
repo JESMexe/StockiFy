@@ -3,9 +3,9 @@ namespace App\Services;
 
 class ExchangeService {
 
-    private $apiUrl = 'https://dolarapi.com/v1/dolares/blue';
-    private $cacheFile;
-    private $cacheTime = 3600; // 1 hora en segundos
+    private string $apiUrl = 'https://dolarapi.com/v1/dolares/blue';
+    private string $cacheFile;
+    private int $cacheTime = 3600; // 1 hora en segundos
 
     public function __construct() {
         // Guardamos el caché en la carpeta temporal del sistema o en la misma carpeta

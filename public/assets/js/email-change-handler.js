@@ -1,5 +1,6 @@
 import { mostrarMensaje } from './universal-functions.js'
 import * as setup from "./setupMiCuentaDropdown.js";
+import {ui_helper} from "./ui-helper.js";
 
 document.addEventListener('DOMContentLoaded', () =>{
 
@@ -85,20 +86,5 @@ document.addEventListener('DOMContentLoaded', () =>{
 })
 
 function setupHeader(){
-    const nav = document.getElementById('header-nav');
-
-    nav.innerHTML = `
-            <a href="/dashboard.php" class="btn btn-primary">Ir al Panel</a> 
-            <a href="/statistics.php" class="btn btn-secondary">Estadisticas</a>
-            <div id="dropdown-container">
-                <div class="btn btn-secondary" id="mi-cuenta-btn">Mi Cuenta</div>
-                <div class="flex-column hidden" id="mi-cuenta-dropdown">
-                    <a href="/configuration.php" class="btn btn-secondary">Configuración</a>
-                    <a href="/configuration.php" class="btn btn-secondary">Modificaciones de Stock</a>
-                    <a href="/configuration.php" class="btn btn-secondary">Soporte</a>
-                    <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
-                </div>
-            </div>            
-        `;
-    setup.setupMiCuenta();
+    ui_helper.renderHeader('stats');
 }

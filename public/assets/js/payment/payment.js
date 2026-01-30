@@ -110,24 +110,6 @@ export class PaymentsModule {
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Nombre del Método</label>
-                    <input type="text" id="pay-name" class="form-input" required placeholder="Ej: Mercado Pago">
-                </div>
-                
-                <div class="form-group">
-                    <label>Moneda</label>
-                    <select id="pay-currency" class="rustic-select" style="width:100%;">
-                        <option value="ARS" selected>Pesos Argentinos (ARS)</option>
-                        <option value="USD">Dólar (USD)</option>
-                        <option value="USDT">Cripto (USDT)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Recargo (%)</label>
-                    <input type="number" id="pay-surcharge" class="form-input" placeholder="0" step="0.1">
-                </div>
             </div>
         `;
     }

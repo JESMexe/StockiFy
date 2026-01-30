@@ -1,35 +1,55 @@
 <?php
+// public/api/user/update.php
 
-require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
+require_once __DIR__ . '/../../../src/core/Database.php';
+require_once __DIR__ . '/../../../src/Models/UserModel.php';
 
-use App\core\Database;
+use App\Models\UserModel;
 
-try {
-    $data = json_decode(file_get_contents('php://input'), true);
+header('Content-Type: application/json');
 
-    $userData = $data;
+// 1. Verificación de Seguridad
+if (session_status() === PHP_SESSION_NONE) session_start();
+$user = getCurrentUser();
 
-    $pdo = Database::getInstance();
-
-    $passType = $data['passwordType'];
-
-    if ($passType == 'number') {
-        $newPassword = password_hash($data['password'],PASSWORD_DEFAULT);
-    }
-    else{
-        $newPassword = $data['password'];
-    }
-
-    $user = getCurrentUser();
-    $user_id = $_SESSION['user_id'];
-
-    $stmt = $pdo->prepare("UPDATE users SET full_name = ?, email = ?, password_hash = ?, username = ? WHERE id = ?");
-    $stmt->execute([$data['full_name'], $data['email'], $newPassword, $data['username'], $user_id]);
-    $response = ['success' => true];
-} catch (Exception $e) {
-    $response = ['success' => false, 'error' => $e->getMessage()];
+if (!$user || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Acceso no autorizado']);
+    exit;
 }
 
-echo json_encode($response, JSON_NUMERIC_CHECK);
+// 2. Obtención de Datos
+$input = json_decode(file_get_contents('php://input'), true);
 
+if (!$input) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Datos inválidos']);
+    exit;
+}
+
+try {
+    $userModel = new UserModel();
+
+    // 3. Ejecución
+    // Nota: El frontend mandará 'full_name', no 'name' y 'surname' separados,
+    // para respetar la estructura de tu DB.
+    $success = $userModel->updateProfile($user['id'], $input);
+
+    if ($success) {
+        // Si cambió el nombre completo, actualizamos la sesión
+        if (isset($input['full_name'])) {
+            $_SESSION['user_name'] = $input['full_name'];
+        }
+        // Si cambió el username, actualizamos la sesión
+        if (isset($input['username'])) {
+            $_SESSION['username'] = $input['username'];
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Perfil actualizado']);
+    }
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}

@@ -21,19 +21,21 @@ if (!$user) {
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
+
 $type = $data['type'] ?? null;
 $title = $data['title'] ?? null;
 $message = $data['message'] ?? null;
+$inventory_id = $data['inventory_id'] ?? null;
 
-if (!$type || !$title) {
+if (!$type || !$title || !$inventory_id) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Tipo y título son requeridos']);
+    echo json_encode(['success' => false, 'message' => 'Faltan datos obligatorios (tipo, título o inventario)']);
     exit;
 }
 
 try {
     $model = new NotificationModel();
-    $model->create($user['id'], $type, $title, $message);
+    $model->create($user['id'], $inventory_id, $type, $title, $message);
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     http_response_code(500);

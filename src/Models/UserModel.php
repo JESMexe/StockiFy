@@ -1,91 +1,112 @@
 <?php
 namespace App\Models;
 
-use App\Core\Database;
+use App\core\Database;
 use PDO;
-use PDOException;
+use Exception;
 
 class UserModel
 {
-    private $db;
+    private PDO $db;
 
     public function __construct()
     {
         $this->db = Database::getInstance();
     }
 
-    /**
-     * Busca un usuario por su dirección de correo electrónico.
-     */
     public function findByEmail(string $email)
     {
-        $stmt = $this->db->prepare("SELECT id, email, username, full_name, cell, password_hash FROM users WHERE email = :email");
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = :email");
         $stmt->execute([':email' => $email]);
-        return $stmt->fetch();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Crea un nuevo usuario en la base de datos.
-     *
-     * @param array $data Datos del usuario (username, email, password, etc.).
-     * @return bool Devuelve true si el usuario fue creado, false si ya existe.
-     */
-    public function createUser(array $data): bool
-    {
-        $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
-
-        $sql = "INSERT INTO users (username, email, password_hash, full_name, cell, dni, is_admin)
-                VALUES (:username, :email, :password_hash, :full_name, :cell, :dni, :is_admin)";
-
-        $stmt = $this->db->prepare($sql);
-
-        try {
-            $stmt->execute([
-                ':username' => $data['username'],
-                ':email' => $data['email'],
-                ':password_hash' => $passwordHash,
-                ':full_name' => $data['full_name'] ?? null,
-                ':cell' => $data['cell'] ?? null,
-                ':dni' => $data['dni'] ?? null,
-                ':is_admin' => $data['is_admin'] ?? 0
-            ]);
-            return true;
-        } catch (PDOException $e) {
-            if ($e->getCode() == '23000') {
-                return false;
-            }
-            throw $e;
-        }
-    }
-
-    /**
-     * Busca un usuario por su ID.
-     *
-     * @param int $id El ID del usuario.
-     * @return array|false Devuelve los datos del usuario o false si no lo encuentra.
-     */
     public function findById(int $id)
     {
-        $stmt = $this->db->prepare("SELECT id, username, email, full_name, created_at, password_hash, is_admin FROM users WHERE id = :id");
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE id = :id");
         $stmt->execute([':id' => $id]);
-        return $stmt->fetch();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function updateUser(int $id, array $data): bool
-    {
-        $set = [];
-        foreach ($data as $key => $value) {
-            $set[] = "$key = :$key";
-        }
+    // --- MÉTODOS DE GOOGLE AUTH ---
+    public function findByGoogleId(string $googleId) {
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE google_id = :gid");
+        $stmt->execute([':gid' => $googleId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
-        if (empty($set)) return false;
+    public function linkGoogleAccount(int $userId, string $googleId) {
+        $stmt = $this->db->prepare("UPDATE users SET google_id = :gid WHERE id = :id");
+        return $stmt->execute([':gid' => $googleId, ':id' => $userId]);
+    }
 
-        $sql = "UPDATE users SET " . implode(', ', $set) . " WHERE id = :id";
+    public function createFromGoogle(array $data) {
+        // Crea usuario con datos de Google y contraseña aleatoria (ya que entra por Google)
+        $tempPass = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
+
+        $sql = "INSERT INTO users (username, email, password_hash, full_name, google_id, created_at) 
+                VALUES (:username, :email, :pass, :name, :gid, NOW())";
+
         $stmt = $this->db->prepare($sql);
-        $data['id'] = $id;
-
-        return $stmt->execute($data);
+        try {
+            $stmt->execute([
+                ':username' => explode('@', $data['email'])[0] . rand(100,999), // Username temporal único
+                ':email' => $data['email'],
+                ':pass' => $tempPass,
+                ':name' => $data['name'],
+                ':gid' => $data['google_id']
+            ]);
+            return $this->db->lastInsertId();
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
-}
+    private function consumeOtp($userId) {
+        $this->db->prepare("UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?")->execute([$userId]);
+    }
 
+    /**
+     * Guarda un código OTP y su expiración para un usuario.
+     */
+    public function setOtp($userId, $otp): bool
+    {
+        $expiry = date("Y-m-d H:i:s", strtotime('+15 minutes'));
+        $sql = "UPDATE users SET otp_code = ?, otp_expiry = ? WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$otp, $expiry, $userId]);
+    }
+
+    /**
+     * Verifica si el código es válido y no ha expirado.
+     */
+    public function verifyOtp($userId, $otp): bool
+    {
+        $sql = "SELECT id FROM users 
+            WHERE id = ? AND otp_code = ? AND otp_expiry > NOW()";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$userId, $otp]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            // Si es válido, lo borramos para que no se pueda reusar
+            $this->db->prepare("UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?")
+                ->execute([$userId]);
+            return true;
+        }
+        return false;
+    }
+
+    // Métodos para actualizar los datos finales
+    public function updateEmail($userId, $newEmail): bool
+    {
+        return $this->db->prepare("UPDATE users SET email = ? WHERE id = ?")
+            ->execute([$newEmail, $userId]);
+    }
+
+    public function updatePassword($userId, $newHash): bool
+    {
+        return $this->db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")
+            ->execute([$newHash, $userId]);
+    }
+}
