@@ -1,6 +1,8 @@
 // public/assets/js/api_FINAL.js
 
 import { pop_ups } from "./notifications/pop-up.js";
+
+
 //import { isLoggedIn } from "./main.js";
 
 /* ------------------- FUNCIONES INTERNAS ------------------- */
@@ -107,6 +109,15 @@ export async function getUserVerifiedTables() {
     const response = await fetch('/api/database/get-verified-tables.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+    });
+    return handleResponse(response);
+}
+
+export async function saveInventoryPreferences(data) {
+    const response = await fetch('/api/table/save-prefs.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
     });
     return handleResponse(response);
 }

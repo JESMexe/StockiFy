@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
-require_once __DIR__ . '/../../../src/Services/ExchangeService.php';
+require_once __DIR__ . '/../../../src/Services/ExchangeService.php'; // Necesitamos el servicio real
 
 use App\core\Database;
 use App\Services\ExchangeService;

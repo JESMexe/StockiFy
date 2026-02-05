@@ -147,10 +147,31 @@ class TableModel
     /**
      * Obtiene todos los datos ordenados por ID para garantizar consistencia.
      */
+    // src/Models/TableModel.php
+
+    // src/Models/TableModel.php
+
+    // src/Models/TableModel.php
+
+    // src/Models/TableModel.php
+
     public function getData(string $tableName): array
     {
+        $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+
+        if (!$activeInventoryId) return [];
+
+        // Verificamos que la tabla realmente le pertenezca a este ID de inventario activo
+        $stmtMeta = $this->db->prepare("SELECT table_name FROM user_tables WHERE inventory_id = :id");
+        $stmtMeta->execute([':id' => $activeInventoryId]);
+        $meta = $stmtMeta->fetch(PDO::FETCH_ASSOC);
+
+        // Si el JS pide una tabla que no es la activa en la sesión, devolvemos vacío
+        if (!$meta || $meta['table_name'] !== $tableName) {
+            return [];
+        }
+
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
-        // Agregamos ORDER BY id ASC para asegurar el orden secuencial
         $stmt = $this->db->query("SELECT * FROM {$safeTableName} ORDER BY id ASC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

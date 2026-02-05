@@ -1,125 +1,234 @@
 ﻿/* public/assets/css/analytics.css */
 
+/* =========================================
+   LAYOUT BASE (OPTIMIZADO PARA 1920px / 2K)
+   ========================================= */
+
 .analytics-layout {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 24px; /* Un poco más de aire en pantallas grandes */
     padding-bottom: 20px;
+    width: 100%;
 }
 
-/* Tarjetas KPI */
+/* --- TARJETAS KPI (Stats) --- */
 .stats-grid {
     display: grid;
+    /* Base para 1920px: Tarjetas de buen tamaño */
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
+    gap: 24px;
 }
 
 .stat-card {
     background: white;
-    padding: 20px;
+    padding: 24px; /* Padding generoso para HD */
     border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 0, 0, 0.15); /* Borde sutil */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: transform 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    min-height: 120px; /* Altura mínima consistente */
 }
 
 .stat-card:hover {
     transform: translateY(-4px);
-    /* box-shadow: 5px 5px 0 var(--accent-color); */
+    border-color: rgba(0,0,0,0.3);
 }
 
+/* Tipografía Base (Grande para monitores grandes) */
 .stat-title {
-    color: #666; font-size: 0.9rem; font-weight: 500;
-    margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    color: #666;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
-.stat-value { font-size: 1.8rem; font-weight: 700; color: #333; }
-.stat-sub { font-size: 0.8rem; margin-top: 5px; opacity: 0.8; }
 
-/* COLORES DE LA APP */
+.stat-value {
+    font-size: 2rem; /* Grande y legible */
+    font-weight: 700;
+    color: #333;
+    line-height: 1.1;
+}
+
+.stat-sub {
+    font-size: 0.85rem;
+    margin-top: 8px;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+/* --- COLORES DE TARJETAS (Mantenemos tu estética) --- */
+
+/* Ingresos (Verde) */
 .stat-card.revenue { border-left: 4px solid var(--accent-green, #28a745); }
 .stat-card.revenue .stat-title i { color: var(--accent-green, #28a745); }
+.stat-card.revenue:hover { box-shadow: 5px 5px 0 var(--accent-green); }
 
-.stat-card.revenue:hover {
-    box-shadow: 5px 5px 0 var(--accent-green);
-}
-
+/* Gastos (Rojo) */
 .stat-card.expenses { border-left: 4px solid var(--accent-red, #dc3545); }
 .stat-card.expenses .stat-title i { color: var(--accent-red, #dc3545); }
+.stat-card.expenses:hover { box-shadow: 5px 5px 0 var(--accent-red); }
 
-.stat-card.expenses:hover {
-    box-shadow: 5px 5px 0 var(--accent-red);
-}
-
-/* Balance y Stock usan el color de acento principal (Azul/Tema) */
+/* Balance (Azul) */
 .stat-card.balance { border-left: 4px solid var(--accent-blue); }
 .stat-card.balance .stat-title i { color: var(--accent-blue); }
+.stat-card.balance:hover { box-shadow: 5px 5px 0 var(--accent-blue); }
 
-.stat-card.balance:hover {
-    box-shadow: 5px 5px 0 var(--accent-blue);
-}
-
+/* Inventario (Amarillo) */
 .stat-card.inventory { border-left: 4px solid var(--accent-yellow); }
 .stat-card.inventory .stat-title i { color: var(--accent-yellow); }
+.stat-card.inventory:hover { box-shadow: 5px 5px 0 var(--accent-yellow); }
 
-.stat-card.inventory:hover {
-    box-shadow: 5px 5px 0 var(--accent-yellow);
+/* Ticket Promedio (Violeta) */
+.stat-card.ticket, .stat-card.average { border-left: 4px solid var(--accent-violet); }
+.stat-card.ticket .stat-title i, .stat-card.average .stat-title i { color: var(--accent-violet); }
+.stat-card.ticket:hover, .stat-card.average:hover { box-shadow: 5px 5px 0 var(--accent-violet); }
+
+
+/* --- SECCIONES DE GRÁFICOS Y LISTAS --- */
+.charts-grid-wrapper {
+    display: grid;
+    /* Por defecto dos columnas: Gráfico grande izquierda, Top List derecha */
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
 }
 
-.stat-card.ticket { border-left: 4px solid var(--accent-violet); }
-.stat-card.ticket .stat-title i { color: var(--accent-violet); }
-
-.stat-card.ticket:hover {
-    box-shadow: 5px 5px 0 var(--accent-violet);
-}
-
-/* Gráficos y Tablas */
 .charts-section, .top-list-card {
     background: white;
     border-radius: 12px;
-    border: 1px solid var(--color-black);
-    padding: 20px;
+    border: 1px solid rgba(0,0,0,0.15); /* Mismo borde sutil */
+    padding: 24px;
     transition: transform 0.2s;
+    height: 100%; /* Para que se estiren igual */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .charts-section:hover, .top-list-card:hover {
     border: 1px solid var(--accent-color);
-    transition: transform 0.2s;
+    transform: translateY(-2px);
 }
 
+/* Items de la lista Top */
 .top-list-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
+    padding: 14px 0;
     border-bottom: 1px solid #f0f0f0;
 }
 .top-list-item:last-child { border-bottom: none; }
 
-.top-item-name { font-weight: 600; color: #333; }
-.top-item-sub { font-size: 0.85rem; color: #888; }
-.top-item-val { font-weight: 700; color: var(--accent-color); }
+.top-item-name { font-weight: 600; color: #333; font-size: 1rem; }
+.top-item-sub { font-size: 0.85rem; color: #999; margin-top: 2px; }
+.top-item-val { font-weight: 700; color: var(--accent-color); font-size: 1.1rem; }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .bottom-section { grid-template-columns: 1fr; }
+/* =================================================================
+   RESPONSIVE: ADAPTACIÓN INTELIGENTE
+   ================================================================= */
+
+/* --- 1. NOTEBOOKS MEDIANAS (1440px - 1500px) --- */
+/* Ajuste sutil para que no se vea tan expandido */
+@media (max-width: 1550px) {
+    .analytics-layout { gap: 20px; }
+
+    #analysis{
+        width: 100%;
+    }
+
+    .stats-grid {
+        gap: 20px;
+        /* Reducimos un poco el min-width para asegurar que entren 4 o 5 en fila */
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .stat-card { padding: 20px; }
+
+    .stat-value { font-size: 1.8rem; } /* Bajamos un poco el número */
+
+    .charts-grid-wrapper { gap: 20px; }
+    .charts-section, .top-list-card { padding: 20px; }
 }
 
-/* Nueva Tarjeta: Ticket Promedio (Color Púrpura/Indigo) */
-.stat-card.average {
-    border-left: 4px solid var(--accent-violet); /* Púrpura */
-}
-.stat-card.average .stat-title i {
-    color: var(--accent-violet);
-}
-.stat-card.average:hover {
-    box-shadow: 5px 5px 0 var(--accent-violet);
+/* --- 2. NOTEBOOKS ESTÁNDAR (1366px - El punto crítico) --- */
+/* Aquí compactamos todo para que entre en pantallas de poca altura */
+@media (max-width: 1366px) {
+
+    .analytics-layout {
+        gap: 15px; /* Menos espacio entre filas */
+    }
+
+    .stats-grid {
+        gap: 15px;
+        /* CLAVE: Bajamos a 180px. Esto permite que entren 5 tarjetas en una fila
+           en una pantalla de 1366px (restando sidebar y padding) */
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .stat-card {
+        padding: 15px; /* Tarjeta más compacta */
+        min-height: 100px;
+    }
+
+    .stat-title {
+        font-size: 0.8rem; /* Texto título más chico */
+        margin-bottom: 5px;
+        gap: 6px;
+    }
+
+    .stat-title i { font-size: 1rem; }
+
+    .stat-value {
+        font-size: 1.5rem; /* Número destacado pero no gigante */
+    }
+
+    .stat-sub {
+        font-size: 0.75rem;
+        margin-top: 4px;
+    }
+
+    /* Ajuste de Gráficos y Listas */
+    .charts-grid-wrapper { gap: 15px; }
+
+    .charts-section, .top-list-card {
+        padding: 15px; /* Menos padding interno */
+    }
+
+    .top-list-item {
+        padding: 10px 0; /* Filas de lista más finas */
+    }
+
+    .top-item-name { font-size: 0.9rem; }
+    .top-item-val { font-size: 1rem; }
 }
 
+/* --- 3. TABLETS Y MÓVILES (Heredado y ajustado) --- */
 @media (max-width: 992px) {
     .charts-grid-wrapper {
-        grid-template-columns: 1fr !important; /* Pila vertical en tablets/móviles */
+        grid-template-columns: 1fr; /* Apilar gráficos verticalmente */
+    }
+
+    /* En tablets, volvemos a agrandar un poco las tarjetas porque hay menos columnas */
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
 }
 
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr 1fr; /* 2 columnas en móvil grande */
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr; /* 1 columna en móvil chico */
+    }
+}

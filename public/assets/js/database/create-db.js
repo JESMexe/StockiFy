@@ -215,7 +215,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (result.success) {
                 messageDiv.textContent = result.message + "\nSerás redirigido al panel.";
-                window.location.href = '/dashboard.php';
+
+                if (result.inventory_id) {
+                    window.activeInventoryId = result.inventory_id;
+                }
+
+                messageDiv.textContent = result.message + "\nRedirigiendo...";
+
+                setTimeout(() => {
+                    window.location.href = '/dashboard.php';
+                }, 1000);
             } else {
                 messageDiv.textContent = `Error: ${result.message}`;
             }

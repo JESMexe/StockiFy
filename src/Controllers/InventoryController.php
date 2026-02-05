@@ -72,11 +72,9 @@ class InventoryController
                     }
 
                 } catch (Exception $importError) {
-                    // Si falla la importación, SOLO registramos el error, pero NO detenemos el script
                     error_log("Error NO FATAL en importación: " . $importError->getMessage());
                     $importStatusMsg = " La tabla se creó, pero hubo un error importando los datos: " . $importError->getMessage();
                 } finally {
-                    // Limpiar sesión SIEMPRE para no liberar memoria y evitar bucles
                     unset($_SESSION['pending_import_data']);
                     unset($_SESSION['pending_import_overwrite']);
                 }
@@ -88,6 +86,7 @@ class InventoryController
 
             echo json_encode([
                 'success' => true,
+                'inventory_id' => $newInventoryId,
                 'message' => "¡Base de datos '{$dbName}' creada!" . $importStatusMsg
             ]);
 

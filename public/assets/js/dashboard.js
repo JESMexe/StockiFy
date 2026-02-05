@@ -233,7 +233,7 @@ async function renderTable(columns, data) {
         if (col === columnMapping.name) label += '<i class="ph-bold ph-article"></i>';
         if (col === 'min_stock') label += ' <i class="ph-bold ph-folder-simple-minus"></i>';
 
-        let sortIcon = ' <i class="ph-fill ph-caret-up-down" style="font-size: 1.4em; color: var(--color-gray);"></i>';;
+        let sortIcon = ' <i class="ph-fill ph-caret-up-down" style="font-size: 1.4em; color: var(--color-gray);"></i>';
         if (currentSort.column === col) {
             if (currentSort.state === 1) sortIcon = ' <i class="ph-fill ph-caret-up" style="font-size: 1.3em; color: var(--accent-color);"></i>';
             if (currentSort.state === 2) sortIcon = ' <i class="ph-fill ph-caret-down" style="; font-size: 1.3em; color: var(--accent-color);"></i>';
@@ -252,7 +252,7 @@ async function renderTable(columns, data) {
 
     // --- BODY ---
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Descripción de la imagen" style="margin: 0; padding: 0; min-width: 100%; min-height: 100%;">`
+        tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Descripción de la imagen" style="margin: 0; padding: 0; width: 450%; height: 400%;">`
     } else {
         tableBody.innerHTML = data.map(row => {
             // Normalización de ID
@@ -1031,7 +1031,7 @@ function openDeleteModal() {
 function closeDeleteModal() {
     if (deleteModal)
         deleteModal.classList.add('hidden');
-        document.body.style.overflow = '';
+    document.body.style.overflow = '';
 }
 
 function handleDeleteConfirmInput() {
@@ -1217,7 +1217,8 @@ async function loadNotifications() {
     listContainer.innerHTML = '<p>Cargando historial...</p>';
 
     try {
-        const response = await fetch('/api/notifications/get.php');
+        // Agregamos un timestamp para evitar cache de la API
+        const response = await fetch(`/api/notifications/get.php?t=${new Date().getTime()}`);
         const data = await response.json();
 
         if (!data.success) throw new Error(data.message);
@@ -1238,29 +1239,29 @@ async function loadNotifications() {
         for (const [label, items] of Object.entries(groups)) {
             html += `<h3 class="notification-date-header">${label}</h3>`;
             items.forEach(n => {
-                // 1. Buscamos config conocida (success, warning, etc.)
                 const config = notificationConfig[n.type];
 
                 let icon, color;
 
                 if (config) {
-                    // SISTEMA: Es una alerta real (guardada como 'success', 'warning')
-                    // Respetamos ícono de sistema (Check, Alerta)
+                    // TIPO SISTEMA (Warning, Info, Success reales)
+                    // Usamos la configuración tal cual
                     icon = config.icon;
                     color = config.color;
                 } else {
-                    // MANUAL: Es una nota guardada con color (ej: 'var(--accent-green)' o '#ff0000')
-                    // Forzamos ícono de nota y usamos el tipo como color
+                    // TIPO MANUAL (Es un color, ej: 'var(--accent-green)' o '#ff0000')
+                    // Forzamos el ícono de nota y usamos el tipo como color
                     icon = 'ph-note';
                     color = n.type;
                 }
 
+                // CORRECCIÓN CLAVE: Agregamos style="color: ${color}" DIRECTAMENTE al ícono
                 html += `
                 <div class="toast-notification show" 
-                     style="--toast-color: ${color}; position: relative; margin-bottom: 1rem; max-width: 100%;"
+                     style="--toast-color: ${color}; position: relative; margin-bottom: 1rem; max-width: 100%; border-left: 4px solid ${color};"
                      data-notification-id="${n.id}">
                     
-                    <i class="toast-icon ph ${icon}"></i>
+                    <i class="toast-icon ph ${icon}" style="color: ${color}; font-size: 1.5rem;"></i>
                     
                     <div class="toast-content">
                         <strong class="toast-title" style="color: ${color}">${n.title}</strong>
@@ -1279,6 +1280,65 @@ async function loadNotifications() {
     } catch (error) {
         listContainer.innerHTML = `<p style="color: var(--accent-red);">Error: ${error.message}</p>`;
     }
+}
+
+/* --- AGREGAR EN dashboard.js --- */
+
+function populateProductPicker() {
+    const container = document.querySelector('#item-picker-modal .picker-list');
+    if (!container) return;
+
+    container.innerHTML = ''; // Limpiamos la lista anterior
+
+    if (!allData || allData.length === 0) {
+        container.innerHTML = '<div class="empty-state">No hay productos en el inventario.</div>';
+        return;
+    }
+
+    // Usamos el mapping para saber qué columna es qué (por si en la DB se llama 'nombre_prod' en vez de 'name')
+    const nameCol = columnMapping.name || 'name';
+    const stockCol = columnMapping.stock || 'stock';
+    const priceCol = columnMapping.sale_price || 'sale_price';
+
+    allData.forEach(item => {
+        // Normalizamos valores
+        const name = item[nameCol] || 'Sin Nombre';
+        const stock = parseFloat(item[stockCol]) || 0;
+        const price = parseFloat(item[priceCol]) || 0;
+        const id = item.id || item.Id || item.ID;
+
+        // Creamos el elemento HTML usando las clases que definimos en el CSS nuevo
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `product-picker-item ${stock <= 0 ? 'disabled' : ''}`; // Deshabilitar si no hay stock
+        itemDiv.dataset.id = id;
+        itemDiv.dataset.json = JSON.stringify(item); // Guardamos la data para usarla al clickear
+
+        itemDiv.innerHTML = `
+            <div class="picker-item-info">
+                <span class="picker-item-name">${name}</span>
+                <span class="picker-item-stock ${stock <= 5 ? 'text-red' : ''}">Stock: ${stock}</span>
+            </div>
+            <div class="picker-item-right">
+                <span class="picker-item-price">$${price.toFixed(2)}</span>
+                <i class="ph-bold ph-check picker-item-check"></i>
+            </div>
+        `;
+
+        // Evento Click: Seleccionar producto
+        itemDiv.addEventListener('click', () => {
+            if (stock <= 0) return; // Evitar click en sin stock
+
+            // Toggle de selección visual
+            itemDiv.classList.toggle('selected');
+
+            // Habilitar botón de confirmar si hay al menos uno seleccionado
+            const hasSelection = container.querySelectorAll('.product-picker-item.selected').length > 0;
+            const confirmBtn = document.querySelector('#item-picker-modal .picker-confirm-btn');
+            if(confirmBtn) confirmBtn.disabled = !hasSelection;
+        });
+
+        container.appendChild(itemDiv);
+    });
 }
 
 function getRelativeDateGroup(dateString) {
@@ -1554,6 +1614,7 @@ async function init() {
 
     console.log("[INIT] Iniciando nav-bar...");
     ui_helper.renderHeader('dashboard');
+    console.log("[INIT] nav-bar iniciado.");
 
     // PREPARA LOS FONDOS GRISES DE LOS MODALES
     setupGreyBg();
@@ -1685,6 +1746,19 @@ async function init() {
     document.addEventListener('click', (e) => {
         if (!searchColumnBtn?.contains(e.target) && !searchColumnDropdown?.contains(e.target)) {
             searchColumnDropdown?.classList.add('hidden');
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.picker-btn');
+
+        if (btn) {
+            const targetId = btn.dataset.modalTarget;
+
+            if (targetId === 'item-picker-modal') {
+                showPickerModal(targetId);
+                populateProductPicker();
+            }
         }
     });
 
@@ -4260,82 +4334,100 @@ async function setupInventoryPicker() {
 
 export async function loadTableData() {
     try {
+        console.log("[loadTableData] Iniciando carga de seguridad y sincronización...");
+
+        // 1. RESET TOTAL de variables globales
+        // Esto es crucial para que la DB nueva no intente usar nombres de columnas de la anterior
+        allData = [];
+        originalData = [];
+        currentTableColumns = [];
+        columnMapping = { name: null, stock: null, sale_price: null, buy_price: null };
+        activeFeatures = { min_stock: false, gain: false, gain_type: 'percent' };
+
+        // 2. OBTENER DATOS DE LA TABLA (Backend usa $_SESSION['active_inventory_id'])
         console.log("[loadTableData] Llamando a api.getTableData...");
         const result = await api.getTableData();
-        console.log("[loadTableData] Se llamó");
 
         if (result && result.success === true) {
             allData = result.data || [];
             originalData = [...allData];
             currentTableColumns = result.columns || [];
 
+            // Sincronizar IDs de inventario activo
             activeInventoryId = result.inventoryId || result.inventory_id;
             window.activeInventoryId = activeInventoryId;
-            console.log("Inventario Activo ID:", activeInventoryId);
+            console.log("Sincronizando Inventario ID:", activeInventoryId);
 
+            // 3. CARGA CRÍTICA: Obtener preferencias reales guardadas para este ID
+            // Hacemos esto ANTES de renderizar para que el sistema sepa cómo se llaman las columnas
+            const prefs = await api.getCurrentInventoryPreferences();
+            if (prefs && prefs.success) {
+                // Aplicamos lo que realmente hay en la DB para este inventario específico
+                columnMapping = prefs.mapping || columnMapping;
+                activeFeatures = prefs.features || activeFeatures;
+                console.log("[loadTableData] Preferencias recuperadas con éxito.");
+            }
+
+            // 4. PREPARACIÓN DE UI
             const filterableColumns = currentTableColumns.filter(
                 col => col.toLowerCase() !== 'created_at'
             );
 
-            document.getElementById('table-title').textContent = result.inventoryName || 'Inventario';
+            const tableTitle = document.getElementById('table-title');
+            if (tableTitle) tableTitle.textContent = result.inventoryName || 'Inventario';
 
-            console.log("[loadTableData] Llamando a renderTable...");
+            // 5. RENDERIZADO (Ahora con los mapeos correctos ya cargados)
+            console.log("[loadTableData] Renderizando tabla con mapeo activo:", columnMapping);
             await renderTable(filterableColumns, allData);
 
-            console.log("[loadTableData] Llamando a renderColumnList...");
+            // Actualizar componentes de gestión
             if(typeof renderColumnList === 'function') renderColumnList();
-
-            // --- NUEVO: Actualizar Listas de Configuración ---
-            // Esto refresca los dropdowns de "Identificación de Columnas" automáticamente
-            if(typeof setupRecomendedColumns === 'function') {
-                await setupRecomendedColumns();
-            }
+            if(typeof setupRecomendedColumns === 'function') await setupRecomendedColumns();
 
             checkCriticalStatus();
-            console.log("[loadTableData] UI actualizada completamente.");
 
+            // 6. RECONSTRUCCIÓN DEL BUSCADOR
+            // Filtramos las columnas de precio del buscador basándonos en el mapeo cargado
             if (searchColumnDropdown) {
                 searchColumnDropdown.innerHTML = `
                   <button class="search-dropdown-item ${selectedSearchColumn === 'all' ? 'active' : ''}" data-column="all">
                     <i class="ph ph-check"></i> Todas las Columnas
                   </button>`;
 
-                // 1. DEFINIMOS LAS COLUMNAS A EXCLUIR DEL BUSCADOR
-                // Usamos columnMapping para detectar cuáles son Precio Venta y Compra en esta DB específica
                 const saleCol = columnMapping.sale_price ? columnMapping.sale_price.toLowerCase() : null;
                 const buyCol = columnMapping.buy_price ? columnMapping.buy_price.toLowerCase() : null;
-
                 const excludedSystemCols = ['percentage_gain', 'hard_gain', 'ganancia'];
 
                 filterableColumns.forEach(col => {
                     const colLower = col.toLowerCase();
-
-                    // 2. FILTRO: Si es precio venta, compra o ganancia, NO lo agregamos
+                    // Si la columna está mapeada como precio o es un cálculo de sistema, la excluimos
                     if (colLower === saleCol || colLower === buyCol || excludedSystemCols.includes(colLower)) {
-                        return; // Saltamos esta iteración
+                        return;
                     }
 
                     const item = document.createElement('button');
                     item.className = 'search-dropdown-item';
-                    if (selectedSearchColumn === col) {
-                        item.classList.add('active');
-                    }
+                    if (selectedSearchColumn === col) item.classList.add('active');
                     item.dataset.column = col;
                     item.innerHTML = `<i class="ph ph-check"></i> ${formatColumnName(col)}`;
                     searchColumnDropdown.appendChild(item);
                 });
             }
+
+            console.log("[loadTableData] Ciclo de carga completado.");
+
         } else {
-            pop_ups.error("Error", "[loadTableData] getTableData devolvió success: false.");
-            throw new Error(result?.message || 'Error al obtener datos de tabla.');
+            throw new Error(result?.message || 'Fallo en la comunicación con la API de datos.');
         }
     } catch (error) {
-        console.error("🛑 ¡ERROR CRÍTICO CAPTURADO!", error);
-        pop_ups.error(error.message || String(error), "[loadTableData] Error CATCH");
+        console.error("🛑 ¡ERROR DE CARGA!", error);
+        pop_ups.error(error.message || String(error), "Error de Sincronización");
+
         if (error.message.includes('No autorizado')) {
             window.location.href = '/login.php';
         } else {
-            window.location.href = '/select-db.php';
+            // Si el error persiste, volvemos a la selección de DB para limpiar sesión
+            setTimeout(() => { window.location.href = '/select-db.php'; }, 1500);
         }
     }
 }

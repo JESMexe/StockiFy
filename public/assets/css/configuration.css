@@ -149,6 +149,7 @@
 
 #page-index body {
     overflow: hidden;
+    width: 100%;
 }
 
 /* Inputs con el color de acento en el focus */
