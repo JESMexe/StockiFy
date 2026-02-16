@@ -1,4 +1,5 @@
 <?php
+// public/api/database/get-preferences-current.php
 header('Content-Type: application/json');
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
@@ -6,22 +7,25 @@ require_once __DIR__ . '/../../../src/core/Database.php';
 
 use App\core\Database;
 
-$user = getCurrentUser();
-if (!$user) { echo json_encode(['success'=>false]); exit; }
+session_start();
 
-// Obtener inventario activo
-// (Asumimos lógica de "último activo" o "único")
-// Aquí simplifico buscando el último creado o el seleccionado en sesión si existiera
+$user = getCurrentUser();
+$activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+
+if (!$user || !$activeInventoryId) {
+    echo json_encode(['success' => false, 'message' => 'Sesión o inventario no activo']);
+    exit;
+}
+
 $db = Database::getInstance();
-$stmt = $db->prepare("SELECT id, preferences, min_stock, hard_gain FROM inventories WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
-$stmt->execute([$user['id']]);
+
+$stmt = $db->prepare("SELECT preferences FROM inventories WHERE id = ? AND user_id = ?");
+$stmt->execute([$activeInventoryId, $user['id']]);
 $inv = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($inv) {
-    // Decodificar JSON
-    $prefs = json_decode($inv['preferences'], true) ?? [];
+    $prefs = json_decode($inv['preferences'] ?? '{}', true);
 
-    // Estructura por defecto si está vacío
     $response = [
         'success' => true,
         'mapping' => $prefs['mapping'] ?? [
@@ -30,15 +34,11 @@ if ($inv) {
                 'sale_price' => null,
                 'buy_price' => null
             ],
-        'features' => $prefs['features'] ?? [
-                'min_stock' => (bool)$inv['min_stock'], // Mantener compatibilidad con dato viejo
-                'gain' => (bool)$inv['hard_gain'],      // Mantener compatibilidad
-                'min_stock_val' => 5,
-                'gain_type' => 'percent'
-            ]
+        // Si tienes features extras
+        'features' => $prefs['features'] ?? []
     ];
     echo json_encode($response);
 } else {
-    echo json_encode(['success' => false, 'message' => 'No hay inventario']);
+    echo json_encode(['success' => false, 'message' => 'Inventario no encontrado']);
 }
 ?>

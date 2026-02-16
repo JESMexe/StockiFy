@@ -11,7 +11,7 @@ import { providerModuleInstance } from './providers/providers.js';
 import { employeeModuleInstance } from './employees/employees.js';
 import { analyticsModuleInstance } from './analytics/analytics.js';
 import { paymentsModuleInstance } from './payment/payment.js';
-import {initializeImportModal, openImportModal, setStockifyColumns} from './import.js';
+import {openImportModal} from './import.js';
 import {ui_helper} from "./ui-helper.js";
 
 // --- 2. VARIABLES GLOBALES ---
@@ -25,6 +25,7 @@ let searchColumnBtn, searchColumnBtnText, searchColumnDropdown;
 let isCriticalFilterActive = false; // Estado del filtro de peligro
 let isActionsHidden = true; // false = Visible, true = Oculto (Pestaña activa)
 let currentDollarRate = 0;
+let columnSorter = null;
 const protectedColumns = ['id', 'created_at'];
 let activeDisplayColumns = [];
 
@@ -166,7 +167,12 @@ async function handleStockUpdate(event) {
  * renderTable
  */
 async function renderTable(columns, data) {
-    // Definimos las constantes para las claves meta
+    if (data && Array.isArray(data) && data.length > 0) {
+        window.allData = data;
+        console.log("Datos sincronizados con Móvil");
+    }
+
+    // --- 1. DEFINICIONES CRÍTICAS (Las que faltaban) ---
     const currencySaleKey = '_meta_currency_sale';
     const currencyBuyKey = '_meta_currency_buy';
 
@@ -176,63 +182,101 @@ async function renderTable(columns, data) {
     // Validación de seguridad
     if (!tableHead || !tableBody) return;
 
-    // Carga de preferencias si no existen
+    // --- 2. CARGA DE PREFERENCIAS ---
     try {
-        if (!columnMapping.name && !columnMapping.stock) {
+        // Intentamos cargar preferencias si no están en memoria
+        if (!columnMapping.name) {
             const prefs = await api.getCurrentInventoryPreferences();
             if (prefs && prefs.success) {
                 if(prefs.mapping) columnMapping = prefs.mapping;
                 if(prefs.features) activeFeatures = prefs.features;
+
+                // Cargar visibilidad y orden si existen
+                window.currentUserPreferences = window.currentUserPreferences || {};
+                if(prefs.visible_columns) window.currentUserPreferences.visible_columns = prefs.visible_columns;
+                if(prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
             }
         }
-    } catch (e) { console.warn("Usando prefs por defecto"); }
+    } catch (e) { console.warn("Usando prefs por defecto o error al cargar"); }
 
-    // Definir columnas si no vienen
+    // Definir columnas base si no vienen
     if ((!columns || columns.length === 0) && data && data.length > 0) {
         columns = Object.keys(data[0]);
         currentTableColumns = columns;
     }
 
-    // --- FILTRADO Y ORDEN DE COLUMNAS ---
-    const systemHiddenCols = ['created_at', 'user_id', 'inventory_id', 'updated_at', 'min_stock'];
+    // --- 3. LÓGICA MAESTRA DE ORDEN Y VISIBILIDAD ---
+    let displayColumns = [...columns];
 
-    const mappedBuyCol = columnMapping.buy_price;
-    const mappedSaleCol = columnMapping.sale_price;
-    const minStockCol = 'min_stock';
+    // A. Ordenamiento Personalizado (Drag & Drop)
+    if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.column_order)) {
+        const savedOrder = window.currentUserPreferences.column_order;
 
-    const normalColumns = columns.filter(col => {
-        const colLower = col.toLowerCase();
-        const isBuyCol = mappedBuyCol && colLower === mappedBuyCol.toLowerCase();
-        const isSaleCol = mappedSaleCol && colLower === mappedSaleCol.toLowerCase();
-        return !systemHiddenCols.includes(colLower) && !isBuyCol && !isSaleCol;
-    });
+        displayColumns.sort((a, b) => {
+            const idxA = savedOrder.indexOf(a);
+            const idxB = savedOrder.indexOf(b);
 
-    const orderedSpecialColumns = [];
-    if (mappedBuyCol && columns.includes(mappedBuyCol)) orderedSpecialColumns.push(mappedBuyCol);
-    if (mappedSaleCol && columns.includes(mappedSaleCol)) orderedSpecialColumns.push(mappedSaleCol);
-    if (activeFeatures.min_stock && columns.includes(minStockCol)) orderedSpecialColumns.push(minStockCol);
+            // Si es columna nueva (no está en el orden guardado), al final
+            if (idxA === -1 && idxB === -1) return 0;
+            if (idxA === -1) return 1;
+            if (idxB === -1) return -1;
 
-    const displayColumns = [...normalColumns, ...orderedSpecialColumns];
+            return idxA - idxB;
+        });
+    } else {
+        // FALLBACK: Orden por defecto (Sistema al final)
+        const mappedBuyCol = columnMapping.buy_price;
+        const mappedSaleCol = columnMapping.sale_price;
+        const minStockCol = 'min_stock';
+        const systemHiddenCols = ['created_at', 'user_id', 'inventory_id', 'updated_at', 'min_stock'];
+
+        const normalColumns = columns.filter(col => {
+            const colLower = col.toLowerCase();
+            const isBuyCol = mappedBuyCol && colLower === mappedBuyCol.toLowerCase();
+            const isSaleCol = mappedSaleCol && colLower === mappedSaleCol.toLowerCase();
+            return !systemHiddenCols.includes(colLower) && !isBuyCol && !isSaleCol;
+        });
+
+        const orderedSpecialColumns = [];
+        if (mappedBuyCol && columns.includes(mappedBuyCol)) orderedSpecialColumns.push(mappedBuyCol);
+        if (mappedSaleCol && columns.includes(mappedSaleCol)) orderedSpecialColumns.push(mappedSaleCol);
+        if (activeFeatures.min_stock && columns.includes(minStockCol)) orderedSpecialColumns.push(minStockCol);
+
+        displayColumns = [...normalColumns, ...orderedSpecialColumns];
+    }
+
+    // B. Filtro de Visibilidad (Gestor de Columnas)
+    if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.visible_columns)) {
+        const visibleSet = window.currentUserPreferences.visible_columns;
+        if (visibleSet.length > 0) {
+            displayColumns = displayColumns.filter(col => visibleSet.includes(col));
+        }
+    } else {
+        // Si no hay config, ocultamos IDs y timestamps por limpieza
+        const systemHiddenDefault = ['created_at', 'user_id', 'inventory_id', 'updated_at'];
+        displayColumns = displayColumns.filter(col => !systemHiddenDefault.includes(col.toLowerCase()));
+    }
+
     activeDisplayColumns = displayColumns;
 
-    // --- HEADER ---
+    // --- 4. RENDERIZADO DEL HEADER ---
     let actionsTh = '';
     if (!isActionsHidden) {
         actionsTh = `<th class="actions-header" onclick="window.toggleActionsColumn()" title="Ocultar columna">Acciones <i class="ph ph-caret-right" style="vertical-align: middle; margin-left: 5px;"></i></th>`;
     }
 
     const headerHTML = displayColumns.map(col => {
-        let niceName = formatColumnName(col);
+        let niceName = formatColumnName(col); // Asegúrate que esta función exista globalmente
         let label = niceName;
 
-        let iconHtml = '';
-
+        // Iconos identificadores
         if (col === columnMapping.stock) label += ' <i class="ph-bold ph-package"></i>';
         if (col === columnMapping.sale_price) label += ' <i class="ph-bold ph-coin-vertical"></i>';
         if (col === columnMapping.buy_price) label += ' <i class="ph-bold ph-shopping-cart"></i>';
         if (col === columnMapping.name) label += '<i class="ph-bold ph-article"></i>';
         if (col === 'min_stock') label += ' <i class="ph-bold ph-folder-simple-minus"></i>';
 
+        // Icono de ordenamiento
         let sortIcon = ' <i class="ph-fill ph-caret-up-down" style="font-size: 1.4em; color: var(--color-gray);"></i>';
         if (currentSort.column === col) {
             if (currentSort.state === 1) sortIcon = ' <i class="ph-fill ph-caret-up" style="font-size: 1.3em; color: var(--accent-color);"></i>';
@@ -250,12 +294,11 @@ async function renderTable(columns, data) {
 
     tableHead.innerHTML = `<tr>${headerHTML}${gainHeader}${actionsTh}</tr>`;
 
-    // --- BODY ---
+    // --- 5. RENDERIZADO DEL BODY ---
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Descripción de la imagen" style="margin: 0; padding: 0; width: 450%; height: 400%;">`
+        tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Sin datos" style="margin: 0; padding: 0; width: 450%; height: 400%;">`
     } else {
         tableBody.innerHTML = data.map(row => {
-            // Normalización de ID
             const rowId = row['id'] ?? row['Id'] ?? row['ID'];
             const isEditing = (editingRowId == rowId);
 
@@ -263,25 +306,25 @@ async function renderTable(columns, data) {
                 let value = row[col] ?? '-';
                 let cellClass = '';
 
+                // Lógica de Stocks y Precios
                 const isSale = (col.toLowerCase() === columnMapping.sale_price?.toLowerCase());
                 const isBuy = (col.toLowerCase() === columnMapping.buy_price?.toLowerCase());
 
-                // Lógica de alerta de Stock Mínimo
+                // Alerta Stock Mínimo
                 if (col === columnMapping.stock && activeFeatures.min_stock) {
                     const min = parseFloat(row['min_stock']) || 0;
                     const current = parseFloat(value) || 0;
                     if (current <= min) cellClass = 'status-critical';
                 }
 
-                // Lógica de Moneda (USD / ARS)
+                // Moneda
                 let currency = 'ARS';
-                if (isSale) currency = row[currencySaleKey] || 'ARS';
-                if (isBuy) currency = row[currencyBuyKey] || 'ARS';
+                if (isSale) currency = row[currencySaleKey] || 'ARS'; // ¡AQUÍ ESTABA EL ERROR!
+                if (isBuy) currency = row[currencyBuyKey] || 'ARS';   // ¡Y AQUÍ!
 
                 const symbol = (currency === 'USD') ? 'US$' : '$';
 
-                // Formateo visual del valor
-                // Formateo visual del valor inteligente
+                // Formateo de Valor
                 if ((isSale || isBuy) && !isNaN(value) && value !== '-') {
                     const numVal = parseFloat(value);
                     if (Math.abs(numVal) < 10 && numVal % 1 !== 0) {
@@ -291,44 +334,36 @@ async function renderTable(columns, data) {
                     }
                 }
 
-                // MODO EDICIÓN
+                // Modo Edición
                 if (isEditing) {
                     if (isSale || isBuy) {
                         return `
-                            <td>
-                                <div class="flex-row" style="gap:0;">
-                                    <button type="button" class="btn-currency-toggle" 
-                                            onclick="window.toggleRowCurrency(this, '${rowId}', '${isSale?'sale':'buy'}', '${currency}')"
-                                            title="Cambiar a ${currency==='ARS'?'USD':'ARS'}"
-                                            style="padding: 0 5px; font-size: 0.7rem; background: #eee; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; cursor: pointer;">
-                                        ${currency}
-                                    </button>
-                                    <input type="text" 
-                                           class="editing-input form-control" 
-                                           data-col="${col}" 
-                                           value="${row[col] ?? ''}" 
-                                           data-currency-type="${isSale ? 'sale' : 'buy'}"
-                                           data-current-currency="${currency}"
-                                           style="width:100%; border-radius: 0 4px 4px 0;">
-                                </div>
-                            </td>`;
+                        <td>
+                            <div class="flex-row" style="gap:0;">
+                                <button type="button" class="btn-currency-toggle" 
+                                    onclick="window.toggleRowCurrency(this, '${rowId}', '${isSale?'sale':'buy'}', '${currency}')"
+                                    title="Cambiar a ${currency==='ARS'?'USD':'ARS'}"
+                                    style="padding: 0 5px; font-size: 0.7rem; background: #eee; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; cursor: pointer;">
+                                    ${currency}
+                                </button>
+                                <input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" data-currency-type="${isSale ? 'sale' : 'buy'}" data-current-currency="${currency}" style="width:100%; border-radius: 0 4px 4px 0;">
+                            </div>
+                        </td>`;
                     }
                     return `<td><input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" style="width:100%"></td>`;
                 }
-
                 return `<td class="${cellClass}">${value}</td>`;
             }).join('');
 
-
-            // --- LÓGICA DE GANANCIA (INTEGRADA CON CONVERSIÓN) ---
+            // --- LÓGICA DE GANANCIA ---
             let gainHTML = '';
             if (activeFeatures.gain) {
                 const saleColName = columnMapping.sale_price;
                 const buyColName = columnMapping.buy_price;
 
-                // 1. Obtenemos valores crudos (raw) y monedas
                 const rawSale = (saleColName && row[saleColName]) ? parseFloat(row[saleColName]) : 0;
                 const rawBuy = (buyColName && row[buyColName]) ? parseFloat(row[buyColName]) : 0;
+
                 const saleCurrency = row[currencySaleKey] || 'ARS';
                 const buyCurrency = row[currencyBuyKey] || 'ARS';
 
@@ -336,9 +371,8 @@ async function renderTable(columns, data) {
                 let displayProfit = '-';
                 let profitClass = '';
 
-                // 2. Aplicamos la lógica de conversión que pediste
+                // Cálculo con cotización
                 if (currentDollarRate > 0 && rawSale > 0 && rawBuy > 0) {
-                    // Normalización a Pesos (ARS) para el cálculo interno
                     const saleInArs = (saleCurrency === 'USD') ? rawSale * currentDollarRate : rawSale;
                     const buyInArs = (buyCurrency === 'USD') ? rawBuy * currentDollarRate : rawBuy;
 
@@ -351,6 +385,7 @@ async function renderTable(columns, data) {
                             displayProfit = `$${profit.toFixed(2)}`;
                         }
                     } else {
+                        // Porcentaje
                         if (buyInArs > 0) {
                             profit = ((saleInArs - buyInArs) / buyInArs) * 100;
                             displayProfit = `${profit.toFixed(2)}%`;
@@ -363,17 +398,14 @@ async function renderTable(columns, data) {
                         }
                     }
 
-                    // Colores
                     if (profit > 0) profitClass = 'text-green-600 font-bold';
                     else if (profit < 0) profitClass = 'status-critical';
 
                 } else if (currentDollarRate === 0 && (saleCurrency === 'USD' || buyCurrency === 'USD')) {
-                    // Si no hay cotización y hay columnas en dólares, mostramos error
                     displayProfit = 'Err Cotiz.';
                     profitClass = 'text-gray-500';
-
                 } else if (rawSale > 0 && rawBuy > 0) {
-                    // Fallback para cuando todo es ARS y no depende del dólar
+                    // Sin conversión (todo ARS o todo USD sin cotización explícita)
                     if (activeFeatures.gain_type === 'fixed') {
                         profit = rawSale - rawBuy;
                         displayProfit = `$${profit.toFixed(2)}`;
@@ -385,12 +417,11 @@ async function renderTable(columns, data) {
                     else if (profit < 0) profitClass = 'status-critical';
                 }
 
-                // Renderizado final de la celda
                 const style = profit > 0 ? 'color: var(--accent-green); font-weight: bold;' : '';
                 gainHTML = `<td class="${profitClass}" style="${style}">${displayProfit}</td>`;
             }
 
-            // Lógica de Acciones
+            // --- LÓGICA DE ACCIONES ---
             let actionsHTML = '';
             if (!isActionsHidden) {
                 if (isEditing) {
@@ -1625,8 +1656,6 @@ async function init() {
 
     // 2. CONFIGURACIÓN BÁSICA DE LA VISTA
     const tableTitleElement = document.getElementById('table-title');
-    initializeImportModal();
-    console.log("[INIT] Modal inicializado.");
 
     // --- Selecciono Elementos del Modal de Eliminación ---
     deleteModal = document.getElementById('delete-confirm-modal');
@@ -4357,14 +4386,21 @@ export async function loadTableData() {
             activeInventoryId = result.inventoryId || result.inventory_id;
             window.activeInventoryId = activeInventoryId;
             console.log("Sincronizando Inventario ID:", activeInventoryId);
+            window.allData = result.data;
+            console.log("Datos cargados en Móvil:", window.allData.length);
 
             // 3. CARGA CRÍTICA: Obtener preferencias reales guardadas para este ID
             // Hacemos esto ANTES de renderizar para que el sistema sepa cómo se llaman las columnas
             const prefs = await api.getCurrentInventoryPreferences();
             if (prefs && prefs.success) {
-                // Aplicamos lo que realmente hay en la DB para este inventario específico
                 columnMapping = prefs.mapping || columnMapping;
                 activeFeatures = prefs.features || activeFeatures;
+
+                if (prefs.visible_columns) {
+                    window.currentUserPreferences = window.currentUserPreferences || {};
+                    window.currentUserPreferences.visible_columns = prefs.visible_columns;
+                }
+
                 console.log("[loadTableData] Preferencias recuperadas con éxito.");
             }
 
@@ -4524,3 +4560,158 @@ document.addEventListener('DOMContentLoaded', async () => {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 });
+
+/* =======================================================
+   GESTIÓN DE COLUMNAS (VISIBILIDAD)
+   ======================================================= */
+
+window.openColumnManager = function() {
+    const modal = document.getElementById('column-manager-modal');
+    const listContainer = document.getElementById('column-manager-list');
+    const modalBody = modal.querySelector('.modal-body');
+
+    if (!modal || !listContainer) return;
+
+    // 1. Inyectar Banner Explicativo (Solo si no existe ya)
+    if (!modalBody.querySelector('.info-banner')) {
+        const banner = document.createElement('div');
+        banner.className = 'info-banner';
+        banner.innerHTML = `
+            <i class="ph-fill ph-info"></i>
+            <div>
+                <p><strong>Personaliza tu vista.</strong><br>
+                Arrastra desde los puntos para reordenar.<br>
+                Desmarca la casilla para ocultar la columna.</p>
+            </div>
+        `;
+        // Insertar al principio del body, antes de la lista
+        modalBody.insertBefore(banner, listContainer);
+    }
+
+    // 2. Obtener y Ordenar Columnas (Igual que antes)
+    let allCols = currentTableColumns || [];
+
+    if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.column_order)) {
+        const savedOrder = window.currentUserPreferences.column_order;
+        allCols.sort((a, b) => {
+            const idxA = savedOrder.indexOf(a);
+            const idxB = savedOrder.indexOf(b);
+            if (idxA === -1 && idxB === -1) return 0;
+            if (idxA === -1) return 1;
+            if (idxB === -1) return -1;
+            return idxA - idxB;
+        });
+    }
+
+    let visibleCols = allCols;
+    if (window.currentUserPreferences && window.currentUserPreferences.visible_columns) {
+        visibleCols = window.currentUserPreferences.visible_columns;
+    }
+
+    // 3. Generar HTML (NUEVO DISEÑO)
+    listContainer.innerHTML = '';
+
+    allCols.forEach(col => {
+        // Filtramos columnas técnicas
+        if (['created_at', 'updated_at', 'user_id', 'inventory_id'].includes(col.toLowerCase())) return;
+
+        const isChecked = visibleCols.includes(col);
+        const niceName = formatColumnName(col);
+
+        const item = document.createElement('div');
+        // Usamos la nueva clase .sortable-item
+        item.className = 'sortable-item';
+        item.dataset.column = col;
+
+        // ESTRUCTURA VISUAL: [Handle] [Nombre] [Checkbox]
+        item.innerHTML = `
+            <div style="display:flex; align-items:center; flex-grow:1;">
+                <div class="drag-handle" title="Arrastrar para mover">
+                    <i class="ph-bold ph-dots-six-vertical"></i>
+                </div>
+                
+                <span class="col-name">${niceName}</span>
+            </div>
+            
+            <input type="checkbox" value="${col}" ${isChecked ? 'checked' : ''} 
+                   style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-color);">
+        `;
+
+        listContainer.appendChild(item);
+    });
+
+    modal.classList.remove('hidden');
+
+    // 4. Inicializar Sortable (Con handle específico)
+    if (columnSorter) columnSorter.destroy();
+    columnSorter = new Sortable(listContainer, {
+        animation: 150,
+        handle: '.drag-handle',
+        ghostClass: 'sortable-ghost',
+    });
+};
+
+window.closeColumnManager = function() {
+    const modal = document.getElementById('column-manager-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+
+window.saveColumnPreferences = async function() {
+    const listContainer = document.getElementById('column-manager-list');
+    // Obtenemos todos los items del modal (ya ordenados visualmente por el usuario)
+    const items = listContainer.querySelectorAll('.sortable-item');
+
+    const visibleCols = [];
+    const orderedCols = [];
+
+    items.forEach(item => {
+        const colName = item.dataset.column;
+        const checkbox = item.querySelector('input[type="checkbox"]');
+
+        // Guardamos TODAS las columnas en el orden que quedaron (para saber el orden futuro)
+        orderedCols.push(colName);
+
+        // Si está marcada, la agregamos a visibles
+        if (checkbox.checked) {
+            visibleCols.push(colName);
+        }
+    });
+
+    try {
+        const response = await api.setCurrentInventoryPreferences({
+            visible_columns: visibleCols,
+            column_order: orderedCols // [NUEVO] Enviamos el orden
+        });
+
+        if (response.success) {
+            pop_ups.success("Configuración guardada.", "Éxito");
+
+            if (!window.currentUserPreferences) window.currentUserPreferences = {};
+            window.currentUserPreferences.visible_columns = visibleCols;
+            window.currentUserPreferences.column_order = orderedCols; // [NUEVO] Actualizamos local
+
+            window.closeColumnManager();
+
+            // Redibujamos la tabla
+            if (typeof renderTable === 'function') {
+                await renderTable(currentTableColumns, allData);
+            } else {
+                if (window.loadTableData) window.loadTableData();
+            }
+
+        } else {
+            throw new Error(response.message || 'Error al guardar');
+        }
+    } catch (error) {
+        console.error(error);
+        pop_ups.error("No se pudo guardar la configuración.", "Error");
+    }
+};
+
+
+window.allData = allData;
+window.columnMapping = columnMapping;
+
+window.salesModuleInstance = salesModuleInstance;
+window.purchasesModule = purchaseModuleInstance;

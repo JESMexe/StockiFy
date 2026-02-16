@@ -38,12 +38,34 @@ export class SalesModule {
     }
 
     init() {
-        if (this.isInitialized) { this.loadHistory(this.currentSortOrder); return; }
+        if (this.isInitialized) {
+            if(document.getElementById(this.containerId)) this.loadHistory(this.currentSortOrder);
+            return;
+        }
+
         const container = document.getElementById(this.containerId);
-        if (!container) return;
-        container.innerHTML = this.renderBaseStructure();
+
+        if (container) {
+            container.innerHTML = this.renderBaseStructure();
+
+            // [FIX MOVIL] Mover modales al body para que se vean
+            const modalCreate = document.getElementById('create-sale-modal');
+            const modalDetail = document.getElementById('detail-sale-modal');
+
+            if (modalCreate) document.body.appendChild(modalCreate);
+            if (modalDetail) document.body.appendChild(modalDetail);
+
+        } else {
+            // Fallback si no existe la vista de tabla
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = this.renderBaseStructure();
+            tempDiv.querySelectorAll('.modal-overlay').forEach(m => document.body.appendChild(m));
+        }
+
         this.attachEvents();
-        this.loadHistory(this.currentSortOrder);
+
+        if(container) this.loadHistory(this.currentSortOrder);
+
         this.isInitialized = true;
     }
 
@@ -76,28 +98,27 @@ export class SalesModule {
 
                 <div id="create-sale-modal" class="modal-overlay hidden" style="display:none; z-index:1000;">
                     <div class="modal-content" style="width: 95vw; max-width: 2000px;">
-                        <div class="modal-header">
-                            <h3><i class="ph-bold ph-shopping-cart"></i> Registrar Venta</h3>
+                        
+                        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <button id="mobile-back-to-products" class="btn btn-secondary hidden-desktop" style="display:none; padding:5px 10px;">
+                                    <i class="ph-bold ph-arrow-left"></i>
+                                </button>
+                                <h3><i class="ph-bold ph-shopping-cart"></i> Registrar Venta</h3>
+                            </div>
                             <button class="modal-close-btn" id="close-sale-modal">&times;</button>
                         </div>
                         
                         <div id="config-warning-overlay" style="display:none; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; padding:40px; color:#555;">
                             <i class="ph ph-warning-circle" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 20px;"></i>
                             <h3 style="margin-bottom: 15px; font-weight: 800; color: #333;">Falta Configuración de Columnas</h3>
-                            <p style="max-width: 500px; margin-bottom: 10px; line-height: 1.5;">
-                                Para usar el módulo de ventas, el sistema necesita saber qué columnas de tu tabla corresponden a los datos clave.
-                            </p>
-                            <div style="margin-top:300px; background: var(--accent-color-quat-opacity); color: var(--accent-color); padding: 10px 20px; border-radius: 6px; border: 1px solid background: var(--accent-color-medium-opacity); margin-bottom: 25px; font-size: 0.9rem;">
-                                <i class="ph-bold ph-info"></i> Columnas requeridas: <strong>Nombre, Stock y Precio de Venta</strong>.
-                            </div>
-                            <button id="go-to-config-btn" class="btn btn-primary" style="padding: 10px 30px; max-width: 800px">
-                                Cerrar Ventana
-                            </button>
+                            <p style="max-width: 500px; margin-bottom: 10px; line-height: 1.5;">Para usar el módulo de ventas, el sistema necesita saber qué columnas de tu tabla corresponden a los datos clave.</p>
+                            <button id="go-to-config-btn" class="btn btn-primary">Cerrar Ventana</button>
                         </div>
 
                         <div class="purchase-modal-body" id="sale-modal-body">
                             
-                            <div class="purchase-col" style="flex: 1.2;">
+                            <div class="purchase-col" id="step-products" style="flex: 1.2;">
                                 <h4>1. Productos</h4>
                                 <div style="display:flex; gap:8px; margin-bottom:15px; align-items: center;">
                                     <input type="text" id="sale-search-product" class="rustic-input" placeholder="Buscar o Escanear..." autocomplete="off" style="flex:1; width: 100%;">
@@ -106,7 +127,7 @@ export class SalesModule {
                                     </button>
                                 </div>
                                 <div id="manual-item-form" style="display:none; background:#f9f9f9; padding:10px; border:1px dashed var(--accent-color); border-radius:6px; margin-bottom:15px;">
-                                    <input type="text" id="manual-name" class="rustic-input" placeholder="Descripción (Ej: Mano de obra)" style="margin-bottom:8px; width:100%;">
+                                    <input type="text" id="manual-name" class="rustic-input" placeholder="Descripción" style="margin-bottom:8px; width:100%;">
                                     <div style="display:flex; gap:8px;">
                                         <input type="number" id="manual-price" class="rustic-input" placeholder="$ Precio" style="flex:1;">
                                         <input type="number" id="manual-qty" class="rustic-input" value="1" style="width:60px;">
@@ -116,87 +137,95 @@ export class SalesModule {
                                 <div id="sale-products-list" class="scrollable-list"></div>
                             </div>
 
-                            <div class="purchase-col" style="flex: 1;">
-                                <h4>2. Carrito</h4>
-                                <div id="sale-cart-items" class="scrollable-list" style="background: #FFF; border-radius: 8px;">
-                                    <div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>
-                                </div>
+                            <div id="step-checkout" style="display:contents;">
                                 
-                                <div style="display:flex; flex-direction:column; gap:10px; padding-top:10px; border-top:2px dashed var(--color-black);">
-                                    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                                        <button id="toggle-cart-currency-btn" class="btn btn-sm btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; width: auto;">
-                                            <i class="ph-bold ph-currency-circle-dollar"></i> Ver en USD
-                                        </button>
-                                        <div style="text-align:right;">
-                                            <span style="font-size:0.8rem; color:#666;">Subtotal:</span>
-                                            <div id="cart-subtotal-display" style="font-weight:bold; font-size:1.1rem;">$0,00</div>
+                                <div class="purchase-col" style="flex: 1;">
+                                    <h4>2. Carrito</h4>
+                                    <div id="sale-cart-items" class="scrollable-list" style="background: #FFF; border-radius: 8px;">
+                                        <div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:10px; padding-top:10px; border-top:2px dashed var(--color-black);">
+                                        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                                            <button id="toggle-cart-currency-btn" class="btn btn-sm btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; width: auto;">
+                                                <i class="ph-bold ph-currency-circle-dollar"></i> Ver en USD
+                                            </button>
+                                            <div style="text-align:right;">
+                                                <span style="font-size:0.8rem; color:#666;">Subtotal:</span>
+                                                <div id="cart-subtotal-display" style="font-weight:bold; font-size:1.1rem;">$0,00</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="purchase-col" style="flex: 1.1;">
-                                <h4>3. Cierre y Pagos</h4>
-                                <div class="form-section" style="margin-bottom: 15px;">
-                                    <label class="form-section-title">Notas de Venta</label>
-                                    <textarea id="sale-notes" class="rustic-input" placeholder="Opcional..." style="height:40px; width:100%; resize:none;"></textarea>
-                                </div>
-                                <div class="scrollable-list" style="padding-right: 5px; overflow-x: visible;">
+                                <div class="purchase-col" style="flex: 1.1;">
+                                    <h4>3. Cierre y Pagos</h4>
+                                    <div class="form-section" style="margin-bottom: 15px;">
+                                        <label class="form-section-title">Notas de Venta</label>
+                                        <textarea id="sale-notes" class="rustic-input" placeholder="Opcional..." style="height:40px; width:100%; resize:none;"></textarea>
+                                    </div>
+                                    <div class="scrollable-list" style="padding-right: 5px; overflow-x: visible;">
+                                        <div class="form-section">
+                                            <label class="form-section-title">Cliente</label>
+                                            <select id="sale-customer" class="rustic-select"></select>
+                                        </div>
+                                        <div class="form-section">
+                                            <div style="display:flex; gap:10px; align-items: flex-end;">
+                                                <div style="flex:1;">
+                                                    <label class="form-section-title">Vendedor</label>
+                                                    <select id="sale-seller" class="rustic-select"></select>
+                                                </div>
+                                                <div style="width: 80px;">
+                                                    <label class="form-section-title">Comisión %</label>
+                                                    <input type="number" id="sale-commission-pct" class="rustic-input" value="0">
+                                                </div>
+                                            </div>
+                                            <div id="commission-display" style="text-align:right; font-size:0.75rem; color:#666; margin-top:5px; font-weight:600;">Comisión: $0,00</div>
+                                        </div>
+                                        <div class="form-section" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;">
+                                            <label class="form-section-title" style="padding-bottom: 0; bottom: 0; margin-bottom: 0">Calculadora </label>
+                                            <h6 style="top: 0; margin-bottom: 10px; color: #888888; font-size: 12px ">(Vuelto y control informativo)</h6>
+                                            <div class="currency-tabs" style="display:flex; gap:5px; margin-bottom:10px; border-bottom: 2px solid #eee;">
+                                                <button class="currency-tab active" data-curr="ARS" style="padding: 5px 15px; border:none; background:none; font-weight:bold; cursor:pointer; border-bottom: 3px solid var(--accent-color);">ARS</button>
+                                                <button class="currency-tab" data-curr="USD" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USD</button>
+                                                <button class="currency-tab" data-curr="USDT" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USDT</button>
+                                            </div>
+                                            <div id="rate-display-info" style="font-size:0.8rem; color:var(--accent-color); margin-bottom:5px; display:none;">
+                                                Cotización aplicada: $1200.00
+                                            </div>
+                                            <div class="payment-row">
+                                                <div style="flex:1; position:relative;">
+                                                    <span id="pay-currency-symbol" style="position:absolute; left:8px; top:8px; color:#666; pointer-events:none;">$</span>
+                                                    <input type="number" id="pay-input-amount" class="rustic-input" placeholder="Monto" style="width:100%; padding-left:45px;">
+                                                </div>
+                                                <select id="pay-method-select" class="rustic-select" style="flex:1.2;"></select>
+                                                <button id="btn-add-payment"><i class="ph ph-plus" style="font-weight:bold;"></i></button>
+                                            </div>
+                                            <div id="payments-list" style="margin-top:10px;"><p style="color:#999; text-align:center; font-size:0.8rem;">Sin pagos registrados</p></div>
+                                        </div>
+                                    </div> 
                                     
-                                    <div class="form-section">
-                                        <label class="form-section-title">Cliente</label>
-                                        <select id="sale-customer" class="rustic-select"></select>
+                                    <div class="totals-box">
+                                        <div class="flex-row total-line"><span>Total valor Productos:</span> <span id="checkout-subtotal">$0,00</span></div>
+                                        <div class="flex-row total-line" style="color:var(--color-gray);"><span>Recargos:</span> <span id="checkout-surcharges">$0,00</span></div>
+                                        <div class="flex-row total-line total-final"><span>Total a pagar:</span> <span id="checkout-total-final">$0,00</span></div>
+                                        <div class="flex-row total-line" style="font-weight:bold;" id="change-row"><span>Falta para completar:</span> <span id="checkout-diff">$0,00</span></div>
                                     </div>
-                                    <div class="form-section">
-                                        <div style="display:flex; gap:10px; align-items: flex-end;">
-                                            <div style="flex:1;">
-                                                <label class="form-section-title">Vendedor</label>
-                                                <select id="sale-seller" class="rustic-select"></select>
-                                            </div>
-                                            <div style="width: 80px;">
-                                                <label class="form-section-title">Comisión %</label>
-                                                <input type="number" id="sale-commission-pct" class="rustic-input" value="0">
-                                            </div>
-                                        </div>
-                                        <div id="commission-display" style="text-align:right; font-size:0.75rem; color:#666; margin-top:5px; font-weight:600;">Comisión: $0,00</div>
-                                    </div>
-
-                                    <div class="form-section" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;">
-                                        <label class="form-section-title" style="padding-bottom: 0; bottom: 0; margin-bottom: 0">Calculadora </label>
-                                        <h6 style="top: 0; margin-bottom: 10px; color: #888888; font-size: 12px ">(Vuelto y control informativo)</h6>
-                                        
-                                        
-                                        <div class="currency-tabs" style="display:flex; gap:5px; margin-bottom:10px; border-bottom: 2px solid #eee;">
-                                            <button class="currency-tab active" data-curr="ARS" style="padding: 5px 15px; border:none; background:none; font-weight:bold; cursor:pointer; border-bottom: 3px solid var(--accent-color);">ARS</button>
-                                            <button class="currency-tab" data-curr="USD" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USD</button>
-                                            <button class="currency-tab" data-curr="USDT" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USDT</button>
-                                        </div>
-
-                                        <div id="rate-display-info" style="font-size:0.8rem; color:var(--accent-color); margin-bottom:5px; display:none;">
-                                            Cotización aplicada: $1200.00
-                                        </div>
-
-                                        <div class="payment-row">
-                                            <div style="flex:1; position:relative;">
-                                                <span id="pay-currency-symbol" style="position:absolute; left:8px; top:8px; color:#666; pointer-events:none;">$</span>
-                                                <input type="number" id="pay-input-amount" class="rustic-input" placeholder="Monto" style="width:100%; padding-left:45px;">
-                                            </div>
-                                            <select id="pay-method-select" class="rustic-select" style="flex:1.2;"></select>
-                                            <button id="btn-add-payment"><i class="ph ph-plus" style="font-weight:bold;"></i></button>
-                                        </div>
-                                        
-                                        <div id="payments-list" style="margin-top:10px;"><p style="color:#999; text-align:center; font-size:0.8rem;">Sin pagos registrados</p></div>
-                                    </div>
-                                </div> 
-                                
-                                <div class="totals-box">
-                                    <div class="flex-row total-line"><span>Total valor Productos:</span> <span id="checkout-subtotal">$0,00</span></div>
-                                    <div class="flex-row total-line" style="color:var(--color-gray);"><span>Recargos:</span> <span id="checkout-surcharges">$0,00</span></div>
-                                    <div class="flex-row total-line total-final"><span>Total a pagar:</span> <span id="checkout-total-final">$0,00</span></div>
-                                    <div class="flex-row total-line" style="font-weight:bold;" id="change-row"><span>Falta para completar:</span> <span id="checkout-diff">$0,00</span></div>
+                                    <button id="confirm-sale-btn" class="btn btn-primary w-full" disabled>Confirmar Venta</button>
                                 </div>
-                                <button id="confirm-sale-btn" class="btn btn-primary w-full" disabled>Confirmar Venta</button>
                             </div>
+                            
+                            <div id="mobile-checkout-bar" class="hidden-desktop" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:white; padding:15px; border-top:1px solid #ccc; box-shadow:0 -5px 15px rgba(0,0,0,0.1); z-index:99999;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <div id="mob-bar-count" style="font-size:0.8rem; color:#666;">0 Ítems</div>
+                                        <div id="mob-bar-total" style="font-size:1.4rem; font-weight:800; color:var(--accent-color);">$ 0,00</div>
+                                    </div>
+                                    <button id="btn-go-to-checkout" class="btn btn-primary" style="padding:10px 20px;">
+                                        Ir a Pagar <i class="ph-bold ph-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -214,6 +243,59 @@ export class SalesModule {
         `;
     }
 
+    // [IMPORTANTE] Este método ahora es parte de la CLASE
+    setMobileView(view) {
+        const btnCheckout = document.getElementById('btn-go-to-checkout');
+        const btnBackHeader = document.getElementById('mobile-back-to-products');
+        const stepProd = document.getElementById('step-products');
+        const stepCheck = document.getElementById('step-checkout');
+        const bar = document.getElementById('mobile-checkout-bar');
+
+        // Solo actuar si estamos en modo móvil (existe la barra)
+        if (!bar || window.innerWidth > 768) return;
+
+        if (view === 'checkout') {
+            // --- MODO CHECKOUT ---
+            if(stepProd) stepProd.style.display = 'none';
+            if(stepCheck) stepCheck.style.display = 'contents';
+
+            // Mostrar flecha volver arriba
+            if(btnBackHeader) btnBackHeader.style.display = 'flex';
+
+            // Configurar botón de abajo como "Seguir Agregando"
+            if(btnCheckout) {
+                btnCheckout.innerHTML = '<i class="ph-bold ph-plus"></i> Seguir Agregando';
+                btnCheckout.className = 'btn btn-secondary';
+                // Al hacer clic, volver a productos
+                btnCheckout.onclick = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    this.setMobileView('products');
+                };
+            }
+
+        } else {
+            // --- MODO PRODUCTOS (DEFAULT) ---
+            if(stepProd) stepProd.style.display = 'flex';
+            if(stepCheck) stepCheck.style.display = 'none';
+
+            // Ocultar flecha volver arriba
+            if(btnBackHeader) btnBackHeader.style.display = 'none';
+
+            // Configurar botón de abajo como "Ir a Pagar"
+            if(btnCheckout) {
+                btnCheckout.innerHTML = 'Ir a Pagar <i class="ph-bold ph-arrow-right"></i>';
+                btnCheckout.className = 'btn btn-primary';
+                // Al hacer clic, ir a checkout
+                btnCheckout.onclick = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    this.setMobileView('checkout');
+                };
+            }
+
+            bar.style.display = 'block';
+        }
+    }
+
     attachEvents() {
         const sortBtn = document.getElementById('sales-sort-btn');
         if(sortBtn) sortBtn.addEventListener('click', () => {
@@ -227,32 +309,18 @@ export class SalesModule {
         });
 
         document.getElementById('sales-renumber-btn')?.addEventListener('click', async () => {
-            const confirm = await pop_ups.confirm(
-                "¿Renumerar Historial?",
-                "Se asignarán nuevos IDs consecutivos (1, 2, 3...) a TODAS las ventas según su fecha. Ideal para limpiar después de pruebas."
-            );
-            if(!confirm) return;
-
-            try {
-                const res = await fetch('/api/sales/reset-ids.php');
-                const data = await res.json();
-
-                if(data.success) {
-                    pop_ups.info("Historial reorganizado.");
-                    await this.loadHistory(this.currentSortOrder);
-                } else {
-                    pop_ups.error("Error: " + (data.message || "No se pudo renumerar"));
-                }
-            } catch(e) {
-                console.error(e);
-                pop_ups.error("Error de conexión");
+            if(await pop_ups.confirm("¿Renumerar Historial?", "Se asignarán nuevos IDs...")) {
+                try {
+                    const res = await fetch('/api/sales/reset-ids.php');
+                    const data = await res.json();
+                    if(data.success) { pop_ups.info("Historial reorganizado."); await this.loadHistory(this.currentSortOrder); }
+                    else { pop_ups.error("Error: " + (data.message || "No se pudo renumerar")); }
+                } catch(e) { console.error(e); pop_ups.error("Error de conexión"); }
             }
         });
 
         document.getElementById('sales-create-btn')?.addEventListener('click', () => this.openCreateModal());
         document.getElementById('close-sale-modal')?.addEventListener('click', () => this.closeModal('create-sale-modal'));
-
-        // CORREGIDO: Listener para cerrar el modal de detalles
         document.getElementById('close-detail-modal')?.addEventListener('click', () => this.closeModal('detail-sale-modal'));
 
         const searchInput = document.getElementById('sale-search-product');
@@ -275,15 +343,23 @@ export class SalesModule {
         });
 
         document.getElementById('toggle-cart-currency-btn')?.addEventListener('click', () => this.toggleCartCurrency());
-
         document.getElementById('sale-commission-pct')?.addEventListener('input', () => this.calculateCommission());
         document.getElementById('confirm-sale-btn')?.addEventListener('click', () => this.submitSale());
+
+        // CONFIGURAR EVENTO DE LA FLECHA DE ARRIBA (Volver)
+        const btnBackHeader = document.getElementById('mobile-back-to-products');
+        if(btnBackHeader) {
+            btnBackHeader.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.setMobileView('products');
+            });
+        }
     }
 
     closeModal(id) {
         const el = document.getElementById(id);
         if(el) {
-            el.classList.add('hidden'); // Usa clases CSS para animación si existen
+            el.classList.add('hidden');
             el.style.display = 'none';
         }
     }
@@ -292,38 +368,27 @@ export class SalesModule {
         try {
             const rateRes = await fetch('/api/table/get-rate.php');
             const rateData = await rateRes.json();
-
             let baseRate = 1200;
             if (rateData.avg) baseRate = parseFloat(rateData.avg);
             else if (rateData.sell) baseRate = parseFloat(rateData.sell);
-
-            this.rates.USD = baseRate;
-            this.rates.USDT = baseRate;
-            this.currentSale.exchange_rate = baseRate;
+            this.rates.USD = baseRate; this.rates.USDT = baseRate; this.currentSale.exchange_rate = baseRate;
         } catch (e) { console.warn("Error cotización", e); }
 
         await this.fetchResources();
+
+        // [IMPORTANTE] Resetear la vista móvil al abrir
+        this.setMobileView('products');
 
         const map = this.resources.config;
         if (!map || !map.name || !map.sale_price || !map.stock) {
             const overlay = document.getElementById('config-warning-overlay');
             overlay.style.display = 'flex';
             document.getElementById('sale-modal-body').style.display = 'none';
-
             document.getElementById('go-to-config-btn').onclick = () => {
                 this.closeModal('create-sale-modal');
-
                 const event = new CustomEvent('open-column-config');
                 window.dispatchEvent(event);
-
-                if(typeof window.openColumnConfigModal === 'function') {
-                    window.openColumnConfigModal();
-                } else {
-                    const configBtn = document.getElementById('config-table-btn');
-                    if(configBtn) configBtn.click();
-                }
             };
-
         } else {
             document.getElementById('config-warning-overlay').style.display = 'none';
             document.getElementById('sale-modal-body').style.display = 'flex';
@@ -343,43 +408,36 @@ export class SalesModule {
         this.recalcSale();
 
         const modal = document.getElementById('create-sale-modal');
-        modal.classList.remove('hidden'); modal.style.display = 'flex';
-        setTimeout(() => document.getElementById('sale-search-product').focus(), 100);
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+
+        if(window.innerWidth > 768) {
+            setTimeout(() => document.getElementById('sale-search-product').focus(), 100);
+        }
     }
 
     switchPaymentTab(currency) {
         this.activePaymentTab = currency;
-
         document.querySelectorAll('.currency-tab').forEach(t => {
             if(t.dataset.curr === currency) {
-                t.style.borderBottom = '3px solid var(--accent-color)';
-                t.style.color = '#333';
-                t.style.fontWeight = 'bold';
+                t.style.borderBottom = '3px solid var(--accent-color)'; t.style.color = '#333'; t.style.fontWeight = 'bold';
             } else {
-                t.style.borderBottom = 'none';
-                t.style.color = '#999';
-                t.style.fontWeight = 'normal';
+                t.style.borderBottom = 'none'; t.style.color = '#999'; t.style.fontWeight = 'normal';
             }
         });
-
         const rateInfo = document.getElementById('rate-display-info');
         const symbol = document.getElementById('pay-currency-symbol');
-
         if (currency === 'ARS') {
-            rateInfo.style.display = 'none';
-            symbol.textContent = '$';
+            rateInfo.style.display = 'none'; symbol.textContent = '$';
         } else {
             rateInfo.style.display = 'block';
             const rate = this.rates[currency];
             rateInfo.textContent = `Cotización aplicada: $${rate.toFixed(2)}`;
             symbol.textContent = currency === 'USD' ? 'U$S' : '₮';
         }
-
         const filteredMethods = this.resources.paymentMethods.filter(pm => {
-            const pmCurr = pm.currency || 'ARS';
-            return pmCurr === currency;
+            const pmCurr = pm.currency || 'ARS'; return pmCurr === currency;
         });
-
         this.fillSelect('pay-method-select', filteredMethods, 'id', 'name', null);
     }
 
@@ -389,30 +447,22 @@ export class SalesModule {
             const stock = parseFloat(p.stock);
             const style = stock > 0 ? '' : 'opacity:0.6; pointer-events:none; filter:grayscale(1);';
             const badgeStock = stock > 0 ? `<span style="font-size:0.75rem; color:#666;">Stock: ${stock}</span>` : `<span style="font-size:0.75rem; color:red; font-weight:bold;">AGOTADO</span>`;
-
             let displayPrice = parseFloat(p.price);
             let badgeCurrency = '';
-
             if (p.currency === 'USD') {
                 displayPrice = displayPrice * this.rates.USD;
                 badgeCurrency = `<span class="usd-badge" style="background:var(--accent-color-quat-opacity); color:var(--color-black); font-size:0.7rem; padding:1px 4px; border-radius:3px; margin-left:5px;">Orig: U$S ${parseFloat(p.price).toFixed(2)}</span>`;
             }
-
-            return `
-            <div class="resource-item prod-trigger" data-id="${p.id}" style="${style}">
+            return `<div class="resource-item prod-trigger" data-id="${p.id}" style="${style}">
                 <div style="flex:1; overflow:hidden; padding-right:10px;">
                     <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-                    <div style="display:flex; align-items:center;">
-                        ${badgeStock}
-                    </div>
+                    <div style="display:flex; align-items:center;">${badgeStock}</div>
                 </div>
                 <div style="text-align:right;">
-                    <div style="font-weight:700; color:var(--sale-green); font-size:1rem;">${fmtMoney(displayPrice)}</div>
-                    ${badgeCurrency}
+                    <div style="font-weight:700; color:var(--sale-green); font-size:1rem;">${fmtMoney(displayPrice)}</div>${badgeCurrency}
                 </div>
             </div>`;
         }).join('');
-
         c.querySelectorAll('.prod-trigger').forEach(b => {
             b.addEventListener('click', () => {
                 const p = this.resources.products.find(x => x.id == b.dataset.id);
@@ -430,12 +480,7 @@ export class SalesModule {
             exist.cantidad++;
         } else {
             this.currentSale.items.push({
-                id: p.id,
-                nombre: p.name,
-                cantidad: 1,
-                precio: priceInArs,
-                original_currency: p.currency,
-                max_stock: parseFloat(p.stock)
+                id: p.id, nombre: p.name, cantidad: 1, precio: priceInArs, original_currency: p.currency, max_stock: parseFloat(p.stock)
             });
         }
         this.recalcSale();
@@ -446,38 +491,17 @@ export class SalesModule {
         const methodSelect = document.getElementById('pay-method-select');
         let amountInputVal = parseFloat(amtInput.value);
         const methodId = methodSelect.value;
-
         if (isNaN(amountInputVal) || amountInputVal <= 0) return pop_ups.warning("Ingresá un monto válido");
         if (!methodId) return pop_ups.warning("Elegí un método de pago");
-
         const methodObj = this.resources.paymentMethods.find(m => m.id == methodId);
         const surchargePct = parseFloat(methodObj.surcharge) || 0;
-
-        let amountInArs = amountInputVal;
-        let originalAmount = amountInputVal;
-        let appliedRate = 1;
-        let currencyId = this.activePaymentTab;
-
-        if (this.activePaymentTab !== 'ARS') {
-            appliedRate = this.rates[this.activePaymentTab];
-            amountInArs = amountInputVal * appliedRate;
-        }
-
+        let amountInArs = amountInputVal; let originalAmount = amountInputVal; let appliedRate = 1; let currencyId = this.activePaymentTab;
+        if (this.activePaymentTab !== 'ARS') { appliedRate = this.rates[this.activePaymentTab]; amountInArs = amountInputVal * appliedRate; }
         const surchargeVal = amountInArs * (surchargePct / 100);
-
         this.currentSale.payments.push({
-            method_id: methodId,
-            name: methodObj.name,
-            amount: amountInArs,
-            surcharge_percent: surchargePct,
-            surcharge_val: surchargeVal,
-            currency_id: currencyId,
-            original_amount: originalAmount,
-            exchange_rate: appliedRate
+            method_id: methodId, name: methodObj.name, amount: amountInArs, surcharge_percent: surchargePct, surcharge_val: surchargeVal, currency_id: currencyId, original_amount: originalAmount, exchange_rate: appliedRate
         });
-
-        amtInput.value = '';
-        this.recalcSale();
+        amtInput.value = ''; this.recalcSale();
     }
 
     updatePaymentUI() {
@@ -490,96 +514,60 @@ export class SalesModule {
                     const symbol = p.currency_id === 'USD' ? 'U$S' : '₮';
                     displayAmount = `<b>${symbol} ${parseFloat(p.original_amount).toFixed(2)}</b> <span style="font-size:0.8rem; color:#666;">(${fmtMoney(p.amount)})</span>`;
                 }
-
-                return `
-                <div style="background:#FFF; border:1px solid #ddd; border-radius:4px; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="font-size:0.9rem;">${displayAmount}</div>
-                        <div style="font-size:0.75rem; color:#555;">${p.name}</div>
-                        ${p.surcharge_val > 0 ? `<div style="font-size:0.7rem; color:var(--accent-color);">+ Recargo: ${fmtMoney(p.surcharge_val)}</div>` : ''}
-                    </div>
-                    <span style="cursor:pointer; color:var(--accent-red);" class="rm-pay" data-idx="${idx}"><i class="ph ph-x-circle" style="font-size:1.2rem;"></i></span>
-                </div>`;
+                return `<div style="background:#FFF; border:1px solid #ddd; border-radius:4px; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><div style="font-size:0.9rem;">${displayAmount}</div><div style="font-size:0.75rem; color:#555;">${p.name}</div>${p.surcharge_val > 0 ? `<div style="font-size:0.7rem; color:var(--accent-color);">+ Recargo: ${fmtMoney(p.surcharge_val)}</div>` : ''}</div>
+                    <span style="cursor:pointer; color:var(--accent-red);" class="rm-pay" data-idx="${idx}"><i class="ph ph-x-circle" style="font-size:1.2rem;"></i></span></div>`;
             }).join('');
-
-            c.querySelectorAll('.rm-pay').forEach(b => b.addEventListener('click', () => {
-                this.currentSale.payments.splice(b.dataset.idx, 1);
-                this.recalcSale();
-            }));
+            c.querySelectorAll('.rm-pay').forEach(b => b.addEventListener('click', () => { this.currentSale.payments.splice(b.dataset.idx, 1); this.recalcSale(); }));
         }
     }
 
     toggleCartCurrency() {
         this.showingCartInUSD = !this.showingCartInUSD;
         const btn = document.getElementById('toggle-cart-currency-btn');
-
-        if(this.showingCartInUSD) {
-            btn.innerHTML = '<i class="ph ph-currency-circle-dollar"></i> Ver en ARS';
-            btn.classList.replace('btn-secondary', 'btn-primary');
-        } else {
-            btn.innerHTML = '<i class="ph ph-currency-circle-dollar"></i> Ver en USD';
-            btn.classList.replace('btn-primary', 'btn-secondary');
-        }
-
+        if(this.showingCartInUSD) { btn.innerHTML = '<i class="ph ph-currency-circle-dollar"></i> Ver en ARS'; btn.classList.replace('btn-secondary', 'btn-primary'); }
+        else { btn.innerHTML = '<i class="ph ph-currency-circle-dollar"></i> Ver en USD'; btn.classList.replace('btn-primary', 'btn-secondary'); }
         this.updateCartSubtotalDisplay();
     }
 
     updateCartSubtotalDisplay() {
         const displayEl = document.getElementById('cart-subtotal-display');
         const valARS = this.currentSale.subtotal_items;
-
         if (this.showingCartInUSD) {
-            const valUSD = valARS / this.rates.USD;
-            displayEl.textContent = `U$S ${valUSD.toFixed(2)}`;
-            displayEl.style.color = 'var(--accent-color)';
-        } else {
-            displayEl.textContent = fmtMoney(valARS);
-            displayEl.style.color = 'inherit';
-        }
+            const valUSD = valARS / this.rates.USD; displayEl.textContent = `U$S ${valUSD.toFixed(2)}`; displayEl.style.color = 'var(--accent-color)';
+        } else { displayEl.textContent = fmtMoney(valARS); displayEl.style.color = 'inherit'; }
     }
 
     recalcSale() {
         const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
-
         const rawSubtotal = this.currentSale.items.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
         const rawSurcharges = this.currentSale.payments.reduce((sum, p) => sum + p.surcharge_val, 0);
         const rawPaid = this.currentSale.payments.reduce((sum, p) => sum + p.amount + p.surcharge_val, 0);
-
         this.currentSale.subtotal_items = rawSubtotal;
         this.currentSale.total_surcharges = rawSurcharges;
         this.currentSale.total_final = round(rawSubtotal + rawSurcharges);
-
         const totalPaid = round(rawPaid);
         const diff = round(totalPaid - this.currentSale.total_final);
-
         document.getElementById('checkout-subtotal').textContent = fmtMoney(this.currentSale.subtotal_items);
         document.getElementById('checkout-surcharges').textContent = fmtMoney(this.currentSale.total_surcharges);
         document.getElementById('checkout-total-final').textContent = fmtMoney(this.currentSale.total_final);
-
         this.updateCartSubtotalDisplay();
-
         const diffEl = document.getElementById('checkout-diff');
         const rowDiff = document.getElementById('change-row');
+        if (diff >= -0.01) { rowDiff.style.color = 'var(--accent-color)'; rowDiff.querySelector('span:first-child').textContent = "Vuelto a dar:"; diffEl.textContent = fmtMoney(Math.abs(diff)); }
+        else { rowDiff.style.color = 'var(--accent-red)'; rowDiff.querySelector('span:first-child').textContent = "Falta por completar:"; diffEl.textContent = fmtMoney(Math.abs(diff)); }
 
-        // --- LÓGICA DE VALIDACIÓN CORREGIDA ---
-        // El semáforo visual se mantiene, pero la lógica de habilitar botón CAMBIA.
-        if (diff >= -0.01) {
-            rowDiff.style.color = 'var(--accent-color)';
-            rowDiff.querySelector('span:first-child').textContent = "Vuelto a dar:";
-            diffEl.textContent = fmtMoney(Math.abs(diff));
-        } else {
-            rowDiff.style.color = 'var(--accent-red)';
-            rowDiff.querySelector('span:first-child').textContent = "Falta por completar:";
-            diffEl.textContent = fmtMoney(Math.abs(diff));
+        // ACTUALIZAR BARRA MÓVIL
+        const mobTotal = document.getElementById('mob-bar-total');
+        const mobCount = document.getElementById('mob-bar-count');
+        if(mobTotal && mobCount) {
+            mobTotal.textContent = fmtMoney(this.currentSale.total_final);
+            const count = this.currentSale.items.reduce((s, i) => s + i.cantidad, 0);
+            mobCount.textContent = `${count} Ítems`;
         }
 
-        // CAMBIO CRÍTICO: El botón SOLO se deshabilita si NO HAY ÍTEMS.
-        // La calculadora es ajena a la confirmación.
         document.getElementById('confirm-sale-btn').disabled = (this.currentSale.items.length === 0);
-
-        this.updateCartUI();
-        this.updatePaymentUI();
-        this.calculateCommission();
+        this.updateCartUI(); this.updatePaymentUI(); this.calculateCommission();
     }
 
     updateCartUI() {
@@ -588,23 +576,10 @@ export class SalesModule {
         else {
             c.innerHTML = this.currentSale.items.map((item, idx) => `
                 <div class="cart-card">
-                    <div class="cart-row-top">
-                        <div class="cart-name">${item.nombre}</div>
-                        <div class="cart-unit-price">${fmtMoney(item.precio)} c/u</div>
-                    </div>
-                    
-                    <div class="cart-row-bottom">
-                        <div class="cart-total">${fmtMoney(item.precio * item.cantidad)}</div>
-                        
-                        <div class="cart-controls-wrapper">
-                            <button class="ctrl-btn sub" data-idx="${idx}">-</button>
-                            <div class="qty-val">${item.cantidad}</div>
-                            <button class="ctrl-btn add" data-idx="${idx}">+</button>
-                            <button class="del-btn del" data-idx="${idx}" title="Eliminar"><i class="ph ph-trash"></i></button>
-                        </div>
-                    </div>
+                    <div class="cart-row-top"><div class="cart-name">${item.nombre}</div><div class="cart-unit-price">${fmtMoney(item.precio)} c/u</div></div>
+                    <div class="cart-row-bottom"><div class="cart-total">${fmtMoney(item.precio * item.cantidad)}</div>
+                    <div class="cart-controls-wrapper"><button class="ctrl-btn sub" data-idx="${idx}">-</button><div class="qty-val">${item.cantidad}</div><button class="ctrl-btn add" data-idx="${idx}">+</button><button class="del-btn del" data-idx="${idx}" title="Eliminar"><i class="ph ph-trash"></i></button></div></div>
                 </div>`).join('');
-
             c.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => { const item = this.currentSale.items[b.dataset.idx]; if (item.cantidad >= item.max_stock) return pop_ups.warning("Stock insuficiente"); item.cantidad++; this.recalcSale(); }));
             c.querySelectorAll('.sub').forEach(b => b.addEventListener('click', () => { const item = this.currentSale.items[b.dataset.idx]; item.cantidad--; if(item.cantidad < 1) this.currentSale.items.splice(b.dataset.idx, 1); this.recalcSale(); }));
             c.querySelectorAll('.del').forEach(b => b.addEventListener('click', () => { this.currentSale.items.splice(b.dataset.idx, 1); this.recalcSale(); }));
@@ -621,9 +596,7 @@ export class SalesModule {
 
     async fetchResources() {
         try {
-            const [prefRes, data, empRes] = await Promise.all([
-                getCurrentInventoryPreferences(), getSaleResources(), getEmployeeList()
-            ]);
+            const [prefRes, data, empRes] = await Promise.all([ getCurrentInventoryPreferences(), getSaleResources(), getEmployeeList() ]);
             this.resources.config = prefRes.mapping || {};
             if(data.success) {
                 this.resources.products = data.products || [];
@@ -642,7 +615,6 @@ export class SalesModule {
     async submitSale() {
         const btn = document.getElementById('confirm-sale-btn'); btn.disabled = true; btn.textContent = 'Procesando...';
         const pct = parseFloat(document.getElementById('sale-commission-pct').value) || 0;
-
         const payload = {
             customer_id: document.getElementById('sale-customer').value || null,
             seller_id: document.getElementById('sale-seller').value || null,
@@ -650,14 +622,7 @@ export class SalesModule {
             total_final: this.currentSale.total_final,
             notes: document.getElementById('sale-notes').value,
             exchange_rate_snapshot: this.currentSale.exchange_rate,
-
-            items: this.currentSale.items.map(i => ({
-                id: i.id || null,
-                nombre: i.nombre,
-                cantidad: i.cantidad,
-                precio: i.precio,
-                subtotal: i.precio * i.cantidad
-            })),
+            items: this.currentSale.items.map(i => ({ id: i.id || null, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio, subtotal: i.precio * i.cantidad })),
             payments: this.currentSale.payments
         };
         try { const res = await createSale(payload); if (res.success) { this.closeModal('create-sale-modal'); await this.loadHistory(this.currentSortOrder); pop_ups.success("Venta Exitosa"); } else { pop_ups.error(res.message); } }
@@ -670,17 +635,12 @@ export class SalesModule {
         b.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Cargando...</td></tr>';
         try {
             const data = await getSalesHistory(order);
-            if(!data.success || !data.sales || data.sales.length === 0) {
-                b.innerHTML='<tr><td colspan="5" style="text-align:center; padding:20px;">Sin ventas registradas</td></tr>';
-                return;
-            }
+            if(!data.success || !data.sales || data.sales.length === 0) { b.innerHTML='<tr><td colspan="5" style="text-align:center; padding:20px;">Sin ventas registradas</td></tr>'; return; }
             b.innerHTML = data.sales.map(s => {
                 const dateStr = s.created_at; const total = s.total; const seller = s.seller_name; const comm = s.commission;
                 let payBadge = '';
                 if (s.payments && s.payments.length > 0) {
-                    const first = s.payments[0];
-                    const extra = s.payments.length - 1;
-                    const plus = extra > 0 ? ` <b style="color:var(--accent-color);">+${extra}</b>` : '';
+                    const first = s.payments[0]; const extra = s.payments.length - 1; const plus = extra > 0 ? ` <b style="color:var(--accent-color);">+${extra}</b>` : '';
                     payBadge = `<div style="margin-top:4px;"><span style="color:#555; font-size:0.75rem; background:#f4f4f4; padding:2px 6px; border-radius:4px;">${first}${plus}</span></div>`;
                 } else { payBadge = `<div style="margin-top:4px;"><span style="color:#eee; font-size:0.75rem;">-</span></div>`; }
                 let sellerHtml = '<span style="color:#ccc;">-</span>';
@@ -693,45 +653,21 @@ export class SalesModule {
     }
 
     async addManualItem() {
-        const nameInput = document.getElementById('manual-name');
-        const priceInput = document.getElementById('manual-price');
-        const qtyInput = document.getElementById('manual-qty');
-
-        const name = nameInput.value.trim();
-        const price = parseFloat(priceInput.value);
-        const qty = parseFloat(qtyInput.value) || 1;
-
-        if (!name) return pop_ups.warning("Ingresá una descripción");
-        if (isNaN(price) || price <= 0) return pop_ups.warning("Ingresá un precio válido");
-
-        this.currentSale.items.push({
-            id: null,
-            fake_id: 'man_' + Date.now(),
-            nombre: name,
-            cantidad: qty,
-            precio: price,
-            max_stock: 999999
-        });
-
-        nameInput.value = '';
-        priceInput.value = '';
-        qtyInput.value = '1';
-        document.getElementById('manual-item-form').style.display = 'none';
-        pop_ups.success("Ítem agregado");
-
-        this.recalcSale();
+        const nameInput = document.getElementById('manual-name'); const priceInput = document.getElementById('manual-price'); const qtyInput = document.getElementById('manual-qty');
+        const name = nameInput.value.trim(); const price = parseFloat(priceInput.value); const qty = parseFloat(qtyInput.value) || 1;
+        if (!name) return pop_ups.warning("Ingresá una descripción"); if (isNaN(price) || price <= 0) return pop_ups.warning("Ingresá un precio válido");
+        this.currentSale.items.push({ id: null, fake_id: 'man_' + Date.now(), nombre: name, cantidad: qty, precio: price, max_stock: 999999 });
+        nameInput.value = ''; priceInput.value = ''; qtyInput.value = '1'; document.getElementById('manual-item-form').style.display = 'none'; pop_ups.success("Ítem agregado"); this.recalcSale();
     }
 
     filterProducts(t) {
-        const term = t.toLowerCase().trim();
-        if(!term) { this.renderProducts(this.resources.products); return; }
+        const term = t.toLowerCase().trim(); if(!term) { this.renderProducts(this.resources.products); return; }
         const filtered = this.resources.products.filter(p => (p.name && p.name.toLowerCase().includes(term)) || Object.values(p).some(val => val && String(val).toLowerCase().includes(term)));
         this.renderProducts(filtered);
     }
 
     handleScan(t) {
-        const term = t.toLowerCase().trim();
-        if(!term) return;
+        const term = t.toLowerCase().trim(); if(!term) return;
         let match = this.resources.products.find(p => Object.values(p).some(val => val && String(val).toLowerCase() === term));
         if (!match) {
             const visualMatches = this.resources.products.filter(p => (p.name && p.name.toLowerCase().includes(term)) || Object.values(p).some(val => val && String(val).toLowerCase().includes(term)));
@@ -746,41 +682,30 @@ export class SalesModule {
         } else { pop_ups.warning("Producto no encontrado"); }
     }
 
-    // --- FUNCIÓN RESTAURADA: MODAL DE DETALLES (ESTÉTICA PERFECTA) ---
     async showDetails(id) {
         try {
-            const res = await getSaleDetails(id);
-            if(!res.success) throw new Error(res.message || "Error al cargar detalles");
+            const res = await getSaleDetails(id); if(!res.success) throw new Error(res.message || "Error al cargar detalles");
             const s = res.sale;
             const bodyContainer = document.getElementById('detail-modal-content');
-
             let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;"><div style="font-size:1.3rem; font-weight:900; letter-spacing:1px;">TICKET #${s.id}</div><div style="font-size:0.9rem; margin-top:5px;">${fmtDate(s.created_at)}</div></div>`;
             html += `<div class="ticket-row" style="margin-bottom:10px;"><div style="display:flex; flex-direction:column; width:100%;"><span style="font-size:0.7rem; text-transform:uppercase; color:#666; font-weight:bold;">CLIENTE:</span><span style="font-size:1rem; font-weight:800;">${s.customer_name || 'Consumidor Final'}</span></div></div>`;
-
             let sellerDisplay = "No especificado"; let commissionDisplay = "";
             if (s.seller_name && s.seller_name !== '-') {
-                sellerDisplay = s.seller_name;
-                const comm = s.commission_amount ? parseFloat(s.commission_amount) : 0;
+                sellerDisplay = s.seller_name; const comm = s.commission_amount ? parseFloat(s.commission_amount) : 0;
                 commissionDisplay = `<span style="font-size:0.8rem; background:#eee; padding:2px 6px; border-radius:4px; margin-left: auto;">Com: ${fmtMoney(comm)}</span>`;
             }
             html += `<div class="ticket-row" style="margin-bottom:15px; border-bottom:1px dotted #ccc; padding-bottom:10px;"><div style="display:flex; flex-direction:column; width:100%;"><span style="font-size:0.7rem; text-transform:uppercase; color:#666; font-weight:bold;">ATENDIDO POR:</span><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:1rem; font-weight:800;">${sellerDisplay}</span>${commissionDisplay}</div></div></div>`;
-
             bodyContainer.innerHTML = html;
             bodyContainer.insertAdjacentHTML('beforeend', '<h4>PRODUCTOS</h4>');
-            const productsTable = document.createElement('table');
-            productsTable.innerHTML = `<thead><tr><th style="text-align:left;">DESCRIPCIÓN</th><th style="text-align:center; width:40px;">CANT</th><th style="text-align:right;">TOTAL</th></tr></thead><tbody id="detail-items-list"></tbody>`;
+            const productsTable = document.createElement('table'); productsTable.innerHTML = `<thead><tr><th style="text-align:left;">DESCRIPCIÓN</th><th style="text-align:center; width:40px;">CANT</th><th style="text-align:right;">TOTAL</th></tr></thead><tbody id="detail-items-list"></tbody>`;
             bodyContainer.appendChild(productsTable);
-
             document.getElementById('detail-items-list').innerHTML = s.items.map(i => `<tr><td style="text-align:left; line-height:1.2;">${i.product_name}<div style="font-size:0.75rem; color:#666;">Unit: ${fmtMoney(i.price)}</div></td><td style="text-align:center; font-weight:bold; vertical-align:top;">${parseFloat(i.quantity)}</td><td style="text-align:right; font-weight:800; vertical-align:top;">${fmtMoney(i.subtotal)}</td></tr>`).join('');
-
             bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-total-section"><span id="detail-total-label">TOTAL A PAGAR</span><span id="detail-total">${fmtMoney(s.total_final)}</span></div>`);
             bodyContainer.insertAdjacentHTML('beforeend', '<h4>FORMA DE PAGO</h4>');
             const paymentsTable = document.createElement('table'); paymentsTable.innerHTML = '<tbody id="detail-payments-list"></tbody>';
             bodyContainer.appendChild(paymentsTable);
             document.getElementById('detail-payments-list').innerHTML = s.payments.map(p => `<tr class="ticket-row" style="border:none;"><td style="text-align:left; font-weight:600;">${p.payment_method_name}</td><td style="text-align:right; font-weight:800;">${fmtMoney(p.amount)}</td></tr>`).join('');
-
             if(s.notes) bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-notes"><strong>NOTAS:</strong><br>${s.notes}</div>`);
-
             const modal = document.getElementById('detail-sale-modal'); modal.classList.remove('hidden'); modal.style.display = 'flex';
         } catch(e) { pop_ups.error("Error: " + e.message); }
     }
@@ -806,5 +731,7 @@ export class SalesModule {
     }
 }
 
-window.salesModuleInstance = new SalesModule();
-export const salesModuleInstance = window.salesModuleInstance;
+const salesModuleInstance = new SalesModule();
+export { salesModuleInstance };
+window.salesModuleInstance = salesModuleInstance;
+console.log("✅ SalesModule registrado globalmente.");

@@ -750,3 +750,233 @@ sale-products-list {
     box-shadow: 2px 2px 0 var(--sale-shadow-color-base);
     filter: brightness(1.1);
 }
+
+/* =========================================
+   ADAPTACIÓN MÓVIL (APP MODE) - FINAL REAL
+   ========================================= */
+
+@media (max-width: 768px) {
+
+    /* 1. CONFIGURACIÓN NUCLEAR PARA MODALES DE VENTA Y COMPRA */
+    /* Apuntamos a los IDs que genera sales.js y purchases.js */
+    #create-sale-modal,
+    #create-purchase-modal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+
+        /* Fondo oscuro semitransparente */
+        background-color: rgba(0,0,0,0.8) !important;
+
+        /* Z-INDEX SUPERIOR AL DEL HEADER MÓVIL */
+        z-index: 2147483650 !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+
+        /* Aseguramos visibilidad */
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Si tienen la clase hidden, ocultarlos */
+    #create-sale-modal.hidden,
+    #create-purchase-modal.hidden {
+        display: none !important;
+    }
+
+    /* 2. LA TARJETA BLANCA INTERNA (.modal-content) */
+    #create-sale-modal .modal-content,
+    #create-purchase-modal .modal-content {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+
+        background-color: #fff !important;
+        border-radius: 0 !important;
+        border: none !important;
+        margin: 0 !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* 3. LAYOUT INTERNO (Productos arriba, Carrito abajo) */
+    .purchase-modal-body {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important; /* Columna vertical */
+        padding: 10px !important;
+        gap: 20px !important;
+        overflow-y: auto !important;
+        padding-bottom: 80px !important; /* Espacio para botón flotante */
+    }
+
+    .purchase-col {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: none !important; /* No expandir automáticamente */
+        height: auto !important;
+        box-shadow: none !important;
+        border: 1px solid #eee !important;
+    }
+
+    /* Ocultamos cosas innecesarias para ahorrar espacio */
+    .form-section-title { font-size: 0.8rem !important; }
+
+    /* 4. BOTÓN CONFIRMAR FLOTANTE */
+    #confirm-sale-btn {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 60px !important;
+        border-radius: 0 !important;
+        z-index: 2147483651 !important;
+        font-size: 1.2rem !important;
+        margin: 0 !important;
+    }
+
+    #step-checkout {
+        display: none;
+        /* Nota: JS lo cambiará a 'contents' cuando demos click a "Pagar" */
+    }
+
+    #mobile-back-to-products {
+        width: 25px;
+        align-content: center;
+    }
+
+    /* BARRA FLOTANTE INFERIOR */
+    #mobile-checkout-bar {
+        display: block !important;
+        /* Asegura que esté por encima de todo pero debajo del modal de confirmación */
+        z-index: 2147483660 !important;
+    }
+
+    /* BOTÓN DE ATRÁS EN CABECERA */
+    .hidden-desktop {
+        display: block !important;
+    }
+
+    /* Ajustar altura de lista de productos para que no quede tapada por la barra */
+    #sale-products-list {
+        padding-bottom: 80px !important;
+    }
+
+    /* El botón de confirmar venta (que está en el paso 2) */
+    #confirm-sale-btn {
+        position: static !important; /* Ya no fijo, porque estará al final del scroll del paso 2 */
+        margin-top: 20px !important;
+        width: 100% !important;
+        height: 50px !important;
+    }
+
+    /* Aseguramos que el cuerpo del modal permita scroll completo */
+    .purchase-modal-body {
+        padding-bottom: 100px !important;
+    }
+
+    #btn-go-to-checkout.btn-secondary {
+        background-color: #fff !important;
+        color: var(--accent-color) !important;
+        border: 2px solid var(--accent-color) !important;
+        box-shadow: none !important;
+    }
+
+    /* Aseguramos espacio al final del checkout para que la barra no tape el botón de Confirmar */
+    #step-checkout .purchase-col:last-child {
+        padding-bottom: 90px !important; /* Espacio extra abajo */
+    }
+
+    /* =========================================
+   ESTÉTICA FINAL DE BOTONES MÓVILES
+   ========================================= */
+
+    @media (max-width: 768px) {
+
+        /* 1. ARREGLAR EL BOTÓN "ATRÁS" (FLECHA) DE LA CABECERA */
+        #mobile-back-to-products {
+            background: transparent !important; /* Fondo transparente */
+            border: none !important;            /* Sin borde feo */
+            color: #333 !important;             /* Color oscuro */
+            font-size: 1.5rem !important;       /* Icono más grande */
+            padding: 8px !important;            /* Área de toque cómoda */
+            margin-right: 5px !important;       /* Separar del título */
+            border-radius: 50% !important;      /* Círculo al presionar */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            box-shadow: none !important;        /* Quitar sombras raras */
+            width: 40px !important;
+            height: 40px !important;
+        }
+
+        #mobile-back-to-products:active {
+            background-color: #f0f0f0 !important; /* Efecto al tocar */
+        }
+
+        /* 2. ARREGLAR LA BARRA INFERIOR (PRECIO vs BOTÓN) */
+        #mobile-checkout-bar > div {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 15px !important; /* Espacio mínimo seguro entre precio y botón */
+        }
+
+        /* Contenedor del Texto (Precio) */
+        #mobile-checkout-bar > div > div:first-child {
+            flex: 1; /* Ocupa el espacio sobrante */
+            min-width: 0; /* Evita que el texto empuje hacia afuera si es muy largo */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #mob-bar-total {
+            font-size: 1.3rem !important; /* Un poco más chico para prevenir saltos de línea */
+            white-space: nowrap;          /* Que no se parta en dos renglones */
+            overflow: hidden;
+            text-overflow: ellipsis;      /* "..." si es millonario y no cabe */
+            line-height: 1.2;
+        }
+
+        /* Botón "Ir a Pagar" */
+        #btn-go-to-checkout {
+            flex-shrink: 0; /* ¡IMPORTANTE! Prohíbe que el botón se aplaste */
+            width: auto !important; /* Que se adapte al contenido */
+            min-width: 140px; /* Ancho mínimo para que se vea bien */
+            padding: 12px 20px !important;
+            border-radius: 50px !important; /* Forma de píldora moderna */
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            box-shadow: 2px 4px 0 rgba(var(--accent-color-rgb), 0.3); /* Sombra suave verde */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px; /* Espacio entre texto y flechita */
+        }
+    }
+}
+
+@media (min-width: 769px) {
+    .hidden-desktop {
+        display: none !important;
+    }
+    #step-checkout {
+        display: contents !important;
+    }
+    #step-products {
+        display: flex !important;
+    }
+}

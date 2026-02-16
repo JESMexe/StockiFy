@@ -283,21 +283,11 @@
 
 /* Wrapper y Tabla */
 .table-wrapper {
-    /* 1. ALTURA FIJA E INAMOVIBLE */
-    height: 100%; /* Altura de referencia (ajusta este valor si necesitas más o menos) */
-    width: 100%;
-
-    /* 2. SCROLL INTERNO */
-    overflow-y: auto;
-    overflow-x: auto;
-
-    /* Mantenemos bordes y fondo */
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background-color: #fff;
-
-    /* Esto es importante para el posicionamiento del sticky header */
-    position: relative;
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important; /* Scroll Horizontal OBLIGATORIO */
+    overflow-y: auto !important; /* Scroll Vertical */
+    position: relative; /* Para que el sticky header funcione */
 }
 .empty-state {
     /* Ocupa todo el alto y ancho disponible del wrapper */
@@ -316,54 +306,34 @@
     transition: width 0.3s ease; /* Suavidad si redimensionas la ventana */
 }
 #data-table {
-    width: 100%;
-    border-collapse: collapse;
+    width: max-content !important; /* Se ensancha tanto como necesite */
+    min-width: 100% !important;    /* Mínimo el ancho de pantalla */
+    table-layout: auto !important; /* Las columnas se calculan solas */
+    display: table !important;     /* Aseguramos comportamiento de tabla */
 }
-#data-table th {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-    color: var(--color-black);
-    /* ANTES: white-space: nowrap; */
-    white-space: normal; /* CAMBIO: Permite que el texto se ajuste */
-    word-wrap: break-word; /* CAMBIO: Rompe palabras largas si es necesario */
-}
+#data-table th,
 #data-table td {
-    /* Aumentamos el padding para dar "aire" vertical y horizontal */
-    padding: 16px 24px;
-    color: var(--color-black);
+    /* CLAVE: Prohibido saltos de línea. Todo en un renglón. */
+    white-space: nowrap !important;
+
+    padding: 12px 20px;
     border-bottom: 1px solid #e0e0e0;
+    color: var(--color-black);
     font-size: 0.95rem;
+    vertical-align: middle;
 
-    /* ANTES: white-space: nowrap; */
-    white-space: normal; /* CAMBIO: Permite saltos de línea */
-    word-wrap: break-word; /* CAMBIO: Asegura que el texto no desborde */
-    max-width: 300px; /* OPCIONAL: Límite máximo para que una columna no sea gigante */
+    /* Quitamos cualquier límite de ancho que tuvieras antes */
+    max-width: none !important;
+    width: auto !important;
 }
-/* Opcional: Hacer que la columna Nombre ocupe el resto del espacio */
 
+/* Mantenemos el Header fijo para que no se pierda al bajar */
 #data-table thead th {
     position: sticky;
     top: 0;
     z-index: 20;
     background-color: #f8f9fa;
     border-bottom: 2px solid #1b1b1b;
-
-    /* TIPOGRAFÍA */
-    font-weight: 700;
-    color: #1b1b1b;
-    font-size: 0.95rem;
-    text-align: left;
-    user-select: none;
-
-    /* ESPACIADO (La clave del diseño) */
-    padding: 16px 40px 16px 24px;
-
-    /* ESTRATEGIA DE ANCHO */
-    width: 1%;
-    white-space: nowrap;
-
-    transition: background-color 0.2s ease;
 }
 #data-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
 #data-table tbody tr:hover { background-color: #f1f1f1; }
@@ -410,10 +380,10 @@
 
 /* 3. ENCABEZADO FIJO (Sticky Header) */
 th {
-    /* El th necesita position: sticky para quedarse pegado al tope del .table-wrapper */
     position: sticky;
     top: 0;
     z-index: 20;
+
 
     /* Aseguramos que el fondo del header sea sólido y no transparente */
     background-color: #f9f9f9;
@@ -3220,4 +3190,348 @@ body.no-scroll {
 /* 3. Efecto Hover conjunto (Opcional, para que se sienta unido) */
 #btn-import-min-stock:hover {
     background-color: #e0e0e0;
+}
+
+/* =======================================================
+   ESTILOS GESTOR DE COLUMNAS (MEJORADO)
+   ======================================================= */
+
+/* 1. El Banner Informativo (Reemplaza al texto gris) */
+.info-banner {
+    display: flex;
+    gap: 12px;
+    background-color: var(--accent-color-quat-opacity); /* Verde muy suave */
+    border: 1px solid var(--accent-color-quat-opacity);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 1.5rem;
+    color: var(--accent-color); /* Verde oscuro */
+    align-items: center;
+}
+
+.info-banner i {
+    font-size: 1.5rem;
+}
+
+.info-banner p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+/* 2. La Lista de Items */
+.column-manager-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px 5px 10px 10px;
+}
+
+/* 3. La Fila Individual (Tarjeta) */
+.sortable-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    background-color: #fff;
+    border: 2px solid #e5e7eb; /* Gris suave por defecto */
+    border-radius: 8px;
+    padding: 10px 15px;
+    transition: all 0.2s ease;
+    user-select: none; /* Evita seleccionar texto al arrastrar */
+}
+
+/* Hover: Se pone un poco más oscura y sube */
+.sortable-item:hover {
+    border-color: #1b1b1b;
+    transform: translateY(-2px);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+}
+
+/* 4. El "Manejador" (Los 6 puntitos) */
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    margin-right: 12px;
+    color: #9ca3af; /* Gris medio */
+    cursor: grab; /* Manito abierta */
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.sortable-item:hover .drag-handle {
+    color: #1b1b1b; /* Se oscurece al pasar el mouse por la fila */
+    background-color: #f3f4f6;
+}
+
+.drag-handle:active {
+    cursor: grabbing; /* Manito cerrada */
+}
+
+.drag-handle i {
+    font-size: 1.4rem; /* Icono grande */
+}
+
+/* 5. El Nombre de la Columna */
+.col-name {
+    flex-grow: 1; /* Ocupa todo el espacio posible */
+    font-weight: 700;
+    font-size: 1rem;
+    color: #374151;
+}
+
+/* 6. Estilo cuando estás arrastrando (SortableJS Ghost) */
+.sortable-ghost {
+    background-color: #f0f9ff;
+    border: 2px dashed var(--accent-color);
+    opacity: 0.8;
+}
+
+/* =========================================
+   STOCKIFY MOBILE (COMPANION MODE)
+   ========================================= */
+
+/* Por defecto (Escritorio): Ocultamos la vista móvil */
+.mobile-app-view {
+    display: none !important;
+}
+
+/* --- CUANDO ES CELULAR (Menos de 768px) --- */
+@media (max-width: 768px) {
+
+    .restore-tab{
+        display: none;
+    }
+
+    /* 1. OCULTAR TODO EL ESCRITORIO */
+    .desktop-app-view,
+    .dashboard-sidebar,
+    .main-menu,
+    .table-wrapper,
+    .table-controls {
+        display: none !important;
+    }
+
+    /* 2. MOSTRAR LA VISTA MÓVIL */
+    .mobile-app-view.hidden {
+        display: block !important; /* Forzamos visualización */
+        display: flex !important;
+        flex-direction: column;
+        height: 100%;
+        padding: 20px;
+    }
+
+    /* Header Móvil */
+    .mobile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    .mobile-user-profile {
+        font-size: 2rem;
+        color: #1b1b1b;
+    }
+
+    /* Grid de Botones Grandes */
+    .mobile-actions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 2 columnas */
+        gap: 15px;
+        flex-grow: 0.8; /* Ocupa el espacio disponible */
+    }
+
+    /* Tarjetas de Acción */
+    .mobile-card {
+        background-color: #fff;
+        border: 2px solid #1b1b1b;
+        border-radius: 12px;
+        padding: 20px 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 4px 4px 0px rgba(0,0,0,0.1); /* Estilo Rústico */
+        transition: transform 0.1s;
+    }
+
+    .mobile-card:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+    }
+
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: var(--accent-color-quat-opacity);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+        border: 2px solid var(--color-black);
+    }
+
+    .mobile-card h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1b1b1b;
+    }
+
+    .mobile-card p {
+        margin: 5px 0 0 0;
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    /* Colores Específicos */
+    .action-sale .icon-circle { background-color: var(--accent-green-20); color: var(--accent-green); } /* Verde Venta */
+    .action-purchase .icon-circle { background-color: var(--accent-blue-20); color: var(--accent-blue); } /* Azul Compra */
+    .action-check .icon-circle { background-color: var(--accent-red-20); color: var(--accent-red); } /* Naranja Consulta */
+    .action-logout {
+        grid-column: span 2; /* Ocupa todo el ancho */
+        border-color: var(--accent-red);
+        background-color: #fff5f5;
+    }
+    .action-logout .icon-circle { background-color: #fff; color: var(--accent-red); border-color: var(--accent-red); }
+
+    /* 3. MODALES EN MÓVIL (Adaptación) */
+    /* Hacemos que tus modales existentes ocupen el 100% */
+    #new-transaction-container,
+    #transaction-picker-modal {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+    }
+
+    /* Ajuste del contenido del modal */
+    .transaction-body, .picker-list {
+        padding-bottom: 80px; /* Espacio para el botón fijo abajo */
+    }
+    /* --- ESTILOS ADICIONALES PARA MÓVIL --- */
+
+    /* Botón de Perfil/Logout Header */
+    .mobile-icon-btn {
+        font-size: 1.8rem;
+        color: #1b1b1b;
+        padding: 5px;
+        cursor: pointer;
+    }
+
+    /* Color para la tarjeta de Caja */
+    .action-balance .icon-circle {
+        background-color: var(--accent-violet-20);
+        color: var(--accent-violet);
+    }
+
+    /* --- MODAL DE CAJA (Full Screen en Móvil) --- */
+    .mobile-modal-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 5000;
+        display: flex;
+        align-items: flex-end; /* Sale de abajo */
+    }
+    .mobile-modal-overlay.hidden { display: none; }
+
+    .mobile-modal-content {
+        background: #fff;
+        width: 100%;
+        height: 85vh; /* Ocupa casi todo */
+        border-radius: 20px 20px 0 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        animation: slideUpMobile 0.3s ease-out;
+    }
+
+    @keyframes slideUpMobile {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+
+    .mobile-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .mobile-modal-header h2 { margin: 0; font-size: 1.5rem; }
+    .close-icon { background: none; border: none; font-size: 2rem; }
+
+    /* Selector de Período */
+    .period-selector {
+        display: flex;
+        background: #f1f5f9;
+        padding: 5px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+    .period-btn {
+        flex: 1;
+        border: none;
+        background: none;
+        padding: 10px;
+        border-radius: 8px;
+        font-weight: 600;
+        color: #64748b;
+        transition: all 0.2s;
+    }
+    .period-btn.active {
+        background: #fff;
+        color: #1b1b1b;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    /* Tarjeta Principal */
+    .balance-main-card {
+        text-align: center;
+        padding: 30px 20px;
+        border: 2px solid #1b1b1b;
+        border-radius: 16px;
+        margin-bottom: 25px;
+        background-color: #fff;
+        box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+    }
+    .balance-main-card h1 { font-size: 2.5rem; margin: 10px 0; }
+    .text-green { color: var(--accent-green); }
+    .text-red { color: var(--accent-red); }
+
+    /* Filas de Detalle */
+    .detail-row {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    .detail-row .icon {
+        width: 45px; height: 45px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        margin-right: 15px;
+    }
+    .detail-row.income .icon { background: var(--accent-green-20); color: var(--accent-green); }
+    .detail-row.expense .icon { background: var(--accent-red-20); color: var(--accent-red); }
+
+    .detail-row h4 { margin: 0; font-size: 1.1rem; }
+    .detail-row span { font-size: 0.9rem; color: #64748b; }
+
+
 }

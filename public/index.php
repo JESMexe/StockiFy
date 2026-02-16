@@ -19,7 +19,7 @@ endif
     <script src="assets/js/cycling-text.js"></script>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/about-section.css">
-    <link rel="icon" href="favicon.ico" type="image/x-icon"
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
 </head>
@@ -84,45 +84,47 @@ endif
     </div>
     <div class="divider-wrapper">
         <div class="divider-line"></div>
-        <svg class="background-shape2 box-22" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" preserveAspectRatio="xMidYMid meet">
-            <defs>
-                <clipPath id="cp1"><path d="M87.77 194.09h591.27v392.4H87.77z"/></clipPath>
-                <clipPath id="cp2"><path d="M192 82.24h487.06V664H192z"/></clipPath>
-                <clipPath id="cp3"><path d="M385.11 82.34L679.05 206.36 485.97 663.94 192.04 539.92z"/></clipPath>
-                <clipPath id="cp4"><path d="M115.84 82.24h459.23V664H115.84z"/></clipPath>
-                <clipPath id="cp5"><path d="M115.87 190.5L384.15 82.34l190.87 473.44-268.27 108.16z"/></clipPath>
-                <clipPath id="cp6"><path d="M115.84 456.14h319.94v242.22H115.84z"/></clipPath>
-                <clipPath id="cp7"><path d="M115.86 586.31l55.04-130.17 264.64 111.89-55.03 130.17z"/></clipPath>
-                <clipPath id="cp8"><path d="M345.28 456.14H664v232.72H345.28z"/></clipPath>
-                <clipPath id="cp9"><path d="M394.69 688.74l-49.25-132.47 269.31-100.13 49.25 132.47z"/></clipPath>
-                <clipPath id="cp10"><path d="M73.39 74.15h620.9v633.17H73.39z"/></clipPath>
-                <clipPath id="cp11"><path d="M90.99 196.3h584.86v388.15H90.99z"/></clipPath>
-                <clipPath id="cp12"><path d="M194.06 85.67h481.8v575.51h-481.8z"/></clipPath>
-                <clipPath id="cp13"><path d="M385.1 85.77l290.75 122.68-190.98 452.62-290.75-122.68z"/></clipPath>
-                <clipPath id="cp14"><path d="M118.74 85.67H573v575.51H118.74z"/></clipPath>
-                <clipPath id="cp15"><path d="M118.78 192.76l265.37-107 188.8 468.31-265.37 107z"/></clipPath>
-                <clipPath id="cp16"><path d="M118.74 455.52H435V695H118.74z"/></clipPath>
-                <clipPath id="cp17"><path d="M118.77 584.28l54.44-128.76 261.78 110.67-54.44 128.76z"/></clipPath>
-                <clipPath id="cp18"><path d="M345.7 455.52H661v230.2H345.7z"/></clipPath>
-                <clipPath id="cp19"><path d="M394.58 685.6l-48.72-131.04 266.39-99.04 48.72 131.04z"/></clipPath>
-                <clipPath id="cp20"><path d="M76.76 77.67h614.17v626.31H76.76z"/></clipPath>
-            </defs>
+        <div class="shape-wrap">
+            <svg class="background-shape2 box-22" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <clipPath id="cp1"><path d="M87.77 194.09h591.27v392.4H87.77z"/></clipPath>
+                    <clipPath id="cp2"><path d="M192 82.24h487.06V664H192z"/></clipPath>
+                    <clipPath id="cp3"><path d="M385.11 82.34L679.05 206.36 485.97 663.94 192.04 539.92z"/></clipPath>
+                    <clipPath id="cp4"><path d="M115.84 82.24h459.23V664H115.84z"/></clipPath>
+                    <clipPath id="cp5"><path d="M115.87 190.5L384.15 82.34l190.87 473.44-268.27 108.16z"/></clipPath>
+                    <clipPath id="cp6"><path d="M115.84 456.14h319.94v242.22H115.84z"/></clipPath>
+                    <clipPath id="cp7"><path d="M115.86 586.31l55.04-130.17 264.64 111.89-55.03 130.17z"/></clipPath>
+                    <clipPath id="cp8"><path d="M345.28 456.14H664v232.72H345.28z"/></clipPath>
+                    <clipPath id="cp9"><path d="M394.69 688.74l-49.25-132.47 269.31-100.13 49.25 132.47z"/></clipPath>
+                    <clipPath id="cp10"><path d="M73.39 74.15h620.9v633.17H73.39z"/></clipPath>
+                    <clipPath id="cp11"><path d="M90.99 196.3h584.86v388.15H90.99z"/></clipPath>
+                    <clipPath id="cp12"><path d="M194.06 85.67h481.8v575.51h-481.8z"/></clipPath>
+                    <clipPath id="cp13"><path d="M385.1 85.77l290.75 122.68-190.98 452.62-290.75-122.68z"/></clipPath>
+                    <clipPath id="cp14"><path d="M118.74 85.67H573v575.51H118.74z"/></clipPath>
+                    <clipPath id="cp15"><path d="M118.78 192.76l265.37-107 188.8 468.31-265.37 107z"/></clipPath>
+                    <clipPath id="cp16"><path d="M118.74 455.52H435V695H118.74z"/></clipPath>
+                    <clipPath id="cp17"><path d="M118.77 584.28l54.44-128.76 261.78 110.67-54.44 128.76z"/></clipPath>
+                    <clipPath id="cp18"><path d="M345.7 455.52H661v230.2H345.7z"/></clipPath>
+                    <clipPath id="cp19"><path d="M394.58 685.6l-48.72-131.04 266.39-99.04 48.72 131.04z"/></clipPath>
+                    <clipPath id="cp20"><path d="M76.76 77.67h614.17v626.31H76.76z"/></clipPath>
+                </defs>
 
-            <g class="dynamic-fill" clip-path="url(#cp1)"><path d="M87.77 194.09h591.66v392.4H87.77z"/></g>
-            <g class="dynamic-fill" clip-path="url(#cp2)"><g clip-path="url(#cp3)"><path d="M385.11 82.34L679.05 206.36 485.75 664.48 191.82 540.46z"/></g></g>
-            <g class="dynamic-fill" clip-path="url(#cp4)"><g clip-path="url(#cp5)"><path d="M115.87 190.5L384.15 82.34 575.12 556.02 306.84 664.18z"/></g></g>
-            <g class="dynamic-fill" clip-path="url(#cp6)"><g clip-path="url(#cp7)"><path d="M115.86 586.31l55.04-130.17 264.42 111.79-55.04 130.18z"/></g></g>
-            <g class="dynamic-fill" clip-path="url(#cp8)"><g clip-path="url(#cp9)"><path d="M394.69 688.74l-49.25-132.47 269.08-100.04 49.26 132.47z"/></g></g>
-            <g class="dynamic-fill" clip-path="url(#cp11)"><path d="M90.99 196.3h585.24v388.15H90.99z"/></g>
-            <g class="dynamic-fill" clip-path="url(#cp12)"><g clip-path="url(#cp13)"><path d="M385.1 85.77l290.75 122.68-191.2 453.16-290.74-122.68z"/></g></g>
-            <g class="dynamic-fill" clip-path="url(#cp14)"><g clip-path="url(#cp15)"><path d="M118.78 192.76l265.37-107 188.9 468.55-265.37 106.99z"/></g></g>
-            <g class="dynamic-fill" clip-path="url(#cp16)"><g clip-path="url(#cp17)"><path d="M118.77 584.28l54.44-128.76 261.55 110.58-54.44 128.76z"/></g></g>
-            <g class="dynamic-fill" clip-path="url(#cp18)"><g clip-path="url(#cp19)"><path d="M394.58 685.6l-48.72-131.04 266.16-98.96 48.72 131.04z"/></g></g>
+                <g class="dynamic-fill" clip-path="url(#cp1)"><path d="M87.77 194.09h591.66v392.4H87.77z"/></g>
+                <g class="dynamic-fill" clip-path="url(#cp2)"><g clip-path="url(#cp3)"><path d="M385.11 82.34L679.05 206.36 485.75 664.48 191.82 540.46z"/></g></g>
+                <g class="dynamic-fill" clip-path="url(#cp4)"><g clip-path="url(#cp5)"><path d="M115.87 190.5L384.15 82.34 575.12 556.02 306.84 664.18z"/></g></g>
+                <g class="dynamic-fill" clip-path="url(#cp6)"><g clip-path="url(#cp7)"><path d="M115.86 586.31l55.04-130.17 264.42 111.79-55.04 130.18z"/></g></g>
+                <g class="dynamic-fill" clip-path="url(#cp8)"><g clip-path="url(#cp9)"><path d="M394.69 688.74l-49.25-132.47 269.08-100.04 49.26 132.47z"/></g></g>
+                <g class="dynamic-fill" clip-path="url(#cp11)"><path d="M90.99 196.3h585.24v388.15H90.99z"/></g>
+                <g class="dynamic-fill" clip-path="url(#cp12)"><g clip-path="url(#cp13)"><path d="M385.1 85.77l290.75 122.68-191.2 453.16-290.74-122.68z"/></g></g>
+                <g class="dynamic-fill" clip-path="url(#cp14)"><g clip-path="url(#cp15)"><path d="M118.78 192.76l265.37-107 188.9 468.55-265.37 106.99z"/></g></g>
+                <g class="dynamic-fill" clip-path="url(#cp16)"><g clip-path="url(#cp17)"><path d="M118.77 584.28l54.44-128.76 261.55 110.58-54.44 128.76z"/></g></g>
+                <g class="dynamic-fill" clip-path="url(#cp18)"><g clip-path="url(#cp19)"><path d="M394.58 685.6l-48.72-131.04 266.16-98.96 48.72 131.04z"/></g></g>
 
-            <g clip-path="url(#cp10)"><path fill="#1b1b1b" d="M693.69 196.42l.4-1.13-310.05-121.14-309.59 122.4-1.03-.41v.79l-.03.02.03.13v388.57L383.89 707.32l310.5-121.7V196.14zM383.73 97.97l105.19 37.67-286.73 111.29-97.1-38.3zM372.84 679.89l-116.28-46.97-58.35-21.91-102.6-40.46V228.75l101.55 40.06v85.45l9.04-2.51 6.12 8.38 8.51-1.97 8.25 8.72 7.19-2.5 11.62 11.52V288.8l9.04 3.58 115.9 45.7zM383.91 318.62L270.53 273.9l279.6-113.32 115.34 47zM672.22 570.55L395 679.89V338.09l277.2-109.37v341.83z"/></g>
+                <g clip-path="url(#cp10)"><path fill="#1b1b1b" d="M693.69 196.42l.4-1.13-310.05-121.14-309.59 122.4-1.03-.41v.79l-.03.02.03.13v388.57L383.89 707.32l310.5-121.7V196.14zM383.73 97.97l105.19 37.67-286.73 111.29-97.1-38.3zM372.84 679.89l-116.28-46.97-58.35-21.91-102.6-40.46V228.75l101.55 40.06v85.45l9.04-2.51 6.12 8.38 8.51-1.97 8.25 8.72 7.19-2.5 11.62 11.52V288.8l9.04 3.58 115.9 45.7zM383.91 318.62L270.53 273.9l279.6-113.32 115.34 47zM672.22 570.55L395 679.89V338.09l277.2-109.37v341.83z"/></g>
 
-            <g clip-path="url(#cp20)"><path fill="#ffffff" d="M690.34 198.61l.4-1.11-306.7-119.83-306.23 121.07-1.02-.4.43.77-.03.03.03.13v384.35l306.87 120.36 307.13-120.39V198.34zM383.73 101.23l104.05 37.27-283.62 110.08-96.05-37.89zM372.96 676.84L257.94 630.38l-57.72-21.67-101.48-40.02V230.59l100.46 39.63v84.52l8.94-2.48 6.05 8.29 8.42-1.95 8.17 8.63 7.11-2.48 11.49 11.4V290l8.94 3.54 114.64 45.21zM383.92 319.5L271.76 275.25 548.34 163.15l114.08 46.49zM669.1 568.69L394.88 676.84V338.75l274.19-108.19v338.13z"/></g>
-        </svg>
+                <g clip-path="url(#cp20)"><path fill="#ffffff" d="M690.34 198.61l.4-1.11-306.7-119.83-306.23 121.07-1.02-.4.43.77-.03.03.03.13v384.35l306.87 120.36 307.13-120.39V198.34zM383.73 101.23l104.05 37.27-283.62 110.08-96.05-37.89zM372.96 676.84L257.94 630.38l-57.72-21.67-101.48-40.02V230.59l100.46 39.63v84.52l8.94-2.48 6.05 8.29 8.42-1.95 8.17 8.63 7.11-2.48 11.49 11.4V290l8.94 3.54 114.64 45.21zM383.92 319.5L271.76 275.25 548.34 163.15l114.08 46.49zM669.1 568.69L394.88 676.84V338.75l274.19-108.19v338.13z"/></g>
+            </svg>
+        </div>
     </div>
     <div class="flex-column all-center" id="acerca-de-container">
         <p class="about-title">
@@ -150,7 +152,7 @@ endif
                         Dile adiós a las hojas de cálculo complicadas y al software obsoleto. <span style="color: var(--accent-color); font-weight: 600">StockiFy</span>
                         está diseñado pensando en ti.<br>Nuestra interfaz <span style="color: var(--accent-color); font-weight: 600">limpia</span> y
                         <span style="color: var(--accent-color); font-weight: 600">moderna</span> te permite agregar productos, gestionar inventarios
-                        y ver tu stock de un solo vistazo <br>Menos tiempo aprendiendo cómo usar la herramienta, más tiempo gestionando tu negocio.
+                        y ver tu stock de un solo vistazo.
                     </p>
                 </div>
 
@@ -210,33 +212,35 @@ endif
             </div>
         </div>
     </div>
-    <div style="width: 100%; border-top: 2px solid black; margin-top: 190px"></div>
-    <div class="flex-row all-center" id="contact-container" style="margin: 60px 0">
-        <div class="contact-wrapper flex-row">
-            <form id="contact-form">
-                <div class="flex-row all-center contact-form-header">
-                    <h2>Contacta con nosotros</h2>
-                </div>
-                <label for="name">Nombre</label>
-                <input type="text" name="name" id="name" placeholder="Nombre" required>
-                <label for="email">E-Mail</label>
-                <input type="email" name="email" id="email" placeholder="E-Mail" required>
-                <label for="phone">Teléfono (Opcional)</label>
-                <input type="text" name="phone" id="phone" placeholder="Telefono." minlength="8" pattern="[0-9]+">
-                <label for="subject">Asunto (Opcional)</label>
-                <input type="text" name="subject" id="subject" placeholder="Asunto" maxlength="30">
-                <label for="message">Mensaje</label>
-                <textarea name="message" id="message" placeholder="Mensaje" rows="5" required></textarea>
-                <button type="submit" class="btn btn-primary">Enviar</button>
-            </form>
-            <iframe id="contact-map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3282.5591441865326!2d-58.604605923529405!3d-34.64057945944709!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bc951c0fe2d9f5%3A0x9f1c540898efecbe!2sUTN%20HAEDO!5e0!3m2!1ses!2sar!4v1762984923168!5m2!1ses!2sar" width="600" height="450" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+    <button class="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="ph ph-arrow-up" style="font-size: 1.4rem;"></i>
+    </button>
+
+</main>
+<footer class="footer">
+    <div class="footer-container">
+
+        <div class="footer-brand">
+            <h3>StockiFy</h3>
+            <p>Gestión inteligente para negocios que buscan crecer.</p>
+        </div>
+
+        <div class="footer-divider"></div>
+
+        <div class="footer-bottom">
+            <p> &copy <span id="year"></span> StockiFy. Todos los derechos reservados.</p>
+            <p class="footer-dev">
+                Desarrollado con arquitectura moderna por
+                <span class="jesm-signature">JESMdev</span>
+            </p>
         </div>
     </div>
-</main>
-<footer style="height: 50px; border-top: 2px solid black; padding-top: 50px" class="flex-row all-center">
-    <p>StockiFy &copy; 2025</p>
 </footer>
 <script type="module" src="assets/js/main.js"></script>
+<script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+</script>
 </body>
 </html>
 

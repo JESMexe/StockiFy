@@ -27,6 +27,10 @@ class TableModel
     /**
      * Inserta múltiples filas. Si overwrite es true, usa TRUNCATE para reiniciar IDs.
      */
+    /**
+     * Inserta múltiples filas.
+     * Si overwrite es true, limpia la tabla respetando la integridad referencial.
+     */
     public function bulkInsertData(string $tableName, array $data, bool $overwrite = false): int
     {
         if (empty($data)) {
@@ -36,18 +40,20 @@ class TableModel
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
 
         try {
-            // --- FASE 1: LIMPIEZA Y REINICIO (Fuera de Transacción) ---
+            // --- FASE 1: LIMPIEZA SEGURA (En lugar de TRUNCATE) ---
             if ($overwrite) {
-                // TRUNCATE borra todo Y reinicia el contador de ID a 1.
-                // Importante: TRUNCATE no se puede hacer dentro de una transacción activa en algunos motores,
-                // y causa un commit implícito. Por eso lo hacemos aquí, antes del beginTransaction.
-                $this->db->exec("TRUNCATE TABLE {$safeTableName}");
+                // DELETE borra los datos pero NO resetea el contador de ID a 1.
+                // Esto protege tus tablas de Ventas y Analíticas.
+                $this->db->exec("DELETE FROM {$safeTableName}");
+
+                // Opcional: Esto ajusta el siguiente ID al número que sigue al máximo actual,
+                // evitando saltos innecesarios pero sin pisar IDs viejos.
+                $this->db->exec("ALTER TABLE {$safeTableName} AUTO_INCREMENT = 1");
             }
 
             // --- FASE 2: INSERCIÓN MASIVA (Transaccional) ---
             $this->db->beginTransaction();
 
-            // Preparamos la sentencia SQL una sola vez
             $columns = array_keys($data[0]);
             $safeColumns = array_map(fn($col) => "`" . str_replace("`", "``", $col) . "`", $columns);
             $placeholders = implode(',', array_fill(0, count($columns), '?'));
@@ -67,13 +73,10 @@ class TableModel
                 }
             }
 
-            // Confirmamos la inserción
             $this->db->commit();
             return $insertedCount;
 
         } catch (\PDOException $e) {
-            // Si falla la inserción, deshacemos solo la parte de insertar
-            // (Si se hizo TRUNCATE antes, esos datos ya se perdieron, es el comportamiento esperado de 'Reemplazar')
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }

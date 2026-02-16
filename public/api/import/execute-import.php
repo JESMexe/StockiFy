@@ -1,64 +1,36 @@
 <?php
 // public/api/import/execute-import.php
+header('Content-Type: application/json');
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
-ob_start();
+require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 
 use App\Controllers\ImportController;
 
-// 1. Configuración de Errores (Solo log, no display)
-ini_set('display_errors', 0); // ¡CRÍTICO! No mostrar errores en el output
-ini_set('log_errors', 1);
-error_reporting(E_ALL);
-
-header('Content-Type: application/json');
-
 try {
+    if (session_status() === PHP_SESSION_NONE) session_start();
 
-    try {
-        // 2. Iniciar Sesión
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        // 3. Cargar Dependencias
-        require_once __DIR__ . '/../../../vendor/autoload.php';
-
-        // Aseguramos que el helper de autenticación esté cargado
-        $authHelperPath = __DIR__ . '/../../../src/helpers/auth_helper.php';
-        if (file_exists($authHelperPath)) {
-            require_once $authHelperPath;
-        } else {
-            throw new Exception("No se encontró el helper de autenticación.");
-        }
-
-        // 4. Validar Método
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            throw new Exception("Método no permitido (Se espera POST).");
-        }
-
-        // 5. Ejecutar Controlador
-        $controller = new ImportController();
-        $controller->executeImport();
-
-    } catch (Throwable $e) {
-        // Captura cualquier error (Exception o Error Fatal) y devuelve JSON
-        http_response_code(500);
-
-        ob_clean();
-
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error Crítico en el Servidor: ' . $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine()
-        ]);
+    $user = getCurrentUser();
+    if (!$user) {
+        http_response_code(401);
+        throw new Exception("No autorizado");
     }
 
-} catch (Throwable $e) {
-    http_response_code(500);
-    ob_clean();
-    echo json_encode(['success' => false, 'message' => 'Error al preparar datos: ' . $e->getMessage()]);
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        // Aceptamos POST para ejecutar la acción
+        throw new Exception("Método no permitido");
+    }
 
-} finally {
-    ob_end_flush();
+    $controller = new ImportController();
+
+    // Llamamos al método que acabamos de crear
+    $result = $controller->finalizeImport();
+
+    echo json_encode($result);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

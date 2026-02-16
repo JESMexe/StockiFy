@@ -19,9 +19,15 @@ class PurchaseModel {
         try {
             $this->db->beginTransaction();
 
+            $inventoryId = $data['inventory_id'] ?? $_SESSION['active_inventory_id'] ?? 0;
+
+            if (!$inventoryId) {
+                throw new Exception("No se ha definido un ID de inventario para esta compra.");
+            }
+
             $stmt = $this->db->prepare("
-                INSERT INTO purchases (user_id, provider_id, total, category, notes, created_at) 
-                VALUES (:user, :prov, :total, :cat, :notes, NOW())
+                INSERT INTO purchases (user_id, inventory_id, provider_id, total, category, notes, created_at) 
+                VALUES (:user, :inventory_id, :prov, :total, :cat, :notes, NOW())
             ");
 
             $providerId = !empty($data['provider_id']) ? $data['provider_id'] : null;
@@ -30,6 +36,7 @@ class PurchaseModel {
 
             $stmt->execute([
                 ':user' => $userId,
+                ':inventory_id' => $inventoryId,
                 ':prov' => $providerId,
                 ':total' => $data['total'],
                 ':cat' => $category,

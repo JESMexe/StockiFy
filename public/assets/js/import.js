@@ -1,4 +1,5 @@
 // public/assets/js/import.js
+
 import * as api from './api.js';
 import { pop_ups } from "./notifications/pop-up.js";
 
@@ -6,294 +7,274 @@ let modalElement, closeModalBtn, importCancelBtn, dropZone, fileInput, importSta
 let step1, step2, mappingForm, validatePrepareBtn;
 let uploadedFile = null;
 let currentStockifyColumns = [];
+let detectedDelimiter = ','; // Variable para guardar el delimitador detectado
 
-function setStockifyColumns(columns) {
-    currentStockifyColumns = columns;
-}
+// Exponer función para recibir columnas del sistema
+window.setStockifyColumns = function(columns) {
+    currentStockifyColumns = columns || [];
+};
 
-function openImportModal() {
+export function openImportModal() {
+    modalElement = document.getElementById('import-modal');
     if (!modalElement) return;
+
+    // Reiniciar estado
     modalElement.classList.remove('hidden');
+    importStatus = document.getElementById('import-status');
+    fileInput = document.getElementById('csv-file-input');
+    dropZone = document.getElementById('import-drop-zone');
+    step1 = document.getElementById('import-step-1');
+    step2 = document.getElementById('import-step-2');
+    validatePrepareBtn = document.getElementById('validate-prepare-btn');
+    mappingForm = document.getElementById('mapping-form');
+
     showStep(1);
-    importStatus.textContent = '';
+    if(importStatus) importStatus.textContent = '';
     uploadedFile = null;
+    detectedDelimiter = ',';
     if (fileInput) fileInput.value = '';
+
+    // Configurar Listeners (si no existen ya)
+    setupEventListeners();
 }
 
 function closeImportModal() {
-    if (!modalElement) return;
-    modalElement.classList.add('hidden');
+    if (modalElement) modalElement.classList.add('hidden');
 }
 
 function showStep(stepNumber) {
-    if (!step1 || !step2 || !validatePrepareBtn) return;
+    if (!step1 || !step2) return;
     step1.classList.toggle('hidden', stepNumber !== 1);
     step2.classList.toggle('hidden', stepNumber !== 2);
-    validatePrepareBtn.classList.toggle('hidden', stepNumber !== 2);
-    if (mappingForm) mappingForm.classList.toggle('hidden', stepNumber !== 2);
+
+    if(validatePrepareBtn) validatePrepareBtn.classList.toggle('hidden', stepNumber !== 2);
+    if(mappingForm) mappingForm.classList.toggle('hidden', stepNumber !== 2);
 }
 
-// --- Manejo de Archivo ---
-function handleFileSelect(file) {
-    if (!file || !file.type.match('text/csv')) {
-        pop_ups.error("Por favor, selecciona un archivo CSV válido.");
+function setupEventListeners() {
+    closeModalBtn = document.getElementById('close-modal-btn');
+    importCancelBtn = document.getElementById('import-cancel-btn');
+
+    // Remover listeners viejos para evitar duplicados (clonando nodos)
+    if(closeModalBtn) {
+        const newBtn = closeModalBtn.cloneNode(true);
+        closeModalBtn.parentNode.replaceChild(newBtn, closeModalBtn);
+        closeModalBtn = newBtn;
+        closeModalBtn.addEventListener('click', closeImportModal);
+    }
+
+    if(importCancelBtn) {
+        const newCancel = importCancelBtn.cloneNode(true);
+        importCancelBtn.parentNode.replaceChild(newCancel, importCancelBtn);
+        importCancelBtn = newCancel;
+        importCancelBtn.addEventListener('click', closeImportModal);
+    }
+
+    if(validatePrepareBtn) {
+        const newValidate = validatePrepareBtn.cloneNode(true);
+        validatePrepareBtn.parentNode.replaceChild(newValidate, validatePrepareBtn);
+        validatePrepareBtn = newValidate;
+        validatePrepareBtn.addEventListener('click', handlePrepareImport);
+    }
+
+    // Drag & Drop
+    if(dropZone) {
+        const newZone = dropZone.cloneNode(true);
+        dropZone.parentNode.replaceChild(newZone, dropZone);
+        dropZone = newZone;
+
+        dropZone.addEventListener('click', () => fileInput && fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
+        });
+    }
+
+    if(fileInput) {
+        const newInput = fileInput.cloneNode(true);
+        fileInput.parentNode.replaceChild(newInput, fileInput);
+        fileInput = newInput;
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
+        });
+    }
+}
+
+async function handleFileSelect(file) {
+    // Validar tipo (permitir .csv y textos planos)
+    if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
+        pop_ups.error("Por favor selecciona un archivo CSV válido.", "Archivo Incorrecto");
         return;
     }
-    uploadedFile = file;
-    importStatus.textContent = `Archivo: ${file.name}`;
-    importStatus.style.color = 'var(--accent-green)';
-    fetchHeaders();
-}
 
-async function fetchHeaders() {
-    if (!uploadedFile) return;
-    importStatus.textContent = 'Analizando archivo...';
+    uploadedFile = file;
+    if(importStatus) importStatus.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Analizando <b>${file.name}</b>...`;
 
     const formData = new FormData();
-    formData.append('csvFile', uploadedFile);
+    formData.append('csv_file', file);
 
     try {
-        const result = await api.getCsvHeaders(formData);
-        if (result.success) {
-            populateMappingUI(result.csvHeaders, currentStockifyColumns);
+        const response = await api.getCsvHeaders(formData);
+
+        if (response.success) {
+            // Guardar delimitador detectado
+            detectedDelimiter = response.delimiter || ',';
+            console.log("Delimitador detectado:", detectedDelimiter);
+
+            // Generar tabla de mapeo
+            generateMappingTable(response.headers, response.ui_headers || response.headers);
             showStep(2);
-            importStatus.textContent = '';
+            if(importStatus) importStatus.textContent = '';
         } else {
-            throw new Error(result.message || 'Error al leer el CSV.');
+            throw new Error(response.message || 'Error al leer cabeceras.');
         }
     } catch (error) {
-        importStatus.textContent = `Error: ${error.message}`;
-        importStatus.style.color = 'var(--accent-red)';
+        console.error(error);
+        if(importStatus) importStatus.textContent = '';
+        pop_ups.error(error.message, "Error de Lectura");
     }
 }
 
-// --- Mapeo y Preparación ---
-
-// Función auxiliar para llenar el select (Aquí está la opción VACIAR DATOS)
-function generateMappingOptions(select, csvHeaders, dbColumn) {
-    select.innerHTML = '';
-
-    // 1. Opción Default
-    const defaultOption = document.createElement('option');
-    defaultOption.value = "";
-    defaultOption.textContent = "Ignorar esta columna";
-    select.appendChild(defaultOption);
-
-    // 2. Opción Vaciar Datos
-    const emptyOption = document.createElement('option');
-    emptyOption.value = "__EMPTY__";
-    emptyOption.textContent = "Vaciar Datos";
-    emptyOption.style.color = 'var(--accent-red)'; // Rojo para destacar
-    select.appendChild(emptyOption);
-
-    // 3. Opciones del CSV
-    csvHeaders.forEach((header, index) => {
-        const option = document.createElement('option');
-        // Enviamos el NOMBRE del header, no el índice, para que el backend lo encuentre fácil
-        option.value = header;
-        option.textContent = header;
-
-        // Auto-match (Fuzzy)
-        const normHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const normDb = dbColumn.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-        if (normHeader === normDb) {
-            option.selected = true;
-        }
-        select.appendChild(option);
-    });
-}
-
-function populateMappingUI(csvHeaders, stockifyColumns) {
+function generateMappingTable(csvHeaders, uiHeaders) {
     if (!mappingForm) return;
     mappingForm.innerHTML = '';
 
-    // Cabeceras visuales
-    mappingForm.insertAdjacentHTML('beforeend', `
-        <div style="text-align: left; font-weight: bold; color: var(--color-gray);">Columna CSV</div>
-        <div></div> 
-        <div style="text-align: center; font-weight: bold; color: var(--color-gray);">Destino StockiFy</div>
-    `);
+    // Contenedor tipo grid para mejor visualización
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'mapping-grid';
+    // Si tu CSS no tiene .mapping-grid, se verá como lista, que es seguro.
+    // Pero agregamos estilos inline discretos por si acaso:
+    gridContainer.style.display = 'grid';
+    gridContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+    gridContainer.style.gap = '15px';
 
-    const niceNames = {
-        'min_stock': 'Stock Mínimo',
-        'sale_price': 'Precio de Venta',
-        'receipt_price': 'Precio de Compra',
-    };
+    currentStockifyColumns.forEach(sysCol => {
+        if (['id', 'created_at', 'updated_at'].includes(sysCol.toLowerCase())) return;
 
-    stockifyColumns.forEach(stockifyCol => {
-        // Filtramos columnas de sistema
-        if (['id', 'created_at', 'updated_at'].includes(stockifyCol.toLowerCase())) return;
+        const card = document.createElement('div');
+        // Usamos clases estándar de UI que suelen tener estilos
+        card.className = 'mapping-card input-group';
+        card.style.background = 'var(--bg-secondary, #f8f9fa)';
+        card.style.padding = '10px';
+        card.style.borderRadius = '8px';
+        card.style.border = '1px solid var(--border-color, #eee)';
 
-        // Crear Select
+        // Etiqueta (Nombre en tu App)
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.style.display = 'block';
+        label.style.marginBottom = '5px';
+        label.style.fontWeight = '600';
+        label.textContent = formatColumnName(sysCol);
+
+        // Select (Columna del CSV)
         const select = document.createElement('select');
-        select.dataset.column = stockifyCol; // Usamos data attribute para identificar
-        select.classList.add('mapping-select'); // Clase para buscar luego
+        select.name = `map[${sysCol}]`;
+        select.className = 'form-select mapping-select'; // Clases comunes
+        select.style.width = '100%';
+        select.style.padding = '8px';
+        select.style.borderRadius = '4px';
+        select.style.border = '1px solid #ccc';
 
-        // ¡AQUÍ ESTÁ LA CORRECCIÓN! Usamos la función auxiliar
-        generateMappingOptions(select, csvHeaders, stockifyCol);
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Ignorar esta columna --';
+        defaultOption.style.color = '#999';
+        select.appendChild(defaultOption);
 
-        const csvColDiv = document.createElement('div');
-        csvColDiv.appendChild(select);
+        csvHeaders.forEach((headerVal, index) => {
+            const option = document.createElement('option');
+            option.value = headerVal;
+            option.textContent = uiHeaders[index]; // ¡Nombre bonito del CSV!
 
-        const arrowDiv = document.createElement('div');
-        arrowDiv.innerHTML = '<i class="ph ph-arrow-right"></i>';
-        arrowDiv.style.textAlign = 'right';
-        arrowDiv.style.color = 'var(--accent-color)';
+            // Auto-match Inteligente
+            const cleanSys = sysCol.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const cleanCsv = headerVal.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-        const stockifyColDiv = document.createElement('div');
-        stockifyColDiv.textContent = stockifyCol.charAt(0).toUpperCase() + stockifyCol.slice(1).replace(/_/g, ' ');
-        stockifyColDiv.style.fontWeight = '600';
+            // Lógica difusa para encontrar coincidencias (ej: precio_venta match con Precio)
+            if (cleanSys === cleanCsv || cleanCsv.includes(cleanSys) || cleanSys.includes(cleanCsv)) {
+                option.selected = true;
+                // Resaltar visualmente que hubo match
+                select.style.borderColor = 'var(--primary-color, #4CAF50)';
+                select.style.backgroundColor = '#f0fff4';
+            }
+            select.appendChild(option);
+        });
 
-        const colKey = stockifyCol.toLowerCase();
-        let displayName = niceNames[colKey];
-
-        if (!displayName) {
-            // Si no está en el mapa, lo formateamos genérico (primera mayúscula y sin guiones)
-            displayName = stockifyCol.charAt(0).toUpperCase() + stockifyCol.slice(1).replace(/_/g, ' ');
-        }
-
-        stockifyColDiv.textContent = displayName;
-        mappingForm.appendChild(csvColDiv);
-        mappingForm.appendChild(arrowDiv);
-        mappingForm.appendChild(stockifyColDiv);
+        card.appendChild(label);
+        card.appendChild(select);
+        gridContainer.appendChild(card);
     });
 
-    // Checkbox de Reemplazo (Con la estructura CSS correcta)
-    const overwriteHTML = `
-        <div class="checkbox-align-wrapper" style="display: flex; align-items: center; gap: 15px; grid-column: 1 / -1; margin-top: 1.5rem; padding: 1rem; border: 1px dashed var(--accent-red); border-radius: 8px; background-color: #fff5f5;">
-            <input type="checkbox" id="overwrite-data" name="overwrite" class="checkbox-danger">
-            
-            <label for="overwrite-data" style="cursor: pointer;">
-                <span style="color: var(--accent-red); font-weight: 700; font-size: 1.05rem;">Reemplazar todos los datos existentes</span>
-                <span style="display:block; font-size:0.85rem; color:#666; font-weight: 500; margin-top:4px; line-height: 1.4;">
-                     <i class="ph ph-warning" style="color: var(--accent-red); margin-right: 4px;"></i> 
-                     Borrará todo el contenido actual de la tabla antes de importar.
-                </span>
-            </label>
-        </div>
-    `;
-    mappingForm.insertAdjacentHTML('beforeend', overwriteHTML);
+    mappingForm.appendChild(gridContainer);
 }
 
-// --- Lógica Principal de Envío ---
-async function handleValidateAndPrepare(event) {
-    event.preventDefault();
+function formatColumnName(name) {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
 
+async function handlePrepareImport() {
     if (!uploadedFile) return;
 
-    validatePrepareBtn.disabled = true;
-    validatePrepareBtn.textContent = 'Procesando...';
-    importStatus.textContent = 'Subiendo y analizando datos...';
+    const mappingData = {};
+    const selects = mappingForm.querySelectorAll('select');
+    let hasMapping = false;
 
-    // 1. Recopilar Mapeo
-    const mapping = {};
-    document.querySelectorAll('.mapping-select').forEach(select => {
+    selects.forEach(select => {
         if (select.value) {
-            mapping[select.dataset.column] = select.value;
+            // Extraer nombre de columna del sistema desde el atributo name="map[nombre_columna]"
+            const sysCol = select.name.match(/\[(.*?)\]/)[1];
+            mappingData[sysCol] = select.value;
+            hasMapping = true;
         }
     });
 
-    // 2. Recopilar Checkbox
-    const overwriteCheck = document.getElementById('overwrite-data');
-    const overwrite = overwriteCheck ? overwriteCheck.checked : false;
+    if (!hasMapping) {
+        pop_ups.alert("Debes mapear al menos una columna para continuar.", "Atención");
+        return;
+    }
 
-    // 3. Preparar FormData
     const formData = new FormData();
-    formData.append('csvFile', uploadedFile); // Nota: PHP espera 'csvFile' (CamelCase)
-    formData.append('mapping', JSON.stringify(mapping));
-    // Enviamos 'true' o 'false' como texto para que PHP lo entienda fácil
-    formData.append('overwrite', overwrite ? 'true' : 'false');
+    formData.append('csv_file', uploadedFile);
+    formData.append('mapping', JSON.stringify(mappingData));
+
+    // ¡CRÍTICO! Enviamos el delimitador detectado al backend
+    formData.append('delimiter', detectedDelimiter);
+
+    if(validatePrepareBtn) {
+        validatePrepareBtn.disabled = true;
+        validatePrepareBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...';
+    }
 
     try {
-        // PASO 1: SIEMPRE PREPARAR (Guardar en sesión)
-        // Esto valida el CSV y lo deja listo en el servidor
-        console.log("Enviando a preparar...");
-        const resultPrepare = await api.prepareCsvImport(formData);
+        const result = await api.prepareCsvImport(formData);
 
-        if (!resultPrepare.success) {
-            throw new Error(resultPrepare.message);
-        }
+        if (result.success) {
+            pop_ups.success("Datos preparados correctamente. Confirmando importación...", "Éxito");
 
-        console.log("Preparación exitosa. Filas:", resultPrepare.rowCount);
-
-        // PASO 2: DECIDIR QUÉ HACER
-        // Si existe esta función, estamos en "Crear DB" -> Solo avisamos y cerramos
-        if (typeof window.updateImportStatus === 'function') {
-            window.updateImportStatus(`${resultPrepare.rowCount} filas listas para importar.`);
-            pop_ups.success("Datos validados correctamente.");
-            closeImportModal();
-        }
-        // Si NO existe, estamos en "Dashboard" -> EJECUTAR INSERCIÓN AHORA
-        else {
-            importStatus.textContent = 'Insertando en base de datos...';
-            const resultExecute = await api.executeImport(); // Llamada sin args, usa la sesión
-
-            if (resultExecute.success) {
-                pop_ups.success(resultExecute.message, "Importación Exitosa");
+            // Ejecutar importación final automáticamente
+            const execResult = await api.executeImport();
+            if (execResult.success) {
+                pop_ups.success(execResult.message, "Importación Completada");
                 closeImportModal();
-
                 // Recargar tabla
-                if (typeof window.loadTableData === 'function') {
-                    await window.loadTableData();
-                } else {
-                    window.location.reload();
-                }
+                if (window.loadTableData) window.loadTableData();
             } else {
-                throw new Error(resultExecute.message);
+                throw new Error(execResult.message);
             }
+        } else {
+            throw new Error(result.message);
         }
-
     } catch (error) {
-        console.error(error);
-        pop_ups.error(`Error: ${error.message}`, "Fallo en Importación");
-        importStatus.textContent = "Error al procesar.";
-        importStatus.style.color = 'var(--accent-red)';
+        pop_ups.error(error.message, "Error en Importación");
     } finally {
-        validatePrepareBtn.disabled = false;
-        validatePrepareBtn.textContent = 'Importar Datos';
+        if(validatePrepareBtn) {
+            validatePrepareBtn.disabled = false;
+            validatePrepareBtn.textContent = 'Confirmar e Importar';
+        }
     }
 }
 
-// --- Inicialización ---
-function initializeImportModal() {
-    modalElement = document.getElementById('import-modal');
-    closeModalBtn = document.getElementById('close-modal-btn');
-    importCancelBtn = document.getElementById('import-cancel-btn');
-    dropZone = document.getElementById('drop-zone');
-    fileInput = document.getElementById('csv-file-input');
-    importStatus = document.getElementById('import-status');
-    step1 = document.getElementById('import-step-1');
-    step2 = document.getElementById('import-step-2');
-    mappingForm = document.getElementById('mapping-form');
-    validatePrepareBtn = document.getElementById('validate-prepare-btn');
-
-    if (!modalElement) return;
-
-    modalElement.classList.add('hidden');
-    showStep(1);
-
-    closeModalBtn?.addEventListener('click', closeImportModal);
-    importCancelBtn?.addEventListener('click', closeImportModal);
-
-    modalElement.addEventListener('click', (event) => {
-        if (event.target === modalElement) closeImportModal();
-    });
-
-    dropZone?.addEventListener('click', () => fileInput?.click());
-    fileInput?.addEventListener('change', (event) => {
-        if (event.target.files.length > 0) handleFileSelect(event.target.files[0]);
-    });
-
-    dropZone?.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone?.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
-    });
-
-    validatePrepareBtn?.addEventListener('click', handleValidateAndPrepare);
-}
-
-export { openImportModal, initializeImportModal, setStockifyColumns };

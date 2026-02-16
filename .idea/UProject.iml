@@ -39,5 +39,6 @@
     <orderEntry type="library" name="@phosphor-icons/web" level="application" />
     <orderEntry type="library" name="sweetalert2" level="application" />
     <orderEntry type="library" name="@phosphor-icons" level="application" />
+    <orderEntry type="library" name="Sortable" level="application" />
   </component>
 </module>

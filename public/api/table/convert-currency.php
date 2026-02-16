@@ -44,7 +44,7 @@ try {
     $realColumnName = $mapping[$columnType] ?? $columnType;
 
     $cols = $db->query("SHOW COLUMNS FROM $tableName")->fetchAll(PDO::FETCH_COLUMN);
-    if (!in_array($realColumnName, $cols)) throw new Exception("La columna '$realColumnName' no existe.");
+    if (!in_array($realColumnName, $cols)) throw new Exception("La columna no existe.");
 
     $safeCol = "`" . str_replace("`", "``", $realColumnName) . "`";
 

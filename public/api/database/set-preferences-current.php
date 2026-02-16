@@ -15,18 +15,41 @@ use App\core\Database;
 try {
     // 1. Auth y Datos
     if (!function_exists('getCurrentUser')) throw new Exception('Auth helper error');
+
+    // Asegurarnos de que la sesión esté iniciada para leer active_inventory_id
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
     $user = getCurrentUser();
-    if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['success'=>false, 'message'=>'No autorizado']);
+        exit;
+    }
+
+    // --- CORRECCIÓN CLAVE AQUÍ ---
+    // Obtenemos el ID del inventario activo desde la sesión
+    $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+
+    if (!$activeInventoryId) {
+        http_response_code(400);
+        throw new Exception("No hay un inventario seleccionado en la sesión actual.");
+    }
+    // -----------------------------
 
     $input = json_decode(file_get_contents('php://input'), true);
     $db = Database::getInstance();
 
-    // 2. Obtener Inventario Activo
-    $stmt = $db->prepare("SELECT id, preferences, min_stock FROM inventories WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
-    $stmt->execute([$user['id']]);
+    // 2. Obtener EL Inventario Activo Específico (No el último creado)
+    $stmt = $db->prepare("SELECT id, preferences, min_stock FROM inventories WHERE id = ? AND user_id = ?");
+    $stmt->execute([$activeInventoryId, $user['id']]);
     $inv = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$inv) throw new Exception("Inventario no encontrado");
+    if (!$inv) {
+        http_response_code(404);
+        throw new Exception("El inventario seleccionado no existe o no te pertenece.");
+    }
 
     $invId = $inv['id'];
     $currentPrefs = json_decode($inv['preferences'] ?? '{}', true) ?? [];
@@ -82,7 +105,6 @@ try {
                 }
             } else {
                 // Si desactivan, por ahora NO borramos físicamente para no perder datos.
-                // Pero podríamos sacarla de los metadatos visuales si quisieras.
             }
 
             // Guardar cambios en user_tables si hubo
@@ -93,6 +115,14 @@ try {
         }
     }
 
+    if (isset($input['visible_columns'])) {
+        $currentPrefs['visible_columns'] = $input['visible_columns'];
+    }
+
+    if (isset($input['column_order'])) {
+        $currentPrefs['column_order'] = $input['column_order'];
+    }
+
     // 5. Guardar Preferencias JSON en inventories
     $stmtSave = $db->prepare("UPDATE inventories SET preferences = ? WHERE id = ?");
     $stmtSave->execute([json_encode($currentPrefs), $invId]);
@@ -100,7 +130,7 @@ try {
     echo json_encode(['success' => true]);
 
 } catch (Exception $e) {
-    // --- MANEJO DE ERRORES PERSONALIZADO (Estilo InventoryController) ---
+    // --- MANEJO DE ERRORES PERSONALIZADO ---
 
     if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && ($e->errorInfo[1] == 1050 || $e->errorInfo[1] == 1062))) {
         http_response_code(409);

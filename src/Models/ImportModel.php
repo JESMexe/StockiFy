@@ -25,7 +25,7 @@ class ImportModel
 
         // Leemos la primera línea para sacar headers
         // Usamos str_getcsv para mejor control si fuera necesario, pero fgetcsv es estándar
-        $headers = fgetcsv($handle, 0, ';');
+        $headers = fgetcsv($handle, 0, ',');
         fclose($handle);
 
         if ($headers === false || count($headers) === 0) {
@@ -53,7 +53,7 @@ class ImportModel
             throw new Exception("No se pudo abrir el archivo CSV para procesar.");
         }
 
-        $headers = fgetcsv($handle, 0, ';');
+        $headers = fgetcsv($handle, 0, ',');
         if ($headers === false) {
             fclose($handle);
             throw new Exception("Error al leer la cabecera del archivo CSV.");
@@ -67,7 +67,7 @@ class ImportModel
 
         $parsedData = [];
 
-        while (($rowData = fgetcsv($handle, 0, ';')) !== false) {
+        while (($rowData = fgetcsv($handle, 0, ',')) !== false) {
             if (count($rowData) === 1 && $rowData[0] === null) continue;
 
             $newRow = [];

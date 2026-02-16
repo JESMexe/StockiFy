@@ -1,10 +1,7 @@
 <?php
 // public/api/purchases/get-resources.php
 header('Content-Type: application/json');
-
-// Desactivar errores HTML para no romper el JSON
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
+ini_set('display_errors', 0); error_reporting(E_ALL);
 
 use App\core\Database;
 
@@ -14,42 +11,45 @@ try {
     require_once $root . '/src/helpers/auth_helper.php';
     require_once $root . '/src/core/Database.php';
 
-    // 1. Auth
+    session_start();
+
     if (!function_exists('getCurrentUser')) throw new Exception('Auth helper error');
     $user = getCurrentUser();
-    if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
+
+    $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+    if (!$user || !$activeInventoryId) {
+        echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']);
+        exit;
+    }
 
     $userId = $user['id'];
     $db = Database::getInstance();
 
-    // 2. OBTENER PROVEEDORES
+    // 1. PROVEEDORES
     $providers = [];
-    $checkTable = $db->query("SHOW TABLES LIKE 'providers'");
-    if ($checkTable->rowCount() > 0) {
+    try {
         $stmt = $db->prepare("SELECT id, full_name FROM providers WHERE user_id = ? ORDER BY full_name ASC");
         $stmt->execute([$userId]);
         $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+    } catch (Exception $e) {}
 
-    // 3. OBTENER PRODUCTOS
+    // 2. PRODUCTOS
     $products = [];
 
-    // A. Buscar inventario activo
-    $stmtInv = $db->prepare("SELECT id, preferences FROM inventories WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
-    $stmtInv->execute([$userId]);
+    // [CORRECCIÓN] Buscar INVENTARIO ACTIVO
+    $stmtInv = $db->prepare("SELECT id, preferences FROM inventories WHERE id = ? AND user_id = ?");
+    $stmtInv->execute([$activeInventoryId, $userId]);
     $inv = $stmtInv->fetch(PDO::FETCH_ASSOC);
 
     if ($inv) {
-        // B. Leer Mapeo
         $prefs = json_decode($inv['preferences'] ?? '{}', true);
         $mapping = $prefs['mapping'] ?? [];
 
-        // Columnas mapeadas
         $colName = $mapping['name'] ?? null;
-        $colPrice = $mapping['receipt_price'] ?? $mapping['buy_price'] ?? null; // Intentamos receipt_price primero
+        // Prioridad: Costo (buy_price). Si no, Precio Recibo (receipt_price).
+        $colPrice = $mapping['buy_price'] ?? $mapping['receipt_price'] ?? null;
         $colStock = $mapping['stock'] ?? null;
 
-        // C. Buscar tabla física
         $stmtTable = $db->prepare("SELECT table_name FROM user_tables WHERE inventory_id = ?");
         $stmtTable->execute([$inv['id']]);
         $tableRow = $stmtTable->fetch(PDO::FETCH_ASSOC);
@@ -58,21 +58,12 @@ try {
             $tableName = $tableRow['table_name'];
             $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
 
-            // D. Consultar datos
             $query = "SELECT * FROM $safeTable";
             $stmtProd = $db->query($query);
 
             while ($row = $stmtProd->fetch(PDO::FETCH_ASSOC)) {
+                $finalName = ($colName && !empty($row[$colName])) ? $row[$colName] : "Item #" . ($row['id']??'?');
 
-                // 1. Nombre
-                $finalName = null;
-                if ($colName && !empty($row[$colName])) {
-                    $finalName = $row[$colName];
-                } else {
-                    $finalName = "Producto ID: " . ($row['id'] ?? '?');
-                }
-
-                // 2. Precio (Costo)
                 $finalPrice = 0;
                 $canBuy = true;
                 $priceError = null;
@@ -81,21 +72,12 @@ try {
                     $finalPrice = (float)$row[$colPrice];
                 } else {
                     $canBuy = false;
-                    $priceError = "Sin columna de Costo configurada.";
+                    $priceError = "Sin Costo asignado";
                 }
 
-                // 3. Stock
-                $finalStock = 0;
-                $stockWarning = false;
+                $finalStock = ($colStock && isset($row[$colStock])) ? (float)$row[$colStock] : 0;
 
-                if ($colStock && isset($row[$colStock])) {
-                    $finalStock = (int)$row[$colStock];
-                } else {
-                    $stockWarning = true;
-                }
-
-                // 4. METADATA DE MONEDA (NUEVO)
-                // Verificamos si existe la columna _meta_currency_buy en la fila
+                // Moneda de COMPRA (Metadata)
                 $currencyBuy = $row['_meta_currency_buy'] ?? 'ARS';
 
                 $products[] = [
@@ -105,8 +87,7 @@ try {
                     'stock' => $finalStock,
                     'can_buy' => $canBuy,
                     'price_error' => $priceError,
-                    'stock_warning' => $stockWarning,
-                    '_meta_currency_buy' => $currencyBuy // ¡ESTO ES LO QUE FALTABA!
+                    'currency' => $currencyBuy // Usamos 'currency' genérico para estandarizar
                 ];
             }
         }
