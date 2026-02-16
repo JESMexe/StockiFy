@@ -1,146 +1,92 @@
-import * as api from './api.js';
-import { pop_ups } from './notifications/pop-up.js';
-import {ui_helper} from "./ui-helper.js";
+/* ==========================================================================
+   LÓGICA DEL INDEX (LANDING PAGE) - ACTUALIZADO
+   ========================================================================== */
+document.addEventListener('DOMContentLoaded', function() {
 
-/* ===============================
-   Texto animado de portada
-================================ */
-const words = ["Ventas.", "Compras.", "Estadísticas.", "Clientes."];
-let currentIndex = 0;
+    // Solo ejecutar si estamos en el index
+    if (document.getElementById('page-index')) {
+        console.log("Index Logic Loaded");
 
-function cycleText() {
-    const el = document.getElementById("cycling-text");
-    if (!el) return;
-
-    el.style.opacity = "0";
-    el.style.transform = "translateY(8px)";
-
-    setTimeout(() => {
-        currentIndex = (currentIndex + 1) % words.length;
-        el.textContent = words[currentIndex];
-        el.style.opacity = "1";
-        el.style.transform = "translateY(0)";
-    }, 250);
-}
-
-/* ===============================
-   Animaciones de entrada
-================================ */
-function initEntranceAnimations() {
-    const els = document.querySelectorAll('.fade-in-up');
-    els.forEach((el, i) => {
-        setTimeout(() => el.classList.add('is-visible'), 100 + i * 100);
-    });
-}
-
-/* ===============================
-   Mostrar vistas
-================================ */
-function showView(viewId) {
-    document.querySelectorAll('.view-container').forEach(v => v.classList.add('hidden'));
-    const target = document.getElementById(viewId);
-    if (target) target.classList.remove('hidden');
-}
-
-/* ===============================
-   checkInitialState()
-================================ */
-async function checkInitialState() {
-    try {
-        const profile = await api.getUserProfile();
-        // console.log("PROFILE:", profile); // Debug opcional
-
-        if (!profile?.success) {
-            showView("welcome-view");
-            return;
+        // 1. SWIPER CONFIGURACIÓN (Estilo Vertical/Tarjeta)
+        if (typeof Swiper !== 'undefined') {
+            var swiper = new Swiper(".mySwiper", {
+                effect: "coverflow",
+                grabCursor: true,
+                centeredSlides: true,
+                slidesPerView: "auto",
+                initialSlide: 1,
+                // Espacio entre slides
+                spaceBetween: 30,
+                coverflowEffect: {
+                    rotate: 0,      // IMPORTANTE: 0 rotación para que se vean rectas
+                    stretch: 0,
+                    depth: 0,       // Sin profundidad 3D excesiva
+                    modifier: 1,
+                    slideShadows: false, // Sin sombras del plugin, usamos las CSS
+                },
+                pagination: {
+                    el: ".swiper-pagination",
+                    clickable: true,
+                },
+            });
         }
 
-        const { user, databases, activeInventoryId } = profile;
-        const name = user?.name ?? "Usuario";
+        // 2. NAV DOTS & SVG ANIMATION (Lógica mejorada)
+        const sections = document.querySelectorAll('.section');
+        const navDots = document.querySelectorAll('.nav-dot');
+        const svgWrapper = document.querySelector('.background-animation-wrapper');
 
-        document.querySelectorAll('#welcome-view h2, #empty-state-view h2, #select-db-view h2, #dashboard-view h2')
-            .forEach(el => el.textContent = `¡Bienvenido, ${name}!`);
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // A. Puntos de Navegación
+                    navDots.forEach(dot => {
+                        dot.classList.remove('active');
+                        if (dot.getAttribute('data-id') === entry.target.id) {
+                            dot.classList.add('active');
+                        }
+                    });
 
-        if (activeInventoryId) { showView("dashboard-view"); return; }
-        if (databases && databases.length > 0) { showView("select-db-view"); return; }
-        showView("empty-state-view");
+                    // B. Movimiento del SVG (Usando clases CSS)
+                    if (svgWrapper) {
+                        // Limpiar clases
+                        svgWrapper.classList.remove('pos-right', 'pos-left');
 
-    } catch (err) {
-        pop_ups.error(`Error sesión: ${err.message}`);
-        showView("welcome-view");
+                        // Lógica: Alternar Derecha / Izquierda
+                        const id = entry.target.id;
+                        if (id === 'section-hero' || id === 'section-pillars') {
+                            svgWrapper.classList.add('pos-right');
+                        } else {
+                            svgWrapper.classList.add('pos-left');
+                        }
+                    }
+                }
+            });
+        }, { threshold: 0.3 }); // Threshold bajo para respuesta rápida
+
+        sections.forEach(s => observer.observe(s));
+
+        // 3. PESTAÑAS (About Section)
+        const options = document.querySelectorAll('.about-option');
+        const panels = document.querySelectorAll('.content-panel');
+
+        if(options.length > 0) {
+            options.forEach(option => {
+                option.addEventListener('click', () => {
+                    options.forEach(opt => opt.classList.remove('active'));
+                    panels.forEach(pnl => pnl.classList.remove('active'));
+
+                    option.classList.add('active');
+                    const targetId = option.getAttribute('data-option');
+                    if(document.getElementById(targetId)) {
+                        document.getElementById(targetId).classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // 4. Footer Year
+        const yearEl = document.getElementById("year");
+        if(yearEl) yearEl.textContent = new Date().getFullYear();
     }
-}
-
-/* ===============================
-   Funciones de Secciones (About/Contact)
-================================ */
-function showContentView(content_id){
-    document.querySelectorAll('.content-panel').forEach(v => v.classList.remove('active'));
-    document.getElementById(content_id)?.classList.add('active');
-}
-
-function setupAboutSection(){
-    document.querySelectorAll('.about-option').forEach(option => {
-        option.addEventListener('click', () => {
-            document.querySelectorAll('.about-option').forEach(o => o.classList.remove('active'));
-            option.classList.add('active');
-            showContentView(option.dataset.option);
-        });
-    });
-}
-
-function setupOtherInfoSection(){
-    document.querySelectorAll('.other-info-item').forEach(option => {
-        option.addEventListener('click', () => {
-            document.querySelectorAll('.other-info-header, .other-info-body').forEach(el => el.classList.remove('active'));
-            option.querySelector('.other-info-header')?.classList.add('active');
-            option.querySelector('.other-info-body')?.classList.add('active');
-        });
-    });
-}
-
-function setupContactForm(){
-    const contactForm = document.getElementById('contact-form');
-    if(!contactForm) return;
-
-    contactForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fd = new FormData(contactForm);
-        const data = {
-            'full_name': fd.get('name'),
-            'email': fd.get('email'),
-            'phone': fd.get('phone') || null,
-            'subject': fd.get('subject') || null,
-            'message': fd.get('message')
-        };
-
-        const res = await api.registerContactForm(data);
-        if (!res.success) alert('Error: ' + res.error);
-        else { alert('Contacto recibido!'); window.location.reload(); }
-    });
-}
-
-function innit(){
-    setupAboutSection();
-    setupOtherInfoSection();
-    setupContactForm();
-    ui_helper.renderHeader('stats');
-}
-
-/* ===============================
-   INICIO
-================================ */
-document.addEventListener('DOMContentLoaded', async () => {
-    setInterval(cycleText, 2200);
-    initEntranceAnimations();
-    innit();
-
-    const deleteModal = document.getElementById('delete-confirm-modal');
-    if (deleteModal && deleteModal.parentElement !== document.body) {
-        document.body.appendChild(deleteModal);
-    }
-
-    const isLoggedIn = await api.checkSessionStatus();
-    if (isLoggedIn) await checkInitialState();
-    else showView('welcome-view');
 });

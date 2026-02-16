@@ -40,11 +40,8 @@
     background-color: grey;
 }
 
-body, footer, .flex-column {
-    width: 100%;
-    max-width: 100%;
-}
-
+/* ---- Reseteo y Estilos Generales ---- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
     width: 100%;
@@ -92,10 +89,6 @@ header {
     #header-logo img { height: 30px; }
     header { padding: 1rem; }
     #header-nav > .btn {font-size: 2px; !important}
-}
-
-img, svg {
-    max-width: 100%;
 }
 
 /* ---- Botones específicos del Header ---- */
@@ -582,94 +575,18 @@ hr { border: none; height: 2px; background-color: var(--color-black); margin: 1.
     transform: translateY(-100%);
 }
 
-/* =========================
-   HERO (Welcome) - layout responsive real
-   2 columnas en desktop / 1 columna en mobile
-========================= */
-
-/* ===== HERO: más ancho y con aire ===== */
 #welcome-container{
-    width: min(1900px, calc(100% - clamp(2rem, 5vw, 8rem)));
-    margin: clamp(3rem, 6vh, 6rem) auto;
-
-    display: grid;
-    grid-template-columns: minmax(520px, 1.35fr) minmax(420px, 0.85fr);
-    column-gap: clamp(3rem, 6vw, 7rem); /* más aire entre columnas */
-    row-gap: 2rem;
-    align-items: center;
+    width: 90%;
+    margin: 5rem 0;
+    flex-wrap: wrap;
+    gap: 5rem;
+    overflow: hidden;
 }
 
-
-
-/* Columna izquierda (título/subtítulo) */
-#welcome-container > .flex-column:first-child{
-    align-items: flex-start;  /* izquierda */
-    text-align: left;
+#welcome-container > div{
+    width: 800px;
+    justify-content: center;
 }
-
-#welcome-container > .flex-column:first-child h1{
-    font-size: clamp(2.8rem, 4.2vw, 6.2rem);
-    line-height: 1.05;
-    max-width: 28ch;     /* antes 20ch -> ahora respira */
-}
-
-#welcome-container > .flex-column:first-child h2{
-    font-size: clamp(1.1rem, 1.5vw, 2.1rem);
-    max-width: 44ch;
-}
-
-
-/* Columna derecha (card) */
-#welcome-container > .flex-column.all-center{
-    justify-self: end;        /* empuja la card a la derecha */
-    width: 100%;
-}
-
-/* La card (view-container) responsiva */
-/* ===== Card: que no se rompa el layout interno ===== */
-#welcome-container .view-container{
-    width: min(560px, 100%);
-    max-width: 560px;
-    padding: 2.25rem;
-    overflow: hidden;          /* corta cualquier desborde interno */
-}
-
-/* Los botones dentro de la card: que respeten el padding */
-#welcome-container .view-container .btn{
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-/* Si tenés wrapper de botones, asegurá que no tenga ancho raro */
-#welcome-buttons,
-.menu-buttons{
-    width: 100%;
-}
-
-
-/* ======== Breakpoint: tablets y abajo -> se apila ======== */
-@media (max-width: 900px){
-    #welcome-container{
-        grid-template-columns: 1fr;
-        width: min(800px, calc(100% - 2rem));
-        column-gap: 0;
-    }
-
-    #welcome-container > .flex-column.all-center{
-        justify-self: center;
-    }
-    #welcome-container > .flex-column:first-child{
-        align-items: center;
-        text-align: center;
-    }
-
-    #welcome-container > .flex-column:first-child h1,
-    #welcome-container > .flex-column:first-child h2{
-        max-width: 100%;
-    }
-}
-
 
 #mi-cuenta-dropdown{
     z-index: 20;
@@ -1053,6 +970,15 @@ hr { border: none; height: 2px; background-color: var(--color-black); margin: 1.
     opacity: 1;
 }
 
+#welcome-container > div > h1{
+    font-size:4.5rem;
+}
+
+#welcome-container > div > h2{
+    font-size: 2rem;
+    margin-top: 2rem;
+    width: fit-content;
+}
 
 
 /* ---- Configuraciones Varias ---- */
@@ -1096,315 +1022,16 @@ hr { border: none; height: 2px; background-color: var(--color-black); margin: 1.
     transition: all var(--transition-speed) ease;
 }
 
-.background-shape2{
-    position: absolute;
-    right: -40px;                 /* lo corrés a la derecha sin vw */
-    top: -200%;
-    transform: translateY(-50%);
-    width: min(700px, 100vw);
-    height: auto;
-    z-index: 9999;
-}
-
-.shape-wrap{
-    position: absolute;
-    inset: 0;                      /* ocupa el alto del divider-wrapper */
-    pointer-events: none;
-    z-index: 0;
-    overflow: visible;             /* dejamos vertical libre */
-}
-
-/* Aseguramos que el SVG ocupe el div contenedor */
-.background-shape2 svg {
-    height: auto;
-
-}
-
-/* Caja 2: Derecha Abajo (Más grande) */
-.box-22 {
-    fill: var(--accent-color);
-    bottom: -10%;
-    margin-right: -200px;
-    width: max(700px, 30vw);
-    min-width: 700px;
-    min-height: 700px;
-    animation: float-rotate-reverse 25s ease-in-out infinite;
-    z-index: 9999;
-}
-
-/* Animaciones */
-@keyframes float-rotate {
-    0% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(5deg); }
-    100% { transform: translateY(0) rotate(0deg); }
-}
-
-@keyframes float-rotate-reverse {
-    0% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-30px) rotate(-8deg); }
-    100% { transform: translateY(0) rotate(0deg); }
-}
-
-.auth-footer {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--color-gray);
-}
-
-.auth-footer a {
-    color: var(--accent-color);
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.auth-footer a:hover {
-    text-decoration: underline;
-}
-
-/* --- DIVISOR CON CAJA ANIMADA (INDEX) --- */
-
-.divider-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100px;                 /* puede ser chico, no importa */
-    overflow-x: clip;              /* CLAVE: corta scroll lateral */
-    overflow-y: visible;           /* deja que el SVG sobresalga */
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-}
-
-/* La línea negra */
-.divider-line {
-    align-items: center;
-    margin-top: 150px; /* Espacio arriba */
-    margin-bottom: 20px; /* Espacio abajo */
-    position: absolute;
-    width: 100%;
-    height: 2px;
-    background-color: var(--color-black);
-    top: 50%;
-    z-index: 0;
-}
-
-/* public/assets/css/main.css */
-
-#dropdown-container {
-    position: relative;
-}
-
-#mi-cuenta-dropdown {
-    position: absolute;
-    top: calc(100% + 10px);
-    /* CAMBIO CLAVE: Anclamos a la derecha */
-    right: 0;
-    left: auto;
-
-    min-width: 220px;
-    background: var(--color-white);
-    border: var(--border-strong);
-    border-radius: var(--border-radius);
-    box-shadow: 6px 6px 0px var(--accent-color);
-    z-index: 9999; /* Máxima prioridad */
-}
-
-#mi-cuenta-dropdown .btn {
-    border: none;
-    border-bottom: 1px solid #eee;
-    border-radius: 0;
-    text-align: left;
-    justify-content: flex-start;
-    padding: 12px 20px;
-    box-shadow: none;
-    transform: none;
-}
-
-#mi-cuenta-dropdown .btn:last-child {
-    border-bottom: none;
-}
-
-#mi-cuenta-dropdown .btn:hover {
-    background-color: var(--accent-color);
-    color: var(--color-white);
-}
-
-@media (max-width: 420px) {
-    .divider-wrapper .box-22 svg {
-        position: absolute;
-        width: 70vw; /* Ancho actual: 70% del ancho de la ventana */
-        height: 70vw;
-        max-width: 700px; /* Ancho máximo de 700 píxeles */
-        max-height: 700px;
-        display: block;
-        margin-right: -200px;
-        margin-top: -200px;
-        opacity: 0.4 !important;
-        pointer-events: none;
-    }
-}
-
-@media (max-width: 768px) {
-    .divider-wrapper .box-22 {
-        position: absolute;
-        width: 100vw; /* Ancho actual: 70% del ancho de la ventana */
-        height: 100vw;
-        max-width: 700px; /* Ancho máximo de 700 píxeles */
-        max-height: 700px;
-        pointer-events: none;
-        right: -20px;
-        bottom: -200px;
-    }
-
-    .divider-wrapper .box-22 svg {
-        position: absolute;
-        width: 100vw;
-        height: 100vw;
-        max-width: 700px;
-        max-height: 700px;
-        display: block;
-
-    }
-}
-
-@media (max-width: 900px) {
-
-    header{
-        width: 100%;
-        left: auto;
-        right: auto;
-        margin: 0;
-        max-width: 100%;
-    }
-
-    .flex-column {
-        margin-top: 0;
-        padding-top: 0;
-    }
-
-    .flex-column h1 {
-
-        font-size: 2rem !important;
-    }
-
-    .flex-column .all-center {
-        padding: 0 !important;
-    }
-
-    .flex-column .all-center #welcome-view #empty-state-view #dashboard-view #select-db-view {
-        font-size: 1rem !important;
-    }
-
-    .divider-wrapper {
-        height: 1px;
-    }
-
-    .box-22 {
-        overflow-x: hidden;
-    }
-
-    .box-22 svg {
-        position: absolute;
-        width: 70vw; /* Ancho actual: 70% del ancho de la ventana */
-        height: 70vw;
-        max-width: 700px; /* Ancho máximo de 700 píxeles */
-        max-height: 700px;
-        display: block;
-        right: 50%;
-
-        top: 80%;
-        margin-top: -200px;
-        opacity: 0.4 !important;
-        pointer-events: none;
-    }
-}
-
-
-.footer {
-    background: var(--accent-color);
-    color: #ccc;
-    padding: 60px 20px 40px;
-    position: relative;
-    font-family: 'Satoshi', sans-serif;
-}
-
-.footer-container {
-    max-width: 1200px;
-    margin: auto;
-}
-
-.footer-brand h3 {
-    font-size: 1.4rem;
-    color: #fff;
-    margin-bottom: 10px;
-    font-weight: 700;
-}
-
-.footer-brand p {
-    font-size: 0.95rem;
-    color: rgba(255,255,255,0.6);
-    max-width: 400px;
-}
-
-.footer-divider {
-    height: 1px;
-    background: rgba(255,255,255,0.1);
-    margin: 40px 0;
-}
-
-.footer-bottom {
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.5);
-}
-
-.footer-dev {
-    margin-top: 8px;
-}
-
-.jesm-signature {
-    color: var(--color-white);
-    font-weight: 600;
-    transition: 0.3s;
-}
-
-.jesm-signature:hover {
-    opacity: 0.8;
-    cursor: pointer;
-}
-
-.scroll-top {
-    position: fixed !important;
-    right: 30px;
-    bottom: 30px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--accent-color);
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    border: 1px solid #1b1b1b;
-    box-shadow: 2px 2px  rgba(0,0,0,0.3);
-    transition: 0.3s;
-    z-index: 99;
-}
-
-.scroll-top:hover {
-    transform: translateY(-3px);
-}
-
 
 /* ---- Media ---- */
 
 @media (max-width: 1400px) {
-
     #estadisticas-generales-container{
         grid-template-columns: 1fr 1fr;
     }
 }
 
 @media (max-width: 1510px) {
-
     #welcome-container{
         margin: 2rem;
         flex-direction: column;
@@ -1412,13 +1039,11 @@ hr { border: none; height: 2px; background-color: var(--color-black); margin: 1.
 
     #welcome-container > div > h1{
         font-size: 4rem;
-        width: 100vh;
+        width: 650px;
     }
 
-    #welcome-container > div > h1{
-        font-size: 4rem;
-        width: auto !important;
-        max-width: 100%;
+    #welcome-container > div{
+        width: fit-content;
     }
     #index-sections-container h3{
         padding: 2rem 2rem;
@@ -1481,21 +1106,8 @@ body.tour-active {
 }
 
 /* --- 4. RESPONSIVE --- */
-@media (max-width: 1024px) {
-    body html main head footer {
-        align-content: center !important;
-    }
-    .divider-wrapper svg {
-        position: absolute;
-        opacity: 0.2 !important;
-        width: 70vw !important;
-        height: 70vw !important;
-        overflow-x: hidden;
-    }
-}
-
 @media (max-width: 768px) {
-    .background-shape2 svg {
+    .background-shape2 svg .box-22 {
         opacity: 0.2 !important;
         width: 80vw !important;
         height: 80vw !important;
@@ -1503,7 +1115,7 @@ body.tour-active {
 }
 
 @media (max-width: 900px) {
-    .background-shape2 svg {
+    .background-shape2 svg .box-22 {
         opacity: 0.2 !important;
         width: 80vw !important;
         height: 80vw !important;
@@ -1511,133 +1123,188 @@ body.tour-active {
 }
 
 @media (max-width: 420px) {
-    .background-shape2 svg {
+    .background-shape2 svg .box-22 {
         opacity: 0.2 !important;
         width: 80vw !important;
         height: 80vw !important;
     }
 }
 
-/** { outline: 1px solid rgba(255,0,0,.15); }*/
-
-
-/* =========================
-   ABOUT SECTION - FIX LAYOUT
-========================= */
-
-/* el contenedor principal debe controlar el ancho */
-#acerca-de-container{
-    width: min(1600px, calc(100% - 2rem));
-    margin-inline: auto;
+.background-shape2 {
+    z-index: 1;
+    opacity:1;
+    right: 100%;
+    pointer-events: none;
+    justify-content: flex-end;
+    overflow: hidden;
 }
 
-/* sobreescribe el comportamiento del flex viejo */
-.about-container{
+/* Aseguramos que el SVG ocupe el div contenedor */
+.background-shape2 svg {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: block;
+    justify-content: flex-end;
+    overflow: hidden;
+}
+
+/* Caja 2: Derecha Abajo (Más grande) */
+.box-22 {
+    fill: var(--accent-color);
+    bottom: -10%;
+    margin-right: -200px;
+    width: 70vw;
+    height: 70vw;
+    max-width: 700px;
+    max-height: 700px;
+    animation: float-rotate-reverse 25s ease-in-out infinite;
+    overflow: hidden;
+}
+
+/* Animaciones */
+@keyframes float-rotate {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes float-rotate-reverse {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-30px) rotate(-8deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--color-gray);
+}
+
+.auth-footer a {
+    color: var(--accent-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+/* --- DIVISOR CON CAJA ANIMADA (INDEX) --- */
+
+.divider-wrapper {
+    position: relative; /* Necesario para que la caja se posicione respecto a esto */
+    width: 100%;
+    background-color: var(--color-white);
+    height: 100px; /* Altura para contener la caja */
     display: flex;
-    justify-content: flex-start;      /* NO justify-between */
-    align-items: flex-start !important;
-    gap: 0;                            /* divisiones limpias */
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* La línea negra */
+.divider-line {
+    align-items: center;
+    margin-top: 150px; /* Espacio arriba */
+    margin-bottom: 20px; /* Espacio abajo */
+    position: absolute;
     width: 100%;
+    height: 2px;
+    background-color: var(--color-black);
+    top: 50%;
+    z-index: 1;
 }
 
-/* Columna izquierda (opciones) */
-.options-wrapper{
-    display: flex !important;
-    flex-direction: column !important;
+/* public/assets/css/main.css */
 
-    justify-content: flex-start !important;
-    align-items: stretch !important;
-
-    height: auto !important;
-    align-self: flex-start !important;
+#dropdown-container {
+    position: relative;
 }
 
-/* Columna derecha (panel) - IMPORTANTÍSIMO para que no desborde */
-.about-container > div:last-child{
-    flex: 1 1 auto;
-    min-width: 0;                     /* clave anti overflow en flex */
-    width: auto !important;           /* pisa tu style="width:100%" */
+#mi-cuenta-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    /* CAMBIO CLAVE: Anclamos a la derecha */
+    right: 0;
+    left: auto;
+
+    min-width: 220px;
+    background: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 6px 6px 0px var(--accent-color);
+    z-index: 9999; /* Máxima prioridad */
 }
 
-/* Hace que cada “opción” no se pase y respete la línea */
-/* Hace que cada “opción” no se pase y respete la línea */
-.about-option{
-    width: 100%;
-    box-sizing: border-box;
-    flex: 0 0 auto !important;
+#mi-cuenta-dropdown .btn {
+    border: none;
+    border-bottom: 1px solid #eee;
+    border-radius: 0;
+    text-align: left;
+    justify-content: flex-start;
+    padding: 12px 20px;
+    box-shadow: none;
+    transform: none;
 }
 
-.about-option.active{
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
+#mi-cuenta-dropdown .btn:last-child {
+    border-bottom: none;
 }
 
-/* panel */
-.content-panel{
-    width: 90%;
-    box-sizing: border-box;
+#mi-cuenta-dropdown .btn:hover {
+    background-color: var(--accent-color);
+    color: var(--color-white);
 }
 
-/* si tus textos largos hacen overflow raro */
-.content-panel p, .about-option p{
-    overflow-wrap: anywhere;
-    word-break: normal;
-}
-
-/* responsive: apila */
-@media (max-width: 900px){
-    .about-container{
-        flex-direction: column;
+@media (max-width: 420px) {
+    .divider-wrapper .box-22 {
+        position: absolute;
+        width: 70vw; /* Ancho actual: 70% del ancho de la ventana */
+        height: 70vw;
+        max-width: 700px; /* Ancho máximo de 700 píxeles */
+        max-height: 700px;
+        display: block;
+        margin-right: -200px;
+        margin-top: -200px;
+        opacity: 0.4 !important;
+        pointer-events: none;
     }
-    .options-wrapper{
-        flex: 0 0 auto;
-        width: 100%;
-        max-width: none;
-        min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .divider-wrapper .box-22 {
+        position: absolute;
+        width: 70vw; /* Ancho actual: 70% del ancho de la ventana */
+        height: 70vw;
+        max-width: 700px; /* Ancho máximo de 700 píxeles */
+        max-height: 700px;
+        display: block;
+        margin-right: -200px;
+        margin-top: -200px;
+        opacity: 0.4 !important;
+        pointer-events: none;
     }
 }
 
-/* ===== FIX DEFINITIVO: que la columna izquierda NO se estire ===== */
+@media (max-width: 900px) {
 
-/* el padre NO debe estirar hijos */
-#page-index #acerca-de-container .about-container{
-    align-items: flex-start !important; /* mata el stretch */
-}
-
-/* la columna izquierda debe medir lo que midan sus items */
-#page-index #acerca-de-container .about-container .options-wrapper{
-    align-self: flex-start !important;      /* no estirar */
-    flex: 0 0 380px !important;             /* ancho fijo */
-    height: auto !important;
-    min-height: 0 !important;
-
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    align-items: stretch !important;
-}
-
-/* El contenedor del panel derecho */
-#page-index #acerca-de-container .content-panel{
-    max-height: 320px;      /* elegí el valor que te guste */
-    overflow-y: hidden;
-    scrollbar-width: none;
-    overflow-x: hidden;
-    min-height: 0;
+    .box-22 {
+        position: absolute;
+        width: 70vw; /* Ancho actual: 70% del ancho de la ventana */
+        height: 70vw;
+        max-width: 700px; /* Ancho máximo de 700 píxeles */
+        max-height: 700px;
+        display: block;
+        right: 50%;
+        top: 80%;
+        margin-top: -200px;
+        opacity: 0.4 !important;
+        pointer-events: none;
+    }
 }
 
 
-/* evitá que el class all-center vuelva a centrar */
-#page-index #acerca-de-container .about-container .options-wrapper.all-center{
-    justify-content: flex-start !important;
-    align-items: stretch !important;
-}
 
-/* por si el active está metiendo variación */
-#page-index #acerca-de-container .options-wrapper .about-option,
-#page-index #acerca-de-container .options-wrapper .about-option.active{
-    margin: 0 !important;
-    transform: none !important;
-}
 

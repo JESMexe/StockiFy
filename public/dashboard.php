@@ -156,7 +156,7 @@
                             </div>
 
                             <button id="manage-columns-btn" class="btn btn-secondary" title="Ocultar o mostrar columnas" onclick="window.openColumnManager()">
-                                <i class="ph ph-columns"></i>
+                                <i class="ph ph-eye"></i>
                             </button>
 
 
@@ -655,7 +655,7 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="window.closeColumnManager()">Cancelar</button>
             <button class="btn btn-primary" onclick="window.saveColumnPreferences()">
-                <i class="ph ph-floppy-disk"></i> Guardar
+                Guardar
             </button>
         </div>
     </div>
