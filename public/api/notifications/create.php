@@ -25,11 +25,10 @@ $data = json_decode(file_get_contents('php://input'), true);
 $type = $data['type'] ?? null;
 $title = $data['title'] ?? null;
 $message = $data['message'] ?? null;
-$inventory_id = $data['inventory_id'] ?? null;
-
+$inventory_id = $_SESSION['active_inventory_id'] ?? null;
 if (!$type || !$title || !$inventory_id) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Faltan datos obligatorios (tipo, título o inventario)']);
+    echo json_encode(['success' => false, 'message' => 'Faltan datos obligatorios (tipo, título o inventario activo)']);
     exit;
 }
 

@@ -150,7 +150,7 @@ class PurchaseModel {
 
     // En src/Models/PurchaseModel.php
 
-    public function getHistory($userId, $order = 'DESC'): array
+    public function getHistory($userId, $inventoryId = null, $order = 'DESC'): array
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         try {
@@ -166,12 +166,17 @@ class PurchaseModel {
                 FROM purchases p
                 LEFT JOIN providers pr ON p.provider_id = pr.id
                 WHERE p.user_id = :user
+                " . ($inventoryId ? "AND p.inventory_id = :inv" : "") . "
                 ORDER BY p.id $order 
                 LIMIT 50
             ";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([':user' => $userId]);
+            $params = [':user' => $userId];
+            if ($inventoryId) {
+                $params[':inv'] = $inventoryId;
+            }
+            $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             return array_map(function($row) {
@@ -240,7 +245,7 @@ class PurchaseModel {
         }
     }
 
-    public function getDetails($purchaseId, $userId): ?array
+    public function getDetails($purchaseId, $userId, $inventoryId = null): ?array
     {
         try {
             $stmt = $this->db->prepare("
@@ -248,8 +253,13 @@ class PurchaseModel {
                 FROM purchases p
                 LEFT JOIN providers pr ON p.provider_id = pr.id
                 WHERE p.id = :id AND p.user_id = :user
+                " . ($inventoryId ? " AND p.inventory_id = :inv" : "") . "
             ");
-            $stmt->execute([':id' => $purchaseId, ':user' => $userId]);
+            $params = [':id' => $purchaseId, ':user' => $userId];
+            if ($inventoryId) {
+                $params[':inv'] = $inventoryId;
+            }
+            $stmt->execute($params);
             $purchase = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$purchase) return null;

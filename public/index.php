@@ -34,6 +34,11 @@ $showDashboard = $currentUser ? '' : 'hidden';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
 
+<div id="imgModal" class="img-modal" aria-hidden="true">
+    <button class="img-modal-close" type="button" aria-label="Cerrar">✕</button>
+    <img id="imgModalContent" alt="">
+</div>
+
 <body id="page-index">
 
 <div class="side-nav">
@@ -49,10 +54,10 @@ $showDashboard = $currentUser ? '' : 'hidden';
     </a>
     <nav id="header-nav" style="display: flex; gap: 10px;">
         <?php if ($currentUser): ?>
-            <a href="dashboard.php" class="btn btn-primary" style="margin:0;">Dashboard</a>
+            <a href="select-db.php" class="btn btn-primary" style="margin:0;">Ir al Panel</a>
             <a href="logout.php" class="btn btn-secondary" style="margin:0;">Cerrar Sesión</a>
         <?php else: ?>
-            <a href="login.php" class="btn btn-secondary" style="margin:0;">Login</a>
+            <a href="login.php" class="btn btn-secondary" style="margin:0;">Iniciar Sesión</a>
         <?php endif; ?>
     </nav>
 </header>
@@ -127,7 +132,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
                     <h2>¡Bienvenido, <?php echo $nombre ?>!</h2>
                     <p>Estamos felices por volver a verte.</p>
                     <div class="menu-buttons">
-                        <a href="dashboard.php" class="btn btn-primary">Ir al Panel</a>
+                        <a href="select-db.php" class="btn btn-primary">Ir al Panel</a>
                     </div>
                 </div>
             </div>
@@ -235,7 +240,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                 <div class="swiper-slide">
                     <div class="slide-img-container">
-                        <img src="./assets/img/Diseño%20sin%20título%20(3).png" alt="Tablas">
+                        <img src="./assets/img/1.png" alt="Tablas">
                     </div>
                     <div class="slide-content">
                         <i class="ph ph-table slide-icon"></i>
@@ -246,12 +251,12 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                 <div class="swiper-slide">
                     <div class="slide-img-container">
-                        <img src="./assets/img/Diseño%20sin%20título%20(6).png" alt="Usuarios">
+                        <img src="./assets/img/opera_htUkWOenpo.png" alt="Usuarios">
                     </div>
                     <div class="slide-content">
                         <i class="ph ph-users slide-icon"></i>
-                        <h3>Gestión de Usuarios</h3>
-                        <p>Control de acceso y permisos para todo tu equipo.</p>
+                        <h3>Gestión Humana</h3>
+                        <p>Controlá quiénes son tus clientes, proveedores o vendedores para poder asignarles una comisión.</p>
                     </div>
                 </div>
 
@@ -295,7 +300,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
 </div>
 
-<script src="assets/js/main.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

@@ -9,7 +9,13 @@ use App\Models\PurchaseModel;
 $user = getCurrentUser();
 if (!$user) { echo json_encode(['success'=>false]); exit; }
 
+$activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+if (!$activeInventoryId) {
+    echo json_encode(['success' => false, 'message' => 'No hay inventario activo seleccionado']);
+    exit;
+}
+
 $model = new PurchaseModel();
-$purchases = $model->getHistory($user['id'], $_GET['order'] ?? 'desc');
+$purchases = $model->getHistory($user['id'], $activeInventoryId, $_GET['order'] ?? 'desc');
 
 echo json_encode(['success' => true, 'purchases' => $purchases]);

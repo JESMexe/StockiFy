@@ -11,43 +11,48 @@ try {
     $pdo = Database::getInstance();
     $user = getCurrentUser();
     $user_id = $_SESSION['user_id'];
+    $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
 
-    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? ORDER BY sale_date DESC");
-    $stmt ->execute([$user_id]);
+    if (!$user || !$activeInventoryId) {
+        throw new Exception('No autorizado o sin inventario activo');
+    }
+
+    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY sale_date DESC");
+    $stmt ->execute([$user_id, $activeInventoryId]);
     $dateDescending = $stmt->fetchAll();
 
-    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? ORDER BY sale_date ASC");
-    $stmt ->execute([$user_id]);
+    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY sale_date ASC");
+    $stmt ->execute([$user_id, $activeInventoryId]);
     $dateAscending = $stmt->fetchAll();
 
     $date = ['ascending' => $dateAscending, 'descending' => $dateDescending];
 
-    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? ORDER BY customer_id DESC");
-    $stmt ->execute([$user_id]);
+    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY customer_id DESC");
+    $stmt ->execute([$user_id, $activeInventoryId]);
     $customerDescending = $stmt->fetchAll();
 
-    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? ORDER BY customer_id ASC");
-    $stmt ->execute([$user_id]);
+    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY customer_id ASC");
+    $stmt ->execute([$user_id, $activeInventoryId]);
     $customerAscending = $stmt->fetchAll();
 
     $customer = ['ascending' => $customerAscending, 'descending' => $customerDescending];
 
-    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? ORDER BY id DESC");
-    $stmt ->execute([$user_id]);
+    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY id DESC");
+    $stmt ->execute([$user_id, $activeInventoryId]);
     $idDescending = $stmt->fetchAll();
 
-    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? ORDER BY id ASC");
-    $stmt ->execute([$user_id]);
+    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY id ASC");
+    $stmt ->execute([$user_id, $activeInventoryId]);
     $idAscending = $stmt->fetchAll();
 
     $id = ['ascending' => $idAscending, 'descending' => $idDescending];
 
-    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? ORDER BY total_amount DESC");
-    $stmt ->execute([$user_id]);
+    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY total_amount DESC");
+    $stmt ->execute([$user_id, $activeInventoryId]);
     $priceDescending = $stmt->fetchAll();
 
-    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? ORDER BY total_amount ASC");
-    $stmt ->execute([$user_id]);
+    $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY total_amount ASC");
+    $stmt ->execute([$user_id, $activeInventoryId]);
     $priceAscending = $stmt->fetchAll();
 
     $price = ['ascending' => $priceAscending, 'descending' => $priceDescending];

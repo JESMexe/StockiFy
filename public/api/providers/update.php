@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json');
+if (session_status() === PHP_SESSION_NONE) session_start();
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -14,14 +15,17 @@ try {
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
 
-    $input = json_decode(file_get_contents('php://input'), true);
+    
+$inventoryId = $_SESSION['active_inventory_id'] ?? null;
+if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
+$input = json_decode(file_get_contents('php://input'), true);
 
     if (empty($input['id']) || empty($input['name'])) {
         echo json_encode(['success'=>false, 'message'=>'Datos incompletos']); exit;
     }
 
     $model = new ProviderModel();
-    $success = $model->updateProvider($input['id'], $user['id'], $input);
+    $success = $model->updateProvider($input['id'], $user['id'], $input, $inventoryId);
 
     echo json_encode(['success' => $success]);
 

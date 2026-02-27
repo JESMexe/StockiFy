@@ -2,7 +2,6 @@
 
 /* --- TÍTULOS --- */
 .about-title {
-    padding-top: 100px;
     z-index: 2;
     font-size: 3rem;
     width: 80%;
@@ -23,7 +22,6 @@
 }
 
 #acerca-de-container {
-    margin-top: 100px;
     width: 100%;
     padding: 0 20px;
 }

@@ -35,12 +35,14 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function linkGoogleAccount(int $userId, string $googleId) {
+    public function linkGoogleAccount(int $userId, string $googleId): bool
+    {
         $stmt = $this->db->prepare("UPDATE users SET google_id = :gid WHERE id = :id");
         return $stmt->execute([':gid' => $googleId, ':id' => $userId]);
     }
 
-    public function createFromGoogle(array $data) {
+    public function createFromGoogle(array $data): bool|string
+    {
         // Crea usuario con datos de Google y contraseña aleatoria (ya que entra por Google)
         $tempPass = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
 

@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json');
+if (session_status() === PHP_SESSION_NONE) session_start();
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -16,8 +17,11 @@ try {
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false]); exit; }
 
-    $model = new ProviderModel();
-    $providers = $model->getAll($user['id'], $_GET['order'] ?? 'desc');
+    
+$inventoryId = $_SESSION['active_inventory_id'] ?? null;
+if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
+$model = new ProviderModel();
+    $providers = $model->getAll($user['id'], $_GET['order'] ?? 'desc', $inventoryId);
 
     echo json_encode(['success'=>true, 'providers'=>$providers]);
 

@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json');
+if (session_status() === PHP_SESSION_NONE) session_start();
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -16,7 +17,7 @@ try {
     if (!$user || !$id) { echo json_encode(['success'=>false]); exit; }
 
     $model = new ProviderModel();
-    $provider = $model->getById($id, $user['id']);
+    $provider = $model->getById($id, $user['id'], $inventoryId);
 
     if ($provider) echo json_encode(['success'=>true, 'provider'=>$provider]);
     else echo json_encode(['success'=>false, 'message'=>'No encontrado']);

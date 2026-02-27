@@ -188,7 +188,9 @@ async function renderTable(columns, data) {
         if (!columnMapping.name) {
             const prefs = await api.getCurrentInventoryPreferences();
             if (prefs && prefs.success) {
-                if(prefs.mapping) columnMapping = prefs.mapping;
+                if(prefs.mapping) window.columnMapping = prefs.mapping;
+                window.columnMapping = columnMapping;
+                window.activeFeatures = activeFeatures;
                 if(prefs.features) activeFeatures = prefs.features;
 
                 // Cargar visibilidad y orden si existen

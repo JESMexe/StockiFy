@@ -99,7 +99,7 @@
                 </div>
             </div>
 
-            <div id="message" style="margin-top: 1rem; color: var(--accent-red);"></div>
+            <div id="message" style="margin-top: 1rem; color: var(--accent-green);"></div>
 
             <button type="submit" class="btn btn-primary">Crear Base de Datos</button>
 

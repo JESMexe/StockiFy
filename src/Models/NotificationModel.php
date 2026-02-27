@@ -41,11 +41,13 @@ class NotificationModel
     public function deleteById(int $notificationId, int $userId): bool
     {
         $stmt = $this->db->prepare(
-            "DELETE FROM notifications WHERE id = :id AND user_id = :user_id"
+            "DELETE FROM notifications WHERE id = :id AND user_id = :user_id AND inventory_id = :inventory_id"
         );
+        $inventoryId = $_SESSION['active_inventory_id'] ?? 0;
         return $stmt->execute([
             ':id' => $notificationId,
-            ':user_id' => $userId
+            ':user_id' => $userId,
+            ':inventory_id' => $inventoryId
         ]);
     }
 }

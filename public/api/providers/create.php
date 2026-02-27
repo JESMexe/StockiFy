@@ -1,6 +1,7 @@
 <?php
 // public/api/providers/create.php
 header('Content-Type: application/json');
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Desactivar errores HTML para no romper JSON
 ini_set('display_errors', 0);
@@ -24,7 +25,10 @@ try {
         exit;
     }
 
-    // 3. Leer JSON (Plano, sin 'provider' wrapper)
+    
+$inventoryId = $_SESSION['active_inventory_id'] ?? null;
+if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
+// 3. Leer JSON (Plano, sin 'provider' wrapper)
     $input = json_decode(file_get_contents('php://input'), true);
 
     // Validación básica
@@ -36,7 +40,7 @@ try {
     // 4. Guardar usando el Modelo
     $model = new ProviderModel();
     // Pasamos el array $input directo porque el modelo ya sabe qué campos usar
-    $id = $model->createProvider($user['id'], $input);
+    $id = $model->createProvider($user['id'], $input, $inventoryId);
 
     if ($id) {
         echo json_encode(['success' => true, 'id' => $id]);

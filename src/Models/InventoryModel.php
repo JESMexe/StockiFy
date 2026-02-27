@@ -270,7 +270,7 @@ class InventoryModel
      */
     public function sanitizeColumnName(string $columnName): string
     {
-        $safeName = preg_replace('/[^a-zA-Z0-9_]/', '', $columnName);
+        $safeName = preg_replace('/[^a-zA-Z0-9_ ]/', '', $columnName);
         if (empty($safeName) || is_numeric(substr($safeName, 0, 1))) {
             throw new \InvalidArgumentException("El nombre de la columna es inválido.");
         }
@@ -280,7 +280,7 @@ class InventoryModel
     public function sanitizeTableName(string $baseTableName): string
     {
         // La misma lógica que usábamos antes, ahora encapsulada
-        $safeBaseName = preg_replace('/[^a-zA-Z0-9_]/', '', $baseTableName);
+        $safeBaseName = preg_replace('/[^a-zA-Z0-9_ ]/', '', $baseTableName);
         if (empty($safeBaseName)) {
             throw new \InvalidArgumentException("El nombre base de la tabla es inválido después de sanitizar.");
         }
@@ -313,10 +313,10 @@ class InventoryModel
     /**
      * Actualiza la lista de columnas (metadatos) en la tabla user_tables.
      */
-    private function updateInventoryColumns(int $inventoryId, array $columns): bool
+    private function updateInventoryColumns(int $inventoryId, array $columns): void
     {
         $stmt = $this->db->prepare("UPDATE user_tables SET columns_json = ? WHERE inventory_id = ?");
-        return $stmt->execute([json_encode($columns), $inventoryId]);
+        $stmt->execute([json_encode($columns), $inventoryId]);
     }
 
     /**

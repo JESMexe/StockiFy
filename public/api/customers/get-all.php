@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json');
 
+if (session_status() === PHP_SESSION_NONE) session_start();
+
 // Reporte de errores OFF para producción (evita romper JSON)
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -25,8 +27,14 @@ try {
         exit;
     }
 
+    $inventoryId = $_SESSION['active_inventory_id'] ?? null;
+    if (!$inventoryId) {
+        echo json_encode(['success' => false, 'message' => 'Inventario no seleccionado']);
+        exit;
+    }
+
     $model = new CustomerModel();
-    $customers = $model->getAll($user['id'], $_GET['order'] ?? 'desc');
+    $customers = $model->getAll($user['id'], $_GET['order'] ?? 'desc', $inventoryId);
 
     echo json_encode(['success' => true, 'customers' => $customers]);
 

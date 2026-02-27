@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json');
+if (session_status() === PHP_SESSION_NONE) session_start();
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -15,7 +16,10 @@ try {
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
 
-    $input = json_decode(file_get_contents('php://input'), true);
+    
+$inventoryId = $_SESSION['active_inventory_id'] ?? null;
+if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
+$input = json_decode(file_get_contents('php://input'), true);
 
     if (empty($input['name'])) { echo json_encode(['success'=>false, 'message'=>'Nombre obligatorio']); exit; }
 
@@ -24,7 +28,7 @@ try {
     $email = $input['email'] ?? null;
 
     $model = new EmployeeModel();
-    $id = $model->createEmployee($user['id'], $input['name'], $dni, $phone, $email);
+    $id = $model->createEmployee($user['id'], $input['name'], $dni, $phone, $email, $inventoryId);
 
     if ($id) echo json_encode(['success'=>true, 'id'=>$id]);
     else echo json_encode(['success'=>false, 'message'=>'Error al crear']);

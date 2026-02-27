@@ -75,7 +75,7 @@ export class SalesModule {
                 <div class="table-header">
                     <h2>Gestión de Ventas</h2>
                     <div class="table-controls">
-                        <button id="sales-renumber-btn" class="btn btn-secondary" title="Renumerar IDs"><i class="ph ph-list-numbers"></i></button>
+                        <button id="sales-renumber-btn" class="btn btn-secondary hidden" title="Renumerar IDs"><i class="ph ph-list-numbers"></i></button>
                         <button id="sales-sort-btn" class="btn btn-secondary" title="Ordenar por Fecha/ID"><i class="ph ph-sort-ascending" id="sales-sort-icon"></i></button>
                         <button id="sales-create-btn" class="btn btn-primary">+ Nueva Venta</button>
                     </div>
@@ -635,7 +635,7 @@ export class SalesModule {
         b.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Cargando...</td></tr>';
         try {
             const data = await getSalesHistory(order);
-            if(!data.success || !data.sales || data.sales.length === 0) { b.innerHTML='<tr><td colspan="5" style="text-align:center; padding:20px;">Sin ventas registradas</td></tr>'; return; }
+            if(!data.success || !data.sales || data.sales.length === 0) { b.innerHTML='<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No hay ventas registradas</td></tr>'; return; }
             b.innerHTML = data.sales.map(s => {
                 const dateStr = s.created_at; const total = s.total; const seller = s.seller_name; const comm = s.commission;
                 let payBadge = '';

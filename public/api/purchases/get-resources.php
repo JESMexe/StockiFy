@@ -28,8 +28,8 @@ try {
     // 1. PROVEEDORES
     $providers = [];
     try {
-        $stmt = $db->prepare("SELECT id, full_name FROM providers WHERE user_id = ? ORDER BY full_name ASC");
-        $stmt->execute([$userId]);
+        $stmt = $db->prepare("SELECT id, full_name FROM providers WHERE user_id = ? AND inventory_id = ? ORDER BY full_name ASC");
+        $stmt->execute([$userId, $activeInventoryId]);
         $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {}
 

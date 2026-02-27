@@ -96,6 +96,11 @@ export async function getCurrentInventoryDefaults() {
     return handleResponse(response);
 }
 
+export async function getInventoryProductsForChecker() {
+    const response = await fetch('/api/inventory/get-products.php');
+    return handleResponse(response);
+}
+
 export async function setCurrentInventoryPreferences(preferences) {
     const response = await fetch('/api/database/set-preferences-current.php', {
         method: 'POST',

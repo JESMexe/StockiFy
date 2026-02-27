@@ -159,7 +159,7 @@ class SalesModel {
         } catch (Exception $e) { $this->db->rollBack(); return false; }
     }
 
-    public function getHistory($userId, $order = 'DESC'): array
+    public function getHistory($userId, $inventoryId = null, $order = 'DESC'): array
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         try {
@@ -186,12 +186,17 @@ class SalesModel {
                 FROM sales s
                 LEFT JOIN customers c ON s.customer_id = c.id
                 WHERE s.user_id = :user
+                " . ($inventoryId ? "AND s.inventory_id = :inv" : "") . "
                 ORDER BY s.sale_date $order
                 LIMIT 100
             ";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([':user' => $userId]);
+            $params = [':user' => $userId];
+            if ($inventoryId) {
+                $params[':inv'] = $inventoryId;
+            }
+            $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Procesamos el string para convertirlo en el array que espera tu JS
@@ -213,7 +218,7 @@ class SalesModel {
         }
     }
 
-    public function getDetails($saleId, $userId): ?array {
+    public function getDetails($saleId, $userId, $inventoryId = null): ?array {
         try {
             // 1. Cabecera (Traemos datos de la tabla nueva 'sales')
             $stmt = $this->db->prepare("
@@ -229,8 +234,13 @@ class SalesModel {
                 LEFT JOIN employees e ON s.seller_id = e.id
                 LEFT JOIN users u ON s.seller_id = u.id
                 WHERE s.id = :id AND s.user_id = :user
+                " . ($inventoryId ? " AND s.inventory_id = :inv" : "") . "
             ");
-            $stmt->execute([':id' => $saleId, ':user' => $userId]);
+            $params = [':id' => $saleId, ':user' => $userId];
+            if ($inventoryId) {
+                $params[':inv'] = $inventoryId;
+            }
+            $stmt->execute($params);
             $sale = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$sale) return null;

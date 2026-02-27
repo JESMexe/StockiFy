@@ -208,7 +208,7 @@ export class CustomerModule {
             email: document.getElementById('cust-email').value,
             address: document.getElementById('cust-address').value,
             birth_date: document.getElementById('cust-birth').value,
-            currency: document.getElementById('pay-currency').value,
+            // currency: document.getElementById('pay-currency').value,
         };
 
         // Decidimos endpoint
@@ -245,11 +245,6 @@ export class CustomerModule {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
 
         try {
-            // Nota: Aquí llamamos a la API pero pasamos el orden manualmente si la función lo soporta,
-            // o usamos la API directa de clientes si getCustomerList no admite parámetros aún.
-            // Asumiremos que api.getCustomerList acepta 'order' o haremos el fetch directo para asegurar.
-
-            // Opción Fetch directo para asegurar el ordenamiento:
             const response = await fetch('/api/customers/get-all.php?order=' + order);
             const data = await response.json();
 
@@ -257,7 +252,7 @@ export class CustomerModule {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="4" class="text-center" style="padding:3rem; color:#888;">
-                            <i class="ph ph-users" style="font-size:2rem; margin-bottom:10px;"></i>
+                            <i class="ph ph-user-focus" style="font-size:2rem; margin-bottom:10px;"></i>
                             <p>No hay clientes registrados.</p>
                         </td>
                     </tr>`;
@@ -316,7 +311,7 @@ export class CustomerModule {
         document.getElementById('cust-email').value = c.email || '';
         document.getElementById('cust-address').value = c.address || '';
         document.getElementById('cust-birth').value = c.birth_date || '';
-        document.getElementById('pay-currency').value = method.currency || 'ARS';
+        //document.getElementById('pay-currency').value = method.currency || 'ARS';
 
         const m = document.getElementById('create-customer-modal');
         m.classList.remove('hidden');

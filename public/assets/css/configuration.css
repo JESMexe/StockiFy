@@ -11,7 +11,7 @@
 }
 
 .config-layout-wrapper {
-    display: flex;
+    display: block;
     gap: 0; /* Unimos sidebar y ventana para que parezca una sola pieza */
 
     /* BLOQUEO DE DIMENSIONES: No se mueve por nada */

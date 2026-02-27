@@ -11,9 +11,11 @@ try {
     $pdo = Database::getInstance();
     $user = getCurrentUser();
     $user_id = $_SESSION['user_id'];
+    $inventoryId = $_SESSION['active_inventory_id'] ?? null;
+    if (!$inventoryId) throw new Exception('Inventario no seleccionado');
 
-    $clients = $pdo->prepare("SELECT * FROM customers WHERE user_id = ?");
-    $clients ->execute([$user_id]);
+    $clients = $pdo->prepare("SELECT * FROM customers WHERE user_id = ? AND inventory_id = ?");
+    $clients ->execute([$user_id, $inventoryId]);
     $clients = $clients->fetchAll();
 
     $response = ['clientList' => $clients, 'success' => true];

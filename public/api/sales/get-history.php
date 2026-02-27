@@ -16,12 +16,19 @@ try {
         exit;
     }
 
+    // Inventario activo (evita mezclar ventas entre DBs)
+    $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+    if (!$activeInventoryId) {
+        echo json_encode(['success' => false, 'message' => 'No hay inventario activo seleccionado']);
+        exit;
+    }
+
     // 2. Instanciar el Modelo
     $model = new SalesModel();
 
     // CORRECCIÓN AQUÍ: Usamos getHistory, NO getAll
     // getAll() ya no existe en el modelo nuevo, por eso te daba error.
-    $sales = $model->getHistory($user['id'], $_GET['order'] ?? 'desc');
+    $sales = $model->getHistory($user['id'], $activeInventoryId, $_GET['order'] ?? 'desc');
 
     // 3. Respuesta limpia
     // Nota: El modelo ya devuelve los datos limpios y formateados,

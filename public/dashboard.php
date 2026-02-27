@@ -303,7 +303,7 @@
 
                     <div class="accordion-item">
                         <button class="accordion-header" aria-expanded="false">
-                            <span>Gestionar Columnas Manuales</span>
+                            <span><i class="ph-bold ph-columns"></i> Gestionar Columnas Manuales</span>
                             <i class="ph ph-caret-down"></i>
                         </button>
                         <div class="accordion-content">

@@ -15,6 +15,16 @@ html, body {
     background-size: 24px 24px;
 }
 
+.about-title {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.flex-column .all-center {
+    margin-top: 0;
+    padding-top: 0;
+}
+
 .scroll-container {
     height: 100vh;
     width: 100%;
@@ -153,42 +163,47 @@ header {
     background: #fff;
 
     /* ANCHO Y ALTO */
-    width: 550px; /* Ancho suficiente para ver detalles */
+    min-width: 1300px;
     height: auto; /* La altura se adapta al contenido */
+    min-height: unset;
 
     /* Estilo Brutalista */
     border: 3px solid #1b1b1b;
-    border-radius: 0px;
-    box-shadow: 10px 10px 0px #1b1b1b;
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 5px 5px 0 var(--color-gray);
 
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     padding: 0;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.5s ease, box-shadow 0.5s ease-in;
 }
 
 .swiper-slide:hover {
     transform: translate(5px, 5px);
-    box-shadow: 5px 5px 0px #1b1b1b;
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 5px 5px 0 var(--accent-color);
+    transition: transform 0.5s ease, box-shadow 0.5s ease-out;
 }
 
 /* CONTENEDOR DE IMAGEN 16:9 */
-.slide-img-container {
+/* El contenedor NO fuerza ratio */
+.slide-img-container{
     width: 100%;
-    /* ESTO ES LA CLAVE: Relación de aspecto forzada */
-    aspect-ratio: 16 / 9;
-    border-bottom: 3px solid #1b1b1b;
+    border-bottom: var(--border-strong);
     overflow: hidden;
     background: #f0f0f0;
     flex-shrink: 0;
 }
 
-.slide-img-container img {
+/* La imagen define el alto */
+.slide-img-container img{
     width: 100%;
-    height: 100%;
-    object-fit: cover; /* Cubre todo el cuadro 16:9 */
-    object-position: top center; /* Muestra la parte de arriba de la captura (el header de la app) */
+    height: auto;           /* clave */
+    object-fit: initial;    /* o unset */
+    display: block;
     transition: transform 0.5s ease;
 }
 
@@ -197,13 +212,17 @@ header {
 }
 
 .slide-content {
-    padding: 1.5rem;
+    padding: 1.2rem 1.5rem 1.4rem 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     text-align: left;
     width: 100%;
     box-sizing: border-box;
+}
+
+.slide-content p {
+    margin-bottom: 0;
 }
 
 .slide-icon {
@@ -297,4 +316,118 @@ header {
 #section-gallery .swiper {
     padding: 20px 20px 60px 20px; /* Ajuste de padding interno del carrusel */
     flex-grow: 1; /* Hace que el carrusel ocupe el espacio blanco disponible */
+}
+
+/* =========================================================
+   FIX GALERÍA + FOOTER (Index / sección gallery)
+   Pegar al FINAL de public/assets/css/index.css
+========================================================= */
+
+/* 1) La sección gallery no necesita tanto aire arriba */
+#section-gallery{
+    padding-top: 90px !important;     /* antes 120px */
+    justify-content: flex-start;
+    gap: 18px;                        /* antes 40px */
+}
+
+/* Título más compacto (tu div tenía margin-top:4rem inline) */
+#section-gallery > div[style*="margin-top"]{
+    margin-top: 0 !important;
+}
+
+/* 2) Swiper: menos padding global, más control */
+#section-gallery .swiper{
+    padding: 18px 20px 55px 20px !important; /* antes 20/60 etc */
+    width: 100%;
+}
+
+/* 3) Tarjeta: ancho más flexible y consistente */
+#section-gallery .swiper-slide{
+    width: min(720px, 92vw) !important; /* evita que se pase */
+}
+
+/* 4) Imagen: que se vea COMPLETA (no recorte) */
+#section-gallery .slide-img-container{
+    aspect-ratio: 16 / 8.5 !important;
+    background: #f6f6f6;
+}
+
+#section-gallery .slide-img-container img{
+    object-fit: contain !important;     /* antes cover */
+    object-position: center !important;
+    background: #f6f6f6;
+}
+
+/* 5) Footer dentro de la sección: hacerlo “fino” y sin romper ancho */
+.footer-snap{
+    margin-top: 18px !important;        /* antes auto */
+    min-width: 0 !important;            /* antes 1000px */
+    padding: 1.5rem 1.2rem 1rem 1.2rem; /* antes 3rem... */
+    border-top: 6px solid var(--accent-color-quat-opacity);
+}
+
+.footer-container{
+    max-width: 1100px;
+}
+
+.footer-brand img{
+    width: 220px !important;            /* antes 300px inline */
+    max-width: 70vw;
+    height: auto;
+}
+
+.footer-bottom{
+    padding-top: 1rem !important;       /* antes 3rem */
+    border-top: 1px solid rgba(255,255,255,0.55);
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+/* 6) En mobile: que no explote nada */
+@media (max-width: 768px){
+    #section-gallery{
+        padding-top: 78px !important;
+        gap: 14px;
+    }
+
+    .footer-bottom{
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+}
+
+/* a */
+
+/* Lightbox simple */
+.img-modal{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.82);
+    z-index: 9999;
+    padding: 24px;
+}
+.img-modal.is-open{ display: flex; align-items: center; justify-content: center; }
+
+.img-modal img{
+    max-width: 96vw;
+    max-height: 92vh;
+    object-fit: contain;
+    background: #111;
+    border-radius: 10px;
+}
+
+.img-modal-close{
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(0,0,0,.35);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
 }

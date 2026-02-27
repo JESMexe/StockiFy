@@ -172,7 +172,10 @@ export class PaymentsModule {
                 const m = res.methods.find(i => i.id == b.dataset.id);
                 this.openEdit(m);
             }));
-            container.querySelectorAll('.delete-trigger').forEach(b => b.addEventListener('click', () => this.deleteMethod(b.dataset.id)));
+            container.querySelectorAll('.delete-trigger').forEach(b => b.addEventListener('click', () => {
+                const method = res.methods.find(i => i.id == b.dataset.id);
+                this.deleteMethod(method.id, method.name);
+            }));
 
         } catch (e) { container.innerHTML = 'Error al cargar'; }
     }
@@ -225,13 +228,23 @@ export class PaymentsModule {
         } catch(e) { console.error(e); }
     }
 
-    async deleteMethod(id) {
-        if(!confirm("¿Borrar este método?")) return;
+    async deleteMethod(id, name = '') {
+        if (!await pop_ups.confirm("¿Borrar este método?")) return;
+
         try {
             const res = await deletePaymentMethod(id);
-            if(res.success) { pop_ups.success("Eliminado"); this.loadMethods(); }
-            else pop_ups.error(res.message);
-        } catch(e) { console.error(e); }
+
+            if (res.success) {
+                const label = name ? ` "${name}"` : '';
+                pop_ups.info(`Método de pago ${label} eliminado.`, "Eliminado");
+                this.loadMethods();
+            } else {
+                pop_ups.error(res.message || "No se pudo eliminar");
+            }
+        } catch (e) {
+            console.error(e);
+            pop_ups.error("Error de conexión");
+        }
     }
 }
 

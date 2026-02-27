@@ -90,3 +90,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if(yearEl) yearEl.textContent = new Date().getFullYear();
     }
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("imgModal");
+    const modalImg = document.getElementById("imgModalContent");
+    const closeBtn = document.querySelector(".img-modal-close");
+
+    if (!modal || !modalImg || !closeBtn) return;
+
+    document.querySelectorAll("#section-gallery .slide-img-container img").forEach(img => {
+        img.style.cursor = "zoom-in";
+        img.addEventListener("click", () => {
+            modal.classList.add("is-open");
+            modal.setAttribute("aria-hidden", "false");
+            modalImg.src = img.src;
+            modalImg.alt = img.alt || "Captura";
+            document.body.style.overflow = "hidden";
+        });
+    });
+
+    function close(){
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+        modalImg.src = "";
+        document.body.style.overflow = "";
+    }
+
+    closeBtn.addEventListener("click", close);
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+});

@@ -16,7 +16,7 @@ header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $userId = $_SESSION['user_id'] ?? null;
-$inventoryId = $_SESSION['inventory_id'] ?? null;
+$inventoryId = $_SESSION['active_inventory_id'] ?? ($_SESSION['inventory_id'] ?? null);
 
 if (!$userId) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -39,19 +39,19 @@ try {
     $topProducts = $model->getTopProducts($userId, $inventoryId);
 
     // 5. Distribución de Pagos (Gráfico de Dona)
-    $paymentDist = $model->getPaymentDistribution($userId);
+    $paymentDist = $model->getPaymentDistribution($userId, $inventoryId);
 
     // 6. Distribución por Moneda
-    $currencyDist = $model->getCurrencyDistribution($userId);
+    $currencyDist = $model->getCurrencyDistribution($userId, $inventoryId);
 
     // 7. Top Clientes
-    $topClients = $model->getTopClients($userId);
+    $topClients = $model->getTopClients($userId, $inventoryId);
 
     // 8. Horarios Pico
-    $peakHours = $model->getPeakHours($userId);
+    $peakHours = $model->getPeakHours($userId, $inventoryId);
 
     // 9. Top Vendedores
-    $topSellers = $model->getTopSellers($userId);
+    $topSellers = $model->getTopSellers($userId, $inventoryId);
 
     echo json_encode([
         'success' => true,

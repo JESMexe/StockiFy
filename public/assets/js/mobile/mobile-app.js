@@ -3,6 +3,7 @@
  * Lógica exclusiva para la versión móvil.
  */
 import { pop_ups } from "../notifications/pop-up.js";
+import * as api from "../api.js";
 
 export function initMobileApp() {
     console.log("📱 StockiFy Mobile Mode Iniciado");
@@ -103,22 +104,51 @@ window.openMobileTransaction = function(type) {
     }, 100);
 };
 
-// ... (MANTÉN AQUÍ EL CÓDIGO DE PRICE CHECKER Y CIERRE DE CAJA IGUAL QUE ANTES) ...
-// Copia el resto de funciones (openMobilePriceChecker, openCashBalance, etc)
-// tal cual las tenías en la versión anterior.
+async function ensureMobileMappingLoaded() {
+    // Ya está cargado
+    if (window.columnMapping && Object.keys(window.columnMapping).length) return true;
+
+    try {
+        const res = await fetch('/api/inventory/get-preferences.php'); // 👈 ajustá si tu endpoint difiere
+        const data = await res.json();
+
+        if (data.success && data.mapping) {
+            window.columnMapping = data.mapping;
+            console.log("✅ Mapping cargado en móvil:", window.columnMapping);
+            return true;
+        }
+
+        console.warn("⚠️ No se pudo obtener mapping:", data);
+        return false;
+    } catch (e) {
+        console.warn("⚠️ Error cargando mapping en móvil:", e);
+        return false;
+    }
+}
 
 // --------------------------------------------------------
 // 2. CONSULTOR DE PRECIOS (PRICE CHECKER)
 // --------------------------------------------------------
-window.openMobilePriceChecker = function() {
+window.openMobilePriceChecker = async function() {
     const modal = document.getElementById('mobile-price-checker-modal');
-    if (modal) {
+    if (!modal) return;
+
+    try {
+        await ensureCheckerDataLoaded();
+
         modal.classList.remove('hidden');
+
         const input = document.getElementById('checker-input');
-        input.value = ''; input.focus();
+        input.value = '';
+        input.focus();
+
         document.getElementById('checker-result').classList.add('hidden');
         document.getElementById('checker-error').classList.add('hidden');
-        window.renderCheckerList(window.allData || []);
+
+        window.renderCheckerList(window.allData);
+    } catch (e) {
+        console.error(e);
+        pop_ups.error(e.message || "Error al cargar datos");
     }
 };
 
@@ -193,7 +223,10 @@ window.performPriceCheck = function(directProduct = null) {
 // --------------------------------------------------------
 window.openCashBalance = function() {
     const modal = document.getElementById('mobile-balance-modal');
-    if(modal) { modal.classList.remove('hidden'); window.loadBalanceData('today'); }
+    if(modal) {
+        modal.classList.remove('hidden');
+        window.loadBalanceData('today');
+    }
 };
 window.closeCashBalance = function() {
     document.getElementById('mobile-balance-modal').classList.add('hidden');
@@ -222,3 +255,27 @@ window.loadBalanceData = async function(period) {
         } else { totalEl.textContent = "Error"; pop_ups.error("Error al cargar datos."); }
     } catch (error) { totalEl.textContent = "Error"; pop_ups.error("Error de conexión."); }
 };
+
+async function ensureCheckerDataLoaded() {
+    // 1) Mapping
+    if (!window.columnMapping) {
+        const pref = await api.getCurrentInventoryPreferences();
+        if (!pref.success) throw new Error("No se pudo cargar preferencias");
+        window.columnMapping = pref.mapping || {};
+    }
+
+    // Validación real: sale_price / stock / name (lo mínimo)
+    const map = window.columnMapping;
+    if (!map.name || !map.stock || !map.sale_price) {
+        throw new Error("Falta configurar columnas (Nombre/Stock/Precio de venta)");
+    }
+
+    // 2) Productos
+    if (!window.allData || !Array.isArray(window.allData) || window.allData.length === 0) {
+        const prod = await api.getInventoryProductsForChecker();
+        if (!prod.success) throw new Error("No se pudieron cargar productos");
+        window.allData = prod.data || prod.products || [];
+    }
+
+    return true;
+}

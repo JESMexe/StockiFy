@@ -3,9 +3,9 @@
 export const ui_helper = {
     // Definimos los tipos de botones para no repetir código
     buttons: {
-        dashboard: () => `<a href="/dashboard.php" class="btn btn-secondary">Ir al Panel</a>`,
+        dashboard: () => `<a href="/select-db.php" class="btn btn-secondary">Ir al Panel</a>`,
         config: () => `<a href="/configuration.php" class="btn btn-secondary">Configuración</a>`,
-        logout: () => `<a href="/logout.php" class="btn btn-secondary">Salir</a>`,
+        logout: () => `<a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>`,
 
         // El Dropdown es un componente más complejo
         userDropdown: (extraLinks = []) => {
@@ -45,9 +45,7 @@ export const ui_helper = {
                 html = this.buttons.dashboard() + this.buttons.userDropdown();
                 break;
             case 'dashboard':
-                html = this.buttons.userDropdown([
-                    { label: 'Historial', href: '#', icon: 'ph-clock-counter-clockwise' }
-                ]);
+                html = this.buttons.userDropdown();
                 break;
             case 'config':
                 html = this.buttons.dashboard() + this.buttons.logout();

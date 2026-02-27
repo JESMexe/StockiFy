@@ -242,7 +242,7 @@
 }
 
 /* Vistas dentro del contenido principal */
-.dashboard-view { height: 100%;/* Ocultas por defecto con .hidden */ }
+.dashboard-view { height: 100%; }
 
 
 /* Contenedor de la Tabla */
@@ -410,7 +410,7 @@ table {
 }
 
 #config-db,
-#notifications, #providers, #customers, #receipts, #sales, #analysis {
+#notifications, #providers, #customers, #receipts, #sales, #analysis, #employees {
     width: 90%;
     background-color: var(--color-white);
     border: var(--border-strong);
@@ -3301,6 +3301,9 @@ body.no-scroll {
     display: none !important;
 }
 
+*, *::before, *::after { box-sizing: border-box; }
+html, body { width: 100%; overflow-x: hidden; }
+
 /* --- CUANDO ES CELULAR (Menos de 768px) --- */
 @media (max-width: 768px) {
 
@@ -3532,6 +3535,19 @@ body.no-scroll {
 
     .detail-row h4 { margin: 0; font-size: 1.1rem; }
     .detail-row span { font-size: 0.9rem; color: #64748b; }
+
+    .modal-content{
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .modal-body{
+        overflow: auto;
+    }
+
+    .header{
+        width: 1px;
+    }
 
 
 }

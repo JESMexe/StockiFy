@@ -11,8 +11,14 @@ $id = $_GET['id'] ?? null;
 
 if (!$user || !$id) { echo json_encode(['success'=>false]); exit; }
 
+$activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+if (!$activeInventoryId) {
+    echo json_encode(['success' => false, 'message' => 'No hay inventario activo seleccionado']);
+    exit;
+}
+
 $model = new PurchaseModel();
-$data = $model->getDetails($id, $user['id']);
+$data = $model->getDetails($id, $user['id'], $activeInventoryId);
 
 if ($data) {
     echo json_encode(['success' => true, 'purchase' => $data['purchase'], 'items' => $data['items']]);

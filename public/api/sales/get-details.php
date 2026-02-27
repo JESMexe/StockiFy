@@ -17,6 +17,12 @@ try {
         exit;
     }
 
+    $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+    if (!$activeInventoryId) {
+        echo json_encode(['success' => false, 'message' => 'No hay inventario activo seleccionado']);
+        exit;
+    }
+
     $saleId = $_GET['id'] ?? null;
     if (!$saleId) {
         echo json_encode(['success' => false, 'message' => 'Falta ID de venta']);
@@ -25,7 +31,7 @@ try {
 
     // 2. Usar el Modelo para obtener los datos correctos (Tablas nuevas en Inglés)
     $model = new SalesModel();
-    $data = $model->getDetails($saleId, $user['id']);
+    $data = $model->getDetails($saleId, $user['id'], $activeInventoryId);
 
     if (!$data || empty($data['sale'])) {
         echo json_encode(['success' => false, 'message' => 'Venta no encontrada o acceso denegado']);

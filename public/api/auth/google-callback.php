@@ -48,7 +48,7 @@ try {
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name'] = $user['full_name'] ?? $user['username'];
 
-    header('Location: /dashboard.php');
+    header('Location: /index.php');
     exit;
 
 } catch (Exception $e) {
