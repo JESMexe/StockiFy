@@ -120,11 +120,9 @@ async function handleFileSelect(file) {
         const response = await api.getCsvHeaders(formData);
 
         if (response.success) {
-            // Guardar delimitador detectado
             detectedDelimiter = response.delimiter || ',';
             console.log("Delimitador detectado:", detectedDelimiter);
 
-            // Generar tabla de mapeo
             generateMappingTable(response.headers, response.ui_headers || response.headers);
             showStep(2);
             if(importStatus) importStatus.textContent = '';
@@ -142,11 +140,8 @@ function generateMappingTable(csvHeaders, uiHeaders) {
     if (!mappingForm) return;
     mappingForm.innerHTML = '';
 
-    // Contenedor tipo grid para mejor visualización
     const gridContainer = document.createElement('div');
     gridContainer.className = 'mapping-grid';
-    // Si tu CSS no tiene .mapping-grid, se verá como lista, que es seguro.
-    // Pero agregamos estilos inline discretos por si acaso:
     gridContainer.style.display = 'grid';
     gridContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
     gridContainer.style.gap = '15px';
@@ -155,14 +150,12 @@ function generateMappingTable(csvHeaders, uiHeaders) {
         if (['id', 'created_at', 'updated_at'].includes(sysCol.toLowerCase())) return;
 
         const card = document.createElement('div');
-        // Usamos clases estándar de UI que suelen tener estilos
         card.className = 'mapping-card input-group';
         card.style.background = 'var(--bg-secondary, #f8f9fa)';
         card.style.padding = '10px';
         card.style.borderRadius = '8px';
         card.style.border = '1px solid var(--border-color, #eee)';
 
-        // Etiqueta (Nombre en tu App)
         const label = document.createElement('label');
         label.className = 'form-label';
         label.style.display = 'block';
@@ -170,10 +163,9 @@ function generateMappingTable(csvHeaders, uiHeaders) {
         label.style.fontWeight = '600';
         label.textContent = formatColumnName(sysCol);
 
-        // Select (Columna del CSV)
         const select = document.createElement('select');
         select.name = `map[${sysCol}]`;
-        select.className = 'form-select mapping-select'; // Clases comunes
+        select.className = 'form-select mapping-select';
         select.style.width = '100%';
         select.style.padding = '8px';
         select.style.borderRadius = '4px';
@@ -188,16 +180,13 @@ function generateMappingTable(csvHeaders, uiHeaders) {
         csvHeaders.forEach((headerVal, index) => {
             const option = document.createElement('option');
             option.value = headerVal;
-            option.textContent = uiHeaders[index]; // ¡Nombre bonito del CSV!
+            option.textContent = uiHeaders[index];
 
-            // Auto-match Inteligente
             const cleanSys = sysCol.toLowerCase().replace(/[^a-z0-9]/g, '');
             const cleanCsv = headerVal.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-            // Lógica difusa para encontrar coincidencias (ej: precio_venta match con Precio)
             if (cleanSys === cleanCsv || cleanCsv.includes(cleanSys) || cleanSys.includes(cleanCsv)) {
                 option.selected = true;
-                // Resaltar visualmente que hubo match
                 select.style.borderColor = 'var(--primary-color, #4CAF50)';
                 select.style.backgroundColor = '#f0fff4';
             }
@@ -225,7 +214,6 @@ async function handlePrepareImport() {
 
     selects.forEach(select => {
         if (select.value) {
-            // Extraer nombre de columna del sistema desde el atributo name="map[nombre_columna]"
             const sysCol = select.name.match(/\[(.*?)\]/)[1];
             mappingData[sysCol] = select.value;
             hasMapping = true;
@@ -240,9 +228,11 @@ async function handlePrepareImport() {
     const formData = new FormData();
     formData.append('csv_file', uploadedFile);
     formData.append('mapping', JSON.stringify(mappingData));
-
-    // ¡CRÍTICO! Enviamos el delimitador detectado al backend
     formData.append('delimiter', detectedDelimiter);
+    formData.append('inventory_id', activeInventoryId);
+
+    const overwrite = document.getElementById('import-overwrite-toggle')?.checked ? '1' : '0';
+    formData.append('overwrite', overwrite);
 
     if(validatePrepareBtn) {
         validatePrepareBtn.disabled = true;
@@ -255,12 +245,10 @@ async function handlePrepareImport() {
         if (result.success) {
             pop_ups.success("Datos preparados correctamente. Confirmando importación...", "Éxito");
 
-            // Ejecutar importación final automáticamente
             const execResult = await api.executeImport();
             if (execResult.success) {
                 pop_ups.success(execResult.message, "Importación Completada");
                 closeImportModal();
-                // Recargar tabla
                 if (window.loadTableData) window.loadTableData();
             } else {
                 throw new Error(execResult.message);

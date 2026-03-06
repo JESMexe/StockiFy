@@ -36,71 +36,170 @@ function initTabs() {
 
 function initSecurityHandlers() {
     const btnPass = document.getElementById('btn-change-password');
-    if (btnPass) {
-        btnPass.addEventListener('click', async () => {
-            const { isConfirmed } = await Swal.fire({
-                title: '¿Cambiar contraseña?',
-                text: "Te enviaremos un código de seguridad a tu email actual.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, enviar código',
-                cancelButtonText: 'Cancelar'
+
+    if (!btnPass) return;
+
+    btnPass.addEventListener('click', async () => {
+        const { isConfirmed } = await Swal.fire({
+            title: '¿Cambiar contraseña?',
+            text: 'Te enviaremos un código de seguridad a tu email actual.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, enviar código',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!isConfirmed) return;
+
+        try {
+            const res = await fetch('./../api/auth/init-password-change.php', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' }
             });
 
-            if (isConfirmed) {
-                try {
-                    const res = await fetch('./../api/auth/init-password-change.php');
-                    const data = await res.json();
+            const data = await res.json();
 
-                    if (data.success) {
-                        const { value: formValues } = await Swal.fire({
-                            title: 'Verificación de Seguridad',
-                            html:
-                                '<p style="font-size:0.8rem;margin-bottom:10px;">Ingresa el código enviado y tu nueva clave</p>' +
-                                '<input id="otp-code" class="swal2-input" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric">' +
-                                '<input id="new-password-input" type="password" class="swal2-input" placeholder="Nueva Contraseña (mín. 6 caracteres)">',
-                            focusConfirm: false,
-                            preConfirm: () => {
-                                const code = document.getElementById('otp-code').value.trim();
-                                const pass = document.getElementById('new-password-input').value.trim();
+            if (!res.ok || !data.success) {
+                Swal.fire('Error', data.message || 'No se pudo iniciar el cambio de contraseña.', 'error');
+                return;
+            }
 
-                                // VALIDACIÓN INTERNA DEL CARTEL
-                                if (!code || code.length !== 6) {
-                                    Swal.showValidationMessage('El código debe tener exactamente 6 dígitos');
-                                    return false;
-                                }
-                                if (pass.length < 6) {
-                                    Swal.showValidationMessage('La nueva contraseña debe tener al menos 6 caracteres');
-                                    return false;
-                                }
-                                return { code: code, new_password: pass };
+            const { value: formValues } = await Swal.fire({
+                title: 'Verificación de Seguridad',
+                customClass: {
+                    popup: 'stockify-otp-popup'
+                },
+                html: `
+        <p class="stockify-otp-text">Ingresá el código enviado y tu nueva clave</p>
+
+        <div class="stockify-otp-group" id="stockify-otp-group">
+            <input class="stockify-otp-slot" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+            <input class="stockify-otp-slot" type="text" inputmode="numeric" maxlength="1">
+            <input class="stockify-otp-slot" type="text" inputmode="numeric" maxlength="1">
+            <input class="stockify-otp-slot" type="text" inputmode="numeric" maxlength="1">
+            <input class="stockify-otp-slot" type="text" inputmode="numeric" maxlength="1">
+            <input class="stockify-otp-slot" type="text" inputmode="numeric" maxlength="1">
+        </div>
+
+        <input
+            id="new-password-input"
+            type="password"
+            class="swal2-input stockify-password-input"
+            placeholder="Nueva contraseña (mín. 6 caracteres)"
+            autocomplete="new-password"
+        >
+    `,
+                focusConfirm: false,
+                confirmButtonText: 'Actualizar contraseña',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    const slots = Array.from(document.querySelectorAll('.stockify-otp-slot'));
+                    const passwordInput = document.getElementById('new-password-input');
+
+                    if (slots.length > 0) {
+                        slots[0].focus();
+                    }
+
+                    slots.forEach((slot, index) => {
+                        slot.addEventListener('input', (e) => {
+                            let value = e.target.value.replace(/\D/g, '');
+                            e.target.value = value;
+
+                            if (value && index < slots.length - 1) {
+                                slots[index + 1].focus();
+                                slots[index + 1].select();
                             }
                         });
 
-                        if (formValues) {
-                            // Enviar al servidor
-                            const resFinal = await fetch('./../api/auth/finalize-password-change.php', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(formValues) // Enviamos {code, new_password}
-                            });
-                            const dataFinal = await resFinal.json();
-
-                            if (dataFinal.success) {
-                                Swal.fire('¡Éxito!', dataFinal.message, 'success');
-                            } else {
-                                Swal.fire('Error', dataFinal.message, 'error');
+                        slot.addEventListener('keydown', (e) => {
+                            if (e.key === 'Backspace' && !slot.value && index > 0) {
+                                slots[index - 1].focus();
+                                slots[index - 1].value = '';
                             }
-                        }
-                    } else {
-                        Swal.fire('Error', data.message, 'error');
+
+                            if (e.key === 'ArrowLeft' && index > 0) {
+                                e.preventDefault();
+                                slots[index - 1].focus();
+                            }
+
+                            if (e.key === 'ArrowRight' && index < slots.length - 1) {
+                                e.preventDefault();
+                                slots[index + 1].focus();
+                            }
+                        });
+
+                        slot.addEventListener('paste', (e) => {
+                            e.preventDefault();
+                            const pasted = (e.clipboardData || window.clipboardData)
+                                .getData('text')
+                                .replace(/\D/g, '')
+                                .slice(0, 6);
+
+                            if (!pasted) return;
+
+                            pasted.split('').forEach((digit, i) => {
+                                if (slots[i]) slots[i].value = digit;
+                            });
+
+                            const nextIndex = Math.min(pasted.length, slots.length - 1);
+                            if (slots[nextIndex]) {
+                                slots[nextIndex].focus();
+                                slots[nextIndex].select();
+                            }
+
+                            if (pasted.length === 6 && passwordInput) {
+                                passwordInput.focus();
+                            }
+                        });
+                    });
+                },
+                preConfirm: () => {
+                    const slots = Array.from(document.querySelectorAll('.stockify-otp-slot'));
+                    const code = slots.map(slot => slot.value.trim()).join('');
+                    const pass = document.getElementById('new-password-input')?.value || '';
+
+                    if (!/^\d{6}$/.test(code)) {
+                        Swal.showValidationMessage('El código debe tener exactamente 6 dígitos');
+                        return false;
                     }
-                } catch (e) {
-                    Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+
+                    if (pass.length < 6) {
+                        Swal.showValidationMessage('La nueva contraseña debe tener al menos 6 caracteres');
+                        return false;
+                    }
+
+                    return {
+                        code,
+                        new_password: pass
+                    };
                 }
+            });
+
+            if (!formValues) return;
+
+            const resFinal = await fetch('./../api/auth/finalize-password-change.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(formValues)
+            });
+
+            const dataFinal = await resFinal.json();
+
+            if (!resFinal.ok || !dataFinal.success) {
+                Swal.fire('Error', dataFinal.message || 'No se pudo actualizar la contraseña.', 'error');
+                return;
             }
-        });
-    }
+
+            Swal.fire('¡Éxito!', dataFinal.message, 'success');
+
+        } catch (e) {
+            Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error');
+        }
+    });
 }
 
 
@@ -165,3 +264,4 @@ function initGeneralProfile() {
         }
     });
 }
+

@@ -251,7 +251,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                 <div class="swiper-slide">
                     <div class="slide-img-container">
-                        <img src="./assets/img/opera_htUkWOenpo.png" alt="Usuarios">
+                        <img src="./assets/img/2.png" alt="Usuarios">
                     </div>
                     <div class="slide-content">
                         <i class="ph ph-users slide-icon"></i>
@@ -262,7 +262,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                 <div class="swiper-slide">
                     <div class="slide-img-container">
-                        <img src="./assets/img/Diseño%20sin%20título%20(7).png" alt="Importar">
+                        <img src="./assets/img/3.png" alt="Importar">
                     </div>
                     <div class="slide-content">
                         <i class="ph ph-file-csv slide-icon"></i>
@@ -273,12 +273,23 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                 <div class="swiper-slide">
                     <div class="slide-img-container">
-                        <img src="./assets/img/Diseño%20sin%20título%20(8).png" alt="Alertas">
+                        <img src="./assets/img/4.png" alt="Alertas">
                     </div>
                     <div class="slide-content">
                         <i class="ph ph-bell slide-icon"></i>
                         <h3>Alertas de Stock</h3>
                         <p>Notificaciones automáticas cuando el inventario es bajo.</p>
+                    </div>
+                </div>
+
+                <div class="swiper-slide">
+                    <div class="slide-img-container">
+                        <img src="./assets/img/5.png" alt="telefonos">
+                    </div>
+                    <div class="slide-content">
+                        <i class="ph ph-device-mobile slide-icon"></i>
+                        <h3>Versión para Teléfonos</h3>
+                        <p>La app para el teléfono pasa a ser una estación de control y manejo más simple y versátil para el día a día en el negocio.</p>
                     </div>
                 </div>
             </div>

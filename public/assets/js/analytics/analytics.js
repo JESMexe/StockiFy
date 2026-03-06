@@ -324,23 +324,33 @@ export class AnalyticsModule {
         document.getElementById('kpi-sales-count').textContent = `${fin.sales_count} ventas`;
         document.getElementById('kpi-purchases-count').textContent = `${fin.purchases_count} compras`;
 
-        // NUEVO: Ticket Promedio
         document.getElementById('kpi-ticket').textContent = fmt(fin.average_ticket);
 
         const balEl = document.getElementById('kpi-balance');
         balEl.textContent = fmt(fin.balance);
         balEl.style.color = fin.balance >= 0 ? 'var(--accent-green, #28a745)' : 'var(--accent-red, #dc3545)';
 
-        document.getElementById('kpi-inventory').textContent = fmt(invValue);
+        const invEl = document.getElementById('kpi-inventory');
+        const invText = fmt(invValue);
+
+        invEl.textContent = invText;
+        invEl.title = invText;
+        invEl.classList.add('ellipsis');
     }
 
     renderChart(data) {
         if (!window.ApexCharts) return;
 
+        const ymdLocal = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
         const salesMap = {};
         const purchMap = {};
 
-        // Manejo seguro de arrays vacíos
         (data.sales || []).forEach(d => salesMap[d.date] = parseFloat(d.total));
         (data.purchases || []).forEach(d => purchMap[d.date] = parseFloat(d.total));
 
@@ -351,23 +361,33 @@ export class AnalyticsModule {
         for (let i = 29; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
+
+            const dateStr = ymdLocal(d); // ✅ LOCAL, no UTC
+
             dates.push(dateStr);
             seriesSales.push(salesMap[dateStr] || 0);
             seriesPurch.push(purchMap[dateStr] || 0);
         }
 
-        // Recuperar colores de las variables CSS (truco avanzado)
         const styles = getComputedStyle(document.documentElement);
         const colorGreen = styles.getPropertyValue('--accent-green').trim() || '#28a745';
         const colorRed = styles.getPropertyValue('--accent-red').trim() || '#dc3545';
 
+        // Armamos labels dd/MM para que se vean lindo sin datetime
+        const labels = dates.map(ds => {
+            const [y, m, d] = ds.split('-');
+            return `${d}/${m}`;
+        });
+
         const options = {
-            series: [{ name: 'Ingresos', data: seriesSales }, { name: 'Gastos', data: seriesPurch }],
-            chart: { type: 'area', height: 350, toolbar: {show:false}, fontFamily: 'inherit' },
+            series: [
+                { name: 'Ingresos', data: seriesSales },
+                { name: 'Gastos', data: seriesPurch }
+            ],
+            chart: { type: 'area', height: 350, toolbar: { show: false }, fontFamily: 'inherit' },
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 2 },
-            xaxis: { categories: dates, type: 'datetime', labels: { format: 'dd/MM' } },
+            xaxis: { categories: labels, type: 'category' },
             colors: [colorGreen, colorRed],
             fill: { type: 'gradient', gradient: { opacityFrom: 0.5, opacityTo: 0.1 } },
             grid: { borderColor: '#f1f1f1' }
@@ -400,7 +420,10 @@ export class AnalyticsModule {
             </div>
         `).join('');
     }
+
 }
+
+
 
 export const analyticsModuleInstance = new AnalyticsModule();
 window.analyticsModule = analyticsModuleInstance;

@@ -927,8 +927,8 @@ hr { border: none; height: 2px; background-color: var(--color-black); margin: 1.
 
 /* ---- Configuraciones Textos ---- */
 
-.text-left{
-    text-align: left;
+.text-left {
+    text-align: center !important;
 }
 
 #options-config-container .btn p{

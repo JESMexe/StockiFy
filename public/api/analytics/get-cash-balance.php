@@ -1,6 +1,6 @@
 <?php
-// public/api/analytics/get-cash-balance.php
 header('Content-Type: application/json');
+
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
@@ -9,52 +9,53 @@ use App\core\Database;
 
 try {
     session_start();
+
+    date_default_timezone_set('America/Argentina/Buenos_Aires');
+
+    // ✅ Fuerza timezone AR para evitar “salto” de día
+    $tz = new DateTimeZone('America/Argentina/Buenos_Aires');
+    $now = new DateTime('now', $tz);
+
     $user = getCurrentUser();
     if (!$user) throw new Exception("No autorizado");
 
     $inventoryId = $_SESSION['active_inventory_id'] ?? null;
     if (!$inventoryId) throw new Exception("Inventario no seleccionado");
 
-    // Recibimos el periodo: 'today', 'month', 'year'
     $period = $_GET['period'] ?? 'today';
-
     $db = Database::getInstance();
 
-    // Definir rangos de fecha
-    $startDate = '';
-    $endDate = date('Y-m-d 23:59:59');
+    $db->query("SET time_zone = '-03:00'");
 
+    // ✅ Rangos robustos: [start, end)
     if ($period === 'month') {
-        $startDate = date('Y-m-01 00:00:00');
+        $start = new DateTime($now->format('Y-m-01 00:00:00'), $tz);
+        $end   = (clone $start)->modify('+1 month');
     } else if ($period === 'year') {
-        $startDate = date('Y-01-01 00:00:00');
+        $start = new DateTime($now->format('Y-01-01 00:00:00'), $tz);
+        $end   = (clone $start)->modify('+1 year');
     } else {
-        // Default: Hoy
-        $startDate = date('Y-m-d 00:00:00');
+        $start = new DateTime($now->format('Y-m-d 00:00:00'), $tz);
+        $end   = (clone $start)->modify('+1 day');
     }
 
-    // 1. Calcular Ventas (Ingresos)
-    // TABLA: sales
-    // COLUMNA MONTO: total_amount
-    // FILTRO: inventory_id
-    // FECHA: sale_date (Ojo, tu tabla dice sale_date, no created_at)
+    $startDate = $start->format('Y-m-d H:i:s');
+    $endDate   = $end->format('Y-m-d H:i:s');
+
+    // 1) Ventas (Ingresos) — sale_date
     $stmtSales = $db->prepare("
-        SELECT SUM(total_amount) as total_sales, COUNT(*) as count_sales 
-        FROM sales 
-        WHERE inventory_id = ? AND sale_date BETWEEN ? AND ?
+        SELECT SUM(total_amount) as total_sales, COUNT(*) as count_sales
+        FROM sales
+        WHERE inventory_id = ? AND sale_date >= ? AND sale_date < ?
     ");
     $stmtSales->execute([$inventoryId, $startDate, $endDate]);
     $salesData = $stmtSales->fetch(PDO::FETCH_ASSOC);
 
-    // 2. Calcular Compras (Egresos)
-    // TABLA: purchases
-    // COLUMNA MONTO: total
-    // FILTRO: inventory_id (¡Ahora sí existe!)
-    // FECHA: created_at
+    // 2) Compras (Egresos) — created_at
     $stmtPurchases = $db->prepare("
-        SELECT SUM(total) as total_purchases, COUNT(*) as count_purchases 
-        FROM purchases 
-        WHERE inventory_id = ? AND created_at BETWEEN ? AND ?
+        SELECT SUM(total) as total_purchases, COUNT(*) as count_purchases
+        FROM purchases
+        WHERE inventory_id = ? AND created_at >= ? AND created_at < ?
     ");
     $stmtPurchases->execute([$inventoryId, $startDate, $endDate]);
     $purchasesData = $stmtPurchases->fetch(PDO::FETCH_ASSOC);
@@ -68,19 +69,19 @@ try {
         'period' => $period,
         'range' => [
             'start' => $startDate,
-            'end' => $endDate
+            'end' => $endDate,
+            'tz' => $tz->getName()
         ],
         'data' => [
             'income' => $totalSales,
-            'sales_count' => $salesData['count_sales'],
+            'sales_count' => (int)($salesData['count_sales'] ?? 0),
             'expenses' => $totalPurchases,
-            'purchases_count' => $purchasesData['count_purchases'],
+            'purchases_count' => (int)($purchasesData['count_purchases'] ?? 0),
             'balance' => $balance
         ]
     ]);
 
 } catch (Exception $e) {
-    // Loguear el error real para debugging pero devolver JSON válido
     error_log("Error en Balance: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

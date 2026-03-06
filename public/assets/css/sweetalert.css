@@ -1,0 +1,132 @@
+﻿
+:root {
+    --font-body: 'Satoshi', sans-serif;
+}
+
+/* Fondo oscuro detrás del modal */
+.swal2-container.swal2-backdrop-show {
+    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Caja principal */
+.swal2-popup {
+    border: 2px solid var(--color-black) !important;
+    border-radius: 14px !important;
+    background: var(--color-white) !important;
+    box-shadow: 8px 8px 0px var(--accent-color) !important;
+    padding: 2rem !important;
+    font-family: 'Satoshi', sans-serif !important;
+}
+
+/* Título */
+.swal2-title {
+    color: var(--color-black) !important;
+    font-size: 2rem !important;
+    font-weight: 900 !important;
+}
+
+/* Texto */
+.swal2-html-container {
+    color: #64748b !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+}
+
+/* Icono warning */
+.swal2-icon.swal2-warning {
+    border-color: var(--accent-color) !important;
+    color: var(--accent-color) !important;
+}
+
+/* Contenedor de botones */
+.swal2-actions {
+    gap: 1rem !important;
+}
+
+/* Botón confirmar */
+.swal2-confirm {
+    background: var(--accent-color) !important;
+    color: var(--color-white) !important;
+    border: 2px solid var(--color-black) !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+    font-family: var(--font-body) !important;
+    padding: 0.85rem 1.5rem !important;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Hover confirmar */
+.swal2-confirm:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 4px 4px 0px var(--color-black) !important;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Botón cancelar */
+.swal2-cancel {
+    background: white !important;
+    color: black !important;
+    border: 2px solid var(--color-black) !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+    font-family: var(--font-body) !important;
+    padding: 0.85rem 1.5rem !important;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.swal2-cancel:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 4px 4px 0px var(--color-black) !important;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.stockify-otp-popup {
+    width: 640px !important;
+    max-width: calc(100vw - 2rem) !important;
+    padding: 2rem 2rem 2.25rem 2rem !important;
+}
+
+.stockify-otp-text {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin: 0 0 1.25rem 0;
+}
+
+.stockify-otp-group {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin: 0 0 1.5rem 0;
+    flex-wrap: nowrap;
+}
+
+.stockify-otp-slot {
+    width: 56px;
+    height: 62px;
+    border: 2px solid #1a1a1a;
+    border-radius: 14px;
+    background: #ffffff;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.stockify-otp-slot:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 4px rgba(163, 190, 140, 0.2);
+}
+
+.stockify-password-input {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    display: block !important;
+}

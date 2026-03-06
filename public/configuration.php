@@ -7,20 +7,18 @@
 
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/configuration.css">
+    <link rel="stylesheet" href="assets/css/sweetalert.css">
 
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="assets/js/theme.js"></script>
     <script type="module" src="./assets/js/configuration.js"></script>
-    <script type="module" src="assets/js/email-change-handler.js"></script>
-    <script type="module" src="assets/js/change-password-handler.js"></script>
 </head>
 
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../src/helpers/auth_helper.php';
 
-if (session_status() === PHP_SESSION_NONE) session_start();
 $currentUser = getCurrentUser();
 
 if (!$currentUser) {
@@ -42,9 +40,7 @@ if (!$currentUser) {
 </header>
 
 <main class="text-left">
-    <div class="flex-row" style="margin: 3rem 0; gap: 2rem; align-items: flex-start; justify-content: center;">
-        <div class="config-layout-wrapper">
-
+    <div class="config-layout-wrapper">
         <div id="options-config-container">
             <div class="btn btn-option-selected" id="btn-config-cuenta">
                 <p><i class="ph ph-user-gear"></i> Mi Cuenta</p>
@@ -114,7 +110,6 @@ if (!$currentUser) {
             </div>
 
         </div>
-        </div>
     </div>
 
     <div class="view-container flex-column justify-left align-center hidden" id="modif-form-container" style="z-index: 1001;">
@@ -140,20 +135,7 @@ if (!$currentUser) {
             <button style="margin-top: 2rem; width: 100%;" class="btn btn-primary" id="save-email-btn">Confirmar Cambio</button>
         </div>
 
-        <form class="hidden" id="change-password-form" style="width: 100%;">
-            <h3 style="margin-bottom: 1.5rem;">Cambiar Contraseña</h3>
 
-            <label for="old-password">Contraseña Actual</label>
-            <input type="password" id="old-password" class="config-input" required>
-
-            <label for="new-password">Nueva Contraseña</label>
-            <input type="password" id="new-password" class="config-input" required>
-
-            <label for="confirm-new-password">Repetir Nueva</label>
-            <input type="password" id="confirm-new-password" class="config-input" required>
-
-            <button type="submit" style="margin-top: 1rem; width: 100%;" class="btn btn-primary" id="save-password-btn">Actualizar Contraseña</button>
-        </form>
     </div>
 </main>
 

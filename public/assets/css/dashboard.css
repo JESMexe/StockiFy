@@ -1631,9 +1631,8 @@ tr.highlight-row {
 }
 
 .modal-body {
-    padding: 2rem;
     flex-grow: 1;
-    overflow-y: auto;
+    overflow-y: hidden;
 }
 .modal-footer {
     padding: 1rem 1.5rem;
@@ -1675,6 +1674,11 @@ tr.highlight-row {
     cursor: pointer;
     transition: all 0.2s ease;
     background-color: #fafafa;
+    height: 300px;
+
+    display: flex;
+    align-items: center;       /* centra vertical */
+    justify-content: center;   /* centra horizontal */
 }
 .drop-zone:hover, .drop-zone.drag-over {
     border-color: var(--accent-color, blue);
@@ -3292,6 +3296,7 @@ body.no-scroll {
     opacity: 0.8;
 }
 
+
 /* =========================================
    STOCKIFY MOBILE (COMPANION MODE)
    ========================================= */
@@ -3499,6 +3504,7 @@ html, body { width: 100%; overflow-x: hidden; }
     .period-btn.active {
         background: #fff;
         color: #1b1b1b;
+        border: 1px solid #1b1b1b;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
@@ -3526,6 +3532,7 @@ html, body { width: 100%; overflow-x: hidden; }
     .detail-row .icon {
         width: 45px; height: 45px;
         border-radius: 50%;
+        border: 1px solid #1b1b1b;
         display: flex; align-items: center; justify-content: center;
         font-size: 1.2rem;
         margin-right: 15px;
@@ -3548,6 +3555,425 @@ html, body { width: 100%; overflow-x: hidden; }
     .header{
         width: 1px;
     }
+}
+
+/* =========================================================
+   FIX DEFINITIVO - MODAL IMPORTAR CSV + MAPPING (StockiFy)
+   PEGAR AL FINAL de dashboard.css
+   ========================================================= */
+
+/* 1) Modal de Importación: ancho real y layout limpio */
+#import-modal .modal-content.import-modal {
+    width: min(1100px, 94vw) !important;
+    max-width: min(1100px, 94vw) !important;
+    min-height: 670px !important;
+    overflow: hidden !important; /* el scroll va adentro */
+}
+
+/* Header / Body / Footer prolijos */
+#import-modal .modal-header {
+    border-bottom: 1px solid #eee;
+}
+
+#import-modal .modal-body {
+    overflow: hidden !important;          /* scroll del contenido */
+    min-height: 270px !important; /* deja lugar a header+footer */
+}
+
+#import-modal .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+    z-index: 2;
+}
+
+/* 2) Paso 2 (Mapeo) ocupa todo el ancho */
+#import-modal #import-step-2 {
+    width: 100% !important;
+}
+
+#import-modal #import-step-2 h3,
+#import-modal #import-step-2 p {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* 3) El form de mapping: grilla responsive (NO 3 columnas raras) */
+#import-modal #mapping-form.import-mapping-form,
+#import-modal #mapping-form {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(280px, 1fr)) !important;
+    gap: 16px !important;
+    align-items: start !important;
+
+    /* tu inline style ya pone max-height/overflow; igual lo reforzamos */
+    max-height: 52vh !important;
+    overflow: auto !important;
+
+    padding-right: 10px !important;
+    margin-top: 1rem !important;
+}
+
+/* En pantallas chicas, 1 columna */
+@media (max-width: 900px) {
+    #import-modal #mapping-form.import-mapping-form,
+    #import-modal #mapping-form {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* 4) Cada “campo” que genere el JS: estilo tarjeta (funciona aunque cambien clases) */
+#import-modal #mapping-form > * {
+    min-width: 0; /* evita overflow raro */
+}
+
+#import-modal #mapping-form .mapping-row,
+#import-modal #mapping-form .form-group,
+#import-modal #mapping-form .mapping-item,
+#import-modal #mapping-form .mapping-field,
+#import-modal #mapping-form .mapping-card,
+#import-modal #mapping-form > div {
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.03);
+}
+
+/* Labels dentro del mapping */
+#import-modal #mapping-form label,
+#import-modal #mapping-form .micro-label {
+    display: block;
+    margin: 0 0 8px 0;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: 0.3px;
+}
+
+/* 5) Matar el “verde” y unificar selects SOLO dentro del import */
+#import-modal select,
+#import-modal .mapping-select,
+#import-modal .rustic-select {
+    width: 100% !important;
+    background: #fff !important;
+    color: #1b1b1b !important;
+
+    border: 2px solid #1b1b1b !important;
+    border-radius: 10px !important;
+
+    padding: 10px 12px !important;
+    font-weight: 700 !important;
+
+    box-shadow: none !important;
+    transform: none !important;
+    filter: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+
+    /* flecha discreta */
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231b1b1b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 10px auto;
+}
+
+#import-modal select:focus,
+#import-modal .mapping-select:focus,
+#import-modal .rustic-select:focus {
+    outline: none !important;
+    border-color: #1b1b1b !important;
+    box-shadow: 0 0 0 4px rgba(var(--accent-color-rgb), 0.18) !important;
+}
+
+/* Opciones (por si el browser mete fondo raro) */
+#import-modal option {
+    background: #fff !important;
+    color: #1b1b1b !important;
+}
+
+/* 6) Scrollbar prolija dentro del form (opcional, pero queda mejor) */
+#import-modal #mapping-form::-webkit-scrollbar {
+    width: 10px;
+}
+#import-modal #mapping-form::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.15);
+    border-radius: 999px;
+}
+#import-modal #mapping-form::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.readonly-cell{
+    font-weight: 700;
+    opacity: .75;
+    user-select: none;
+}
+
+@media (min-width: 900px) {
+    .mobile-modal-overlay{
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        z-index: 5000;
+
+        display: flex;
+        align-items: center;      /* desktop: centrado */
+        justify-content: center;  /* desktop: centrado */
+        padding: 24px;
+    }
+
+    .mobile-modal-overlay.hidden{ display: none; }
+
+    .mobile-modal-content{
+        background: #fff;
+        width: min(760px, 100%);
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+    }
+
+    /* Tarjeta Principal */
+    .balance-main-card {
+        text-align: center;
+        padding: 30px 20px;
+        border: 2px solid #1b1b1b;
+        border-radius: 16px;
+        margin-bottom: 25px;
+        background-color: #fff;
+        box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+    }
+    .balance-main-card h1 { font-size: 2.5rem; margin: 10px 0; }
+    .text-green { color: var(--accent-green); }
+    .text-red { color: var(--accent-red); }
+
+    /* Filas de Detalle */
+    .detail-row {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    .detail-row .icon {
+        width: 45px; height: 45px;
+        border-radius: 50%;
+        border: 1px solid #1b1b1b;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        margin-right: 15px;
+    }
+    .detail-row.income .icon { background: var(--accent-green-20); color: var(--accent-green); }
+    .detail-row.expense .icon { background: var(--accent-red-20); color: var(--accent-red); }
+
+    .detail-row h4 { margin: 0; font-size: 1.1rem; }
+    .detail-row span { font-size: 0.9rem; color: #64748b; }
+
+    /* Selector de Período */
+    .period-selector {
+        display: flex;
+        background: #f1f5f9;
+        padding: 5px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+    .period-btn {
+        flex: 1;
+        border: none;
+        background: none;
+        padding: 10px;
+        border-radius: 8px;
+        font-weight: 600;
+        color: #64748b;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .period-btn.active {
+        background: #fff;
+        color: #1b1b1b;
+        border: 1px solid #1b1b1b;
+        box-shadow: 4px 4px 0 rgba(0,0,0,0.05);
+    }
+
+    .modal-content{
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .modal-body{
+        overflow: auto;
+    }
+
+    .header{
+        width: 1px;
+    }
+
+    .mobile-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .mobile-modal-header h2 { margin: 0; font-size: 1.5rem; }
+    .close-icon { background: none; border: none; font-size: 2rem; cursor: pointer;}
 
 
+}
+
+.import-overwrite-row{
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.import-overwrite-check{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight: 600;
+}
+
+.import-overwrite-check input{
+    cursor: pointer;
+}
+
+.import-overwrite-hint{
+    opacity: .75;
+}
+
+.import-overwrite{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:12px;
+    font-size: .95rem;
+    color: #333;
+    user-select:none;
+}
+.import-overwrite input{ cursor:pointer; }
+.import-overwrite{ cursor:pointer; }
+
+/* =========================
+   Botón Cierre Caja - esquina (FIX)
+========================= */
+#analysis{
+    position: relative;
+}
+
+/* Si tu botón además tiene .btn / .btn-secondary, esto lo pisa igual */
+#analysis .cash-corner-btn{
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    z-index: 20;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+
+    width: max-content;      /* clave: no se achica */
+    max-width: none;
+    min-width: 0;
+    white-space: nowrap;     /* clave: no corta palabras */
+    word-break: normal;
+    overflow-wrap: normal;
+
+    background: #fff;
+    border: 1.5px solid #1b1b1b;
+    border-radius: 10px;
+
+    cursor: pointer;
+    transition: transform .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+#analysis .cash-corner-btn:hover{
+    color: #1b1b1b;
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--accent-color);
+}
+
+#analysis .cash-corner-btn i{
+    font-size: 1rem;
+    line-height: 1;
+}
+
+/* ===== Overwrite (Step 2) ===== */
+.import-overwrite-section{
+    width: 100%;
+    max-width: 900px;
+    margin: 8px auto 22px auto; /* <-- separa del título */
+}
+
+.import-overwrite-box{
+    width: 100%;
+    display: flex;
+    align-items: center;           /* <-- checkbox centrado con el bloque */
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(27,27,27,.15);
+    border-radius: 12px;
+    background: rgba(94,129,172,.06);
+    cursor: pointer;
+    user-select: none;
+}
+
+.import-overwrite-box input[type="checkbox"]{
+    width: 18px;
+    height: 18px;
+    margin: 0;                     /* <-- saca “desalineos” por default */
+    flex: 0 0 auto;
+    accent-color: var(--accent-color);
+}
+
+.import-overwrite-text{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.import-overwrite-title{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.import-overwrite-badge{
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(94,129,172,.15);
+    border: 1px solid rgba(94,129,172,.25);
+}
+
+.import-overwrite-text p{
+    margin: 0;
+    color: rgba(27,27,27,.75);
+    font-size: .9rem;
+    line-height: 1.25rem;
+}
+
+/* Más aire entre esta caja y el título del mapeo */
+#import-step-2 > h3{
+    margin-top: 0;
+}
+
+.import-overwrite-box:has(#import-overwrite-toggle:checked){
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 4px rgba(var(--accent-color-rgb), .12);
+    background: rgba(var(--accent-color-rgb), .12);
 }

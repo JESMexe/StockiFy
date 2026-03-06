@@ -4,49 +4,50 @@
 
 /* --- 1. LAYOUT PRINCIPAL --- */
 #page-configuration main {
+    width: 100%;
     padding: 3rem 1rem;
     display: flex;
     justify-content: center;
     align-items: flex-start;
+    box-sizing: border-box;
 }
 
 .config-layout-wrapper {
-    display: block;
-    gap: 0; /* Unimos sidebar y ventana para que parezca una sola pieza */
-
-    /* BLOQUEO DE DIMENSIONES: No se mueve por nada */
+    display: flex;
     width: 1100px;
     min-width: 1100px;
     max-width: 1100px;
+
     height: 750px;
     min-height: 750px;
     max-height: 750px;
 
+    margin: 0 auto;
     border: var(--border-strong);
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     background-color: var(--color-white);
-
-    /* SOMBRA DURA DE ACENTO (Pop-up StockiFy) */
     box-shadow: 8px 8px 0px var(--accent-color);
 }
 
-/* --- 2. SIDEBAR DE BOTONES (ESTILO RÚSTICO PREMIUM) --- */
 #options-config-container {
     flex: 0 0 300px;
     width: 300px;
     min-width: 300px;
-    background-color: var(--color-white);
+    height: 100%;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
     gap: 1rem;
-    box-shadow: none;
-    border: none;
+    box-sizing: border-box;
+    border-right: 2px solid var(--color-black);
+    background-color: var(--color-white);
 }
 #options-config-container:hover{
     box-shadow: none;
 }
+
+
 
 
 #options-config-container .btn {
@@ -76,6 +77,8 @@
 
 /* --- HOVER: MÁS PROFUNDIDAD --- */
 #options-config-container .btn:hover:not(.btn-option-selected) {
+    background-color: var(--color-white) !important;
+    box-shadow: 4px 4px 0px var(--accent-color);
 }
 
 /* --- ESTADO ACTIVO (EL SELECCIONADO) --- */
@@ -86,7 +89,7 @@
 
     /* Efecto "Presionado": El botón baja y la sombra desaparece */
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px var(--color-black);
+    box-shadow: none;
 
     font-size: 1.2rem !important;
 }
@@ -95,21 +98,16 @@
     font-size: 1.4rem;
 }
 
-/* Ajuste del contenedor principal para que no se mueva */
-.config-layout-wrapper {
-    display: flex;
-    width: 1100px;
-    height: 750px;
-    border: var(--border-strong);
-    border-radius: 12px;
-    background-color: var(--color-white);
-    overflow: hidden;
-}
-
 #config-container {
     flex: 1;
+    height: 100%;
+    min-height: 0;
     padding: 3.5rem;
     overflow-y: auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-white);
 }
 
 /* --- 3. CONTENEDOR DE CONTENIDO (VENTANA PRINCIPAL) --- */
@@ -147,9 +145,14 @@
     background: var(--accent-color);
 }
 
-#page-index body {
+body#page-index {
     overflow: hidden;
     width: 100%;
+}
+
+body#page-configuration {
+    width: 100%;
+    margin: 0;
 }
 
 /* Inputs con el color de acento en el focus */

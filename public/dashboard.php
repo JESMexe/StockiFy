@@ -256,7 +256,7 @@
                                                         <select id="import-min-stock-source" class="rustic-select" style="flex-grow: 1; height: 38px; border-top-right-radius: 0; border-bottom-right-radius: 0;">
                                                             <option value="">-- Elegir columna origen --</option>
                                                         </select>
-                                                        <button type="button" id="btn-import-min-stock" class="btn btn-secondary btn-sm" style="height: 38px; margin: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none;">Importar</button>
+                                                        <button type="button" id="btn-import-min-stock" class="btn btn-secondary btn-sm" style="height: 38px; margin: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 0;">Importar</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -488,7 +488,7 @@
 
 <!-- ===================== MODALES GENERALES ===================== -->
 <div id="import-modal" class="modal-overlay hidden">
-    <div class="modal-content view-container"> <button id="close-modal-btn" class="modal-close-btn">&times;</button>
+    <div class="modal-content view-container import-modal"> <button id="close-modal-btn" class="modal-close-btn">&times;</button>
 
         <div class="modal-header">
             <h2>Importar Datos desde CSV</h2>
@@ -504,10 +504,23 @@
                 <div id="import-status" style="margin-top: 1rem;"></div>
             </div>
 
+            <div class="import-overwrite-section">
+                <label class="import-overwrite-box" for="import-overwrite-toggle">
+                    <input type="checkbox" id="import-overwrite-toggle" />
+                    <div class="import-overwrite-text">
+                        <div class="import-overwrite-title">
+                            <strong>Sobre-escribir datos actuales</strong>
+                            <span class="import-overwrite-badge">Borra y reemplaza</span>
+                        </div>
+                        <p>Si está activado, se elimina lo existente y queda solo lo importado del CSV.</p>
+                    </div>
+                </label>
+            </div>
+
             <div id="import-step-2" class="hidden">
                 <h3>Mapeá las Columnas</h3>
                 <p>Asigná las columnas de tu archivo a las de StockiFy.</p>
-                <form id="mapping-form" style="max-height: 40vh; overflow-y: auto; padding-right: 10px;"></form>
+                <form id="mapping-form" class="import-mapping-form" style="max-height: 40vh; overflow-y: auto; padding-right: 10px;"></form>
             </div>
         </div>
 
@@ -668,21 +681,22 @@
             <button class="close-icon" onclick="window.closePriceChecker()">&times;</button>
         </div>
 
-        <div class="checker-body" style="padding: 0 20px;">
+        <div id="checker-body" class="checker-body" style="padding: 0 20px; border-bottom: 2px solid #1b1b1b;">
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <input type="text" id="checker-input" placeholder="Buscar producto o escanear..."
                        style="width: 100%; padding: 15px; border: 2px solid #1b1b1b; border-radius: 12px; font-size: 1.1rem;">
                 <button onclick="window.performPriceCheck()"
-                        style="background: var(--color-black); color: white; border: none; border-radius: 12px; width: 60px; font-size: 1.5rem;">
+                        style="background: var(--color-white); color: var(--color-black); border: 3px solid #1b1b1b; border-radius: 12px; width: 60px; font-size: 1.5rem;">
                     <i class="ph-bold ph-magnifying-glass"></i>
                 </button>
             </div>
 
-            <div id="checker-list-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; display: none;"></div>
+            <div id="checker-list-container" style="max-height: 330px; overflow-y: auto; display: none;"></div>
 
             <div id="checker-result" class="hidden" style="text-align: center; border: 2px dashed #ccc; padding: 20px; border-radius: 12px;">
                 <h3 id="res-name" style="margin: 0 0 10px 0; font-size: 1.2rem; color: #666;">Nombre del Producto</h3>
-                <h1 id="res-price" style="margin: 10px 0; font-size: 2.5rem; color: var(--accent-green);">$0.00</h1>
+                <small>Precio de Venta</small>
+                <h1 id="res-price" style="margin: 10px 0; margin-top: 0; font-size: 2.5rem; color: var(--accent-green);">$0.00</h1>
 
                 <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
                     <div style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
@@ -690,7 +704,7 @@
                         <div id="res-stock" style="font-weight: bold; font-size: 1.2rem;">0</div>
                     </div>
                     <div style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
-                        <small>Costo</small>
+                        <small>Precio de Compra</small>
                         <div id="res-cost" style="font-weight: bold; font-size: 1.2rem;">$0.00</div>
                     </div>
                 </div>
@@ -703,45 +717,6 @@
     </div>
 </div>
 
-<div id="mobile-balance-modal" class="mobile-modal-overlay hidden">
-    <div class="mobile-modal-content">
-        <div class="mobile-modal-header">
-            <h2>Balance & Caja</h2>
-            <button class="close-icon" onclick="window.closeCashBalance()">&times;</button>
-        </div>
-
-        <div class="balance-body">
-            <div class="period-selector">
-                <button id="btn-period-today" class="period-btn active" onclick="window.loadBalanceData('today')">Hoy</button>
-                <button id="btn-period-month" class="period-btn" onclick="window.loadBalanceData('month')">Mes</button>
-                <button id="btn-period-year" class="period-btn" onclick="window.loadBalanceData('year')">Año</button>
-            </div>
-
-            <div class="balance-main-card">
-                <p id="balance-date-label">Resumen de Hoy</p>
-                <h1 id="balance-total">$0.00</h1>
-                <span class="badge-status">Balance Neto</span>
-            </div>
-
-            <div class="balance-details">
-                <div class="detail-row income">
-                    <div class="icon"><i class="ph-fill ph-arrow-down-left"></i></div>
-                    <div class="info">
-                        <span>Ingresos (Ventas)</span>
-                        <h4 id="balance-income">$0.00</h4>
-                    </div>
-                </div>
-                <div class="detail-row expense">
-                    <div class="icon"><i class="ph-fill ph-arrow-up-right"></i></div>
-                    <div class="info">
-                        <span>Egresos (Compras)</span>
-                        <h4 id="balance-expense">$0.00</h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- ===================== SCRIPTS ===================== -->
 <!-- Librería para gráficos (necesaria para Estadísticas Diarias del compañero) -->

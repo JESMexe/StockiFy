@@ -64,40 +64,6 @@ class UserModel
         }
     }
 
-    private function consumeOtp($userId) {
-        $this->db->prepare("UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?")->execute([$userId]);
-    }
-
-    /**
-     * Guarda un código OTP y su expiración para un usuario.
-     */
-    public function setOtp($userId, $otp): bool
-    {
-        $expiry = date("Y-m-d H:i:s", strtotime('+15 minutes'));
-        $sql = "UPDATE users SET otp_code = ?, otp_expiry = ? WHERE id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$otp, $expiry, $userId]);
-    }
-
-    /**
-     * Verifica si el código es válido y no ha expirado.
-     */
-    public function verifyOtp($userId, $otp): bool
-    {
-        $sql = "SELECT id FROM users 
-            WHERE id = ? AND otp_code = ? AND otp_expiry > NOW()";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$userId, $otp]);
-        $user = $stmt->fetch();
-
-        if ($user) {
-            // Si es válido, lo borramos para que no se pueda reusar
-            $this->db->prepare("UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?")
-                ->execute([$userId]);
-            return true;
-        }
-        return false;
-    }
 
     // Métodos para actualizar los datos finales
     public function updateEmail($userId, $newEmail): bool
@@ -110,5 +76,129 @@ class UserModel
     {
         return $this->db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")
             ->execute([$newHash, $userId]);
+    }
+
+    private function clearOtpState(int $userId): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET
+                otp_hash = NULL,
+                otp_expires_at = NULL,
+                otp_attempts = 0,
+                otp_action_type = NULL
+            WHERE id = :id
+        ");
+
+        return $stmt->execute([':id' => $userId]);
+    }
+
+    public function clearPasswordOtp(int $userId): bool
+    {
+        return $this->clearOtpState($userId);
+    }
+
+    public function canRequestPasswordOtp(int $userId, int $cooldownSeconds = 60): bool
+    {
+        $stmt = $this->db->prepare("
+            SELECT otp_last_sent_at
+            FROM users
+            WHERE id = :id
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $userId]);
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row || empty($row['otp_last_sent_at'])) {
+            return true;
+        }
+
+        $lastSentTimestamp = strtotime((string)$row['otp_last_sent_at']);
+        if ($lastSentTimestamp === false) {
+            return true;
+        }
+
+        return (time() - $lastSentTimestamp) >= $cooldownSeconds;
+    }
+
+    public function storePasswordChangeOtp(int $userId, string $otpHash, string $expiresAt): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET
+                otp_hash = :otp_hash,
+                otp_expires_at = :otp_expires_at,
+                otp_attempts = 0,
+                otp_last_sent_at = NOW(),
+                otp_action_type = 'password_change'
+            WHERE id = :id
+        ");
+
+        return $stmt->execute([
+            ':otp_hash' => $otpHash,
+            ':otp_expires_at' => $expiresAt,
+            ':id' => $userId
+        ]);
+    }
+
+    public function verifyPasswordChangeOtp(int $userId, string $otp): bool
+    {
+        $stmt = $this->db->prepare("
+            SELECT otp_hash, otp_expires_at, otp_attempts, otp_action_type
+            FROM users
+            WHERE id = :id
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $userId]);
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            return false;
+        }
+
+        if (
+            empty($user['otp_hash']) ||
+            empty($user['otp_expires_at']) ||
+            ($user['otp_action_type'] ?? null) !== 'password_change'
+        ) {
+            return false;
+        }
+
+        $attempts = (int)($user['otp_attempts'] ?? 0);
+
+        // Máximo 5 intentos fallidos
+        if ($attempts >= 5) {
+            $this->clearOtpState($userId);
+            return false;
+        }
+
+        // Expirado
+        if (strtotime((string)$user['otp_expires_at']) < time()) {
+            $this->clearOtpState($userId);
+            return false;
+        }
+
+        // Verificación del hash
+        if (!password_verify($otp, (string)$user['otp_hash'])) {
+            $this->incrementOtpAttempts($userId);
+            return false;
+        }
+
+        // Si es válido, lo consumimos
+        $this->clearOtpState($userId);
+        return true;
+    }
+
+    private function incrementOtpAttempts(int $userId): void
+    {
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET otp_attempts = otp_attempts + 1
+            WHERE id = :id
+        ");
+
+        $stmt->execute([':id' => $userId]);
     }
 }

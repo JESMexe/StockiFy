@@ -643,7 +643,7 @@ export class SalesModule {
                     const first = s.payments[0]; const extra = s.payments.length - 1; const plus = extra > 0 ? ` <b style="color:var(--accent-color);">+${extra}</b>` : '';
                     payBadge = `<div style="margin-top:4px;"><span style="color:#555; font-size:0.75rem; background:#f4f4f4; padding:2px 6px; border-radius:4px;">${first}${plus}</span></div>`;
                 } else { payBadge = `<div style="margin-top:4px;"><span style="color:#eee; font-size:0.75rem;">-</span></div>`; }
-                let sellerHtml = '<span style="color:#ccc;">-</span>';
+                let sellerHtml = '<span style="color:#ccc;">No asignado</span>';
                 if (seller && seller !== '-' && seller !== 'No asignado') {
                     sellerHtml = `<div style="line-height:1.2;"><div style="font-weight:600; color:#333;"><i class="ph ph-identification-badge" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${seller}</div>${comm > 0 ? `<div style="font-size:0.75rem; color:var(--sale-green); font-weight:600;">Com: ${fmtMoney(comm)}</div>` : ''}</div>`;
                 }

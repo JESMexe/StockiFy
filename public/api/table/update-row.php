@@ -13,34 +13,33 @@ use App\core\Database;
 
 try {
     $user = getCurrentUser();
-    if (!$user) { echo json_encode(['success'=>false, 'message'=>'Sesión expirada']); exit; }
-
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!isset($input['id']) || !isset($input['data'])) {
-        echo json_encode(['success'=>false, 'message'=>'Datos incompletos']); exit;
-    }
-
-    $id = $input['id'];
-    $data = $input['data'];
-    $meta = $input['meta'] ?? [];
-
-    // CORRECCIÓN FINAL:
-    // 1. Buscamos 'inventory_id' que manda el JS (gracias al cambio en TableController)
-    // 2. Si no, buscamos 'active_inventory_id' que es como TU sistema llama a la sesión.
-    $inventoryId = $input['inventory_id'] ?? $_SESSION['active_inventory_id'] ?? null;
-
-    if (!$inventoryId) {
-        // Log para depuración extrema si vuelve a fallar
-        error_log("UpdateRow Fail. Input: " . print_r($input, true) . " Session: " . print_r($_SESSION, true));
-        echo json_encode(['success'=>false, 'message'=>'Error: No se identifica el inventario activo.']);
+    if (!$user) {
+        echo json_encode(['success' => false, 'message' => 'Sesión expirada']);
         exit;
     }
 
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!isset($input['id']) || !isset($input['data'])) {
+        echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+        exit;
+    }
+
+    $id = (int)$input['id'];
+    $data = is_array($input['data']) ? $input['data'] : [];
+    $meta = (isset($input['meta']) && is_array($input['meta'])) ? $input['meta'] : [];
+
+    $inventoryId = $input['inventory_id'] ?? ($_SESSION['active_inventory_id'] ?? null);
+    if (!$inventoryId) {
+        error_log("UpdateRow Fail. Input: " . print_r($input, true) . " Session: " . print_r($_SESSION, true));
+        echo json_encode(['success' => false, 'message' => 'Error: No se identifica el inventario activo.']);
+        exit;
+    }
+    $inventoryId = (int)$inventoryId;
+
     $db = Database::getInstance();
 
-    // Validar y obtener nombre de tabla
     $stmtTable = $db->prepare("
-        SELECT t.table_name 
+        SELECT t.table_name
         FROM user_tables t
         JOIN inventories i ON t.inventory_id = i.id
         WHERE i.id = :invId AND i.user_id = :uid
@@ -55,37 +54,64 @@ try {
 
     $tableName = "`" . str_replace("`", "``", $rawTableName) . "`";
 
-    // Limpieza de datos
     $cleanData = [];
     foreach ($data as $k => $v) {
-        if ($k !== 'undefined' && $k !== 'null' && trim($k) !== '') $cleanData[$k] = $v;
+        if (!is_string($k)) continue;
+        $kTrim = trim($k);
+        if ($kTrim === '' || $kTrim === 'undefined' || $kTrim === 'null') continue;
+        $cleanData[$kTrim] = $v;
     }
-    if (empty($cleanData)) { echo json_encode(['success'=>true, 'message'=>'Sin cambios']); exit; }
 
-    // Update Query
+    $allData = array_merge($cleanData, $meta);
+    if (empty($allData)) {
+        echo json_encode(['success' => true, 'message' => 'Sin cambios']);
+        exit;
+    }
+
     $setClause = [];
     $params = [':id' => $id];
-    $allData = array_merge($cleanData, $meta);
 
+    $i = 0;
     foreach ($allData as $col => $val) {
+        if (!is_string($col)) continue;
+        $colLower = strtolower(trim($col));
+        if ($colLower === 'id') continue;
+        $col = trim($col);
+        if ($col === '' || $col === 'undefined' || $col === 'null') continue;
+
         $safeCol = "`" . str_replace("`", "``", $col) . "`";
 
-        // Auto-crear columnas meta
         if (strpos($col, '_meta_') === 0) {
-            try { $db->exec("ALTER TABLE $tableName ADD COLUMN $safeCol VARCHAR(10) DEFAULT 'ARS'"); } catch (Exception $e) {}
+            try {
+                $db->exec("ALTER TABLE $tableName ADD COLUMN $safeCol VARCHAR(10) DEFAULT 'ARS'");
+            } catch (Throwable $e) {
+                // ignorar si ya existe u otro error no crítico
+            }
         }
 
-        $setClause[] = "$safeCol = :val_$col";
-        $params[":val_$col"] = $val;
+        $ph = ":v{$i}";
+        $setClause[] = "$safeCol = $ph";
+        $params[$ph] = $val;
+
+        $i++;
     }
 
-    $sql = "UPDATE $tableName SET " . implode(', ', $setClause) . " WHERE id = :id";
+    if (empty($setClause)) {
+        echo json_encode(['success' => true, 'message' => 'Sin cambios']);
+        exit;
+    }
+
+    $sql = "UPDATE $tableName SET " . implode(', ', $setClause) . " WHERE `id` = :id";
     $stmt = $db->prepare($sql);
 
     if ($stmt->execute($params)) {
-        $stmtGet = $db->prepare("SELECT * FROM $tableName WHERE id = :id");
+        $stmtGet = $db->prepare("SELECT * FROM $tableName WHERE `id` = :id");
         $stmtGet->execute([':id' => $id]);
-        echo json_encode(['success' => true, 'updatedItem' => $stmtGet->fetch(PDO::FETCH_ASSOC)]);
+
+        echo json_encode([
+            'success' => true,
+            'updatedItem' => $stmtGet->fetch(PDO::FETCH_ASSOC)
+        ]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Error SQL']);
     }

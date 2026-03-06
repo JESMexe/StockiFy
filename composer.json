@@ -5,7 +5,8 @@
     "phpmailer/phpmailer": "^6.9.1",
     "ext-json": "*",
     "ext-pdo": "*",
-    "ext-fileinfo": "*"
+    "ext-fileinfo": "*",
+    "ext-dom": "*"
   },
   "autoload": {
     "psr-4": {

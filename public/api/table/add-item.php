@@ -13,76 +13,101 @@ use App\core\Database;
 
 try {
     $user = getCurrentUser();
-    if (!$user) { echo json_encode(['success'=>false, 'message'=>'Sesión expirada']); exit; }
+    if (!$user) {
+        echo json_encode(['success' => false, 'message' => 'Sesión expirada']);
+        exit;
+    }
 
     $input = json_decode(file_get_contents('php://input'), true);
 
-    // Obtenemos datos y el ID de inventario seguro
-    $data = $input['data'] ?? [];
-    $inventoryId = $input['inventory_id'] ?? $_SESSION['active_inventory_id'] ?? null;
+    $data = (isset($input['data']) && is_array($input['data'])) ? $input['data'] : [];
+    $inventoryId = $input['inventory_id'] ?? ($_SESSION['active_inventory_id'] ?? null);
 
     if (!$inventoryId) {
-        echo json_encode(['success'=>false, 'message'=>'No se identificó el inventario.']); exit;
+        echo json_encode(['success' => false, 'message' => 'No se identificó el inventario.']);
+        exit;
     }
+    $inventoryId = (int)$inventoryId;
 
     if (empty($data)) {
-        echo json_encode(['success'=>false, 'message'=>'La fila está vacía.']); exit;
+        echo json_encode(['success' => false, 'message' => 'La fila está vacía.']);
+        exit;
     }
 
     $db = Database::getInstance();
 
-    // 1. Obtener Nombre de la Tabla (Verificando propiedad)
+    // 1) Obtener tabla del inventario validando propiedad
     $stmtInv = $db->prepare("
-        SELECT t.table_name 
+        SELECT t.table_name
         FROM user_tables t
         JOIN inventories i ON t.inventory_id = i.id
         WHERE i.id = :invId AND i.user_id = :uid
+        LIMIT 1
     ");
     $stmtInv->execute([':invId' => $inventoryId, ':uid' => $user['id']]);
     $rawTableName = $stmtInv->fetchColumn();
 
-    if (!$rawTableName) throw new Exception("Inventario no encontrado.");
+    if (!$rawTableName) {
+        throw new Exception("Inventario no encontrado o acceso denegado.");
+    }
 
     $tableName = "`" . str_replace("`", "``", $rawTableName) . "`";
 
-    // 2. Limpieza de columnas (Solo insertar columnas que existen)
+    // 2) Traer columnas válidas reales
     $validCols = $db->query("SHOW COLUMNS FROM $tableName")->fetchAll(PDO::FETCH_COLUMN);
+    $validMap = array_flip($validCols); // lookup rápido
 
+    // 3) Limpiar y filtrar data (no permitir id/created_at)
     $insertData = [];
     foreach ($data as $col => $val) {
-        // Ignoramos ID y created_at, y verificamos que la columna exista
-        if (in_array($col, $validCols) && $col !== 'id' && $col !== 'created_at') {
-            $insertData[$col] = $val;
-        }
+        if (!is_string($col)) continue;
+
+        $col = trim($col);
+        $colLower = strtolower($col);
+
+        if ($col === '' || $colLower === 'id' || $colLower === 'created_at') continue;
+        if (!isset($validMap[$col])) continue;
+
+        $insertData[$col] = $val;
     }
 
     if (empty($insertData)) {
         throw new Exception("No hay datos válidos para las columnas de esta tabla.");
     }
 
-    // 3. Construir INSERT dinámico
+    // 4) Construir INSERT dinámico:
+    //    - Columnas con backticks (permiten espacios)
+    //    - Placeholders seguros :v0, :v1... (SIN espacios)
     $cols = array_keys($insertData);
-    $placeholders = array_map(fn($c) => ":$c", $cols);
-    $safeCols = array_map(fn($c) => "`" . str_replace("`", "``", $c) . "`", $cols);
 
-    $sql = "INSERT INTO $tableName (" . implode(', ', $safeCols) . ") VALUES (" . implode(', ', $placeholders) . ")";
+    $safeCols = [];
+    $placeholders = [];
+    $params = [];
+
+    $i = 0;
+    foreach ($cols as $col) {
+        $safeCols[] = "`" . str_replace("`", "``", $col) . "`";
+        $ph = ":v{$i}";
+        $placeholders[] = $ph;
+        $params[$ph] = $insertData[$col];
+        $i++;
+    }
+
+    $sql = "INSERT INTO $tableName (" . implode(', ', $safeCols) . ")
+            VALUES (" . implode(', ', $placeholders) . ")";
 
     $stmt = $db->prepare($sql);
 
-    // Bind parameters
-    foreach ($insertData as $col => $val) {
-        $stmt->bindValue(":$col", $val);
-    }
-
-    if ($stmt->execute()) {
+    if ($stmt->execute($params)) {
         $newId = $db->lastInsertId();
 
-        // Devolver la fila completa creada
-        $stmtGet = $db->prepare("SELECT * FROM $tableName WHERE id = ?");
-        $stmtGet->execute([$newId]);
-        $newItem = $stmtGet->fetch(PDO::FETCH_ASSOC);
+        $stmtGet = $db->prepare("SELECT * FROM $tableName WHERE `id` = :id");
+        $stmtGet->execute([':id' => $newId]);
 
-        echo json_encode(['success' => true, 'newItem' => $newItem]);
+        echo json_encode([
+            'success' => true,
+            'newItem' => $stmtGet->fetch(PDO::FETCH_ASSOC)
+        ]);
     } else {
         throw new Exception("Error SQL al insertar.");
     }

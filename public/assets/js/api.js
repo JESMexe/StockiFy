@@ -194,11 +194,12 @@ export async function prepareCsvImport(formData) {
 }
 
 export async function executeImport() {
-    const response = await fetch('/api/import/execute-import.php', {
+    const res = await fetch('/api/import/execute-import.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _ts: Date.now() })
     });
-    return handleResponse(response);
+    return res.json();
 }
 
 /* ------------------- USUARIOS ------------------- */

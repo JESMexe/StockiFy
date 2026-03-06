@@ -4,6 +4,15 @@
    LAYOUT BASE (OPTIMIZADO PARA 1920px / 2K)
    ========================================= */
 
+/* KPI con corte y tooltip */
+.stat-value.ellipsis {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .analytics-layout {
     display: flex;
     flex-direction: column;

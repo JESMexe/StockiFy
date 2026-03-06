@@ -188,7 +188,7 @@ async function renderTable(columns, data) {
         if (!columnMapping.name) {
             const prefs = await api.getCurrentInventoryPreferences();
             if (prefs && prefs.success) {
-                if(prefs.mapping) window.columnMapping = prefs.mapping;
+                if (prefs.mapping) columnMapping = prefs.mapping;
                 window.columnMapping = columnMapping;
                 window.activeFeatures = activeFeatures;
                 if(prefs.features) activeFeatures = prefs.features;
@@ -298,7 +298,25 @@ async function renderTable(columns, data) {
 
     // --- 5. RENDERIZADO DEL BODY ---
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `<img src="/assets/img/ImagenSinDatos.svg" alt="Sin datos" style="margin: 0; padding: 0; width: 450%; height: 400%;">`
+        tableBody.innerHTML = `
+        <div style="
+            width:100%;
+            height:100%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            overflow: hidden;
+        ">
+            <img src="/assets/img/ImagenSinDatos.svg" 
+                 alt="Sin datos"
+                 style="
+                    max-width:100%;
+                    max-height:100%;
+                    object-fit:contain;
+                    overflow: hidden;
+                 ">
+        </div>
+    `;
     } else {
         tableBody.innerHTML = data.map(row => {
             const rowId = row['id'] ?? row['Id'] ?? row['ID'];
@@ -338,6 +356,13 @@ async function renderTable(columns, data) {
 
                 // Modo Edición
                 if (isEditing) {
+                    const colKey = String(col).toLowerCase().trim();
+                    const isIdCol = (colKey === 'id' || colKey === ' id' || colKey === 'ID');
+
+                    if (isIdCol) {
+                        const shown = (row[col] ?? value ?? '-');
+                        return `<td class="${cellClass}"><span class="readonly-cell">${shown}</span></td>`;
+                    }
                     if (isSale || isBuy) {
                         return `
                         <td>
@@ -450,6 +475,7 @@ async function renderTable(columns, data) {
         }).join('');
     }
 }
+
 
 window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
     const targetCurr = (currentCurr === 'ARS') ? 'USD' : 'ARS';
@@ -616,7 +642,7 @@ window.enableEditRow = (btn, id) => {
 };
 
 /* =========================================
-   2. GUARDAR CAMBIOS (VERSIÓN BLINDADA)
+   2. GUARDAR CAMBIOS
    ========================================= */
 window.saveRowChanges = async (btn, id) => {
     // 1. Localizar la fila
@@ -811,6 +837,7 @@ function setupMenuNavigation() {
 
             if (targetView === 'analysis') {
                 analyticsModuleInstance.init();
+                injectCashButtonIntoAnalytics();
             }
 
             if (targetView === 'payments') {
@@ -827,6 +854,68 @@ function setupMenuNavigation() {
     console.log("Navegación del menú lateral configurada.");
 }
 
+/* =========================================================
+   BOTÓN "CIERRE DE CAJA" TAMBIÉN EN ANALÍTICAS (PC)
+   Reusa el modal #mobile-balance-modal ya existente
+========================================================= */
+
+// Fallback: si por algún motivo NO existieran, definimos open/close básicos
+if (typeof window.openCashBalance !== 'function') {
+    window.openCashBalance = () => {
+        const modal = document.getElementById('mobile-balance-modal');
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+        // opcional: bloquear scroll del fondo
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+
+        // si tu app ya tiene esta función en otro archivo, la usamos
+        if (typeof window.loadBalanceData === 'function') {
+            window.loadBalanceData('today');
+        }
+    };
+}
+
+if (typeof window.closeCashBalance !== 'function') {
+    window.closeCashBalance = () => {
+        const modal = document.getElementById('mobile-balance-modal');
+        if (!modal) return;
+
+        modal.classList.add('hidden');
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+    };
+}
+
+function injectCashButtonIntoAnalytics() {
+    const analysis = document.getElementById('analysis');
+    if (!analysis) return;
+
+    // Evitar duplicarlo
+    if (analysis.querySelector('#btn-cash-balance-desktop')) return;
+
+    // Esperamos a que el módulo de analíticas renderice su HTML
+    setTimeout(() => {
+        if (analysis.querySelector('#btn-cash-balance-desktop')) return;
+
+        // En tu analytics.js (por lo que venías usando) suele existir .table-header
+        const header = analysis.querySelector('.table-header') || analysis;
+
+        const btn = document.createElement('button');
+        btn.id = 'btn-cash-balance-desktop';
+        btn.className = 'btn btn-outline btn-xs cash-corner-btn';
+        btn.type = 'button';
+        btn.innerHTML = `<i class="ph ph-money"></i> Cierre de caja`;
+        btn.style.marginLeft = '10px';
+
+        btn.addEventListener('click', () => {
+            window.openCashBalance();
+        });
+
+        header.appendChild(btn);
+    }, 0);
+}
 
 function setupAccordion() {
     console.log("[INIT] Configurando acordeones inteligentes...");
@@ -4691,7 +4780,7 @@ window.saveColumnPreferences = async function() {
 
             if (!window.currentUserPreferences) window.currentUserPreferences = {};
             window.currentUserPreferences.visible_columns = visibleCols;
-            window.currentUserPreferences.column_order = orderedCols; // [NUEVO] Actualizamos local
+            window.currentUserPreferences.column_order = orderedCols;
 
             window.closeColumnManager();
 
@@ -4710,6 +4799,87 @@ window.saveColumnPreferences = async function() {
         pop_ups.error("No se pudo guardar la configuración.", "Error");
     }
 };
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('mobile-balance-modal');
+        if (modal && !modal.classList.contains('hidden')) window.closeCashBalance();
+    }
+});
+
+// =========================================================
+// Balance modal (usable en PC también)
+// =========================================================
+(function () {
+    function getBalanceModal() {
+        // Si quedó duplicado por error, esto agarra el primero
+        return document.getElementById('mobile-balance-modal');
+    }
+
+    window.openCashBalance = function () {
+        const modal = getBalanceModal();
+        if (!modal) {
+            console.warn("No existe #mobile-balance-modal en el DOM");
+            return;
+        }
+
+        // Abrir aunque el CSS mobile lo tenga oculto en desktop
+        modal.classList.remove('hidden');
+        modal.classList.add('is-open');
+
+        // Fuerza visual (por si hay media queries)
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.zIndex = '99999';
+
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+
+        // Cargar data
+        if (typeof window.loadBalanceData === 'function') {
+            window.loadBalanceData('today');
+        }
+    };
+
+    window.closeCashBalance = function () {
+        const modal = getBalanceModal();
+        if (!modal) return;
+
+        modal.classList.add('hidden');
+        modal.classList.remove('is-open');
+
+        // Limpia overrides
+        modal.style.display = '';
+        modal.style.position = '';
+        modal.style.inset = '';
+        modal.style.zIndex = '';
+
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+    };
+
+    // Cerrar con ESC + click afuera
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const modal = getBalanceModal();
+            if (modal && !modal.classList.contains('hidden')) window.closeCashBalance();
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const modal = getBalanceModal();
+        if (!modal || modal.classList.contains('hidden')) return;
+        if (e.target === modal) window.closeCashBalance();
+    });
+})();
+
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('mobile-balance-modal');
+    if (!modal || modal.classList.contains('hidden')) return;
+
+    if (e.target === modal) window.closeCashBalance();
+});
 
 
 window.allData = allData;

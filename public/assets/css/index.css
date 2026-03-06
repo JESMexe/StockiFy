@@ -190,7 +190,7 @@ header {
 
 /* CONTENEDOR DE IMAGEN 16:9 */
 /* El contenedor NO fuerza ratio */
-.slide-img-container{
+.slide-img-container {
     width: 100%;
     border-bottom: var(--border-strong);
     overflow: hidden;
@@ -348,7 +348,7 @@ header {
 
 /* 4) Imagen: que se vea COMPLETA (no recorte) */
 #section-gallery .slide-img-container{
-    aspect-ratio: 16 / 8.5 !important;
+    aspect-ratio: 16 / 8 !important;
     background: #f6f6f6;
 }
 
@@ -430,4 +430,22 @@ header {
     color: #fff;
     font-size: 18px;
     cursor: pointer;
+}
+
+.swiper-pagination-bullet{
+    width: 8px;
+    height: 8px;
+    background: #cfcfcf;
+    opacity: 1;
+    transition: all .2s ease;
+}
+
+.swiper-pagination-bullet-active{
+    background: var(--accent-color);
+    transform: scale(1.25);
+}
+
+.swiper{
+    --swiper-pagination-color: var(--accent-color);
+    --swiper-pagination-bullet-inactive-color: #cfcfcf;
 }
