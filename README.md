@@ -110,7 +110,7 @@ Para correr el proyecto necesitás:
 ### 1️⃣ Clonar el repositorio
 
 ```
-https://github.com/JESMexe/StockiFy.git
+git clone https://github.com/JESMexe/StockiFy.git
 cd StockiFy
 ```
 
