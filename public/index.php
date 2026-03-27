@@ -30,6 +30,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css" />
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
@@ -46,6 +47,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
     <div class="nav-dot" data-id="section-features" title="Características" onclick="document.getElementById('section-features').scrollIntoView({behavior: 'smooth'})"></div>
     <div class="nav-dot" data-id="section-pillars" title="Pilares" onclick="document.getElementById('section-pillars').scrollIntoView({behavior: 'smooth'})"></div>
     <div class="nav-dot" data-id="section-gallery" title="Galería" onclick="document.getElementById('section-gallery').scrollIntoView({behavior: 'smooth'})"></div>
+    <div class="nav-dot" data-id="section-pricing" title="Planes y Precios" onclick="document.getElementById('section-pricing').scrollIntoView({behavior: 'smooth'})"></div>
 </div>
 
 <header>
@@ -295,6 +297,101 @@ $showDashboard = $currentUser ? '' : 'hidden';
             </div>
             <div class="swiper-pagination"></div>
         </div>
+    </section>
+
+    <!-- ======================= SECCIÓN DE PRECIOS ======================= -->
+    <!-- force-cache-flush-v2 -->
+    <section class="section bg-pattern" id="section-pricing" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; gap: 2rem; padding: 4rem 1rem;">
+        <div style="z-index: 2; text-align: center; margin-bottom: 2rem;">
+            <h2 style="font-size: 2.5rem; color: var(--color-black); padding-bottom: 20px;">Planes y Precios</h2>
+            <p style="color: #666; font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Elige el plan que mejor se adapte a las necesidades de tu emprendimiento para llevar el control al máximo nivel.</p>
+        </div>
+
+        <div id="pricing-carousel-container" style="width: 100%; max-width: 100vw; overflow: visible;">
+            <div class="pricing-wrapper" id="pricing-wrapper">
+            
+            <!-- Plan Emprendedor (Básico) -->
+            <div class="pricing-card-v2 card-theme-dark">
+                <h3>Básico</h3>
+                <div class="price-val">$240.000<span style="font-size: 1rem; opacity: 0.7;">/mes</span></div>
+                <ul>
+                    <li><i class="ph-bold ph-check"></i> Un solo Inventario Activo</li>
+                    <li><i class="ph-bold ph-check"></i> Gestión de Productos</li>
+                    <li><i class="ph-bold ph-check"></i> Analíticas y Cierre de Caja</li>
+                    <li><i class="ph-bold ph-check"></i> Importación de Datos</li>
+                    
+                    <!-- Separador premium -->
+                    <div style="height: 1px; background: rgba(128,128,128,0.2); margin: 0.5rem 0;"></div>
+
+                    <li style="opacity: 0.6; border-bottom: none;"><i class="ph-bold ph-lock-key" style="color: var(--accent-red) !important;"></i> Gestión CRM (Clientes, Empleados y Proveedores)</li>
+                </ul>
+                <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20el%20Plan%20Básico%20de%20StockiFy.%20¿Cómo%20podemos%20avanzar?" target="_blank" class="btn-pricing">Consultar Plan</a>
+            </div>
+
+            <!-- Plan Profesiones (Profesional) -->
+            <div class="pricing-card-v2 card-theme-pro">
+                <div class="pro-badge">Recomendado</div>
+                <h3>Profesional</h3>
+                <div class="price-val">$299.999<span style="font-size: 1.1rem; opacity: 0.7;">/mes</span></div>
+                <ul>
+                    <li style="font-weight: 700;"><i class="ph-bold ph-plus"></i> Todo lo que contiene el Plan Básico</li>
+                    <li><i class="ph-bold ph-check"></i> Inventarios Ilimitados</li>
+                    <li><i class="ph-bold ph-check"></i> Gestión CRM (Clientes, Empleados y Proveedores)</li>
+                    <li><i class="ph-bold ph-check"></i> Carga Ilimitada de productos</li>
+                    <li><i class="ph-bold ph-check"></i> Acceso de terminal desde el Teléfono</li>
+                    <li><i class="ph-bold ph-check"></i> Gestión de Métodos de Pago</li>
+                    <li><i class="ph-bold ph-check"></i> Alertas de Stock Mínimo Alcanzado</li>
+                    <li><i class="ph-bold ph-check"></i> Stock Valorizado, Ticket Promedio</li>
+                    <li><i class="ph-bold ph-check"></i> Analíticas (Top Productos, Mejores Vendedores y Clientes)</li>
+                    <li><i class="ph-bold ph-check"></i> Manejo de Comisión por Vendedor</li>
+                </ul>
+                <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20el%20Plan%20Profesional%20de%20StockiFy.%20¿Cómo%20podemos%20avanzar?" target="_blank" class="btn-pricing">Adquirir Plan</a>
+            </div>
+
+            <!-- Plan Empresarial -->
+            <div class="pricing-card-v2 card-theme-dark">
+                <div class="dark-badge">A Medida</div>
+                <h3>Empresarial</h3>
+                <div class="price-val">A cotizar</div>
+                <ul>
+                    <li style="font-weight: 700;"><i class="ph-bold ph-plus"></i> Todo lo que contiene el Plan Profesional</li>
+                    <li style="border-bottom: none; padding-bottom: 0;"><i class="ph-bold ph-check"></i> Contacto directo con el desarrollador para mayor personalización: </li>
+                    <li style="border-bottom: none; padding-bottom: 0; margin-left: 20px;"><i class="ph-bold ph-caret-right"></i> Módulos Programados a Medida</li>
+                    <li style="border-bottom: none; padding-bottom: 0; margin-left: 20px;"><i class="ph-bold ph-caret-right"></i> Análisis de Datos Exclusivos</li>
+                    <li style="margin-left: 20px;"><i class="ph-bold ph-caret-right"></i> Módulos personalizados para tus analíticas</li>
+                    <li><i class="ph-bold ph-check"></i> Soporte Inmediato 24/7</li>
+                    <li style="border-bottom: none;"><i class="ph-bold ph-star"></i> Una Aplicación 100% Personalizada para tu negocio</li>
+                </ul>
+                <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20el%20Plan%20Empresarial%20de%20StockiFy.%20Necesito%20funciones%20a%20medida%20para%20mi%20negocio.%20¿Podemos%20coordinar%20una%20reunión?" target="_blank" class="btn-pricing">Contactar Ventas</a>
+            </div>
+
+            <!-- Plan Vitalicio -->
+            <div class="pricing-card-v2 card-theme-vital">
+                <div class="vital-badge">Único Pago</div>
+                <h3>Vitalicio</h3>
+                <div class="price-val">USD 3.999<span style="font-size: 0.9rem; opacity: 0.7;">/único</span></div>
+                
+                <div style="margin-top: 5px; margin-bottom: 5px; font-size: 0.75rem; color: #555; background: #e5e5e5; padding: 6px 10px; border-radius: 4px; display: flex; align-items: flex-start; border: 1px solid #d0d0d0; line-height: 1.4;">
+                    <i class="ph-bold ph-info" style="margin-right: 6px; font-size: 1rem; margin-top: 1px; flex-shrink: 0;"></i> 
+                    <span><strong>Comunicado:</strong> El otorgamiento de esta licencia se encuentra condicionado a disponibilidad (Límite operativo de 20 fundadores).</span>
+                </div>
+                <ul>
+                    <li style="font-weight: 700;"><i class="ph-bold ph-star"></i> Acceso Absoluto:</li>
+                    <li><i class="ph-bold ph-check"></i> Pago único de por vida</li>
+                    <li><i class="ph-bold ph-check"></i> Funciones Empresariales</li>
+                    <li><i class="ph-bold ph-check"></i> Updates gratuitos infinitos</li>
+                </ul>
+                <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20la%20Licencia%20Vitalicia%20(Edición%20Fundadores)%20de%20StockiFy.%20¿Cómo%20avanzamos?" target="_blank" class="btn-pricing">Inversión Única</a>
+            </div>
+            
+            <!-- Pagination dinámica para mobile -->
+            <div class="swiper-pagination pricing-pagination" id="pricing-pagination" style="display: none;"></div>
+        </div>
+
+    </section>
+
+    <!-- ======================= FOOTER ======================= -->
+    <section class="section bg-pattern" style="min-height: auto !important; padding: 0;">
 
         <footer class="footer footer-snap" style="width: 100%; z-index: 2;">
             <div class="footer-container">

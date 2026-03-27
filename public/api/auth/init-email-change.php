@@ -21,7 +21,7 @@ if (!$newEmail || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
 }
 
 $userModel = new UserModel();
-$otp = (string) rand(100000, 999999);
+$otp = (string)rand(100000, 999999);
 
 if ($userModel->setOtp($user['id'], $otp)) {
     $_SESSION['temp_new_email'] = $newEmail;
@@ -30,7 +30,8 @@ if ($userModel->setOtp($user['id'], $otp)) {
     // Intentar enviar y capturar si falla
     if ($mailService->sendSecurityOTP($newEmail, $otp, 'email_change')) {
         echo json_encode(['success' => true]);
-    } else {
+    }
+    else {
         echo json_encode(['success' => false, 'message' => 'El servidor de correo rechazó el envío.']);
     }
 }

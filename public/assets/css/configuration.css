@@ -1,4 +1,4 @@
-﻿/* =================================================================
+/* =================================================================
    CONFIGURATION.CSS - VERSION "THE FORTRESS" (DIMENSIONES FIJAS)
    ================================================================= */
 
@@ -288,4 +288,79 @@ body#page-configuration {
 .locked-field {
     grid-column: span 2;
     margin-bottom: 1.5rem;
+}
+
+/* =================================================================
+   RESPONSIVE DESIGN (MÓVILES Y PANTALLAS PEQUEÑAS)
+   ================================================================= */
+@media (max-width: 900px) {
+    #page-configuration main {
+        padding: 1rem;
+    }
+
+    /* Romper "La Fortaleza" (Dimensiones Fijas) */
+    .config-layout-wrapper {
+        width: 100%;
+        min-width: unset;
+        max-width: 100%;
+        height: auto;
+        min-height: unset;
+        max-height: unset;
+        flex-direction: column;
+    }
+
+    /* Convertir barra lateral en Pestañas Superiores */
+    #options-config-container {
+        flex: none;
+        width: 100%;
+        min-width: unset;
+        height: auto;
+        flex-direction: row;
+        padding: 1rem;
+        border-right: none;
+        border-bottom: 2px solid var(--color-black);
+    }
+
+    #options-config-container .btn {
+        flex: 1;
+        justify-content: center;
+        padding: 0 1rem;
+        height: 55px;
+    }
+
+    /* Reducir padding excesivo para el contenedor de datos */
+    #config-container {
+        padding: 1.5rem;
+        border-radius: 0 0 10px 10px;
+        overflow-y: visible; /* Que el scroll lo maneje la ventana del móvil, no el contenedor interno */
+    }
+
+    /* Apilar grilla de datos de usuario */
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Inputs de ancho completo que antes ocupaban 2 columnas */
+    .locked-field {
+        grid-column: span 1;
+    }
+
+    /* Apilar input de contraseña y su botón */
+    .input-with-lock {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+
+    #btn-change-password {
+        width: 100%;
+        margin-top: 5px;
+    }
+}
+
+/* Teléfonos muy angostos (Pestañas apiladas verticalmente si no caben lado a lado) */
+@media (max-width: 480px) {
+    #options-config-container {
+        flex-direction: column;
+    }
 }

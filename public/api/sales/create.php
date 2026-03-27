@@ -48,9 +48,11 @@ try {
 
     $clientId = !empty($input['customer_id']) ? (int)$input['customer_id'] : null;
 
-    // Obtener inventario activo (Fallback)
+    // Obtener inventario activo (Estricto por Session)
+    if (session_status() === PHP_SESSION_NONE) { session_start(); }
+    $inventoryId = $input['inventory_id'] ?? $_SESSION['active_inventory_id'] ?? null;
+    
     $model = new SalesModel();
-    $inventoryId = $input['inventory_id'] ?? null;
     if (!$inventoryId) {
         try {
             $ctx = $model->getInventoryContext($user['id']);

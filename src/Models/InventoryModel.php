@@ -489,7 +489,7 @@ class InventoryModel
      * @param int $quantity Cantidad a descontar.
      * @return bool True si se actualizó, False si falló.
      */
-    public function decreaseStock(int $userId, $productId, int $quantity, $inventoryId = null): bool
+    public function decreaseStock(int $userId, $productId, int $quantity, $inventoryId = null, string $productNameFallback = null): bool
     {
         try {
             // 1. Identificar la tabla correcta
@@ -514,10 +514,40 @@ class InventoryModel
 
             $safeTable = "`" . str_replace("`", "``", $row['table_name']) . "`";
 
-            // 2. Ejecutar descuento
+            // 2. CHECK ALERTA DE STOCK (Antes de descontar)
+            // Ya no buscamos 'name' porque la columna del usuario puede tener cualquier nombre.
+            $stmtBefore = $this->db->prepare("SELECT stock, min_stock FROM {$safeTable} WHERE id = :id");
+            $stmtBefore->execute([':id' => $productId]);
+            $prod = $stmtBefore->fetch(PDO::FETCH_ASSOC);
+
+            // 3. Ejecutar descuento
             $sql = "UPDATE {$safeTable} SET stock = stock - :qty WHERE id = :id";
             $stmtUpdate = $this->db->prepare($sql);
-            return $stmtUpdate->execute([':qty' => $quantity, ':id' => $productId]);
+            $success = $stmtUpdate->execute([':qty' => $quantity, ':id' => $productId]);
+
+            // 4. DISPARAR EMAIL SI CRUZA EL UMBRAL (Solo cruces exactos para evitar spam)
+            if ($success && $prod && isset($prod['stock']) && isset($prod['min_stock'])) {
+                $oldStock = (float)$prod['stock'];
+                $minStock = (float)$prod['min_stock'];
+                $newStock = $oldStock - $quantity;
+
+                if ($oldStock > $minStock && $newStock <= $minStock) {
+                    $prodName = $productNameFallback ?? 'Producto #' . $productId;
+                    $stmtUser = $this->db->prepare("SELECT email, full_name FROM users WHERE id = :id");
+                    $stmtUser->execute([':id' => $userId]);
+                    $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($u && !empty($u['email'])) {
+                        // Importación perezosa (Lazy Load) para no afectar rendimiento si no hay mail
+                        require_once dirname(__DIR__) . '/Services/MailService.php';
+                        $mailSvc = new \App\Services\MailService();
+                        // (Un leve lag de ~500ms es esperable al despachar el mail, tolerable para esta app)
+                        $mailSvc->sendLowStockAlert($u['email'], $u['full_name'] ?? 'Socio', $prodName, $newStock, $minStock);
+                    }
+                }
+            }
+
+            return $success;
 
         } catch (Exception $e) {
             error_log("InventoryModel: Error al descontar stock: " . $e->getMessage());

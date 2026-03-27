@@ -476,7 +476,9 @@ export class SalesModule {
     addToCart(p, priceInArs) {
         const exist = this.currentSale.items.find(i => i.id == p.id);
         if (exist) {
-            if (exist.cantidad >= p.stock) return pop_ups.warning("Stock máximo alcanzado");
+            if (exist.cantidad >= p.stock) {
+                pop_ups.warning("Atención: Estás vendiendo por encima del stock disponible.");
+            }
             exist.cantidad++;
         } else {
             this.currentSale.items.push({
@@ -580,7 +582,14 @@ export class SalesModule {
                     <div class="cart-row-bottom"><div class="cart-total">${fmtMoney(item.precio * item.cantidad)}</div>
                     <div class="cart-controls-wrapper"><button class="ctrl-btn sub" data-idx="${idx}">-</button><div class="qty-val">${item.cantidad}</div><button class="ctrl-btn add" data-idx="${idx}">+</button><button class="del-btn del" data-idx="${idx}" title="Eliminar"><i class="ph ph-trash"></i></button></div></div>
                 </div>`).join('');
-            c.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => { const item = this.currentSale.items[b.dataset.idx]; if (item.cantidad >= item.max_stock) return pop_ups.warning("Stock insuficiente"); item.cantidad++; this.recalcSale(); }));
+            c.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => { 
+                const item = this.currentSale.items[b.dataset.idx]; 
+                if (item.cantidad >= item.max_stock) {
+                    pop_ups.warning("Atención: Operando en stock negativo.");
+                }
+                item.cantidad++; 
+                this.recalcSale(); 
+            }));
             c.querySelectorAll('.sub').forEach(b => b.addEventListener('click', () => { const item = this.currentSale.items[b.dataset.idx]; item.cantidad--; if(item.cantidad < 1) this.currentSale.items.splice(b.dataset.idx, 1); this.recalcSale(); }));
             c.querySelectorAll('.del').forEach(b => b.addEventListener('click', () => { this.currentSale.items.splice(b.dataset.idx, 1); this.recalcSale(); }));
         }

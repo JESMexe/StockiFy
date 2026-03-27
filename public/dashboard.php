@@ -1,4 +1,21 @@
-﻿<!DOCTYPE html>
+<?php
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../src/helpers/auth_helper.php';
+
+$currentUser = getCurrentUser();
+
+if (!$currentUser) {
+    header('Location: login.php');
+    exit;
+}
+
+// THE IMPENETRABLE BARRIER: Access control for Subscriptions
+if (!isset($currentUser['subscription_active']) || $currentUser['subscription_active'] == 0) {
+    header('Location: index.php#section-pricing');
+    exit; // Immediately kills server execution. Zero bytes sent to browser.
+}
+?>
+<!DOCTYPE html>
 <html lang="es" xmlns:type="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
@@ -101,7 +118,21 @@
                     <li><button class="menu-btn active" data-target-view="view-db"><i class="ph ph-table"></i> Ver Datos</button></li>
                     <li><button class="menu-btn" data-target-view="config-db"><i class="ph ph-gear"></i> Configurar Tabla</button></li>
                     <li><a href="select-db.php" class="menu-link"><i class="ph ph-database"></i> Cambiar Base de Datos</a></li>
+                    
+                    <?php 
+                        // Verify Inventory limit for Tier 1
+                        $dbInstance = \App\core\Database::getInstance();
+                        $stmtCount = $dbInstance->prepare("SELECT COUNT(*) FROM inventories WHERE user_id = ?");
+                        $stmtCount->execute([$currentUser['id']]);
+                        $invCount = $stmtCount->fetchColumn();
+                        $canCreateDb = ($currentUser['subscription_active'] >= 2) || ($currentUser['subscription_active'] == 1 && $invCount == 0);
+                    ?>
+
+                    <?php if ($canCreateDb): ?>
                     <li><a href="create-db.php" class="menu-link"><i class="ph ph-plus-circle"></i> Crear Nueva Base de Datos</a></li>
+                    <?php else: ?>
+                    <li style="opacity: 0.5;" title="Límite del Plan Básico alcanzado."><a href="#" onclick="window.showLockedFeatureToast('Múltiples Inventarios'); return false;" class="menu-link"><i class="ph ph-plus-circle"></i> Nuevo Inventario <i class="ph-fill ph-lock-key" style="margin-left: auto; color: var(--accent-red)"></i></a></li>
+                    <?php endif; ?>
                     <hr>
                 </ul>
 
@@ -109,9 +140,17 @@
                 <ul>
                     <li><button class="menu-btn" data-target-view="sales"><i class="ph ph-money"></i> Ventas</button></li>
                     <li><button class="menu-btn" data-target-view="receipts"><i class="ph ph-stack"></i> Compras</button></li>
+
+                    <?php if ($currentUser['subscription_active'] >= 2): ?>
                     <li><button class="menu-btn" data-target-view="customers"><i class="ph ph-user-focus"></i> Clientes</button></li>
                     <li><button class="menu-btn" data-target-view="providers"><i class="ph ph-van"></i> Proveedores</button></li>
                     <li><button class="menu-btn" data-target-view="employees"><i class="ph ph-identification-badge"></i> Empleados</button></li>
+                    <?php else: ?>
+                    <div style="margin-top: 15px; margin-bottom: 5px; padding-left: 10px; font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: bold;">Funciones VIP:</div>
+                    <li style="opacity: 0.5;" title="Bloqueado en el Plan Básico"><button class="menu-btn" onclick="window.showLockedFeatureToast('Sección de Clientes');"><i class="ph ph-user-focus"></i> Clientes <i class="ph-fill ph-lock-key" style="margin-left: auto; color: var(--accent-red)"></i></button></li>
+                    <li style="opacity: 0.5;" title="Bloqueado en el Plan Básico"><button class="menu-btn" onclick="window.showLockedFeatureToast('Sección de Proveedores');"><i class="ph ph-van"></i> Proveedores <i class="ph-fill ph-lock-key" style="margin-left: auto; color: var(--accent-red)"></i></button></li>
+                    <li style="opacity: 0.5;" title="Bloqueado en el Plan Básico"><button class="menu-btn" onclick="window.showLockedFeatureToast('Sección de Empleados');"><i class="ph ph-identification-badge"></i> Empleados <i class="ph-fill ph-lock-key" style="margin-left: auto; color: var(--accent-red)"></i></button></li>
+                    <?php endif; ?>
                     <hr>
                 </ul>
 
@@ -729,6 +768,13 @@
 <script type="module" src="assets/js/sales/sales.js"></script>
 <script type="module" src="assets/js/payment/payment.js"></script>
 <script type="module" src="assets/js/dashboard.js"></script>
+
+<script type="module">
+    import { pop_ups } from './assets/js/notifications/pop-up.js';
+    window.showLockedFeatureToast = (featureName) => {
+        pop_ups.system(`Funcionabilidad no incluída en su versión de pago Básico: ${featureName}`, 'Acceso Restringido');
+    };
+</script>
 
 <script type="module">
     import { initMobileApp } from './assets/js/mobile/mobile-app.js';

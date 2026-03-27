@@ -46,6 +46,10 @@ class PurchaseModel {
             $purchaseId = $this->db->lastInsertId();
 
             if (!empty($data['items']) && is_array($data['items'])) {
+                // Instanciar InventoryModel para incrementar stock
+                require_once __DIR__ . '/InventoryModel.php';
+                $inventoryModel = new \App\Models\InventoryModel();
+
                 $stmtDetail = $this->db->prepare("
                     INSERT INTO purchase_details (purchase_id, product_id, product_name, quantity, unit_price, subtotal)
                     VALUES (:pid, :prod_id, :name, :qty, :price, :subtotal)
@@ -60,6 +64,11 @@ class PurchaseModel {
                         ':price' => $item['precio_unitario'],
                         ':subtotal' => $item['subtotal']
                     ]);
+                    
+                    // Incremento estricto del inventario
+                    if (!empty($item['id'])) {
+                        $inventoryModel->increaseStock($userId, $item['id'], $item['cantidad'], $inventoryId);
+                    }
                 }
             }
 

@@ -1,7 +1,8 @@
-﻿/* public/assets/css/index.css */
+/* public/assets/css/index.css */
 
 /* --- Configuración Global --- */
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     height: 100%;
@@ -11,7 +12,7 @@ html, body {
 
 /* Fondo de puntos */
 .bg-pattern {
-    background-image: radial-gradient(rgba(0,0,0,0.15) 1.5px, transparent 1.5px);
+    background-image: radial-gradient(rgba(0, 0, 0, 0.15) 1.5px, transparent 1.5px);
     background-size: 24px 24px;
 }
 
@@ -26,7 +27,7 @@ html, body {
 }
 
 .scroll-container {
-    height: 100vh;
+    height: 100dvh;
     width: 100%;
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
@@ -94,14 +95,16 @@ header {
 /* --- Secciones (Centrado Vertical Puro) --- */
 .section {
     position: relative;
-    height: 100vh;
+    min-height: 100dvh;
     width: 100%;
     scroll-snap-align: start;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Centra el contenido verticalmente */
+    justify-content: center;
+    /* Centra el contenido verticalmente */
     align-items: center;
-    padding: 0 2rem; /* Sin padding arriba extra */
+    padding: 80px 2rem 2rem 2rem;
+    /* Espacio superior para el header fijo */
     box-sizing: border-box;
     z-index: 1;
     /* Esto evita que el scroll "coma" parte del contenido por el header */
@@ -154,17 +157,19 @@ header {
 }
 
 /* --- Carrusel 16:9 (Widescreen para Capturas) --- */
-.swiper {
+#section-gallery .swiper {
     width: 100%;
-    padding: 60px 20px 80px 20px; /* Espacio generoso para la sombra */
+    padding: 60px 20px 80px 20px;
+    /* Espacio generoso para la sombra */
 }
 
-.swiper-slide {
+#section-gallery .swiper-slide {
     background: #fff;
 
     /* ANCHO Y ALTO */
     min-width: 1300px;
-    height: auto; /* La altura se adapta al contenido */
+    height: auto;
+    /* La altura se adapta al contenido */
     min-height: unset;
 
     /* Estilo Brutalista */
@@ -180,7 +185,7 @@ header {
     transition: transform 0.5s ease, box-shadow 0.5s ease-in;
 }
 
-.swiper-slide:hover {
+#section-gallery .swiper-slide:hover {
     transform: translate(5px, 5px);
     border: var(--border-strong);
     border-radius: var(--border-radius);
@@ -199,15 +204,17 @@ header {
 }
 
 /* La imagen define el alto */
-.slide-img-container img{
+.slide-img-container img {
     width: 100%;
-    height: auto;           /* clave */
-    object-fit: initial;    /* o unset */
+    height: auto;
+    /* clave */
+    object-fit: initial;
+    /* o unset */
     display: block;
     transition: transform 0.5s ease;
 }
 
-.swiper-slide:hover .slide-img-container img {
+#section-gallery .swiper-slide:hover .slide-img-container img {
     transform: scale(1.05);
 }
 
@@ -231,7 +238,7 @@ header {
     margin-bottom: 0.5rem;
 }
 
-.swiper-slide h3 {
+#section-gallery .swiper-slide h3 {
     margin: 0;
     font-size: 1.3rem;
     color: #1b1b1b;
@@ -239,7 +246,7 @@ header {
     text-transform: uppercase;
 }
 
-.swiper-slide p {
+#section-gallery .swiper-slide p {
     font-size: 0.95rem;
     color: #555;
     line-height: 1.5;
@@ -254,6 +261,7 @@ header {
     opacity: 0.2;
     border-radius: 0;
 }
+
 .swiper-pagination-bullet-active {
     opacity: 1;
     background: var(--accent-color);
@@ -261,6 +269,7 @@ header {
 
 /* Responsive para Móviles */
 @media (max-width: 768px) {
+
     /* En móvil, la tarjeta ocupa casi todo el ancho pero mantiene 16:9 */
     .swiper-slide {
         width: 85vw;
@@ -294,28 +303,68 @@ header {
 
 /* --- Animación Bounce --- */
 @keyframes bounce {
-    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-    40% {transform: translateY(-10px);}
-    60% {transform: translateY(-5px);}
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-10px);
+    }
+
+    60% {
+        transform: translateY(-5px);
+    }
 }
 
 /* --- Responsive --- */
 @media (max-width: 768px) {
-    .section { padding: 0 1rem; }
-    .side-nav { display: none; }
-    .swiper-slide { width: 260px; height: 420px; }
-    .footer-bottom { flex-direction: column; text-align: center; gap: 1rem; }
+    .scroll-container {
+        scroll-snap-type: y proximity;
+        /* Permitimos desplazamiento más suave si hay contenido muy alto */
+    }
+
+    .section {
+        padding: 90px 1rem 2rem 1rem;
+    }
+
+    .side-nav {
+        display: none;
+    }
+
+    .swiper-slide {
+        height: auto;
+    }
+
+    #section-pillars h2 {
+        margin-bottom: 1rem !important;
+    }
+
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
 }
 
 #section-gallery {
-    padding-top: 120px !important; /* Fuerza espacio arriba */
-    justify-content: flex-start; /* Alinea todo arriba, el margin-top: auto del footer hará el resto */
-    gap: 40px; /* Espacio entre el título y el carrusel */
+    padding-top: 120px !important;
+    /* Fuerza espacio arriba */
+    justify-content: flex-start;
+    /* Alinea todo arriba, el margin-top: auto del footer hará el resto */
+    gap: 40px;
+    /* Espacio entre el título y el carrusel */
 }
 
 #section-gallery .swiper {
-    padding: 20px 20px 60px 20px; /* Ajuste de padding interno del carrusel */
-    flex-grow: 1; /* Hace que el carrusel ocupe el espacio blanco disponible */
+    padding: 20px 20px 60px 20px;
+    /* Ajuste de padding interno del carrusel */
+    flex-grow: 1;
+    /* Hace que el carrusel ocupe el espacio blanco disponible */
 }
 
 /* =========================================================
@@ -324,93 +373,146 @@ header {
 ========================================================= */
 
 /* 1) La sección gallery no necesita tanto aire arriba */
-#section-gallery{
-    padding-top: 90px !important;     /* antes 120px */
+#section-gallery {
+    padding-top: 90px !important;
+    /* antes 120px */
     justify-content: flex-start;
-    gap: 18px;                        /* antes 40px */
+    gap: 18px;
+    /* antes 40px */
 }
 
 /* Título más compacto (tu div tenía margin-top:4rem inline) */
-#section-gallery > div[style*="margin-top"]{
+#section-gallery>div[style*="margin-top"] {
     margin-top: 0 !important;
 }
 
 /* 2) Swiper: menos padding global, más control */
-#section-gallery .swiper{
-    padding: 18px 20px 55px 20px !important; /* antes 20/60 etc */
+#section-gallery .swiper {
+    padding: 18px 20px 45px 20px !important;
+    /* antes 20/60 etc */
     width: 100%;
+    flex-grow: 0 !important;
+    /* Desactiva el estiramiento vertical para que los puntos sigan a la tarjeta */
 }
 
 /* 3) Tarjeta: ancho más flexible y consistente */
-#section-gallery .swiper-slide{
-    width: min(720px, 92vw) !important; /* evita que se pase */
+#section-gallery .swiper-slide {
+    width: min(720px, 92vw) !important;
+    /* evita que se pase */
 }
 
-/* 4) Imagen: que se vea COMPLETA (no recorte) */
-#section-gallery .slide-img-container{
-    aspect-ratio: 16 / 8 !important;
+/* 4) Imagen: que se adapte exacto a la foto sin generar barras grises */
+#section-gallery .slide-img-container {
+    height: auto !important;
+    aspect-ratio: unset !important;
     background: #f6f6f6;
+    overflow: hidden;
 }
 
-#section-gallery .slide-img-container img{
-    object-fit: contain !important;     /* antes cover */
+#section-gallery .slide-img-container img {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
     object-position: center !important;
     background: #f6f6f6;
+    display: block;
 }
 
 /* 5) Footer dentro de la sección: hacerlo “fino” y sin romper ancho */
-.footer-snap{
-    margin-top: 18px !important;        /* antes auto */
-    min-width: 0 !important;            /* antes 1000px */
-    padding: 1.5rem 1.2rem 1rem 1.2rem; /* antes 3rem... */
+.footer-snap {
+    margin-top: auto !important;
+    /* el auto empuja al footer al fondo si hay espacio libre */
+    min-width: 0 !important;
+    /* antes 1000px */
+    padding: 1.5rem 1.2rem 1rem 1.2rem;
+    /* antes 3rem... */
     border-top: 6px solid var(--accent-color-quat-opacity);
 }
 
-.footer-container{
+.footer-container {
     max-width: 1100px;
 }
 
-.footer-brand img{
-    width: 220px !important;            /* antes 300px inline */
+.footer-brand img {
+    width: 220px !important;
+    /* antes 300px inline */
     max-width: 70vw;
     height: auto;
 }
 
-.footer-bottom{
-    padding-top: 1rem !important;       /* antes 3rem */
-    border-top: 1px solid rgba(255,255,255,0.55);
+.footer-bottom {
+    padding-top: 1rem !important;
+    /* antes 3rem */
+    border-top: 1px solid rgba(255, 255, 255, 0.55);
     gap: .75rem;
     flex-wrap: wrap;
 }
 
 /* 6) En mobile: que no explote nada */
-@media (max-width: 768px){
-    #section-gallery{
+@media (max-width: 768px) {
+    #section-gallery {
         padding-top: 78px !important;
         gap: 14px;
+        min-height: auto !important;
+        /* Anula los 100dvh para que la pantalla no tenga espacio muerto */
     }
 
-    .footer-bottom{
+    /* Ajuste específico del carrousel en teléfonos */
+    #section-gallery .swiper-slide {
+        width: 85vw !important;
+        min-width: 0 !important;
+        /* CRÍTICO: anula el min-width: 1300px que estaba rompiendo todo en móvil */
+        height: auto !important;
+    }
+
+    #section-gallery .slide-img-container {
+        height: auto !important;
+        min-height: unset !important;
+        max-height: unset !important;
+        aspect-ratio: unset !important;
+        width: 100% !important;
+    }
+
+    #section-gallery .slide-content {
+        padding: 1.2rem;
+    }
+
+    #section-gallery h3 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .footer-bottom {
         flex-direction: column;
         align-items: center;
         text-align: center;
+    }
+
+    .footer-snap {
+        margin-top: 50px !important;
+        /* El footer sube sin el margen auto descontrolado */
     }
 }
 
 /* a */
 
 /* Lightbox simple */
-.img-modal{
+.img-modal {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,.82);
+    background: rgba(0, 0, 0, .82);
     z-index: 9999;
     padding: 24px;
 }
-.img-modal.is-open{ display: flex; align-items: center; justify-content: center; }
 
-.img-modal img{
+.img-modal.is-open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.img-modal img {
     max-width: 96vw;
     max-height: 92vh;
     object-fit: contain;
@@ -418,21 +520,21 @@ header {
     border-radius: 10px;
 }
 
-.img-modal-close{
+.img-modal-close {
     position: absolute;
     top: 18px;
     right: 18px;
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,.18);
-    background: rgba(0,0,0,.35);
+    border: 1px solid rgba(255, 255, 255, .18);
+    background: rgba(0, 0, 0, .35);
     color: #fff;
     font-size: 18px;
     cursor: pointer;
 }
 
-.swiper-pagination-bullet{
+.swiper-pagination-bullet {
     width: 8px;
     height: 8px;
     background: #cfcfcf;
@@ -440,12 +542,377 @@ header {
     transition: all .2s ease;
 }
 
-.swiper-pagination-bullet-active{
+.swiper-pagination-bullet-active {
     background: var(--accent-color);
     transform: scale(1.25);
 }
 
-.swiper{
+.swiper {
     --swiper-pagination-color: var(--accent-color);
     --swiper-pagination-bullet-inactive-color: #cfcfcf;
+}
+
+/* =========================================================
+   PRICING MATRIX (SaaS 4 Tiers)
+========================================================= */
+
+.pricing-wrapper {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    /* Centrado vertical para que la jerarquía se marque por height */
+    justify-content: center;
+    width: 100%;
+    max-width: 1400px;
+    flex-wrap: wrap;
+    z-index: 2;
+    margin: 0 auto; /* Alineación del bloque dentro del nuevo contenedor bloque width 100% */
+}
+
+/* Card General CSS */
+.pricing-card-v2 {
+    border-radius: 12px;
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 2px solid var(--color-black);
+    text-align: left;
+}
+
+.pricing-card-v2 h3 {
+    font-size: 1.6rem;
+    border-bottom: 2px dashed rgba(128, 128, 128, 0.3);
+    padding-bottom: 1rem;
+    margin: 0;
+}
+
+.pricing-card-v2 .price-val {
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin: 0.5rem 0;
+}
+
+.pricing-card-v2 ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    /* Cambiamos el gap por un border-bottom controlado */
+    flex-grow: 1;
+}
+
+.pricing-card-v2 li {
+    display: flex;
+    align-items: flex-start;
+    /* alinea el icono arriba si hay texto multi-linea */
+    font-weight: 400;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    /* Achicamos espacio entre lineas del MISMO elemento */
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+}
+
+.pricing-card-v2 li:last-child {
+    border-bottom: none;
+}
+
+.pricing-card-v2 li i {
+    margin-right: 12px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    /* Evita que el icono se aplaste si el texto es muy largo */
+    margin-top: 2px;
+    /* Alineación perfecta con la primer linea de texto */
+}
+
+/* Utilidad rápida por si no usas librerías y pusiste clases manuales */
+.text-muted {
+    opacity: 0.6;
+}
+
+/* Botones 3D Flat */
+.btn-pricing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 1.5rem;
+    height: 50px;
+    font-weight: bold;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 2px solid var(--color-black);
+    transform: translate(0, 0);
+    box-shadow: none;
+}
+
+.btn-pricing:hover {
+    transform: translate(-5px, -5px);
+    box-shadow: 5px 5px 0px var(--color-black);
+}
+
+/* 1. PLAN BÁSICO & PLAN EMPRESARIAL (Theme Negro -> Hover Accent) */
+.card-theme-dark {
+    width: 300px;
+    background: var(--color-white);
+    color: var(--color-black);
+}
+
+/* Hover Accent */
+.card-theme-dark:hover {
+    transform: translate(-8px, -8px);
+    /* Card pop-out */
+    box-shadow: 8px 8px 0px var(--accent-color);
+    border-color: var(--color-black);
+}
+
+.card-theme-dark li i {
+    color: var(--accent-color) !important;
+}
+
+.card-theme-dark:hover h3,
+.card-theme-dark:hover li i {
+    color: var(--accent-color) !important;
+    border-color: rgba(0, 0, 0, 0.2) !important;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.card-theme-dark .btn-pricing {
+    background: var(--color-white);
+    color: var(--color-black);
+    border-color: var(--color-black);
+}
+
+.card-theme-dark .btn-pricing:hover {
+    color: var(--color-black);
+    box-shadow: 4px 4px 0px var(--accent-color);
+}
+
+/* 2. PLAN PROFESIONAL (Centro, Grande, Verde) */
+.card-theme-pro {
+    width: 330px;
+    padding: 3rem 2.5rem;
+    background: #EDF2E8;
+    border: 3px solid var(--color-black);
+    color: var(--color-black);
+    transform: scale(1.05);
+    z-index: 10;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 2);
+}
+
+.card-theme-pro:hover {
+    transform: scale(1.05) translate(-6px, -6px);
+    box-shadow: 6px 6px 0px var(--accent-green);
+    border: 3px solid var(--accent-green);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.card-theme-pro h3 {
+    color: var(--color-black) !important;
+    font-size: 1.8rem;
+}
+
+.card-theme-pro .price-val {
+    color: var(--accent-green) !important;
+    font-size: 2.6rem;
+}
+
+.card-theme-pro li i {
+    color: var(--accent-green);
+}
+
+.card-theme-pro .btn-pricing {
+    background: var(--color-white);
+    color: var(--color-black);
+    border-color: var(--color-black);
+    height: 55px;
+    font-size: 1.1rem;
+}
+
+.card-theme-pro .btn-pricing:hover {
+    background: var(--color-white);
+    color: var(--accent-green);
+    border-color: var(--accent-green);
+    box-shadow: 5px 5px 0px var(--accent-green);
+}
+
+/* Etiqueta Recomendado (Flotante) */
+.pro-badge {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-white);
+    color: var(--color-black);
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-weight: 900;
+    font-size: 0.95rem;
+    border: 3px solid var(--color-black);
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.card-theme-pro:hover .pro-badge {
+    background: var(--accent-green);
+    color: var(--color-white);
+    border-color: var(--accent-green);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Etiqueta A Medida (Flotante) */
+.dark-badge {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-white);
+    color: var(--color-black);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    border: 2px solid var(--color-black);
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.card-theme-dark:hover .dark-badge {
+    background: var(--accent-color);
+    color: var(--color-white);
+    border-color: var(--color-black);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* 3. PLAN VITALICIO (Derecha Dócil, Pequeño, Fondo Gris Claro) */
+.card-theme-vital {
+    width: 250px;
+    padding: 1.5rem;
+    background: #f0f0f0;
+    color: var(--color-black);
+    border: 2px dashed #ccc;
+    font-size: 0.9rem;
+    /* Subordinación visual */
+    opacity: 0.9;
+}
+
+.card-theme-vital:hover {
+    background: var(--color-white);
+    transform: translate(-3px, -3px);
+    box-shadow: 4px 4px 0px var(--color-black);
+    border: 2px solid var(--color-black);
+    opacity: 1;
+}
+
+.card-theme-vital h3 {
+    font-size: 1.3rem;
+    color: var(--color-black) !important;
+    padding-bottom: 0.5rem;
+}
+
+.card-theme-vital .price-val {
+    font-size: 1.6rem;
+    color: var(--color-black) !important;
+}
+
+.card-theme-vital li i {
+    color: var(--accent-color);
+    font-size: 1rem;
+}
+
+.card-theme-vital .btn-pricing {
+    height: 40px;
+    font-size: 0.9rem;
+    background: var(--color-white);
+    color: var(--color-black);
+    border-color: #888;
+}
+
+.card-theme-vital:hover .btn-pricing {
+    border-color: var(--color-black);
+}
+
+.card-theme-vital .btn-pricing:hover {
+    box-shadow: 3px 3px 0px var(--accent-color);
+}
+
+/* Badge Vitalicio */
+.vital-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #e0e0e0;
+    color: var(--color-black);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.7rem;
+    border: 1px solid #aaa;
+    white-space: nowrap;
+}
+
+.card-theme-vital:hover .vital-badge {
+    background: var(--color-black);
+    color: var(--color-white);
+    border-color: var(--color-black);
+}
+
+/* =========================================================
+   MOBILE PRICING CAROUSEL OVERRIDES (SWIPER)
+========================================================= */
+@media (max-width: 1024px) {
+    .pricingSwiper {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin-left: calc(-50vw + 50%) !important; /* Rompe el padding del padre para centrado matemático perfecto */
+        padding-top: 0.5rem;   
+        padding-bottom: 3.5rem; /* Amplio espacio para que vivan los puntos del paginador */
+    }
+
+    .pricingSwiper .swiper-wrapper {
+        flex-wrap: nowrap !important; /* OBLIGATORIO: Anula el wrap del .pricing-wrapper de PC */
+        justify-content: flex-start !important; /* Necesario para la matemática de traslados de Swiper */
+        align-items: stretch !important; /* Fuerza las tarjetas a estar centradas correctamente sin cortarse */
+        margin: 0 !important;
+        padding: 0 !important;
+        gap: 0 !important; /* MATA EL GAP DE ESCRITORIO QUE ROMPÍA LA MATEMÁTICA DE SWIPER */
+    }
+
+    .pricingSwiper .swiper-slide {
+        box-sizing: border-box !important;
+        width: 320px !important; /* Fijamos un ancho más de 'celular' para que no parezca estirado */
+        max-width: 85vw !important;
+        height: auto;
+        align-self: stretch; /* Iguala las alturas en el entorno flex de Swiper */
+        margin-top: 2rem !important; /* EMPUJA FÍSICAMENTE LA TARJETA HACIA ABAJO PARA QUE LA MEDALLA NO CHOQUE CON EL TECHO */
+    }
+    
+    /* El card Profesional que en PC tiene scale(1.05), en mobile la desactivamos
+       para que no se desborde del overflow: hidden de Swiper. */
+    .pricingSwiper .card-theme-pro {
+        transform: scale(1) !important; 
+    }
+    
+    .pricingSwiper .card-theme-pro:hover {
+        transform: scale(1) translate(-4px, -4px) !important;
+    }
+
+    /* Puntos Inferiores del Carrusel (Navegación Intuitiva de Mobile) */
+    .pricing-pagination {
+        position: absolute !important;
+        bottom: 10px !important;
+        left: 0 !important;
+        width: 100% !important;
+        text-align: center;
+        z-index: 10;
+        display: block !important;
+    }
 }

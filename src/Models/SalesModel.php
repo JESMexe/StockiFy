@@ -65,6 +65,17 @@ class SalesModel {
             // 2. Detalles y Stock
             if (!empty($data['items']) && is_array($data['items'])) {
                 $inventoryModel = new InventoryModel(); // Asegúrate de tener esto importado o instanciado
+                
+                // PREPARAR METADATOS PARA ALERTAS DE GANANCIA
+                $stmtInv = $this->db->prepare("SELECT i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId LIMIT 1");
+                $stmtInv->execute([':invId' => $inventoryId]);
+                $invRow = $stmtInv->fetch(PDO::FETCH_ASSOC);
+                $tableName = $invRow ? "`" . str_replace("`", "``", $invRow['table_name']) . "`" : null;
+                $prefs = $invRow ? json_decode($invRow['preferences'], true) : [];
+                $costCol = $prefs['mapping']['receipt_price'] ?? null;
+                $safeCostCol = $costCol ? "`" . str_replace("`", "``", $costCol) . "`" : null;
+                $mailSvc = null;
+
                 $stmtDet = $this->db->prepare("
                     INSERT INTO sale_details 
                     (sale_id, product_id, product_name, quantity, unit_price, subtotal) 
@@ -83,9 +94,37 @@ class SalesModel {
                         ':sub'   => ($item['precio'] ?? $item['precio_unitario']) * $item['cantidad']
                     ]);
 
-                    // IMPORTANTE: Decrementar Stock solo si hay ID de producto
+                    // IMPORTANTE: Decrementar Stock y Controlar Ganancia
                     if ($productId) {
-                        $inventoryModel->decreaseStock($userId, $productId, $item['cantidad'], $inventoryId);
+                        $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? null;
+                        $inventoryModel->decreaseStock($userId, $productId, $item['cantidad'], $inventoryId, $prodName);
+
+                        // ALERTA DE GANANCIA NEGATIVA
+                        if ($tableName && $safeCostCol) {
+                            $stmtCost = $this->db->prepare("SELECT $safeCostCol as cost FROM $tableName WHERE id = :id");
+                            $stmtCost->execute([':id' => $productId]);
+                            $costRow = $stmtCost->fetch(PDO::FETCH_ASSOC);
+
+                            if ($costRow && isset($costRow['cost'])) {
+                                $cost = (float)$costRow['cost'];
+                                $salePrice = (float)($item['precio'] ?? $item['precio_unitario']);
+                                
+                                if ($salePrice > 0 && $salePrice < $cost && $cost > 0) {
+                                    $stmtUser = $this->db->prepare("SELECT email, full_name FROM users WHERE id = :id");
+                                    $stmtUser->execute([':id' => $userId]);
+                                    $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+                                    if ($u && !empty($u['email'])) {
+                                        if (!$mailSvc) {
+                                            require_once dirname(__DIR__) . '/Services/MailService.php';
+                                            $mailSvc = new \App\Services\MailService();
+                                        }
+                                        $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? 'Producto';
+                                        $mailSvc->sendNegativeProfitAlert($u['email'], $u['full_name'] ?? 'Socio', $prodName, $salePrice, $cost);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

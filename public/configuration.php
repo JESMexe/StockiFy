@@ -25,6 +25,11 @@ if (!$currentUser) {
     header('Location: index.php');
     exit;
 }
+
+if (!isset($currentUser['subscription_active']) || $currentUser['subscription_active'] == 0) {
+    header('Location: index.php#section-pricing');
+    exit;
+}
 ?>
 
 <body id="page-configuration">

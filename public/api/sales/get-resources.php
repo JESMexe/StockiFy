@@ -27,19 +27,19 @@ try {
     $userId = $user['id'];
     $db = Database::getInstance();
 
-    // 1. CLIENTES (Globales por usuario)
+    // 1. CLIENTES (Filtrados por inventario)
     $customers = [];
     try {
-        $stmt = $db->prepare("SELECT id, full_name FROM customers WHERE user_id = ? ORDER BY full_name ASC");
-        $stmt->execute([$userId]);
+        $stmt = $db->prepare("SELECT id, full_name FROM customers WHERE user_id = ? AND inventory_id = ? ORDER BY full_name ASC");
+        $stmt->execute([$userId, $activeInventoryId]);
         $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) { /* Ignorar si no existe tabla */ }
 
-    // 2. EMPLEADOS (Globales por usuario)
+    // 2. EMPLEADOS (Filtrados por inventario)
     $employees = [];
     try {
-        $stmt = $db->prepare("SELECT id, full_name FROM employees WHERE user_id = ? ORDER BY full_name ASC");
-        $stmt->execute([$userId]);
+        $stmt = $db->prepare("SELECT id, full_name FROM employees WHERE user_id = ? AND inventory_id = ? ORDER BY full_name ASC");
+        $stmt->execute([$userId, $activeInventoryId]);
         $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) { /* Ignorar */ }
 

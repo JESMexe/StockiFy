@@ -1,7 +1,7 @@
 /* ==========================================================================
    LÓGICA DEL INDEX (LANDING PAGE) - ACTUALIZADO
    ========================================================================== */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
     // Solo ejecutar si estamos en el index
     if (document.getElementById('page-index')) {
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const options = document.querySelectorAll('.about-option');
         const panels = document.querySelectorAll('.content-panel');
 
-        if(options.length > 0) {
+        if (options.length > 0) {
             options.forEach(option => {
                 option.addEventListener('click', () => {
                     options.forEach(opt => opt.classList.remove('active'));
@@ -78,16 +78,83 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     option.classList.add('active');
                     const targetId = option.getAttribute('data-option');
-                    if(document.getElementById(targetId)) {
+                    if (document.getElementById(targetId)) {
                         document.getElementById(targetId).classList.add('active');
                     }
                 });
             });
         }
 
-        // 4. Footer Year
+        // 4. PRICING CAROUSEL DEDICADO Y SEGURO (Solo Mobile)
+        let pricingSwiperInstance = null;
+
+        function handlePricingCarousel() {
+            const container = document.getElementById('pricing-carousel-container');
+            const wrapper = document.getElementById('pricing-wrapper');
+            const pagination = document.getElementById('pricing-pagination');
+
+            if (!container || !wrapper) return;
+
+            // Límite de 1024px para considerarse Mobile / Tablet
+            if (window.innerWidth <= 1024) {
+                // Inyectar clases de Swiper para armar el Carrusel
+                container.classList.add('swiper', 'pricingSwiper');
+                container.style.overflow = 'hidden'; // Requerido por swiper en móvil
+                wrapper.classList.add('swiper-wrapper');
+
+                const cards = wrapper.querySelectorAll('.pricing-card-v2');
+                cards.forEach(card => card.classList.add('swiper-slide'));
+
+                if (pagination) pagination.style.display = 'block';
+
+                if (!pricingSwiperInstance && typeof Swiper !== 'undefined') {
+                    pricingSwiperInstance = new Swiper('.pricingSwiper', {
+                        effect: "slide",
+                        slidesPerView: "auto",
+                        centeredSlides: true,
+                        spaceBetween: 20,
+                        initialSlide: 1, // Inicia directo en "Profesional"
+                        pagination: {
+                            el: ".pricing-pagination",
+                            clickable: true,
+                        },
+                    });
+                    
+                    // Forzar el snap al slide 1 (Profesional)
+                    setTimeout(() => {
+                        if (pricingSwiperInstance) pricingSwiperInstance.slideTo(1, 0);
+                    }, 50);
+                }
+            } else {
+                // Modo PC: Destruir cualquier rastro del carrusel para no mutar el diseño Matrix
+                if (pricingSwiperInstance) {
+                    pricingSwiperInstance.destroy(true, true);
+                    pricingSwiperInstance = null;
+                }
+
+                container.classList.remove('swiper', 'pricingSwiper');
+                container.style.overflow = 'visible'; // Restaurar overflow
+                wrapper.classList.remove('swiper-wrapper');
+                wrapper.style.transform = ''; // Remover restos de JS
+
+                const cards = wrapper.querySelectorAll('.pricing-card-v2');
+                cards.forEach(card => {
+                    card.classList.remove('swiper-slide');
+                    card.style.width = '';
+                    card.style.margin = '';
+                });
+
+                if (pagination) pagination.style.display = 'none';
+            }
+        }
+
+        // Ejecutar en la carga y al cambiar de tamaño
+        handlePricingCarousel();
+        window.addEventListener('resize', handlePricingCarousel);
+
+        // 5. Footer Year
         const yearEl = document.getElementById("year");
-        if(yearEl) yearEl.textContent = new Date().getFullYear();
+        if (yearEl) yearEl.textContent = new Date().getFullYear();
     }
 });
 
@@ -109,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    function close(){
+    function close() {
         modal.classList.remove("is-open");
         modal.setAttribute("aria-hidden", "true");
         modalImg.src = "";

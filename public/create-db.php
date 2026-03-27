@@ -1,3 +1,62 @@
+<?php
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../src/helpers/auth_helper.php';
+
+$currentUser = getCurrentUser();
+
+if (!$currentUser) {
+    header('Location: login.php');
+    exit;
+}
+
+if (!isset($currentUser['subscription_active']) || $currentUser['subscription_active'] == 0) {
+    header('Location: index.php#section-pricing');
+    exit;
+}
+
+// LÍMITE DEL PLAN BÁSICO (1 Base de Datos)
+if ($currentUser['subscription_active'] == 1) {
+    $dbInstance = \App\core\Database::getInstance();
+    $stmtCount = $dbInstance->prepare("SELECT COUNT(*) FROM inventories WHERE user_id = ?");
+    $stmtCount->execute([$currentUser['id']]);
+    $invCount = $stmtCount->fetchColumn();
+    
+    if ($invCount >= 1) {
+        echo '
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Límite Alcanzado - StockiFy</title>
+            <link rel="stylesheet" href="assets/css/main.css">
+            <link rel="stylesheet" href="assets/css/auth.css">
+            <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+            <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+            <script src="assets/js/theme.js"></script>
+        </head>
+        <body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--bg-color); margin: 0;">
+            <div class="auth-wrapper" style="width: 100%; max-width: 600px; padding: 2rem;">
+                <div class="auth-form-container" style="text-align: center; padding: 3rem 2rem; border: 2px solid var(--accent-red); box-shadow: 8px 8px 0px var(--accent-red); background: var(--color-white); border-radius: 12px;">
+                    <i class="ph-fill ph-lock-key" style="font-size: 4rem; color: var(--accent-red); margin-bottom: 1rem;"></i>
+                    <h1 style="color: var(--accent-red); margin-bottom: 1rem; font-size: 2rem;">Acceso Restringido</h1>
+                    <p style="font-size: 1.1rem; color: #666; margin-bottom: 2.5rem; line-height: 1.5;">
+                        Tu <strong style="color: var(--color-black)">Plan Básico</strong> solo permite administrar <strong>1 inventario activo</strong>.<br><br>
+                        Para crear múltiples inventarios y desbloquear todo el potencial de tu negocio, adquiere el <strong style="color: var(--accent-green)">Plan Profesional</strong>.
+                    </p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="dashboard.php" class="btn btn-secondary" style="margin: 0;">Volver al Panel</a>
+                        <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20ampliar%20el%20límite%20de%20mis%20inventarios%20y%20pasar%20al%20Plan%20Profesional." target="_blank" class="btn btn-primary" style="margin: 0; background-color: var(--accent-green); color: var(--color-white); border-color: var(--accent-green);">Mejorar mi Plan</a>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        ';
+        exit;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
