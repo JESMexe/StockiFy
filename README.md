@@ -79,7 +79,7 @@ StockiFy/
 ├─ public/ → punto de entrada del sistema
 ├─ src/ → lógica principal de la aplicación
 ├─ database/
-│  └─ schema.sql → estructura completa de la base de datos
+│  └─ schema.sql → estructura completa de la base de datos (link del archivo en mí Portfolio)
 │
 ├─ .env.example → ejemplo de configuración
 ├─ composer.json → dependencias del proyecto
@@ -107,76 +107,7 @@ Para correr el proyecto necesitás:
 
 ## Instalación
 
-### 1️⃣ Clonar el repositorio
-
-```
-https://github.com/JESMexe/StockiFy.git
-cd StockiFy
-```
-
----
-
-### 2️⃣ Crear la base de datos
-
-Crear una base nueva llamada:
-
-```
-uproject_db
-```
-
-Luego importar el archivo:
-
-```
-database/esquema.sql
-```
-
-Esto va a generar toda la estructura necesaria para el sistema.
-
----
-
-### 3️⃣ Configurar variables de entorno
-
-Copiar el archivo:
-
-```
-.env.example
-```
-
-y renombrarlo a:
-
-```
-.env
-```
-
-Luego completar los datos de conexión a la base.
-
-Ejemplo:
-
-```
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=uproject_db
-DB_USERNAME=root
-DB_PASSWORD=1234
-```
-
----
-
-### 4️⃣ Instalar dependencias
-
-```
-composer install
-```
-
----
-
-### 5️⃣ Iniciar el servidor
-
-Iniciar Apache y MySQL y abrir en el navegador:
-
-```
-http://localhost/StockiFy/public
-```
+#### (Expresado en mí Portfolio)
 
 ---
 
