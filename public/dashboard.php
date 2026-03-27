@@ -169,7 +169,13 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
             <div id="view-db" class="dashboard-view">
                 <div class="table-container">
                     <div class="table-header">
-                        <h2 id="table-title">Cargando...</h2>
+                        <div style="display: flex; align-items: center; gap: 10px; height: 100%;">
+                            <h2 id="table-title" style="margin: 0; line-height: 1; display: flex; align-items: center;">Cargando...</h2>
+                            <button id="refresh-table-btn" class="btn btn-secondary" title="Recargar y actualizar datos"
+                                    style="padding: 4px 8px; display: flex; align-items: center; justify-content: center; border-radius: 6px; margin-top: 2px;">
+                                <i class="ph-bold ph-arrows-clockwise" style="font-size: 1.3rem; line-height: 1;"></i>
+                            </button>
+                        </div>
 
                         <div class="table-controls">
                             <button id="critical-filter-btn" class="btn hidden" title="Mostrar solo productos con stock bajo o pérdidas"

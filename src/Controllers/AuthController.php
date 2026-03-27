@@ -28,12 +28,19 @@ class AuthController
             } else {
                 echo json_encode(['success' => false, 'message' => 'Credenciales incorrectas.']);
             }
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Error interno: ' . $e->getMessage()]);
         }
     }
 
+    public function logout(): void {
+        header('Content-Type: application/json');
+        session_start();
+        session_unset();
+        session_destroy();
+        echo json_encode(['success' => true, 'message' => 'Sesión cerrada correctamente.']);
+    }
 
     /**
      * Maneja la lógica del registro de usuarios.

@@ -17,7 +17,7 @@ class TableModel
     /**
      * Obtiene los metadatos de una tabla de usuario.
      */
-    public function getTableMetadata(int $inventoryId): array|false
+    public function getTableMetadata(int $inventoryId): bool|array
     {
         $stmt = $this->db->prepare("SELECT table_name, columns_json FROM user_tables WHERE inventory_id = :id");
         $stmt->execute([':id' => $inventoryId]);
@@ -108,10 +108,10 @@ class TableModel
      * @param string $tableName El nombre real de la tabla (user_X_...).
      * @param int $itemId El ID de la fila a actualizar.
      * @param array $dataToUpdate Un array asociativo ['columna' => 'valor', ...].
-     * @return array|false La fila actualizada o false si falla.
+     * @return bool|array La fila actualizada o false si falla.
      * @throws Exception
      */
-    public function updateItemRow(string $tableName, int $itemId, array $dataToUpdate): array|false
+    public function updateItemRow(string $tableName, int $itemId, array $dataToUpdate): bool|array
     {
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
         $setClauses = [];
@@ -141,7 +141,7 @@ class TableModel
 
             $this->db->commit();
             return $updatedRow;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if ($this->db->inTransaction()) $this->db->rollBack();
             throw $e;
         }
@@ -184,9 +184,9 @@ class TableModel
      *
      * @param string $tableName Nombre real de la tabla (user_X_...).
      * @param array $data Array asociativo ['columna' => 'valor'] con los datos a insertar.
-     * @return array|false La fila recién insertada (incluyendo ID) o false si falla.
+     * @return bool|array La fila recién insertada (incluyendo ID) o false si falla.
      */
-    public function insertItem(string $tableName, array $data): array|false
+    public function insertItem(string $tableName, array $data): bool|array
     {
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";
         $columns = []; $values = []; $placeholders = [];
@@ -213,7 +213,7 @@ class TableModel
                 return $stmtSel->fetch(PDO::FETCH_ASSOC);
             }
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -243,9 +243,9 @@ class TableModel
      * @param int $itemId ID de la fila.
      * @param string $stockColumnName Nombre de la columna de stock.
      * @param int $amountToAddOrSubtract Cantidad a sumar (positivo) o restar (negativo).
-     * @return int|false El nuevo valor del stock o false si falló.
+     * @return bool|int El nuevo valor del stock o false si falló.
      */
-    public function adjustStock(string $tableName, int $itemId, string $stockColumnName, int $amountToAddOrSubtract): int|false
+    public function adjustStock(string $tableName, int $itemId, string $stockColumnName, int $amountToAddOrSubtract): bool|int
     {
         // Seguridad
         $safeTableName = "`" . str_replace("`", "``", $tableName) . "`";

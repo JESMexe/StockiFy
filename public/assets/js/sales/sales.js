@@ -622,7 +622,7 @@ export class SalesModule {
     }
 
     async submitSale() {
-        const btn = document.getElementById('confirm-sale-btn'); btn.disabled = true; btn.textContent = 'Procesando...';
+        const btn = document.getElementById('confirm-sale-btn'); btn.disabled = true; btn.textContent = 'Procesando Venta...';
         const pct = parseFloat(document.getElementById('sale-commission-pct').value) || 0;
         const payload = {
             customer_id: document.getElementById('sale-customer').value || null,
@@ -634,8 +634,50 @@ export class SalesModule {
             items: this.currentSale.items.map(i => ({ id: i.id || null, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio, subtotal: i.precio * i.cantidad })),
             payments: this.currentSale.payments
         };
-        try { const res = await createSale(payload); if (res.success) { this.closeModal('create-sale-modal'); await this.loadHistory(this.currentSortOrder); pop_ups.success("Venta Exitosa"); } else { pop_ups.error(res.message); } }
-        catch(e) { console.error(e); pop_ups.error("Error de conexión"); }
+        try { 
+            const res = await createSale(payload); 
+            if (res.success) { 
+                this.closeModal('create-sale-modal'); 
+                await this.loadHistory(this.currentSortOrder); 
+                pop_ups.success("Venta Exitosa"); 
+                
+                // Procesar Alertas
+                if (res.alerts && res.alerts.length > 0) {
+                    // Mostrar alertas visuales amarillas rápidas en la UI
+                    res.alerts.forEach(a => {
+                        if (a.type === 'low_stock') {
+                            pop_ups.warning(`Stock mínimo alcanzado en ${a.product_name}. Actual: ${a.current_stock}. Min: ${a.min_stock}`, 'Bajo Stock');
+                        } else if (a.type === 'negative_profit') {
+                            pop_ups.error(`¡Alerta de Rentabilidad en ${a.product_name}! Venta a $${a.sale_price}, Costo $${a.cost_price}`, 'Rentabilidad Crítica');
+                        }
+                    });
+                    
+                    // Mostrar popup de espera
+                    btn.textContent = 'Enviando Correos...'; 
+                    pop_ups.info("Espere. Generando reportes y enviándolos al mail...");
+                    try {
+                        const emailRes = await fetch('/api/sales/send-queued-emails.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ alerts: res.alerts })
+                        });
+                        const emailData = await emailRes.json();
+                        if (emailData.success) {
+                            if (emailData.sent > 0) {
+                                pop_ups.success(`¡Reportes (${emailData.sent}) enviados al mail con éxito!`);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Error al enviar correos diferidos:", err);
+                    }
+                }
+            } else { 
+                pop_ups.error(res.message); 
+            } 
+        } catch(e) { 
+            console.error(e); 
+            pop_ups.error("Error de conexión"); 
+        }
         btn.disabled = false; btn.textContent = 'Confirmar Venta';
     }
 

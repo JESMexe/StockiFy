@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // public/api/sales/update-customer.php
 header('Content-Type: application/json');
 ini_set('display_errors', 0); error_reporting(E_ALL);
@@ -18,7 +18,7 @@ try {
     if (empty($input['sale_id'])) throw new Exception("Falta ID");
 
     $model = new SalesModel();
-    $model->updateCustomer($input['sale_id'], $user['id'], $input['client_id'] ?? null);
+    $model->updateSale($input['sale_id'], $user['id'], ['customer_id' => $input['client_id'] ?? null]);
 
     echo json_encode(['success' => true]);
 

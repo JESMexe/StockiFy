@@ -100,8 +100,8 @@ function createMailer(): PHPMailer
     $mail->isSMTP();
     $mail->Host = SMTP_HOST;
     $mail->SMTPAuth = true;
-    $mail->Username = SMTP_USERNAME;
-    $mail->Password = SMTP_PASSWORD;
+    $mail->Username = SMTP_USER;
+    $mail->Password = SMTP_PASS;
     $mail->SMTPSecure = SMTP_SECURE;
     $mail->Port = SMTP_PORT;
     $mail->CharSet = 'UTF-8';

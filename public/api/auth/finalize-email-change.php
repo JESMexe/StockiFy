@@ -16,7 +16,7 @@ if (!$newEmail) {
 }
 
 $userModel = new UserModel();
-if ($userModel->verifyOtp($user['id'], $otp)) {
+if ($userModel->verifyOtp($user['id'], $otp, 'email_change')) {
     // Éxito: Cambiamos el email
     $userModel->updateEmail($user['id'], $newEmail);
     $_SESSION['user_email'] = $newEmail; // Actualizar sesión

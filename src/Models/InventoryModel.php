@@ -489,7 +489,7 @@ class InventoryModel
      * @param int $quantity Cantidad a descontar.
      * @return bool True si se actualizó, False si falló.
      */
-    public function decreaseStock(int $userId, $productId, int $quantity, $inventoryId = null, string $productNameFallback = null): bool
+    public function decreaseStock(int $userId, $productId, int $quantity, $inventoryId = null, string $productNameFallback = null, array &$alerts = null): bool
     {
         try {
             // 1. Identificar la tabla correcta
@@ -533,16 +533,26 @@ class InventoryModel
 
                 if ($oldStock > $minStock && $newStock <= $minStock) {
                     $prodName = $productNameFallback ?? 'Producto #' . $productId;
-                    $stmtUser = $this->db->prepare("SELECT email, full_name FROM users WHERE id = :id");
-                    $stmtUser->execute([':id' => $userId]);
-                    $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
                     
-                    if ($u && !empty($u['email'])) {
-                        // Importación perezosa (Lazy Load) para no afectar rendimiento si no hay mail
-                        require_once dirname(__DIR__) . '/Services/MailService.php';
-                        $mailSvc = new \App\Services\MailService();
-                        // (Un leve lag de ~500ms es esperable al despachar el mail, tolerable para esta app)
-                        $mailSvc->sendLowStockAlert($u['email'], $u['full_name'] ?? 'Socio', $prodName, $newStock, $minStock);
+                    if ($alerts !== null) {
+                        $alerts[] = [
+                            'type' => 'low_stock',
+                            'product_name' => $prodName,
+                            'current_stock' => $newStock,
+                            'min_stock' => $minStock
+                        ];
+                    } else {
+                        $stmtUser = $this->db->prepare("SELECT email, full_name FROM users WHERE id = :id");
+                        $stmtUser->execute([':id' => $userId]);
+                        $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($u && !empty($u['email'])) {
+                            // Importación perezosa (Lazy Load) para no afectar rendimiento si no hay mail
+                            require_once dirname(__DIR__) . '/Services/MailService.php';
+                            $mailSvc = new \App\Services\MailService();
+                            // (Un leve lag de ~500ms es esperable al despachar el mail, tolerable para esta app)
+                            $mailSvc->sendLowStockAlert($u['email'], $u['full_name'] ?? 'Socio', $prodName, $newStock, $minStock);
+                        }
                     }
                 }
             }

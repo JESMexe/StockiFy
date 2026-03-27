@@ -12,7 +12,7 @@ class Database
 
     private function __construct()
     {
-        $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
+        $dotenv = Dotenv::createImmutable(__DIR__ . '/../../');
         $dotenv->load();
 
         $host = $_ENV['DB_HOST'];

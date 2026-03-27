@@ -9,7 +9,8 @@ session_start();
 $user = getCurrentUser();
 
 if (!$user || $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(403); exit(json_encode(['success'=>false, 'message'=>'No autorizado']));
+    http_response_code(403);
+    exit(json_encode(['success' => false, 'message' => 'No autorizado']));
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -32,15 +33,17 @@ if ($userModel->findByEmail($newEmail)) {
 }
 
 // 3. Generar OTP y enviar al NUEVO email
-$otp = (string) rand(100000, 999999);
+$otp = (string)rand(100000, 999999);
 // Guardamos el OTP en la DB asociado al usuario (aunque se envíe al nuevo email, valida al usuario actual)
 // TRUCO: Guardamos el "nuevo email" en la sesión temporalmente para validarlo en el paso 2
 $_SESSION['temp_new_email'] = $newEmail;
-$userModel->setOtp($user['id'], $otp);
+$userModel->setOtp($user['id'], $otp, 'email_change');
 
 $mailService = new MailService();
-if ($mailService->sendSecurityOTP($newEmail, $otp, 'email_change')) {
+$userName = $user['full_name'] ?? $user['username'] ?? 'Usuario';
+if ($mailService->sendSecurityOTP($newEmail, $otp, 'email_change', $userName)) {
     echo json_encode(['success' => true, 'message' => 'Código enviado al nuevo email.']);
-} else {
+}
+else {
     echo json_encode(['success' => false, 'message' => 'Error al enviar el correo.']);
 }

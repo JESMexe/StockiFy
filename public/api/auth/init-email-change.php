@@ -23,12 +23,13 @@ if (!$newEmail || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
 $userModel = new UserModel();
 $otp = (string)rand(100000, 999999);
 
-if ($userModel->setOtp($user['id'], $otp)) {
+if ($userModel->setOtp($user['id'], $otp, 'email_change')) {
     $_SESSION['temp_new_email'] = $newEmail;
     $mailService = new MailService();
 
     // Intentar enviar y capturar si falla
-    if ($mailService->sendSecurityOTP($newEmail, $otp, 'email_change')) {
+    $userName = $user['full_name'] ?? $user['username'] ?? 'Usuario';
+    if ($mailService->sendSecurityOTP($newEmail, $otp, 'email_change', $userName)) {
         echo json_encode(['success' => true]);
     }
     else {

@@ -65,10 +65,11 @@ try {
         exit;
     }
 
-    $saleId = $model->createSale($user['id'], $inventoryId, $clientId, $data);
+    $alerts = [];
+    $saleId = $model->createSale($user['id'], $inventoryId, $clientId, $data, $alerts);
 
     if ($saleId) {
-        echo json_encode(['success' => true, 'sale_id' => $saleId]);
+        echo json_encode(['success' => true, 'sale_id' => $saleId, 'alerts' => $alerts]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Error al guardar en BD']);
     }

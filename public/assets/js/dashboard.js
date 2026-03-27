@@ -3,7 +3,7 @@
 // --- 1. IMPORTACIONES ---
 import * as api from './api.js';
 import * as setup from './setupMiCuentaDropdown.js';
-import {notificationConfig, pop_ups} from './notifications/pop-up.js';
+import { notificationConfig, pop_ups } from './notifications/pop-up.js';
 import { salesModuleInstance } from './sales/sales.js';
 import { purchaseModuleInstance } from './purchases/purchases.js';
 import { customerModuleInstance } from './customers/customers.js';
@@ -11,8 +11,8 @@ import { providerModuleInstance } from './providers/providers.js';
 import { employeeModuleInstance } from './employees/employees.js';
 import { analyticsModuleInstance } from './analytics/analytics.js';
 import { paymentsModuleInstance } from './payment/payment.js';
-import {openImportModal} from './import.js';
-import {ui_helper} from "./ui-helper.js";
+import { openImportModal } from './import.js';
+import { ui_helper } from "./ui-helper.js";
 
 // --- 2. VARIABLES GLOBALES ---
 export let activeInventoryId = null;
@@ -130,7 +130,7 @@ async function handleStockUpdate(event) {
         value = parseInt(input.value, 10);
         if (isNaN(value) || value < 0) {
             pop_ups.warning("Ingresá un número de stock válido (mayor o igual a 0).", "Stock Inválido");
-            if(stockInput) stockInput.value = originalValue ?? 0;
+            if (stockInput) stockInput.value = originalValue ?? 0;
             return;
         }
     } else {
@@ -155,7 +155,7 @@ async function handleStockUpdate(event) {
         }
     } catch (error) {
         pop_ups.error(`Error: ${error.message}`, "Error al actualizar stock");
-        if(stockInput) stockInput.value = originalValue ?? 0;
+        if (stockInput) stockInput.value = originalValue ?? 0;
     } finally {
         cell.querySelectorAll('button, input').forEach(el => el.disabled = false);
     }
@@ -191,12 +191,12 @@ async function renderTable(columns, data) {
                 if (prefs.mapping) columnMapping = prefs.mapping;
                 window.columnMapping = columnMapping;
                 window.activeFeatures = activeFeatures;
-                if(prefs.features) activeFeatures = prefs.features;
+                if (prefs.features) activeFeatures = prefs.features;
 
                 // Cargar visibilidad y orden si existen
                 window.currentUserPreferences = window.currentUserPreferences || {};
-                if(prefs.visible_columns) window.currentUserPreferences.visible_columns = prefs.visible_columns;
-                if(prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
+                if (prefs.visible_columns) window.currentUserPreferences.visible_columns = prefs.visible_columns;
+                if (prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
             }
         }
     } catch (e) { console.warn("Usando prefs por defecto o error al cargar"); }
@@ -368,8 +368,8 @@ async function renderTable(columns, data) {
                         <td>
                             <div class="flex-row" style="gap:0;">
                                 <button type="button" class="btn-currency-toggle" 
-                                    onclick="window.toggleRowCurrency(this, '${rowId}', '${isSale?'sale':'buy'}', '${currency}')"
-                                    title="Cambiar a ${currency==='ARS'?'USD':'ARS'}"
+                                    onclick="window.toggleRowCurrency(this, '${rowId}', '${isSale ? 'sale' : 'buy'}', '${currency}')"
+                                    title="Cambiar a ${currency === 'ARS' ? 'USD' : 'ARS'}"
                                     style="padding: 0 5px; font-size: 0.7rem; background: #eee; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; cursor: pointer;">
                                     ${currency}
                                 </button>
@@ -528,7 +528,7 @@ window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
         input.dataset.newCurrency = targetCurr;
         input.dataset.currencyType = type;
 
-    } catch(e) {
+    } catch (e) {
         console.error(e);
         btn.textContent = originalText;
         pop_ups.error("Error obteniendo cotización");
@@ -541,7 +541,7 @@ window.showRowHistory = (dateString, id) => {
     pop_ups.info(`Este registro (ID: ${id}) fue creado el: <br><b>${dateString}</b>`, "Historial de Creación");
 };
 
-window.confirmDeleteRow = async(id) => {
+window.confirmDeleteRow = async (id) => {
     const confirmado = await pop_ups.confirm(
         'Eliminar Registro',
         '¿Estás seguro de que deseas eliminar esta fila permanentemente?'
@@ -554,7 +554,7 @@ window.confirmDeleteRow = async(id) => {
     try {
         const response = await fetch('/api/table/delete-row.php', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: id })
         }).then(res => res.json());
 
@@ -723,7 +723,7 @@ window.saveRowChanges = async (btn, id) => {
         console.error("Error Fetch:", error);
         pop_ups.error("Error al guardar: " + error.message);
     } finally {
-        if(btn) {
+        if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalContent;
         }
@@ -794,7 +794,7 @@ function filterTable() {
 function showDashboardView(viewId) {
     document.querySelectorAll('.dashboard-view').forEach(view => view.classList.add('hidden'));
     const viewToShow = document.getElementById(viewId);
-    const transactionViews = ['sales','receipts', 'customers','providers'];
+    const transactionViews = ['sales', 'receipts', 'customers', 'providers'];
     if (viewToShow) { viewToShow.classList.remove('hidden'); }
     document.querySelectorAll('.menu-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.targetView === viewId);
@@ -847,7 +847,7 @@ function setupMenuNavigation() {
             if (targetView) {
                 showDashboardView(targetView);
             } else {
-                if(typeof pop_ups !== 'undefined') pop_ups.info("Funcionalidad aún no implementada.");
+                if (typeof pop_ups !== 'undefined') pop_ups.info("Funcionalidad aún no implementada.");
             }
         });
     });
@@ -921,7 +921,7 @@ function setupAccordion() {
     console.log("[INIT] Configurando acordeones inteligentes...");
     const headers = document.querySelectorAll('.accordion-header');
 
-    try{
+    try {
         headers.forEach(header => {
             // Evitamos duplicar listeners si la función se llama varias veces
             if (header.dataset.attached) return;
@@ -987,7 +987,7 @@ async function setupFeatures() {
     }
 }
 
-async function setupInventoryInfoBtn(){
+async function setupInventoryInfoBtn() {
     const btns = document.querySelectorAll('.inventory-info-btn');
     const closeBtn = document.getElementById('close-inventory-info-modal');
 
@@ -1456,7 +1456,7 @@ function populateProductPicker() {
             // Habilitar botón de confirmar si hay al menos uno seleccionado
             const hasSelection = container.querySelectorAll('.product-picker-item.selected').length > 0;
             const confirmBtn = document.querySelector('#item-picker-modal .picker-confirm-btn');
-            if(confirmBtn) confirmBtn.disabled = !hasSelection;
+            if (confirmBtn) confirmBtn.disabled = !hasSelection;
         });
 
         container.appendChild(itemDiv);
@@ -1498,8 +1498,8 @@ async function createEditableRow(columns) {
     let inventoryDefaults = {};
     try {
         const res = await api.getCurrentInventoryDefaults();
-        if(res.success) inventoryDefaults = res;
-    } catch(e) {}
+        if (res.success) inventoryDefaults = res;
+    } catch (e) { }
 
     // 2. Iteramos las columnas VISUALES
     columns.forEach(col => {
@@ -1581,11 +1581,11 @@ async function createEditableRow(columns) {
     return tr;
 }
 
-function getAutoPrice(inventoryPreferences, inventoryDefaults, salePrice, gainValue){
+function getAutoPrice(inventoryPreferences, inventoryDefaults, salePrice, gainValue) {
     let autoPrice;
     const type = inventoryPreferences.auto_price_type;
 
-    try{
+    try {
         switch (type) {
             case 'iva':
                 autoPrice = parseFloat(salePrice) * 1.21;
@@ -1594,20 +1594,20 @@ function getAutoPrice(inventoryPreferences, inventoryDefaults, salePrice, gainVa
                 if (inventoryPreferences.percentage_gain === 1) {
                     autoPrice = parseFloat(salePrice) * (1 + (parseFloat(gainValue) / 100));
                 }
-                else {autoPrice = parseFloat(salePrice) + parseFloat(gainValue);}
+                else { autoPrice = parseFloat(salePrice) + parseFloat(gainValue); }
                 break;
             default:
                 autoPrice = parseFloat(salePrice) * 1.21;
                 if (inventoryPreferences.percentage_gain === 1) {
                     autoPrice = autoPrice * (1 + (parseFloat(gainValue) / 100));
                 }
-                else {autoPrice += parseFloat(gainValue);}
+                else { autoPrice += parseFloat(gainValue); }
                 break;
         }
-        if (isNaN(autoPrice)){autoPrice = inventoryDefaults.receipt_price;}
+        if (isNaN(autoPrice)) { autoPrice = inventoryDefaults.receipt_price; }
         return autoPrice;
     }
-    catch(error){
+    catch (error) {
         console.log('Entrada Invalida. Valor de Compra no actualizado');
         return inventoryDefaults.receipt_price;
     }
@@ -1624,7 +1624,7 @@ async function handleAddRowClick() {
     }
 
     const addBtn = document.getElementById('add-row-btn');
-    if(addBtn) addBtn.disabled = true;
+    if (addBtn) addBtn.disabled = true;
 
     try {
         // CORRECCIÓN: Usamos activeDisplayColumns para respetar el orden visual (Nombre, Precio, Stock...)
@@ -1642,12 +1642,12 @@ async function handleAddRowClick() {
 
         // Foco en el primer input real
         const firstInput = newRow.querySelector('input:not([disabled]):not([type="hidden"])');
-        if(firstInput) firstInput.focus();
+        if (firstInput) firstInput.focus();
 
     } catch (error) {
         console.error("Error:", error);
     } finally {
-        if(addBtn) addBtn.disabled = false;
+        if (addBtn) addBtn.disabled = false;
     }
 }
 
@@ -1674,7 +1674,7 @@ async function handleSaveNewRow(event) {
 
         const response = await fetch('/api/table/add-item.php', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
@@ -1685,31 +1685,31 @@ async function handleSaveNewRow(event) {
             newRowElement.remove();
             await renderTable(currentTableColumns, allData);
 
-            if(typeof pop_ups !== 'undefined') pop_ups.success("Fila creada exitosamente.");
+            if (typeof pop_ups !== 'undefined') pop_ups.success("Fila creada exitosamente.");
         } else {
             throw new Error(result.message || "Error al guardar la fila.");
         }
     } catch (error) {
-        if(typeof pop_ups !== 'undefined') pop_ups.error(`Error al guardar: ${error.message}`);
+        if (typeof pop_ups !== 'undefined') pop_ups.error(`Error al guardar: ${error.message}`);
         saveButton.disabled = false;
         saveButton.textContent = 'Guardar';
     }
 }
 
 // **--- INICIO: FUNCIONES AUXILIARES NECESARIAS ---**
-function setupGreyBg(){
+function setupGreyBg() {
     const greyBg = document.getElementById('grey-background');
     const transactionModal = document.getElementById('transaction-picker-modal');
     const transactionContainer = document.getElementById('new-transaction-container');
     const mobileMenu = document.getElementById('mobile-menu');
     const inventoryInfoModal = document.getElementById('inventory-info-modal');
-    greyBg.addEventListener('click', (event) =>{
+    greyBg.addEventListener('click', (event) => {
         if (event.target === greyBg) {
             if (!mobileMenu.classList.contains('hidden')) {
                 greyBg.classList.add('hidden');
                 mobileMenu.classList.add('hidden');
             }
-            else if(!transactionContainer.classList.contains('hidden')) {
+            else if (!transactionContainer.classList.contains('hidden')) {
                 transactionContainer.classList.add('hidden');
                 greyBg.classList.add('hidden');
                 inventoryInfoModal.classList.add('hidden');
@@ -1727,7 +1727,7 @@ async function init() {
 
     // 1. HEADER (LÓGICA DE NANO - RUTAS LIMPIAS Y EN INGLÉS)
     const response = await api.checkUserAdmin();
-    if (!response.success){
+    if (!response.success) {
         alert('Ha ocurrido un error interno. Será deslogeado');
         window.location.href = '/logout.php';
         return; // Agregado return para detener ejecución si falla
@@ -1770,7 +1770,7 @@ async function init() {
     cancelDeleteBtn?.addEventListener('click', closeDeleteModal);
     deleteConfirmInput?.addEventListener('input', handleDeleteConfirmInput);
     confirmDeleteBtn?.addEventListener('click', handleConfirmDelete);
-    if(deleteModal) {
+    if (deleteModal) {
         deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
     }
     console.log("[INIT] Modal de Eliminación inicializado.");
@@ -1787,14 +1787,14 @@ async function init() {
 
     window.addEventListener('open-column-config', () => {
         const btn = document.getElementById('identify-columns-btn');
-        if(btn) btn.click();
+        if (btn) btn.click();
 
         const mainConfigBtn = document.getElementById('config-table-btn');
-        if(mainConfigBtn) {
+        if (mainConfigBtn) {
             mainConfigBtn.click();
             setTimeout(() => {
                 const tabBtn = document.querySelector('[data-tab="identification"]');
-                if(tabBtn) tabBtn.click();
+                if (tabBtn) tabBtn.click();
             }, 300);
         }
     });
@@ -1989,7 +1989,7 @@ async function init() {
 }
 // ------------------------------------------------------------------------------------------------------
 
-function setupMobileMenu(){
+function setupMobileMenu() {
     /*
     const menuBtn = document.getElementById('open-mobile-menu-btn')
     menuBtn.addEventListener('click', () => {
@@ -2001,7 +2001,7 @@ function setupMobileMenu(){
     */
 }
 
-function getReloadVariables(){
+function getReloadVariables() {
     const urlParams = new URLSearchParams(window.location.search);
     const menuToOpen = urlParams.get('location');
     if (!menuToOpen) return;
@@ -2012,20 +2012,20 @@ function getReloadVariables(){
     menuToClick.click();
 }
 
-function showSaleModal(saleInfo){
+function showSaleModal(saleInfo) {
     const modal = document.getElementById('transaction-info-modal');
 
     modal.originalSaleInfo = JSON.parse(JSON.stringify(saleInfo));
 
     const itemList = saleInfo.itemList;
     let customerInfo;
-    if (!saleInfo.customerInfo){
+    if (!saleInfo.customerInfo) {
         customerInfo = `<div class="flex-row justify-between">
                                     <p>Cliente</p>
                                     <p>'No asignado'</p>
                                 </div>`;
     }
-    else{customerInfo = newCustomerInfo(saleInfo.customerInfo);}
+    else { customerInfo = newCustomerInfo(saleInfo.customerInfo); }
 
     const saleList = itemList.map((item, index) => {
         const name = item.product_name;
@@ -2092,11 +2092,11 @@ function showSaleModal(saleInfo){
 
     const closeBtn = document.getElementById('close-info-modal');
 
-    closeBtn.addEventListener('click', closeTransactionInfoModal );
+    closeBtn.addEventListener('click', closeTransactionInfoModal);
 
     const customerInfoBtn = document.getElementById('customer-info-btn');
 
-    if (customerInfoBtn){
+    if (customerInfoBtn) {
         customerInfoBtn.addEventListener('click', () => {
             if (modal.dataset.isEditing === 'true') return;
 
@@ -2127,11 +2127,11 @@ async function enableSaleEditing() {
     const listWrapper = document.getElementById('sale-item-list-wrapper');
     const itemRows = listWrapper.querySelectorAll('.sale-item-row');
 
-    for (const row of itemRows){
+    for (const row of itemRows) {
         const index = row.dataset.index;
         const itemData = originalSaleInfo.itemList[index];
 
-        const response = await getProductData(itemData.item_id,itemData.inventory_id);
+        const response = await getProductData(itemData.item_id, itemData.inventory_id);
         if (!response.success) return;
 
         const productInfo = response.productInfo;
@@ -2244,8 +2244,8 @@ async function handleSaveSale() {
     console.log("Datos de Venta Modificados (listos para enviar al backend):", updatedSaleData);
 
     const response = await api.updateSaleList(updatedSaleData);
-    if (response.success){alert("Se han guardados los cambios. Será redirigido."); window.location.reload();}
-    else{alert("Ha ocurrido un error. No se pudieron guardar los cambios");console.log(response.error);}
+    if (response.success) { alert("Se han guardados los cambios. Será redirigido."); window.location.reload(); }
+    else { alert("Ha ocurrido un error. No se pudieron guardar los cambios"); console.log(response.error); }
 
     handleCancelSale();
 }
@@ -2275,7 +2275,7 @@ function newCustomerInfo(clientInfo) {
             </div>`;
 }
 
-function closeTransactionInfoModal(){
+function closeTransactionInfoModal() {
     const modal = document.getElementById('transaction-info-modal');
     const greyBg = document.getElementById('grey-background');
     modal.classList.add('hidden');
@@ -2283,7 +2283,7 @@ function closeTransactionInfoModal(){
 }
 
 
-async function setupReceiptList(){
+async function setupReceiptList() {
     const response = await api.getUserReceipts();
     if (response.success) {
         const itemList = response.receiptList;
@@ -2354,11 +2354,11 @@ async function populateReceiptView(itemList) {
 
 }
 
-async function createReceiptRow(receipt){
+async function createReceiptRow(receipt) {
     let providerName;
 
-    if (receipt.provider_id === null){providerName = "No asignado";}
-    else{
+    if (receipt.provider_id === null) { providerName = "No asignado"; }
+    else {
         const result = await api.getProdivderById(receipt.provider_id);
         const provider = result.providerInfo;
         providerName = provider.full_name;
@@ -2382,20 +2382,20 @@ async function createReceiptRow(receipt){
     return receiptDiv;
 }
 
-function showReceiptModal(receiptInfo){
+function showReceiptModal(receiptInfo) {
     const modal = document.getElementById('transaction-info-modal');
 
     modal.originalReceiptInfo = JSON.parse(JSON.stringify(receiptInfo));
 
     const itemList = receiptInfo.itemList;
     let providerInfo;
-    if (!receiptInfo.providerInfo){
+    if (!receiptInfo.providerInfo) {
         providerInfo = `<div class="flex-row justify-between">
                                     <p>Proveedor</p>
                                     <p>'No asignado'</p>
                                 </div>`;
     }
-    else{providerInfo = newProviderInfo(receiptInfo.providerInfo);}
+    else { providerInfo = newProviderInfo(receiptInfo.providerInfo); }
 
     const receiptList = itemList.map((item, index) => {
         const name = item.product_name;
@@ -2445,7 +2445,7 @@ function showReceiptModal(receiptInfo){
 
     const closeBtn = document.getElementById('close-info-modal');
 
-    closeBtn.addEventListener('click', closeTransactionInfoModal );
+    closeBtn.addEventListener('click', closeTransactionInfoModal);
 
     const productListBtn = document.getElementById('product-list-btn');
     const listDropdown = document.getElementById('product-list-dropdown');
@@ -2466,7 +2466,7 @@ function showReceiptModal(receiptInfo){
 
     const providerInfoBtn = document.getElementById('provider-info-btn');
 
-    if (providerInfoBtn){
+    if (providerInfoBtn) {
         providerInfoBtn.addEventListener('click', () => {
             if (modal.dataset.isEditing === 'true') return;
 
@@ -2515,7 +2515,7 @@ async function enableReceiptEditing() {
     const listWrapper = document.getElementById('receipt-item-list-wrapper');
     const itemRows = listWrapper.querySelectorAll('.receipt-item-row');
 
-    for (const row of itemRows){
+    for (const row of itemRows) {
         const index = row.dataset.index;
         const itemData = originalReceiptInfo.itemList[index];
 
@@ -2623,8 +2623,8 @@ async function handleSaveReceipt() {
 
     const response = await api.updateRececiptList(updatedReceiptData);
 
-    if (response.success){alert("Se han guardados los cambios. Será redirigido."); window.location.reload();}
-    else{alert("Ha ocurrido un error. No se pudieron guardar los cambios");console.log(response.error);}
+    if (response.success) { alert("Se han guardados los cambios. Será redirigido."); window.location.reload(); }
+    else { alert("Ha ocurrido un error. No se pudieron guardar los cambios"); console.log(response.error); }
 
     handleCancelReceipt();
 }
@@ -2637,7 +2637,7 @@ function handleCancelReceipt() {
     showReceiptModal(originalReceiptInfo);
 }
 
-function setupOrderBy(){
+function setupOrderBy() {
 
     //DECLARACION DE VARIABLES IMPORTANTES
 
@@ -2650,17 +2650,17 @@ function setupOrderBy(){
 
     //COMPORTAMIENTOS DEL DROPDOWN
 
-    orderByBtns.forEach(button =>{
-        button.addEventListener('click', (e) =>{
+    orderByBtns.forEach(button => {
+        button.addEventListener('click', (e) => {
             e.stopPropagation();
             const currentContainer = button.closest('.order-by-container');
             const currentDropdown = currentContainer.querySelector('.order-by-dropdown');
 
-            if(currentContainer.classList.contains('clicked')) {
+            if (currentContainer.classList.contains('clicked')) {
                 currentContainer.classList.remove('clicked');
                 currentDropdown.classList.add('hidden');
             }
-            else{
+            else {
                 currentContainer.classList.add('clicked');
                 currentDropdown.classList.remove('hidden');
             }
@@ -2678,25 +2678,25 @@ function setupOrderBy(){
 
 
     //SELECCION DE ORDEN
-    orderButtons.forEach(button =>{
-        button.addEventListener('click', () =>{
+    orderButtons.forEach(button => {
+        button.addEventListener('click', () => {
             const menuContainer = button.closest('.menu-container');
             const directionButton = menuContainer.querySelector('.direction-btn');
 
             viewOrder = button.dataset.order;
             directionButton.dataset.order = viewOrder;
 
-            showTransactionView(viewOrder,viewDirection,menuContainer);
+            showTransactionView(viewOrder, viewDirection, menuContainer);
         })
     })
 
     //SELECCION DE DIRECCION
 
-    directionBtns.forEach(button =>{
-        button.addEventListener('click', () =>{
+    directionBtns.forEach(button => {
+        button.addEventListener('click', () => {
             const menuContainer = button.closest('.menu-container');
 
-            if (button.dataset.order === 'none'){
+            if (button.dataset.order === 'none') {
                 const orderButton = menuContainer.querySelector('.order-btn');
                 button.dataset.order = orderButton.dataset.order;
             }
@@ -2716,16 +2716,16 @@ function setupOrderBy(){
                 button.dataset.direction = 'descending';
             }
 
-            showTransactionView(viewOrder,viewDirection,menuContainer);
+            showTransactionView(viewOrder, viewDirection, menuContainer);
         })
     })
 }
 
 //CAMBIO DE VIEW SEGUN EL ORDEN SELECCIONADO
 
-function showTransactionView(viewOrder, viewDirection,menuContainer) {
+function showTransactionView(viewOrder, viewDirection, menuContainer) {
     menuContainer.querySelectorAll('.transaction-view').forEach(view => view.classList.add('hidden'));
-    const viewToShow =  document.getElementById(viewOrder + '-' + viewDirection);
+    const viewToShow = document.getElementById(viewOrder + '-' + viewDirection);
     console.log(viewOrder + '-' + viewDirection);
     if (viewToShow) { viewToShow.classList.remove('hidden'); }
 }
@@ -2820,7 +2820,7 @@ function connectItemEvents(itemList, transactionType) {
     });
 }
 
-async function populateTransactionClientList(){
+async function populateTransactionClientList() {
     const response = await api.getAllClients();
     const clientes = response.clientList;
 
@@ -2828,19 +2828,19 @@ async function populateTransactionClientList(){
 
     clientModal.innerHTML = '';
 
-    const none = {full_name: 'No Asignado', id: null};
-    const noneSelected = createPersonItem(none,'sale');
+    const none = { full_name: 'No Asignado', id: null };
+    const noneSelected = createPersonItem(none, 'sale');
     clientModal.appendChild(noneSelected);
 
     clientes.forEach(client => {
-        const newClientItem = createPersonItem(client,'sale');
+        const newClientItem = createPersonItem(client, 'sale');
         clientModal.appendChild(newClientItem);
     })
 
     configureClientSelection();
 }
 
-function createPersonItem(person, transactionType){
+function createPersonItem(person, transactionType) {
     const item = document.createElement('div');
 
     item.innerHTML = `<div class="flex-column">
@@ -2849,7 +2849,7 @@ function createPersonItem(person, transactionType){
                       <div class="flex-colum" style="text-align: right; width: 100%;">
                             <div class="person-id">${person.id || ''}</div>
                       </div>`
-    ;
+        ;
     item.dataset.id = person.id;
     item.dataset.name = person.full_name;
     item.className = 'flex-row';
@@ -2858,7 +2858,7 @@ function createPersonItem(person, transactionType){
     return item;
 }
 
-function configureClientSelection(){
+function configureClientSelection() {
     const clientPickers = document.querySelectorAll('.client-picker-item');
     clientPickers.forEach(client => {
         client.addEventListener('click', () => {
@@ -2873,14 +2873,14 @@ function configureClientSelection(){
 
             const confirmBtn = modalBody.querySelector('.picker-confirm-btn');
 
-            confirmBtn.dataset.data = JSON.stringify({id: clientID, name: clientName});
+            confirmBtn.dataset.data = JSON.stringify({ id: clientID, name: clientName });
             confirmBtn.disabled = false;
         })
     })
 }
 
 
-function configureProviderSelection(){
+function configureProviderSelection() {
     const providerPickers = document.querySelectorAll('.provider-picker-item');
     providerPickers.forEach(provider => {
         provider.addEventListener('click', () => {
@@ -2901,7 +2901,7 @@ function configureProviderSelection(){
     })
 }
 
-function setupCompleteTransactionBtn(itemList){
+function setupCompleteTransactionBtn(itemList) {
 
     const buttons = document.querySelectorAll('.complete-transaction-btn');
 
@@ -2909,18 +2909,18 @@ function setupCompleteTransactionBtn(itemList){
         button.addEventListener('click', async () => {
             const transactionType = button.dataset.type;
 
-            if (transactionType ==='sale'){
+            if (transactionType === 'sale') {
                 const emailInfo = await completeSale(itemList);
-                if (emailInfo) {setupSendEmailBtn(emailInfo);}
+                if (emailInfo) { setupSendEmailBtn(emailInfo); }
 
             }
-            else if (transactionType ==='receipt'){ await completeReceipt(itemList);}
+            else if (transactionType === 'receipt') { await completeReceipt(itemList); }
         })
     })
 }
 
 
-function configCreateClientBtn(){
+function configCreateClientBtn() {
     const customerForm = document.getElementById('customer-form');
 
     customerForm.addEventListener('submit', (event) => {
@@ -2932,7 +2932,7 @@ function configCreateClientBtn(){
     })
 }
 
-function configCreateProviderBtn(){
+function configCreateProviderBtn() {
     const providerForm = document.getElementById('provider-form');
 
     providerForm.addEventListener('submit', (event) => {
@@ -2944,10 +2944,10 @@ function configCreateProviderBtn(){
     })
 }
 
-async function completeCustomer(){
+async function completeCustomer() {
     const clientName = document.getElementById('client-name').value;
 
-    if (clientName === ''){showTransactionError('Es obligatorio asignarle un nombre al cliente.'); return;}
+    if (clientName === '') { showTransactionError('Es obligatorio asignarle un nombre al cliente.'); return; }
 
     var clientEmail = document.getElementById('client-email').value;
     var clientPhone = document.getElementById('client-phone').value;
@@ -2956,17 +2956,17 @@ async function completeCustomer(){
 
     const clientList = await api.getAllClients();
 
-    if (!clientList.success){
-        {showTransactionError('Ha ocurrido un error interno.' + clientList.error); return;}
+    if (!clientList.success) {
+        { showTransactionError('Ha ocurrido un error interno.' + clientList.error); return; }
     }
 
-    if (clientList.clientList.find(client => client.email === clientEmail) && clientEmail !== ''){
+    if (clientList.clientList.find(client => client.email === clientEmail) && clientEmail !== '') {
         showTransactionError('Ya existe un cliente registrado con ese email.'); return;
     }
-    if (clientList.clientList.find(client => parseInt(client.phone,10) === parseInt(clientPhone,10)) && clientPhone !== ''){
+    if (clientList.clientList.find(client => parseInt(client.phone, 10) === parseInt(clientPhone, 10)) && clientPhone !== '') {
         showTransactionError('Ya existe un cliente registrado con ese telefono.'); return;
     }
-    if (clientList.clientList.find(client => client.tax_id === clientDNI) && clientDNI !== ''){
+    if (clientList.clientList.find(client => client.tax_id === clientDNI) && clientDNI !== '') {
         showTransactionError('Ya existe un cliente registrado con ese dni.'); return;
     }
 
@@ -2975,12 +2975,12 @@ async function completeCustomer(){
     clientAddress = (clientAddress === '') ? null : clientAddress;
     clientDNI = (clientDNI === '') ? null : clientDNI;
 
-    const client = {'name' : clientName, 'email' : clientEmail, 'phone' : clientPhone, 'address' : clientAddress, 'dni' : clientDNI};
+    const client = { 'name': clientName, 'email': clientEmail, 'phone': clientPhone, 'address': clientAddress, 'dni': clientDNI };
 
     const result = await api.createClient(client);
 
-    if (!result.success){
-        {showTransactionError('Ha ocurrido un error interno. No se pudo registrar el cliente'); return;}
+    if (!result.success) {
+        { showTransactionError('Ha ocurrido un error interno. No se pudo registrar el cliente'); return; }
     }
 
     console.log('Cliente registrado');
@@ -3008,18 +3008,18 @@ async function completeCustomer(){
     showTransactionSuccess(transactionSuccessBody);
 }
 
-async function setupProviders(){
+async function setupProviders() {
     const response = await api.getOrderedProviders();
-    if (response.success){
+    if (response.success) {
         const providers = response.providerList;
         populateProviderModal(providers);
     }
-    else{
+    else {
         console.log('no salio bien' + response.error);
     }
 }
 
-function populateEmptyProviderModal(){
+function populateEmptyProviderModal() {
     const providerModals = document.querySelectorAll('.provider-view');
     providerModals.forEach(modal => {
         modal.innerHTML = `<div class="flex-row"><div class="flex-column">
@@ -3029,7 +3029,7 @@ function populateEmptyProviderModal(){
     })
 }
 
-function populateProviderModal(providers){
+function populateProviderModal(providers) {
     const providersByNameDesc = providers.name.descending;
     const providersByNameAsc = providers.name.ascending;
     const providersByEmailDesc = providers.email.descending;
@@ -3052,39 +3052,39 @@ function populateProviderModal(providers){
     const providerAddressDescending = document.getElementById('providers-table-address-descending');
     const providerAddressAscending = document.getElementById('providers-table-address-ascending');
 
-    providersByNameDesc.forEach(provider =>{
+    providersByNameDesc.forEach(provider => {
         providerNameDescending.appendChild(createProviderRow(provider));
     })
-    providersByNameAsc.forEach(provider =>{
+    providersByNameAsc.forEach(provider => {
         providerNameAscending.appendChild(createProviderRow(provider));
     })
-    providersByEmailDesc.forEach(provider=>{
+    providersByEmailDesc.forEach(provider => {
         providerEmailDescending.appendChild(createProviderRow(provider));
     })
-    providersByEmailAsc.forEach(provider =>{
+    providersByEmailAsc.forEach(provider => {
         providerEmailAscending.appendChild(createProviderRow(provider));
     })
-    providersByDateDesc.forEach(provider =>{
+    providersByDateDesc.forEach(provider => {
         providerDateDescending.appendChild(createProviderRow(provider));
     })
-    providersByDateAsc.forEach(provider =>{
+    providersByDateAsc.forEach(provider => {
         providerDateAscending.appendChild(createProviderRow(provider));
     })
-    providersByPhoneDesc.forEach(provider =>{
+    providersByPhoneDesc.forEach(provider => {
         providerPhoneDescending.appendChild(createProviderRow(provider));
     })
-    providersByPhoneAsc.forEach(provider =>{
+    providersByPhoneAsc.forEach(provider => {
         providerPhoneAscending.appendChild(createProviderRow(provider));
     })
-    providersByAddressDesc.forEach(provider =>{
+    providersByAddressDesc.forEach(provider => {
         providerAddressDescending.appendChild(createProviderRow(provider));
     })
-    providersByAddressAsc.forEach(provider =>{
+    providersByAddressAsc.forEach(provider => {
         providerAddressAscending.appendChild(createProviderRow(provider));
     })
 }
 
-function createProviderRow (provider){
+function createProviderRow(provider) {
     const providerDiv = document.createElement('div');
     providerDiv.classList.add('provider-row');
     providerDiv.innerHTML = `<div>
@@ -3098,7 +3098,7 @@ function createProviderRow (provider){
     return providerDiv;
 }
 
-function showProviderInfoModal(provider){
+function showProviderInfoModal(provider) {
     const modal = document.getElementById('transaction-info-modal');
 
     const providerEmail = (provider.email === null) ? '' : provider.email;
@@ -3149,11 +3149,11 @@ function showProviderInfoModal(provider){
     showTransactionInfoModal();
 }
 
-async function saveProviderChanges(providerID){
+async function saveProviderChanges(providerID) {
 
     const providerName = document.getElementById('provider-name').value;
 
-    if (providerName === ''){showTransactionError('Es obligatorio asignarle un nombre al proveedor.'); return;}
+    if (providerName === '') { showTransactionError('Es obligatorio asignarle un nombre al proveedor.'); return; }
 
     var providerEmail = document.getElementById('provider-email').value;
     var providerPhone = document.getElementById('provider-phone').value;
@@ -3161,15 +3161,15 @@ async function saveProviderChanges(providerID){
 
     const providerList = await api.getAllProviders();
 
-    if (!providerList.success){
-        {showTransactionError('Ha ocurrido un error interno.' + providerList.error); return;}
+    if (!providerList.success) {
+        { showTransactionError('Ha ocurrido un error interno.' + providerList.error); return; }
     }
 
-    if (providerList.providerList.find(provider => provider.email === providerEmail && provider.id !== providerID) && providerEmail !== ''){
+    if (providerList.providerList.find(provider => provider.email === providerEmail && provider.id !== providerID) && providerEmail !== '') {
         showTransactionError('Ya existe un proveedor registrado con ese email.'); return;
     }
-    if (providerList.providerList.find(provider => parseInt(provider.phone,10) === parseInt(providerPhone,10) && provider.id !== providerID)
-        && providerPhone !== ''){
+    if (providerList.providerList.find(provider => parseInt(provider.phone, 10) === parseInt(providerPhone, 10) && provider.id !== providerID)
+        && providerPhone !== '') {
         showTransactionError('Ya existe un proveedor registrado con ese telefono.'); return;
     }
 
@@ -3177,18 +3177,22 @@ async function saveProviderChanges(providerID){
     providerPhone = (providerPhone === '') ? null : providerPhone;
     providerAddress = (providerAddress === '') ? null : providerAddress;
 
-    const providerData = {'name' : providerName, 'email' : providerEmail, 'phone' : providerPhone, 'address' : providerAddress, 'id' : providerID};
+    const providerData = { 'name': providerName, 'email': providerEmail, 'phone': providerPhone, 'address': providerAddress, 'id': providerID };
 
     const response = await api.updateProvider(providerData);
 
-    if (!response.success){{showTransactionError('Ha ocurrido un error interno. No se pudo actualizar el proveedor');
-        console.log(response.error);
-        return;}}
+    if (!response.success) {
+        {
+            showTransactionError('Ha ocurrido un error interno. No se pudo actualizar el proveedor');
+            console.log(response.error);
+            return;
+        }
+    }
     alert('Proveedor actualizado con exito. Será redirigido');
     window.location.href = '/dashboard.php?location=customers';
 }
 
-function showTransactionInfoModal(){
+function showTransactionInfoModal() {
     const modal = document.getElementById('transaction-info-modal');
     const greyBg = document.getElementById('grey-background');
     const pickerModal = document.getElementById('transaction-picker-modal');
@@ -3203,18 +3207,18 @@ function showTransactionInfoModal(){
     greyBg.classList.remove('hidden');
 }
 
-async function setupClients(){
+async function setupClients() {
     const response = await api.getOrderedClients();
-    if (response.success){
+    if (response.success) {
         const clients = response.clientList;
         populateClientModal(clients);
     }
-    else{
+    else {
         pop_ups.error('No salió bien:' + response.error, "Error.");
     }
 }
 
-function populateEmptyClientModal(){
+function populateEmptyClientModal() {
     const clientModals = document.querySelectorAll('.customer-view');
     clientModals.forEach(modal => {
         modal.innerHTML = `<div class="flex-row"><div class="flex-column">
@@ -3224,7 +3228,7 @@ function populateEmptyClientModal(){
     })
 }
 
-function populateClientModal(clients){
+function populateClientModal(clients) {
     const clientsByNameDesc = clients.name.descending;
     const clientsByNameAsc = clients.name.ascending;
     const clientsByEmailDesc = clients.email.descending;
@@ -3251,45 +3255,45 @@ function populateClientModal(clients){
     const customerDniDescending = document.getElementById('customers-table-dni-descending');
     const customerDniAscending = document.getElementById('customers-table-dni-ascending');
 
-    clientsByNameDesc.forEach(client =>{
+    clientsByNameDesc.forEach(client => {
         customerNameDescending.appendChild(createClientRow(client));
     })
-    clientsByNameAsc.forEach(client =>{
+    clientsByNameAsc.forEach(client => {
         customerNameAscending.appendChild(createClientRow(client));
     })
-    clientsByEmailDesc.forEach(client =>{
+    clientsByEmailDesc.forEach(client => {
         customerEmailDescending.appendChild(createClientRow(client));
     })
-    clientsByEmailAsc.forEach(client =>{
+    clientsByEmailAsc.forEach(client => {
         customerEmailAscending.appendChild(createClientRow(client));
     })
-    clientsByDateDesc.forEach(client =>{
+    clientsByDateDesc.forEach(client => {
         customerDateDescending.appendChild(createClientRow(client));
     })
-    clientsByDateAsc.forEach(client =>{
+    clientsByDateAsc.forEach(client => {
         customerDateAscending.appendChild(createClientRow(client));
     })
-    clientsByPhoneDesc.forEach(client =>{
+    clientsByPhoneDesc.forEach(client => {
         customerPhoneDescending.appendChild(createClientRow(client));
     })
-    clientsByPhoneAsc.forEach(client =>{
+    clientsByPhoneAsc.forEach(client => {
         customerPhoneAscending.appendChild(createClientRow(client));
     })
-    clientsByAddressDesc.forEach(client =>{
+    clientsByAddressDesc.forEach(client => {
         customerAddressDescending.appendChild(createClientRow(client));
     })
-    clientsByAddressAsc.forEach(client =>{
+    clientsByAddressAsc.forEach(client => {
         customerAddressAscending.appendChild(createClientRow(client));
     })
-    clientsByDniDesc.forEach(client =>{
+    clientsByDniDesc.forEach(client => {
         customerDniDescending.appendChild(createClientRow(client));
     })
-    clientsByDniAsc.forEach(client =>{
+    clientsByDniAsc.forEach(client => {
         customerDniAscending.appendChild(createClientRow(client));
     })
 }
 
-function createClientRow (client){
+function createClientRow(client) {
     const clientDiv = document.createElement('div');
     clientDiv.classList.add('client-row');
     clientDiv.innerHTML = `<div>
@@ -3303,7 +3307,7 @@ function createClientRow (client){
     return clientDiv;
 }
 
-function showClientInfoModal(client){
+function showClientInfoModal(client) {
     const modal = document.getElementById('transaction-info-modal');
 
     const clientEmail = (client.email === null) ? '' : client.email;
@@ -3358,11 +3362,11 @@ function showClientInfoModal(client){
     showTransactionInfoModal();
 }
 
-async function saveCustomerChanges(customerID){
+async function saveCustomerChanges(customerID) {
 
     const customerName = document.getElementById('client-name').value;
 
-    if (customerName === ''){showTransactionError('Es obligatorio asignarle un nombre al cliente.'); return;}
+    if (customerName === '') { showTransactionError('Es obligatorio asignarle un nombre al cliente.'); return; }
 
     var customerEmail = document.getElementById('client-email').value;
     var customerPhone = document.getElementById('client-phone').value;
@@ -3371,17 +3375,19 @@ async function saveCustomerChanges(customerID){
 
     const customerList = await api.getAllClients();
 
-    if (!customerList.success){
-        {   pop_ups.error('Ha ocurrido un error interno.' + customerList.error, "Error.");
-            showTransactionError('Ha ocurrido un error interno.' + customerList.error); return;}
+    if (!customerList.success) {
+        {
+            pop_ups.error('Ha ocurrido un error interno.' + customerList.error, "Error.");
+            showTransactionError('Ha ocurrido un error interno.' + customerList.error); return;
+        }
     }
 
-    if (customerList.clientList.find(client => client.email === customerEmail && client.id !== customerID) && customerEmail !== ''){
+    if (customerList.clientList.find(client => client.email === customerEmail && client.id !== customerID) && customerEmail !== '') {
         pop_ups.warning('Ya existe un cliente registrado con ese email.', "Mail duplicado.");
         showTransactionError('Ya existe un cliente registrado con ese email.'); return;
     }
-    if (customerList.clientList.find(client => parseInt(client.phone,10) === parseInt(customerPhone,10) && client.id !== customerID)
-        && customerPhone !== ''){
+    if (customerList.clientList.find(client => parseInt(client.phone, 10) === parseInt(customerPhone, 10) && client.id !== customerID)
+        && customerPhone !== '') {
         pop_ups.warning('Ya existe un cliente registrado con ese teléfono.', "Teléfono duplicado.");
         showTransactionError('Ya existe un cliente registrado con ese teléfono.'); return;
 
@@ -3392,24 +3398,29 @@ async function saveCustomerChanges(customerID){
     customerAddress = (customerAddress === '') ? null : customerAddress;
     customerDNI = (customerDNI === '') ? null : customerDNI;
 
-    const customerData = {'name' : customerName, 'email' : customerEmail, 'phone' : customerPhone, 'address' : customerAddress, 'tax_id' : customerDNI,'id' : customerID};
+    const customerData = { 'name': customerName, 'email': customerEmail, 'phone': customerPhone, 'address': customerAddress, 'tax_id': customerDNI, 'id': customerID };
 
     const response = await api.updateCustomer(customerData);
 
-    if (!response.success){{
-        pop_ups.error('Ha ocurrido un error interno.' + customerList.error, "Error.");
-        showTransactionError('Ha ocurrido un error interno. No se pudo actualizar el cliente');
-        console.log(response.error);
-        return;}}
+    if (!response.success) {
+        {
+            pop_ups.error('Ha ocurrido un error interno.' + customerList.error, "Error.");
+            showTransactionError('Ha ocurrido un error interno. No se pudo actualizar el cliente');
+            console.log(response.error);
+            return;
+        }
+    }
     pop_ups.success('Cliente actualizado con exito. Será redirigido', "Cliente actualizado.");
     window.location.href = '/dashboard.php?location=customers';
 }
 
-async function completeProvider(){
+async function completeProvider() {
     const providerName = document.getElementById('provider-name').value;
 
-    if (providerName === ''){pop_ups.warning('Es obligatorio asignarle un nombre al proveedor.', "Obviedad.");
-        showTransactionError('Es obligatorio asignarle un nombre al proveedor.'); return;}
+    if (providerName === '') {
+        pop_ups.warning('Es obligatorio asignarle un nombre al proveedor.', "Obviedad.");
+        showTransactionError('Es obligatorio asignarle un nombre al proveedor.'); return;
+    }
 
     var providerEmail = document.getElementById('provider-email').value;
     var providerPhone = document.getElementById('provider-phone').value;
@@ -3417,15 +3428,15 @@ async function completeProvider(){
 
     const providerList = await api.getAllProviders();
 
-    if (!providerList.success){
-        {showTransactionError('Ha ocurrido un error interno.' + providerList.error); return;}
+    if (!providerList.success) {
+        { showTransactionError('Ha ocurrido un error interno.' + providerList.error); return; }
     }
 
-    if (providerList.providerList.find(provider => provider.email === providerEmail) && providerEmail !== ''){
+    if (providerList.providerList.find(provider => provider.email === providerEmail) && providerEmail !== '') {
         pop_ups.warning('Ya existe un proveedor registrado con ese email.', "Mail duplicado.");
         showTransactionError('Ya existe un provedor registrado con ese email.'); return;
     }
-    if (providerList.providerList.find(provider => parseInt(provider.phone,10) === parseInt(providerPhone,10)) && providerPhone !== ''){
+    if (providerList.providerList.find(provider => parseInt(provider.phone, 10) === parseInt(providerPhone, 10)) && providerPhone !== '') {
         pop_ups.warning('Ya existe un proveedor registrado con ese teléfono.', "Teléfono duplicado.");
         showTransactionError('Ya existe un provedor registrado con ese teléfono.'); return;
     }
@@ -3435,13 +3446,15 @@ async function completeProvider(){
     providerAddress = (providerAddress === '') ? null : providerAddress;
 
 
-    const provider = {'name' : providerName, 'email' : providerEmail, 'phone' : providerPhone, 'address' : providerAddress};
+    const provider = { 'name': providerName, 'email': providerEmail, 'phone': providerPhone, 'address': providerAddress };
 
     const result = await api.createProvider(provider);
 
-    if (!result.success){
-        {   pop_ups.error('Ha ocurrido un error interno.' + customerList.error, "Error.");
-            showTransactionError('Ha ocurrido un error interno. No se pudo registrar el provedor '); return;}
+    if (!result.success) {
+        {
+            pop_ups.error('Ha ocurrido un error interno.' + customerList.error, "Error.");
+            showTransactionError('Ha ocurrido un error interno. No se pudo registrar el provedor '); return;
+        }
     }
 
     providerEmail = (providerEmail === null) ? 'No asignado' : providerEmail;
@@ -3466,7 +3479,7 @@ async function completeProvider(){
     showTransactionSuccess(transactionSuccessBody);
 }
 
-function setupReloadBtns(){
+function setupReloadBtns() {
     const reloadBtns = document.querySelectorAll('.reload-btn');
     const successReturnBtn = document.getElementById('success-return-btn');
 
@@ -3482,16 +3495,16 @@ function setupReloadBtns(){
     })
 }
 
-function setupSendEmailBtn(emailInfo){
+function setupSendEmailBtn(emailInfo) {
     const sendEmailBtn = document.getElementById('send-sale-email-btn');
-    if (!sendEmailBtn) {return; }
+    if (!sendEmailBtn) { return; }
 
-    sendEmailBtn.addEventListener('click',() =>{
+    sendEmailBtn.addEventListener('click', () => {
         sendSaleEmail(emailInfo);
     })
 }
 
-async function sendSaleEmail(emailInfo){
+async function sendSaleEmail(emailInfo) {
     const sendEmailBtn = document.getElementById('send-sale-email-btn');
     const originalText = sendEmailBtn.textContent;
 
@@ -3522,7 +3535,7 @@ async function sendSaleEmail(emailInfo){
     }
 }
 
-function showTransactionSuccess(body){
+function showTransactionSuccess(body) {
     const transactionModal = document.getElementById('new-transaction-container');
     const modalContainer = document.getElementById('transaction-success-modal');
     const modalContainerBody = document.getElementById('success-modal-body');
@@ -3537,7 +3550,7 @@ function showTransactionSuccess(body){
 //  ---- Funciones auxiliares de Transacciones ----
 
 
-function getForm(transactionType){
+function getForm(transactionType) {
     let HTML;
 
     switch (transactionType) {
@@ -3635,7 +3648,7 @@ function getProviderForm() {
                                 </form>`;
 }
 
-function showTransactionError(message){
+function showTransactionError(message) {
     const transactionError = document.querySelectorAll('.transaction-error-message');
 
     transactionError.forEach(error => {
@@ -3645,7 +3658,7 @@ function showTransactionError(message){
 }
 
 //'Picker modal' Son los container para seleccionar productos y clientes/proveedores para agregar a la transaccion.
-function showPickerModal(pickerModalID){
+function showPickerModal(pickerModalID) {
     document.querySelectorAll('.picker-modal').forEach(modal => modal.classList.add('hidden'));
     const allBtns = document.querySelectorAll('.picker-confirm-btn');
 
@@ -3655,11 +3668,11 @@ function showPickerModal(pickerModalID){
     const transactionModal = document.getElementById('transaction-picker-modal');
     const transactionContainer = document.getElementById('new-transaction-container');
 
-    if (pickerModalID !== 'item-picker-modal'){
+    if (pickerModalID !== 'item-picker-modal') {
         const inventoryPickerContainer = document.getElementById('inventory-picker-container');
         inventoryPickerContainer.classList.add('hidden');
     }
-    else{
+    else {
         const inventoryPickerContainer = document.getElementById('inventory-picker-container');
         inventoryPickerContainer.classList.remove('hidden');
     }
@@ -3672,7 +3685,7 @@ function showPickerModal(pickerModalID){
     transactionModal.classList.remove('hidden');
 }
 
-function showProductList(tableID){
+function showProductList(tableID) {
     document.querySelectorAll('.product-list').forEach(wrapper => wrapper.classList.add('hidden'));
     const productListWrapper = document.getElementById('product-list-wrapper');
     const productListToShow = document.getElementById(tableID);
@@ -3681,7 +3694,7 @@ function showProductList(tableID){
     productListToShow.classList.remove('hidden');
 }
 
-function hideTransactionError(){
+function hideTransactionError() {
     const transactionError = document.querySelectorAll('.transaction-error-message');
 
     transactionError.forEach(error => {
@@ -3716,12 +3729,12 @@ async function setupRecomendedColumns() {
     let prefs = {};
     try {
         const res = await api.getCurrentInventoryPreferences();
-        if(res.success) {
+        if (res.success) {
             prefs = res;
-            if(res.mapping) columnMapping = res.mapping;
-            if(res.features) activeFeatures = res.features;
+            if (res.mapping) columnMapping = res.mapping;
+            if (res.features) activeFeatures = res.features;
         }
-    } catch(e) { console.error("Error cargando prefs:", e); }
+    } catch (e) { console.error("Error cargando prefs:", e); }
 
     // --- A. FORMULARIO DE MAPEO (Identificación de Columnas) ---
     const mapForm = document.getElementById('mapping-columns-form');
@@ -3756,7 +3769,7 @@ async function setupRecomendedColumns() {
                             <option value="">-- Sin Asignar --</option>
                             ${currentTableColumns.map(col => {
                 // Filtramos columnas internas del sistema para que no molesten
-                if(['id','created_at','min_stock'].includes(col.toLowerCase())) return '';
+                if (['id', 'created_at', 'min_stock'].includes(col.toLowerCase())) return '';
 
                 // Marcamos como seleccionada si coincide con lo guardado
                 const isSelected = (col.toLowerCase() === String(currentValue).toLowerCase()) ? 'selected' : '';
@@ -3789,7 +3802,7 @@ async function setupRecomendedColumns() {
                 sale_price: document.getElementById('map-sale-price-col').value
             };
             const res = await api.setCurrentInventoryPreferences({ mapping: newMap });
-            if(res.success) {
+            if (res.success) {
                 columnMapping = newMap;
                 pop_ups.success("Referencias guardadas correctamente.", "Éxito");
                 await loadTableData();
@@ -3805,20 +3818,20 @@ async function setupRecomendedColumns() {
         const radiosGain = document.getElementsByName('gain-type');
 
         // Cargar estado actual de los checkbox
-        if(prefs.features) {
+        if (prefs.features) {
             chkMin.checked = !!prefs.features.min_stock;
             chkGain.checked = !!prefs.features.gain;
-            radiosGain.forEach(r => { if(r.value === prefs.features.gain_type) r.checked = true; });
+            radiosGain.forEach(r => { if (r.value === prefs.features.gain_type) r.checked = true; });
         }
 
         // Lógica de importación de Min Stock
         const selImport = document.getElementById('import-min-stock-source');
         const btnImport = document.getElementById('btn-import-min-stock');
 
-        if(selImport) {
+        if (selImport) {
             selImport.innerHTML = '<option value="">-- Elegir columna origen --</option>';
             currentTableColumns.forEach(col => {
-                if(['id','created_at','min_stock'].includes(col.toLowerCase())) return;
+                if (['id', 'created_at', 'min_stock'].includes(col.toLowerCase())) return;
                 const opt = document.createElement('option');
                 opt.value = col;
                 opt.textContent = formatColumnName(col);
@@ -3826,12 +3839,12 @@ async function setupRecomendedColumns() {
             });
         }
 
-        if(btnImport) {
+        if (btnImport) {
             btnImport.onclick = async () => {
                 const source = selImport.value;
-                if(!source) return pop_ups.warning("Elegí una columna.");
+                if (!source) return pop_ups.warning("Elegí una columna.");
                 const res = await api.manageTableColumn('copy_data', { source: source, target: 'min_stock' });
-                if(res.success) pop_ups.success("Datos importados.");
+                if (res.success) pop_ups.success("Datos importados.");
             };
         }
 
@@ -3845,7 +3858,7 @@ async function setupRecomendedColumns() {
                 gain_type: document.querySelector('input[name="gain-type"]:checked')?.value || 'fixed'
             };
             const res = await api.setCurrentInventoryPreferences({ features: newFeat });
-            if(res.success) {
+            if (res.success) {
                 activeFeatures = newFeat;
                 pop_ups.success("Configuración aplicada.");
                 await loadTableData();
@@ -3857,7 +3870,7 @@ async function setupRecomendedColumns() {
             const el = document.getElementById(id);
             if (!chk || !el) return;
 
-            if(chk.checked) el.classList.add('open');
+            if (chk.checked) el.classList.add('open');
             else el.classList.remove('open'); // Asegurar estado inicial correcto
 
             if (!chk.dataset.toggleAttached) {
@@ -3876,7 +3889,7 @@ async function setupRecomendedColumns() {
     if (!currencyForm) {
         // Fallback por si te olvidaste de agregarlo en dashboard.php
         const parent = document.getElementById('mapping-columns-form')?.parentNode;
-        if(parent) {
+        if (parent) {
             const newDiv = document.createElement('div');
             newDiv.id = 'currency-conversion-form';
             newDiv.style.marginTop = '20px';
@@ -3933,7 +3946,7 @@ async function setupRecomendedColumns() {
                 // Texto amigable para la confirmación
                 const colName = colSelect.options[colSelect.selectedIndex].text;
 
-                if(!await pop_ups.confirm(
+                if (!await pop_ups.confirm(
                     "¿Confirmar Conversión Masiva?",
 
                     `Vas a convertir TODOS los valores de "${colName}" a ${targetCurr}. Esta acción no se puede deshacer.`
@@ -3947,7 +3960,7 @@ async function setupRecomendedColumns() {
 
                     const res = await fetch('/api/table/convert-currency.php', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             inventory_id: activeInventoryId,
                             column_type: colType,
@@ -3957,11 +3970,11 @@ async function setupRecomendedColumns() {
                     });
                     const data = await res.json();
 
-                    if(data.success) {
+                    if (data.success) {
                         pop_ups.success(data.message || "Conversión finalizada.");
                         // Mostrar detalle técnico (cotización usada)
                         let rateText = "";
-                        if(data.rate_used) {
+                        if (data.rate_used) {
                             // rate_used puede venir como objeto o float simple según tu PHP
                             const val = (typeof data.rate_used === 'object') ? data.rate_used.sell : data.rate_used;
                             rateText = `(Cotización aplicada: $${val})`;
@@ -3973,7 +3986,7 @@ async function setupRecomendedColumns() {
                         pop_ups.error(data.message || "Error al convertir.");
                         document.getElementById('conv-result').textContent = '';
                     }
-                } catch(e) {
+                } catch (e) {
                     console.error(e);
                     pop_ups.error("Error de conexión con el servidor.");
                 }
@@ -3985,7 +3998,7 @@ async function setupRecomendedColumns() {
     }
 }
 
-function getUserPreferences(){
+function getUserPreferences() {
     const minStockCheckbox = document.getElementById('min-stock-input');
     const salePriceCheckbox = document.getElementById('sale-price-input');
     const receiptPriceCheckbox = document.getElementById('receipt-price-input');
@@ -4008,18 +4021,18 @@ function getUserPreferences(){
     let auto_price_type = null;
     if (autoPrice.checked) {
         const checkedRadio = document.querySelector('input[name="price-type"]:checked');
-        if(checkedRadio) auto_price_type = checkedRadio.value;
+        if (checkedRadio) auto_price_type = checkedRadio.value;
     } else {
         auto_price_type = null;
     }
 
 
     const preferences = {
-        min_stock: {active: (minStockCheckbox.checked) ? 1 : 0, default: minStockDefault},
-        sale_price: {active: (salePriceCheckbox.checked) ? 1 : 0, default: salePriceDefault},
-        receipt_price: {active: (receiptPriceCheckbox.checked) ? 1 : 0, default: receiptPriceDefault},
-        percentage_gain: {active: (percentageRadio.checked) ? 1 : 0, default: gainDefault},
-        hard_gain: {active: (hardRadio.checked) ? 1 : 0, default: gainDefault},
+        min_stock: { active: (minStockCheckbox.checked) ? 1 : 0, default: minStockDefault },
+        sale_price: { active: (salePriceCheckbox.checked) ? 1 : 0, default: salePriceDefault },
+        receipt_price: { active: (receiptPriceCheckbox.checked) ? 1 : 0, default: receiptPriceDefault },
+        percentage_gain: { active: (percentageRadio.checked) ? 1 : 0, default: gainDefault },
+        hard_gain: { active: (hardRadio.checked) ? 1 : 0, default: gainDefault },
         auto_price: (autoPrice.checked) ? 1 : 0,
         auto_price_type: auto_price_type
     }
@@ -4031,14 +4044,14 @@ function getUserPreferences(){
 
 async function updateDailyStatistics(inventoryId) {
     const hourlyStatistics = await api.getDailyStatistics(inventoryId);
-    if (hourlyStatistics){
+    if (hourlyStatistics) {
         const groupedStatistics = groupHourlyData(hourlyStatistics);
         populateGroupedStatistics(groupedStatistics);
         populateHourlyGraphs(hourlyStatistics);
     }
 }
 
-function createCharts(){
+function createCharts() {
     const stockIngresado = document.getElementById('stock-ingresado-graph');
     const stockVendido = document.getElementById('stock-vendido-graph');
     const ventas = document.getElementById('ventas-graph');
@@ -4050,7 +4063,7 @@ function createCharts(){
     const proveedores = document.getElementById('proveedores-graph');
 
     var options = {
-        name:{
+        name: {
         },
         chart: {
             type: 'area',
@@ -4066,45 +4079,45 @@ function createCharts(){
         }
     };
 
-    const stockIngresadoChart = new ApexCharts(stockIngresado,options);
+    const stockIngresadoChart = new ApexCharts(stockIngresado, options);
     stockIngresadoChart.render();
     stockIngresado.myChartInstance = stockIngresadoChart;
 
-    const stockVendidoChart = new ApexCharts(stockVendido,options);
+    const stockVendidoChart = new ApexCharts(stockVendido, options);
     stockVendidoChart.render();
     stockVendido.myChartInstance = stockVendidoChart;
 
-    const gastosChart = new ApexCharts(gastos,options);
+    const gastosChart = new ApexCharts(gastos, options);
     gastosChart.render();
     gastos.myChartInstance = gastosChart;
 
-    const ingresosChart = new ApexCharts(ingresos,options);
+    const ingresosChart = new ApexCharts(ingresos, options);
     ingresosChart.render();
     ingresos.myChartInstance = ingresosChart;
 
-    const gananciasChart = new ApexCharts(ganancias,options);
+    const gananciasChart = new ApexCharts(ganancias, options);
     gananciasChart.render();
     ganancias.myChartInstance = gananciasChart;
 
-    const clientesChart = new ApexCharts(clientes,options);
+    const clientesChart = new ApexCharts(clientes, options);
     clientesChart.render();
     clientes.myChartInstance = clientesChart;
 
-    const proveedoresChart = new ApexCharts(proveedores,options);
+    const proveedoresChart = new ApexCharts(proveedores, options);
     proveedoresChart.render();
     proveedores.myChartInstance = proveedoresChart;
 
-    const ventasChart = new ApexCharts(ventas,options);
+    const ventasChart = new ApexCharts(ventas, options);
     ventasChart.render();
     ventas.myChartInstance = ventasChart;
 
-    const comprasChart = new ApexCharts(compras,options);
+    const comprasChart = new ApexCharts(compras, options);
     comprasChart.render();
     compras.myChartInstance = comprasChart;
 
 }
 
-function setupStatPickers(){
+function setupStatPickers() {
     const statPickers = document.querySelectorAll('.daily-stat-item');
     statPickers.forEach(picker => {
         picker.addEventListener('click', () => {
@@ -4120,13 +4133,13 @@ function setupStatPickers(){
     })
 }
 
-function populateHourlyGraphs(hourlyStatistics){
+function populateHourlyGraphs(hourlyStatistics) {
 
     const hours = [];
     const currentHour = new Date().getHours();
     var i;
 
-    for (i = 0; i <= currentHour ; i++){
+    for (i = 0; i <= currentHour; i++) {
         hours.push(i + " hs");
     }
 
@@ -4286,7 +4299,7 @@ function populateHourlyGraphs(hourlyStatistics){
     proveedoresChart.updateOptions(options);
 }
 
-function populateGroupedStatistics(stats){
+function populateGroupedStatistics(stats) {
     const stockIngresado = document.getElementById('daily-stock-ingresado');
     const stockVendido = document.getElementById('daily-stock-vendido');
     const gastos = document.getElementById('daily-gastos');
@@ -4329,31 +4342,31 @@ function groupHourlyData(hourlyData) {
         }
     };
 
-    groupedData.conexiones.nuevosClientes = hourlyData.conexiones.nuevosClientes.reduce((acum,valor) => {
+    groupedData.conexiones.nuevosClientes = hourlyData.conexiones.nuevosClientes.reduce((acum, valor) => {
         return acum + valor;
     })
-    groupedData.conexiones.nuevosProveedores = hourlyData.conexiones.nuevosProveedores.reduce((acum,valor) => {
+    groupedData.conexiones.nuevosProveedores = hourlyData.conexiones.nuevosProveedores.reduce((acum, valor) => {
         return acum + valor;
     })
-    groupedData.transacciones.ventasRealizadas = hourlyData.transacciones.ventasRealizadas.reduce((acum,valor) => {
+    groupedData.transacciones.ventasRealizadas = hourlyData.transacciones.ventasRealizadas.reduce((acum, valor) => {
         return acum + valor;
     })
-    groupedData.transacciones.comprasRealizadas = hourlyData.transacciones.comprasRealizadas.reduce((acum,valor) => {
+    groupedData.transacciones.comprasRealizadas = hourlyData.transacciones.comprasRealizadas.reduce((acum, valor) => {
         return acum + valor;
     })
-    groupedData.stock.stockIngresado = hourlyData.stock.stockIngresado.reduce((acum,valor) => {
+    groupedData.stock.stockIngresado = hourlyData.stock.stockIngresado.reduce((acum, valor) => {
         return acum + valor;
     })
-    groupedData.stock.stockVendido = hourlyData.stock.stockVendido.reduce((acum,valor) => {
+    groupedData.stock.stockVendido = hourlyData.stock.stockVendido.reduce((acum, valor) => {
         return acum + valor;
     })
-    groupedData.monetarias.gastos = hourlyData.monetarias.gastos.reduce((acum,valor) => {
+    groupedData.monetarias.gastos = hourlyData.monetarias.gastos.reduce((acum, valor) => {
         return acum + valor;
     })
-    groupedData.monetarias.ingresos = hourlyData.monetarias.ingresos.reduce((acum,valor) => {
+    groupedData.monetarias.ingresos = hourlyData.monetarias.ingresos.reduce((acum, valor) => {
         return acum + valor;
     })
-    groupedData.monetarias.ganancias = hourlyData.monetarias.ganancias.reduce((acum,valor) => {
+    groupedData.monetarias.ganancias = hourlyData.monetarias.ganancias.reduce((acum, valor) => {
         return acum + valor;
     })
 
@@ -4508,8 +4521,8 @@ export async function loadTableData() {
             await renderTable(filterableColumns, allData);
 
             // Actualizar componentes de gestión
-            if(typeof renderColumnList === 'function') renderColumnList();
-            if(typeof setupRecomendedColumns === 'function') await setupRecomendedColumns();
+            if (typeof renderColumnList === 'function') renderColumnList();
+            if (typeof setupRecomendedColumns === 'function') await setupRecomendedColumns();
 
             checkCriticalStatus();
 
@@ -4570,6 +4583,25 @@ function setupEventListeners() {
             currentSearchTerm = e.target.value;
             currentPage = 1; // Volver a primera página al buscar
             loadTableData();
+        });
+    }
+
+    // 1b. Botón de Recarga Manual
+    const refreshTableBtn = document.getElementById('refresh-table-btn');
+    if (refreshTableBtn) {
+        refreshTableBtn.addEventListener('click', async () => {
+            const icon = refreshTableBtn.querySelector('i');
+            refreshTableBtn.disabled = true;
+            if (icon) icon.classList.add('ph-spin'); // Feedback visual
+            try {
+                await loadTableData();
+                if (typeof pop_ups !== 'undefined') pop_ups.success("Datos actualizados correctamente.", "Actualizado");
+            } catch (e) {
+                console.error(e);
+            } finally {
+                refreshTableBtn.disabled = false;
+                if (icon) icon.classList.remove('ph-spin');
+            }
         });
     }
 
@@ -4636,11 +4668,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const rateData = await ratePromise;
 
-        if(rateData && rateData.success && rateData.sell) {
+        if (rateData && rateData.success && rateData.sell) {
             currentDollarRate = parseFloat(rateData.sell);
             console.log(`Cotización (Cached): $${currentDollarRate}`);
         }
-    } catch(e) {
+    } catch (e) {
         console.error("Error crítico obteniendo cotización:", e);
     }
 
@@ -4656,7 +4688,7 @@ document.addEventListener('DOMContentLoaded', async () => {
    GESTIÓN DE COLUMNAS (VISIBILIDAD)
    ======================================================= */
 
-window.openColumnManager = function() {
+window.openColumnManager = function () {
     const modal = document.getElementById('column-manager-modal');
     const listContainer = document.getElementById('column-manager-list');
     const modalBody = modal.querySelector('.modal-body');
@@ -4742,13 +4774,13 @@ window.openColumnManager = function() {
     });
 };
 
-window.closeColumnManager = function() {
+window.closeColumnManager = function () {
     const modal = document.getElementById('column-manager-modal');
     if (modal) modal.classList.add('hidden');
 };
 
 
-window.saveColumnPreferences = async function() {
+window.saveColumnPreferences = async function () {
     const listContainer = document.getElementById('column-manager-list');
     // Obtenemos todos los items del modal (ya ordenados visualmente por el usuario)
     const items = listContainer.querySelectorAll('.sortable-item');

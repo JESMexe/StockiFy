@@ -1,6 +1,7 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1)
+;
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
@@ -56,7 +57,7 @@ try {
     $userId = (int)$user['id'];
     $userModel = new UserModel();
 
-    $isValidOtp = $userModel->verifyPasswordChangeOtp($userId, $otp);
+    $isValidOtp = $userModel->verifyOtp($userId, $otp);
 
     if (!$isValidOtp) {
         jsonResponse(400, [
@@ -90,7 +91,8 @@ try {
         'message' => 'Contraseña actualizada correctamente.'
     ]);
 
-} catch (\Throwable $e) {
+}
+catch (\Throwable $e) {
     error_log('finalize-password-change: error inesperado. ' . $e->getMessage());
     jsonResponse(500, [
         'success' => false,

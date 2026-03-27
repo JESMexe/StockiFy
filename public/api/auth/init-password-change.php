@@ -61,16 +61,10 @@ try {
     /**
      * OTP seguro de 6 dígitos
      */
-    $otp = (string) random_int(100000, 999999);
-
-    /**
-     * Nunca guardamos el OTP en texto plano en DB.
-     * Guardamos hash.
-     */
-    $otpHash = password_hash($otp, PASSWORD_DEFAULT);
-
-    if ($otpHash === false) {
-        error_log("init-password-change: no se pudo hashear OTP para user_id={$userId}");
+    try {
+        $otp = (string) random_int(100000, 999999);
+    } catch (\Exception $e) {
+        error_log('init-password-change: fallo al generar OTP seguro. ' . $e->getMessage());
         jsonResponse(500, [
             'success' => false,
             'message' => 'No se pudo generar el código de seguridad.'
@@ -92,9 +86,10 @@ try {
      * - guardar otp_last_sent_at = NOW()
      * - opcionalmente guardar otp_action_type
      */
-    $saved = $userModel->storePasswordChangeOtp(
+    $saved = $userModel->setOtp(
         userId: $userId,
-        otpHash: $otpHash,
+        otp: $otp,
+        actionType: 'password_change',
         expiresAt: $expiresAt
     );
 
@@ -135,16 +130,11 @@ try {
         'message' => 'Código de seguridad enviado a tu correo actual.'
     ]);
 
-} catch (\Random\RandomException $e) {
-    error_log('init-password-change: fallo al generar OTP seguro. ' . $e->getMessage());
-    jsonResponse(500, [
-        'success' => false,
-        'message' => 'No se pudo generar el código de seguridad.'
-    ]);
-} catch (\Throwable $e) {
+} catch (\Exception $e) {
+    // Exception from random_int caught below if any, otherwise general exception
     error_log('init-password-change: error inesperado. ' . $e->getMessage());
     jsonResponse(500, [
         'success' => false,
         'message' => 'Ocurrió un error inesperado.'
     ]);
-}
+} 

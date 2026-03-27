@@ -122,8 +122,14 @@ class UserModel
         return (time() - $lastSentTimestamp) >= $cooldownSeconds;
     }
 
-    public function storePasswordChangeOtp(int $userId, string $otpHash, string $expiresAt): bool
+    public function setOtp(int $userId, string $otp, string $actionType = 'password_change', string $expiresAt = null): bool
     {
+        // Si no nos pasan expiration, por defecto es 10 minutos
+        if ($expiresAt === null) {
+            $expiresAt = (new \DateTimeImmutable('+10 minutes'))->format('Y-m-d H:i:s');
+        }
+        $otpHash = password_hash($otp, PASSWORD_DEFAULT);
+
         $stmt = $this->db->prepare("
             UPDATE users
             SET
@@ -131,18 +137,19 @@ class UserModel
                 otp_expires_at = :otp_expires_at,
                 otp_attempts = 0,
                 otp_last_sent_at = NOW(),
-                otp_action_type = 'password_change'
+                otp_action_type = :action_type
             WHERE id = :id
         ");
 
         return $stmt->execute([
             ':otp_hash' => $otpHash,
             ':otp_expires_at' => $expiresAt,
+            ':action_type' => $actionType,
             ':id' => $userId
         ]);
     }
 
-    public function verifyPasswordChangeOtp(int $userId, string $otp): bool
+    public function verifyOtp(int $userId, string $otp, string $actionType = 'password_change'): bool
     {
         $stmt = $this->db->prepare("
             SELECT otp_hash, otp_expires_at, otp_attempts, otp_action_type
@@ -161,7 +168,7 @@ class UserModel
         if (
             empty($user['otp_hash']) ||
             empty($user['otp_expires_at']) ||
-            ($user['otp_action_type'] ?? null) !== 'password_change'
+            ($user['otp_action_type'] ?? null) !== $actionType
         ) {
             return false;
         }
@@ -200,5 +207,46 @@ class UserModel
         ");
 
         $stmt->execute([':id' => $userId]);
+    }
+
+    public function createUser(array $data): bool
+    {
+        $sql = "INSERT INTO users (username, email, password_hash, full_name, created_at) 
+                VALUES (:username, :email, :pass, :name, NOW())";
+        $stmt = $this->db->prepare($sql);
+        try {
+            return $stmt->execute([
+                ':username' => $data['username'],
+                ':email' => $data['email'],
+                ':pass' => password_hash($data['password'], PASSWORD_DEFAULT),
+                ':name' => $data['full_name'] ?? $data['name'] ?? null
+            ]);
+        } catch (\PDOException $e) {
+            return false;
+        }
+    }
+
+    public function updateProfile(int $userId, array $data): bool
+    {
+        $fields = [];
+        $params = [':id' => $userId];
+
+        if (isset($data['full_name'])) {
+            $fields[] = "full_name = :full_name";
+            $params[':full_name'] = $data['full_name'];
+        }
+        if (isset($data['username'])) {
+            $fields[] = "username = :username";
+            $params[':username'] = $data['username'];
+        }
+        // Agrega otros campos si es necesario
+
+        if (empty($fields)) {
+            return true;
+        }
+
+        $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
     }
 }

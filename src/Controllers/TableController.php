@@ -64,7 +64,7 @@ class TableController
 
             echo $jsonData;
 
-        } catch (\PDOException | \Exception $e) {
+        } catch (\PDOException | Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Error interno del servidor: ' . $e->getMessage()]);
             error_log("Error en TableController::get: " . $e->getMessage());

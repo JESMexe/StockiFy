@@ -31,7 +31,7 @@ class SalesModel {
         return ['inventory_id' => $res['inventory_id'], 'table' => "`" . str_replace("`", "``", $res['table_name']) . "`", 'stock_col' => "`" . str_replace("`", "``", $stockCol) . "`"];
     }
 
-    public function createSale($userId, $inventoryId, $clientId, $data): bool|string
+    public function createSale($userId, $inventoryId, $clientId, $data, array &$outAlerts = []): bool|string
     {
         try {
             if (!$this->db->inTransaction()) $this->db->beginTransaction();
@@ -97,7 +97,7 @@ class SalesModel {
                     // IMPORTANTE: Decrementar Stock y Controlar Ganancia
                     if ($productId) {
                         $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? null;
-                        $inventoryModel->decreaseStock($userId, $productId, $item['cantidad'], $inventoryId, $prodName);
+                        $inventoryModel->decreaseStock($userId, $productId, $item['cantidad'], $inventoryId, $prodName, $outAlerts);
 
                         // ALERTA DE GANANCIA NEGATIVA
                         if ($tableName && $safeCostCol) {
@@ -110,18 +110,13 @@ class SalesModel {
                                 $salePrice = (float)($item['precio'] ?? $item['precio_unitario']);
                                 
                                 if ($salePrice > 0 && $salePrice < $cost && $cost > 0) {
-                                    $stmtUser = $this->db->prepare("SELECT email, full_name FROM users WHERE id = :id");
-                                    $stmtUser->execute([':id' => $userId]);
-                                    $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
-
-                                    if ($u && !empty($u['email'])) {
-                                        if (!$mailSvc) {
-                                            require_once dirname(__DIR__) . '/Services/MailService.php';
-                                            $mailSvc = new \App\Services\MailService();
-                                        }
-                                        $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? 'Producto';
-                                        $mailSvc->sendNegativeProfitAlert($u['email'], $u['full_name'] ?? 'Socio', $prodName, $salePrice, $cost);
-                                    }
+                                    $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? 'Producto';
+                                    $outAlerts[] = [
+                                        'type' => 'negative_profit',
+                                        'product_name' => $prodName,
+                                        'sale_price' => $salePrice,
+                                        'cost_price' => $cost
+                                    ];
                                 }
                             }
                         }
