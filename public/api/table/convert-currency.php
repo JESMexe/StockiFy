@@ -70,9 +70,10 @@ try {
     // ---------------------------------------------------------
     // SOLUCIÓN RAÍZ 2: MATEMÁTICA (Eliminar Brecha)
     // ---------------------------------------------------------
-    // Obtenemos la tasa real desde el Backend directamente
+    // Obtenemos la tasa contextual configurada por el usuario (Manual o API)
+    $exchangeConfig = $prefs['exchange_config'] ?? null;
     $service = new ExchangeService();
-    $rates = $service->getRates();
+    $rates = $service->getContextualRate($exchangeConfig);
 
     // Calculamos el PROMEDIO. Esto hace que la operación sea simétrica.
     // (Compra + Venta) / 2

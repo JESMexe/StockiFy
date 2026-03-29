@@ -586,6 +586,57 @@ export async function registerContactForm(contactData){
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(contactData),
-    })
+    });
     return handleResponse(response);
+}
+
+// --- DIVISAS / EXCHANGE RATE (Con Fallback Activo) ---
+export async function getExchangeRate(forceRefresh = false) {
+    try {
+        const url = forceRefresh ? '/api/table/get-rate.php?force_refresh=true' : '/api/table/get-rate.php';
+        const response = await fetch(url);
+        if (!response.ok) {
+            const data = await response.json().catch(() => null);
+            if (data && data.message === 'API_DOWN') {
+                return await promptManualRateFallback();
+            }
+            throw new Error(data?.message || `Error del servidor: ${response.status}`);
+        }
+        return await response.json();
+    } catch (e) {
+        if (e.message === 'API_DOWN') {
+            return await promptManualRateFallback();
+        }
+        pop_ups.error(e.message, "Error Divisas");
+        throw e;
+    }
+}
+
+async function promptManualRateFallback() {
+    try {
+        const val = await pop_ups.prompt(
+            "API del Dólar Caída",
+            "La API externa no responde. Ingresá manualmente el valor (1 USD = X ARS) para continuar:",
+            " Ej: 1250 ",
+            ""
+        );
+
+        const rate = parseFloat(val);
+        if (isNaN(rate) || rate <= 0) {
+            pop_ups.error("El valor ingresado no es válido.", "Error");
+            throw new Error("Valor manual inválido");
+        }
+
+        // Auto-guardar 
+        const newConfig = { type: 'manual', manual_rate: rate, api_source: 'blue' };
+        await setCurrentInventoryPreferences({ exchange_config: newConfig });
+
+        pop_ups.warning(`Cotización bloqueada en $${rate} ARS. Podés volver a modo Automático desde el menú de Ajustes en la tabla.`, "Modo Manual Activado");
+        
+        return { success: true, buy: rate, sell: rate, avg: rate, updated: new Date().toISOString(), source: 'manual' };
+
+    } catch (e) {
+        pop_ups.error("Se canceló la operación porque no se definió un tipo de cambio.", "Cancelado");
+        throw new Error("No se definió tipo de cambio.");
+    }
 }

@@ -123,6 +123,10 @@ try {
         $currentPrefs['column_order'] = $input['column_order'];
     }
 
+    if (isset($input['exchange_config'])) {
+        $currentPrefs['exchange_config'] = $input['exchange_config'];
+    }
+
     // 5. Guardar Preferencias JSON en inventories
     $stmtSave = $db->prepare("UPDATE inventories SET preferences = ? WHERE id = ?");
     $stmtSave->execute([json_encode($currentPrefs), $invId]);

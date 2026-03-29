@@ -1,4 +1,4 @@
-﻿/**
+/**
  * public/assets/js/purchases/purchases.js
  * Módulo de Compras (Final Estilizado)
  */
@@ -19,7 +19,7 @@ const fmtDate = (dateString) => {
     const safeDate = dateString.replace(/-/g, '/');
     const d = new Date(safeDate);
     if (isNaN(d.getTime())) return dateString;
-    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 export class PurchaseModule {
@@ -37,7 +37,7 @@ export class PurchaseModule {
 
     init() {
         if (this.isInitialized) {
-            if(document.getElementById(this.containerId)) this.loadHistory(this.currentSortOrder);
+            if (document.getElementById(this.containerId)) this.loadHistory(this.currentSortOrder);
             return;
         }
 
@@ -45,7 +45,6 @@ export class PurchaseModule {
 
         if (container) {
             container.innerHTML = this.renderBaseStructure();
-            // [FIX MOVIL] Mover modales al body
             const modalCreate = document.getElementById('create-purchase-modal');
             const modalDetail = document.getElementById('detail-purchase-modal');
             const modalQuick = document.getElementById('quick-expense-modal');
@@ -59,7 +58,7 @@ export class PurchaseModule {
         }
 
         this.attachEvents();
-        if(container) this.loadHistory(this.currentSortOrder);
+        if (container) this.loadHistory(this.currentSortOrder);
         this.isInitialized = true;
         console.log("PurchaseModule inicializado");
     }
@@ -154,17 +153,17 @@ export class PurchaseModule {
         if (window.innerWidth > 768 || !bar) return;
 
         // Ocultar todo
-        if(stepProv) stepProv.style.display = 'none';
-        if(stepProd) stepProd.style.display = 'none';
-        if(stepCheck) stepCheck.style.display = 'none';
+        if (stepProv) stepProv.style.display = 'none';
+        if (stepProd) stepProd.style.display = 'none';
+        if (stepCheck) stepCheck.style.display = 'none';
         bar.style.display = 'block';
 
         if (view === 'provider') {
             // PANTALLA 1: PROVEEDOR
-            if(stepProv) stepProv.style.display = 'block';
-            if(btnBack) btnBack.style.display = 'none'; // Sin botón atrás
+            if (stepProv) stepProv.style.display = 'block';
+            if (btnBack) btnBack.style.display = 'none'; // Sin botón atrás
 
-            if(btnNext) {
+            if (btnNext) {
                 btnNext.innerHTML = 'Ir a Productos <i class="ph-bold ph-arrow-right"></i>';
                 btnNext.className = 'btn btn-primary'; // Verde
                 btnNext.onclick = (e) => { e.preventDefault(); e.stopPropagation(); this.setMobileView('products'); };
@@ -172,13 +171,13 @@ export class PurchaseModule {
 
         } else if (view === 'products') {
             // PANTALLA 2: PRODUCTOS
-            if(stepProd) stepProd.style.display = 'block';
-            if(btnBack) {
+            if (stepProd) stepProd.style.display = 'block';
+            if (btnBack) {
                 btnBack.style.display = 'flex'; // Flecha visible
                 btnBack.onclick = (e) => { e.preventDefault(); e.stopPropagation(); this.setMobileView('provider'); };
             }
 
-            if(btnNext) {
+            if (btnNext) {
                 btnNext.innerHTML = 'Ir a Resumen <i class="ph-bold ph-arrow-right"></i>';
                 btnNext.className = 'btn btn-primary'; // Verde
                 btnNext.onclick = (e) => { e.preventDefault(); e.stopPropagation(); this.setMobileView('checkout'); };
@@ -186,13 +185,13 @@ export class PurchaseModule {
 
         } else if (view === 'checkout') {
             // PANTALLA 3: RESUMEN
-            if(stepCheck) stepCheck.style.display = 'block';
-            if(btnBack) {
+            if (stepCheck) stepCheck.style.display = 'block';
+            if (btnBack) {
                 btnBack.style.display = 'flex';
                 btnBack.onclick = (e) => { e.preventDefault(); e.stopPropagation(); this.setMobileView('products'); };
             }
 
-            if(btnNext) {
+            if (btnNext) {
                 btnNext.innerHTML = '<i class="ph-bold ph-plus"></i> Seguir Agregando';
                 btnNext.className = 'btn btn-secondary'; // Blanco con borde
                 btnNext.onclick = (e) => { e.preventDefault(); e.stopPropagation(); this.setMobileView('products'); };
@@ -239,7 +238,7 @@ export class PurchaseModule {
         // Eventos móviles (Flecha del header)
         // El botón inferior se controla en setMobileView
         const btnBack = document.getElementById('mobile-back-purch-step');
-        if(btnBack) {
+        if (btnBack) {
             btnBack.addEventListener('click', (e) => {
                 e.preventDefault();
                 // La lógica exacta depende del paso, pero setMobileView reasigna el onclick correcto.
@@ -290,7 +289,7 @@ export class PurchaseModule {
             });
 
             this.calcTotal();
-            pop_ups.info("Compra cargada para edición", "Editar" );
+            pop_ups.info("Compra cargada para edición", "Editar");
         } catch (e) {
             console.error(e);
             pop_ups.error(e.message || 'Error al cargar');
@@ -299,14 +298,13 @@ export class PurchaseModule {
 
     closeModal(id) {
         document.getElementById(id).classList.add('hidden');
-        document.getElementById(id).style.display='none';
+        document.getElementById(id).style.display = 'none';
         this.editingId = null;
     }
 
     async openCreateModal() {
         try {
-            const rateRes = await fetch('/api/table/get-rate.php');
-            const rateData = await rateRes.json();
+            const rateData = await api.getExchangeRate();
             this.rates.USD = (rateData.avg) ? parseFloat(rateData.avg) : 1200;
         } catch (e) { console.warn("Error cotización", e); }
 
@@ -314,7 +312,7 @@ export class PurchaseModule {
 
         const m = document.getElementById('create-purchase-modal');
         m.classList.remove('hidden');
-        m.style.display='flex';
+        m.style.display = 'flex';
 
         this.currentPurchase = { providerId: null, providerName: null, items: [], total: 0 };
         this.updateCartUI();
@@ -330,23 +328,23 @@ export class PurchaseModule {
                 api.getPurchaseResources(),
                 api.getCurrentInventoryPreferences()
             ]);
-            if(resData.success) {
+            if (resData.success) {
                 this.availableProviders = resData.providers || [];
                 this.availableProducts = resData.products || [];
                 this.renderProviders(this.availableProviders);
                 this.renderProducts(this.availableProducts);
             }
             this.config = (prefData && prefData.success && prefData.mapping) ? prefData.mapping : {};
-        } catch(e){ console.error(e); }
+        } catch (e) { console.error(e); }
     }
 
     renderProviders(list) {
         const c = document.getElementById('purch-providers-list');
-        if(!c) return;
+        if (!c) return;
         c.innerHTML = list.map(p => `<div class="resource-item prov-trigger" data-id="${p.id}"><b>${p.full_name}</b> <i class="ph ph-plus-circle" style="color:var(--accent-color);"></i></div>`).join('');
 
         c.querySelectorAll('.prov-trigger').forEach(b => b.addEventListener('click', () => {
-            this.selectProvider(this.availableProviders.find(x=>x.id==b.dataset.id));
+            this.selectProvider(this.availableProviders.find(x => x.id == b.dataset.id));
             // [CORRECCIÓN] YA NO SALTAMOS AUTOMÁTICAMENTE
             // if(window.innerWidth <= 768) this.setMobileView('products');
         }));
@@ -354,7 +352,7 @@ export class PurchaseModule {
 
     renderProducts(list) {
         const c = document.getElementById('purch-products-list');
-        if(list.length===0){c.innerHTML='<p class="text-center" style="padding:1rem; color:#999">Sin resultados</p>';return;}
+        if (list.length === 0) { c.innerHTML = '<p class="text-center" style="padding:1rem; color:#999">Sin resultados</p>'; return; }
         c.innerHTML = list.map(p => {
             const disabledClass = p.can_buy ? '' : 'disabled';
             let displayPrice = parseFloat(p.price);
@@ -368,7 +366,7 @@ export class PurchaseModule {
             return `<div class="product-card prod-trigger ${disabledClass}" data-id="${p.id}"><div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-meta">${stockDisplay}</div></div><div class="prod-pricing">${priceHtml}</div></div>`;
         }).join('');
         c.querySelectorAll('.prod-trigger').forEach(b => {
-            if(b.classList.contains('disabled')) return;
+            if (b.classList.contains('disabled')) return;
             b.addEventListener('click', () => {
                 const p = this.availableProducts.find(x => x.id == b.dataset.id);
                 let finalPriceARS = parseFloat(p.price);
@@ -381,29 +379,29 @@ export class PurchaseModule {
     selectProvider(p) { this.currentPurchase.providerId = p.id; this.currentPurchase.providerName = p.full_name; this.updateProviderUI(); }
     updateProviderUI() {
         const d = document.getElementById('selected-provider-display');
-        if(this.currentPurchase.providerId) {
-            d.style.display='block';
+        if (this.currentPurchase.providerId) {
+            d.style.display = 'block';
             d.innerHTML = `Proveedor: <b>${this.currentPurchase.providerName}</b> <span id="rm-prov" style="float:right; cursor:pointer;">&times;</span>`;
-            document.getElementById('rm-prov').addEventListener('click', (e)=>{ e.stopPropagation(); this.selectProvider({id:null, full_name:null}); });
-        } else { d.style.display='none'; }
+            document.getElementById('rm-prov').addEventListener('click', (e) => { e.stopPropagation(); this.selectProvider({ id: null, full_name: null }); });
+        } else { d.style.display = 'none'; }
     }
 
     addToCart(p, overridePrice = null) {
         const exist = this.currentPurchase.items.find(i => i.id == p.id);
         const priceToUse = overridePrice !== null ? overridePrice : parseFloat(p.price);
-        if(exist) { exist.quantity++; exist.price = priceToUse; }
-        else { this.currentPurchase.items.push({...p, quantity:1, price: priceToUse}); }
+        if (exist) { exist.quantity++; exist.price = priceToUse; }
+        else { this.currentPurchase.items.push({ ...p, quantity: 1, price: priceToUse }); }
         this.calcTotal();
     }
 
     calcTotal() {
-        this.currentPurchase.total = this.currentPurchase.items.reduce((s,i)=>s+(i.price*i.quantity),0);
+        this.currentPurchase.total = this.currentPurchase.items.reduce((s, i) => s + (i.price * i.quantity), 0);
         document.getElementById('purch-total-display').textContent = `${fmtMoney(this.currentPurchase.total)}`;
         const mobTotal = document.getElementById('mob-purch-total');
         const mobCount = document.getElementById('mob-purch-count');
-        if(mobTotal && mobCount) {
+        if (mobTotal && mobCount) {
             mobTotal.textContent = fmtMoney(this.currentPurchase.total);
-            const count = this.currentPurchase.items.reduce((s,i)=>s+i.quantity, 0);
+            const count = this.currentPurchase.items.reduce((s, i) => s + i.quantity, 0);
             mobCount.textContent = `${count} Ítems`;
         }
         this.updateCartUI();
@@ -411,49 +409,49 @@ export class PurchaseModule {
 
     updateCartUI() {
         const c = document.getElementById('purch-cart-items');
-        if(!this.currentPurchase.items.length) {
-            c.innerHTML='<div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>';
-            document.getElementById('confirm-purchase-btn').disabled=true;
+        if (!this.currentPurchase.items.length) {
+            c.innerHTML = '<div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>';
+            document.getElementById('confirm-purchase-btn').disabled = true;
             return;
         }
-        document.getElementById('confirm-purchase-btn').disabled=false;
-        c.innerHTML = this.currentPurchase.items.map((i,idx) => `
+        document.getElementById('confirm-purchase-btn').disabled = false;
+        c.innerHTML = this.currentPurchase.items.map((i, idx) => `
             <div class="cart-card">
                 <div class="cart-row-top"><div class="cart-name">${i.name}</div><div class="cart-unit-price">${fmtMoney(i.price)} c/u</div></div>
                 <div class="cart-row-bottom"><div class="cart-total">${fmtMoney(i.price * i.quantity)}</div><div class="cart-controls-wrapper"><button class="ctrl-btn sub" data-idx="${idx}">-</button><div class="qty-val">${i.quantity}</div><button class="ctrl-btn add" data-idx="${idx}">+</button><button class="del-btn del" data-idx="${idx}" title="Eliminar"><i class="ph ph-trash"></i></button></div></div>
             </div>`
         ).join('');
-        c.querySelectorAll('.sub').forEach(b => b.addEventListener('click', ()=>{ const idx = parseInt(b.dataset.idx); const item = this.currentPurchase.items[idx]; item.quantity--; if(item.quantity < 1) this.currentPurchase.items.splice(idx, 1); this.calcTotal(); }));
-        c.querySelectorAll('.add').forEach(b => b.addEventListener('click', ()=>{ const idx = parseInt(b.dataset.idx); this.currentPurchase.items[idx].quantity++; this.calcTotal(); }));
-        c.querySelectorAll('.del').forEach(b => b.addEventListener('click', ()=>{ const idx = parseInt(b.dataset.idx); this.currentPurchase.items.splice(idx, 1); this.calcTotal(); }));
+        c.querySelectorAll('.sub').forEach(b => b.addEventListener('click', () => { const idx = parseInt(b.dataset.idx); const item = this.currentPurchase.items[idx]; item.quantity--; if (item.quantity < 1) this.currentPurchase.items.splice(idx, 1); this.calcTotal(); }));
+        c.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => { const idx = parseInt(b.dataset.idx); this.currentPurchase.items[idx].quantity++; this.calcTotal(); }));
+        c.querySelectorAll('.del').forEach(b => b.addEventListener('click', () => { const idx = parseInt(b.dataset.idx); this.currentPurchase.items.splice(idx, 1); this.calcTotal(); }));
     }
 
-    filterProviders(t) { this.renderProviders(this.availableProviders.filter(p=>p.full_name.toLowerCase().includes(t.toLowerCase()))); }
-    filterProducts(t) { this.renderProducts(this.availableProducts.filter(p=>p.name.toLowerCase().includes(t.toLowerCase()))); }
+    filterProviders(t) { this.renderProviders(this.availableProviders.filter(p => p.full_name.toLowerCase().includes(t.toLowerCase()))); }
+    filterProducts(t) { this.renderProducts(this.availableProducts.filter(p => p.name.toLowerCase().includes(t.toLowerCase()))); }
 
     async submitPurchase() {
-        const btn = document.getElementById('confirm-purchase-btn'); btn.textContent = 'Procesando...'; btn.disabled=true;
+        const btn = document.getElementById('confirm-purchase-btn'); btn.textContent = 'Procesando...'; btn.disabled = true;
         try {
-            const payload = { provider_id: this.currentPurchase.providerId, total: this.currentPurchase.total, items: this.currentPurchase.items.map(i=>({ id:i.id, nombre_producto:i.name, cantidad:i.quantity, precio_unitario:i.price, subtotal:i.price*i.quantity })) };
+            const payload = { provider_id: this.currentPurchase.providerId, total: this.currentPurchase.total, items: this.currentPurchase.items.map(i => ({ id: i.id, nombre_producto: i.name, cantidad: i.quantity, precio_unitario: i.price, subtotal: i.price * i.quantity })) };
             const res = await api.createPurchase(payload);
-            if(res.success) { this.closeModal('create-purchase-modal'); await this.loadHistory(); pop_ups.success('Compra registrada'); }
-        } catch(e){ console.error(e); }
-        btn.textContent = 'Confirmar Compra'; btn.disabled=false;
+            if (res.success) { this.closeModal('create-purchase-modal'); await this.loadHistory(); pop_ups.success('Compra registrada'); }
+        } catch (e) { console.error(e); }
+        btn.textContent = 'Confirmar Compra'; btn.disabled = false;
     }
 
     // Funciones adicionales (Gasto rápido, detalles, etc. simplificadas para brevedad pero funcionales)
-    fillProviderSelect(selectId, selectedId = null) { const sel = document.getElementById(selectId); if(!sel) return; sel.innerHTML = '<option value="">-- Desconocido / Ninguno --</option>'; if (this.availableProviders) { this.availableProviders.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.full_name; if(p.id == selectedId) opt.selected = true; sel.appendChild(opt); }); } }
-    async openQuickModal(d){if(!this.availableProviders.length)await this.fetchResources();this.fillProviderSelect('quick-provider');const m=document.getElementById('quick-expense-modal'),f=document.getElementById('quick-expense-form'),t=document.getElementById('quick-modal-title'),b=document.getElementById('submit-quick-btn');f.reset();document.getElementById('quick-date').valueAsDate=new Date;if(d){this.editingId=d.id;t.innerHTML='<i class="ph ph-pencil-simple"></i> Editar Gasto';b.textContent="Actualizar Gasto";document.getElementById('quick-amount').value=d.total;document.getElementById('quick-provider').value=d.provider_id||"";document.getElementById('quick-category').value=d.category||"General";document.getElementById('quick-note').value=d.notes||"";if(d.created_at)document.getElementById('quick-date').value=d.created_at.split(' ')[0]}else{this.editingId=null;t.innerHTML='<i class="ph-bold ph-lightning"></i> Gasto Rápido';b.textContent="Registrar Gasto"}m.classList.remove('hidden');m.style.display='flex';document.getElementById('quick-amount').focus()}
-    async submitQuickExpense(e){e.preventDefault();const b=document.getElementById('submit-quick-btn');b.disabled=true;const ot=b.textContent;b.textContent='Procesando...';const a=parseFloat(document.getElementById('quick-amount').value);if(isNaN(a)||a<=0){pop_ups.warning("Monto inválido");b.disabled=false;b.textContent=ot;return}const p={id:this.editingId,total:a,provider_id:document.getElementById('quick-provider').value||null,category:document.getElementById('quick-category').value||'General',notes:document.getElementById('quick-note').value||null,created_at:document.getElementById('quick-date').value+' '+new Date().toLocaleTimeString(),items:[]};const ep=this.editingId?'/api/purchases/update.php':'/api/purchases/create.php';try{const r=await this.sendRequest(ep,p);if(r.success){this.closeModal('quick-expense-modal');this.loadHistory(this.currentSortOrder);pop_ups.success(this.editingId?'Actualizado':'Registrado')}else pop_ups.error(r.message)}catch(e){pop_ups.error("Error de conexión")}b.disabled=false;b.textContent=ot}
-    async deletePurchase(i){if(!await pop_ups.confirm("Eliminar","¿Seguro?"))return;try{const r=await this.sendRequest('/api/purchases/delete.php',{id:i});if(r.success){pop_ups.info("Eliminado");this.loadHistory(this.currentSortOrder)}else pop_ups.error("Error")}catch(e){pop_ups.error("Error")}}
-    async sendRequest(u,d){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});return await r.json()}
+    fillProviderSelect(selectId, selectedId = null) { const sel = document.getElementById(selectId); if (!sel) return; sel.innerHTML = '<option value="">-- Desconocido / Ninguno --</option>'; if (this.availableProviders) { this.availableProviders.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.full_name; if (p.id == selectedId) opt.selected = true; sel.appendChild(opt); }); } }
+    async openQuickModal(d) { if (!this.availableProviders.length) await this.fetchResources(); this.fillProviderSelect('quick-provider'); const m = document.getElementById('quick-expense-modal'), f = document.getElementById('quick-expense-form'), t = document.getElementById('quick-modal-title'), b = document.getElementById('submit-quick-btn'); f.reset(); document.getElementById('quick-date').valueAsDate = new Date; if (d) { this.editingId = d.id; t.innerHTML = '<i class="ph ph-pencil-simple"></i> Editar Gasto'; b.textContent = "Actualizar Gasto"; document.getElementById('quick-amount').value = d.total; document.getElementById('quick-provider').value = d.provider_id || ""; document.getElementById('quick-category').value = d.category || "General"; document.getElementById('quick-note').value = d.notes || ""; if (d.created_at) document.getElementById('quick-date').value = d.created_at.split(' ')[0] } else { this.editingId = null; t.innerHTML = '<i class="ph-bold ph-lightning"></i> Gasto Rápido'; b.textContent = "Registrar Gasto" } m.classList.remove('hidden'); m.style.display = 'flex'; document.getElementById('quick-amount').focus() }
+    async submitQuickExpense(e) { e.preventDefault(); const b = document.getElementById('submit-quick-btn'); b.disabled = true; const ot = b.textContent; b.textContent = 'Procesando...'; const a = parseFloat(document.getElementById('quick-amount').value); if (isNaN(a) || a <= 0) { pop_ups.warning("Monto inválido"); b.disabled = false; b.textContent = ot; return } const p = { id: this.editingId, total: a, provider_id: document.getElementById('quick-provider').value || null, category: document.getElementById('quick-category').value || 'General', notes: document.getElementById('quick-note').value || null, created_at: document.getElementById('quick-date').value + ' ' + new Date().toLocaleTimeString(), items: [] }; const ep = this.editingId ? '/api/purchases/update.php' : '/api/purchases/create.php'; try { const r = await this.sendRequest(ep, p); if (r.success) { this.closeModal('quick-expense-modal'); this.loadHistory(this.currentSortOrder); pop_ups.info(this.editingId ? 'Actualizado' : 'Registrado') } else pop_ups.error(r.message) } catch (e) { pop_ups.error("Error de conexión") } b.disabled = false; b.textContent = ot }
+    async deletePurchase(i) { if (!await pop_ups.confirm("Eliminar", "¿Seguro?")) return; try { const r = await this.sendRequest('/api/purchases/delete.php', { id: i }); if (r.success) { pop_ups.info("Eliminado"); this.loadHistory(this.currentSortOrder) } else pop_ups.error("Error") } catch (e) { pop_ups.error("Error") } }
+    async sendRequest(u, d) { const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }); return await r.json() }
     async showDetails(id) {
         try {
             const res = await api.getPurchaseDetails(id);
             if (!res.success) throw new Error(res.message || "Error al cargar detalles");
             const p = res.purchase; const items = res.items || [];
             const modal = document.getElementById('detail-purchase-modal');
-            if(!modal) { alert("Error: No se encontró el modal #detail-purchase-modal"); return; }
+            if (!modal) { alert("Error: No se encontró el modal #detail-purchase-modal"); return; }
             const bodyContainer = modal.querySelector('.purchase-modal-body');
             let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;"><div style="font-size:1.3rem; font-weight:900; letter-spacing:1px; color:var(--ticket-color);">COMPRA #${p.id}</div><div style="font-size:0.9rem; margin-top:5px;">${fmtDate(p.created_at)}</div></div>`;
             const provName = p.provider_name || p.provider_real_name || '-'; const concept = (provName !== '-') ? provName : (p.category || 'Gasto General');
@@ -473,7 +471,7 @@ export class PurchaseModule {
                 html += `</tbody></table>`;
             } else { html += `<div style="padding:15px; text-align:center; font-style:italic; color:#666; margin-bottom:15px; border: 1px dashed #ccc;">Gasto sin ítems de inventario</div>`; }
             html += `<div id="detail-total-section"><span>TOTAL PAGADO</span><span>${fmtMoney(p.total || p.total_amount)}</span></div>`;
-            if(p.notes) { html += `<div id="detail-notes"><strong>NOTAS:</strong><br>${p.notes}</div>`; }
+            if (p.notes) { html += `<div id="detail-notes"><strong>NOTAS:</strong><br>${p.notes}</div>`; }
             bodyContainer.innerHTML = html; modal.classList.remove('hidden'); modal.style.display = 'flex';
         } catch (e) { pop_ups.error("Error: " + e.message); }
     }

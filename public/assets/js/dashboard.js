@@ -488,8 +488,7 @@ window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
     btn.textContent = "...";
 
     try {
-        const res = await fetch('/api/table/get-rate.php');
-        const rateData = await res.json();
+        const rateData = await api.getExchangeRate();
 
         // LÓGICA DE PROMEDIO (Simétrica)
         let rate = 0;
@@ -1828,10 +1827,12 @@ async function init() {
 
             if (isCriticalFilterActive) {
                 criticalBtn.style.backgroundColor = 'var(--accent-red)';
-                criticalBtn.style.color = '#fff';
+                criticalBtn.style.color = 'var(--color-black)';
+                criticalBtn.style.borderColor = 'var(--color-black)';
             } else {
-                criticalBtn.style.backgroundColor = '#fff0f0';
+                criticalBtn.style.backgroundColor = 'var(--accent-red-20)';
                 criticalBtn.style.color = 'var(--accent-red)';
+                criticalBtn.style.borderColor = 'var(--accent-red)';
             }
 
             filterTable();
@@ -3188,7 +3189,7 @@ async function saveProviderChanges(providerID) {
             return;
         }
     }
-    alert('Proveedor actualizado con exito. Será redirigido');
+    pop_ups.success('Proveedor actualizado con exito. Será redirigido', "Proveedor actualizado.");
     window.location.href = '/dashboard.php?location=customers';
 }
 
@@ -3817,11 +3818,81 @@ async function setupRecomendedColumns() {
         const chkGain = document.getElementById('feature-gain');
         const radiosGain = document.getElementsByName('gain-type');
 
+        // Tipo de Cambio
+        const radiosExchange = document.getElementsByName('exchange-type');
+        const selApiSource = document.getElementById('exchange-api-source');
+        const inpManualRate = document.getElementById('exchange-manual-rate');
+        const wrapApi = document.getElementById('exchange-api-options');
+        const wrapManual = document.getElementById('exchange-manual-options');
+
+        const toggleExchangeViews = () => {
+            if (!wrapApi || !wrapManual) return;
+            const activeType = document.querySelector('input[name="exchange-type"]:checked')?.value || 'api';
+            if (activeType === 'api') {
+                wrapApi.style.display = 'block';
+                wrapManual.style.display = 'none';
+            } else {
+                wrapApi.style.display = 'none';
+                wrapManual.style.display = 'flex';
+            }
+        };
+
+        radiosExchange.forEach(r => {
+            if (!r.dataset.toggleAttached) {
+                r.addEventListener('change', () => toggleExchangeViews());
+                r.dataset.toggleAttached = 'true';
+            }
+        });
+
+        // Lógica de Preview en vivo de la cotización
+        const liveValueSpan = document.getElementById('exchange-api-live-value');
+        const btnRefreshLive = document.getElementById('exchange-api-force-refresh');
+
+        const fetchPreviewRate = async (source) => {
+            if (!liveValueSpan) return;
+            liveValueSpan.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
+            try {
+                const res = await fetch(`https://dolarapi.com/v1/dolares/${source}`);
+                const data = await res.json();
+                const avg = (data.compra + data.venta) / 2;
+                liveValueSpan.textContent = `$${avg.toFixed(2)}`;
+            } catch (e) {
+                liveValueSpan.textContent = "Error";
+            }
+        };
+
+        if (selApiSource) {
+            selApiSource.addEventListener('change', (e) => fetchPreviewRate(e.target.value));
+        }
+
+        if (btnRefreshLive && selApiSource) {
+            btnRefreshLive.addEventListener('click', () => {
+                const icon = btnRefreshLive.querySelector('i');
+                if (icon) icon.classList.add('ph-spin');
+                fetchPreviewRate(selApiSource.value).finally(() => {
+                    setTimeout(() => { if (icon) icon.classList.remove('ph-spin'); }, 500);
+                });
+            });
+        }
+
         // Cargar estado actual de los checkbox
         if (prefs.features) {
-            chkMin.checked = !!prefs.features.min_stock;
-            chkGain.checked = !!prefs.features.gain;
+            if (chkMin) chkMin.checked = !!prefs.features.min_stock;
+            if (chkGain) chkGain.checked = !!prefs.features.gain;
             radiosGain.forEach(r => { if (r.value === prefs.features.gain_type) r.checked = true; });
+        }
+
+        // Cargar estado de Tipo de Cambio
+        if (prefs.exchange_config) {
+            const ext = prefs.exchange_config;
+            radiosExchange.forEach(r => { if (r.value === ext.type) r.checked = true; });
+            if (selApiSource && ext.api_source) selApiSource.value = ext.api_source;
+            if (inpManualRate && ext.manual_rate) inpManualRate.value = ext.manual_rate;
+            toggleExchangeViews();
+            if (ext.type === 'api' || !ext.type) fetchPreviewRate(ext.api_source || 'blue');
+        } else {
+            toggleExchangeViews();
+            fetchPreviewRate('blue');
         }
 
         // Lógica de importación de Min Stock
@@ -3852,15 +3923,28 @@ async function setupRecomendedColumns() {
         featForm.onsubmit = async (e) => {
             e.preventDefault();
             const newFeat = {
-                min_stock: chkMin.checked,
+                min_stock: chkMin ? chkMin.checked : false,
                 min_stock_val: 0,
-                gain: chkGain.checked,
+                gain: chkGain ? chkGain.checked : false,
                 gain_type: document.querySelector('input[name="gain-type"]:checked')?.value || 'fixed'
             };
-            const res = await api.setCurrentInventoryPreferences({ features: newFeat });
+
+            const exType = document.querySelector('input[name="exchange-type"]:checked')?.value || 'api';
+            const newExchangeConfig = {
+                type: exType,
+                api_source: selApiSource ? selApiSource.value : 'blue',
+                manual_rate: inpManualRate ? parseFloat(inpManualRate.value) || 1200 : 1200
+            };
+
+            const res = await api.setCurrentInventoryPreferences({ features: newFeat, exchange_config: newExchangeConfig });
             if (res.success) {
                 activeFeatures = newFeat;
+                prefs.exchange_config = newExchangeConfig;
                 pop_ups.success("Configuración aplicada.");
+
+                // Forzar sincronización usando DOM como fuente de verdad
+                setTimeout(() => toggleExchangeViews(), 100);
+
                 await loadTableData();
             }
         };
@@ -3907,7 +3991,7 @@ async function setupRecomendedColumns() {
                 <i class="ph ph-currency-circle-dollar"></i> Conversión Masiva de Precios
             </div>
             <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">
-                Esta herramienta convierte <b>toda la columna</b> seleccionada de una moneda a otra (ej: de Pesos a Dólares) usando la cotización Blue del día.
+                Esta herramienta convierte <b>toda la columna</b> seleccionada de una moneda a otra (ej: de Pesos a Dólares) usando la cotización Automática o Manual configurada en tus ajustes.
                 <br><small style="color: var(--accent-color);">* Todos los valores de tu tabla se verán afectados.</small>
             </p>
             
@@ -4595,7 +4679,7 @@ function setupEventListeners() {
             if (icon) icon.classList.add('ph-spin'); // Feedback visual
             try {
                 await loadTableData();
-                if (typeof pop_ups !== 'undefined') pop_ups.success("Datos actualizados correctamente.", "Actualizado");
+                if (typeof pop_ups !== 'undefined') pop_ups.info("Datos actualizados correctamente.", "Actualizado");
             } catch (e) {
                 console.error(e);
             } finally {

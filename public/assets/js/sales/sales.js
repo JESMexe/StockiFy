@@ -366,8 +366,7 @@ export class SalesModule {
 
     async openCreateModal() {
         try {
-            const rateRes = await fetch('/api/table/get-rate.php');
-            const rateData = await rateRes.json();
+            const rateData = await api.getExchangeRate();
             let baseRate = 1200;
             if (rateData.avg) baseRate = parseFloat(rateData.avg);
             else if (rateData.sell) baseRate = parseFloat(rateData.sell);

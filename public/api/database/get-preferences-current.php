@@ -34,8 +34,8 @@ if ($inv) {
                 'sale_price' => null,
                 'buy_price' => null
             ],
-        // Si tienes features extras
-        'features' => $prefs['features'] ?? []
+        'features' => $prefs['features'] ?? [],
+        'exchange_config' => $prefs['exchange_config'] ?? null
     ];
     echo json_encode($response);
 } else {

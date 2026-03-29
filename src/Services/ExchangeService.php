@@ -3,82 +3,106 @@ namespace App\Services;
 
 class ExchangeService {
 
-    private $apiUrl = 'https://dolarapi.com/v1/dolares/blue';
-    private $cacheFile;
     private $cacheTime = 3600; // 1 hora en segundos
 
     public function __construct() {
-        // Guardamos el caché en la carpeta temporal del sistema o en la misma carpeta
-        $this->cacheFile = __DIR__ . '/exchange_cache.json';
     }
 
-    public function getRates() {
-        // 1. INTENTO LEER DE CACHÉ
-        if (file_exists($this->cacheFile)) {
-            $cacheContent = @file_get_contents($this->cacheFile);
+    /**
+     * Devuelve la cotización según la configuración del usuario actual.
+     * Si falla la API externa y no hay manual, lanza excepción "API_DOWN" para forzar fallback en UI.
+     *
+     * @param array|null $config Configuración 'exchange_config' de DB
+     */
+    public function getContextualRate(?array $config = null, bool $forceRefresh = false) {
+        $type = $config['type'] ?? 'api';
+        $apiSource = $config['api_source'] ?? 'blue';
+        $manualRate = floatval($config['manual_rate'] ?? 1200);
+
+        // 1. MODO MANUAL: Prioridad absoluta
+        if ($type === 'manual' && $manualRate > 0) {
+            return [
+                'buy' => $manualRate,
+                'sell' => $manualRate,
+                'avg' => $manualRate,
+                'updated' => date('Y-m-d H:i:s'),
+                'source' => 'manual'
+            ];
+        }
+
+        // 2. MODO API: Buscar desde API Externa parametrizada
+        $allowedSources = ['blue', 'oficial', 'bolsa', 'cripto', 'mayorista'];
+        if (!in_array($apiSource, $allowedSources)) {
+            $apiSource = 'blue';
+        }
+
+        $apiUrl = "https://dolarapi.com/v1/dolares/{$apiSource}";
+        $cacheFile = __DIR__ . "/exchange_cache_{$apiSource}.json";
+
+        // INTENTO LEER CACHÉ (Si no se fuerza recarga)
+        if (!$forceRefresh && file_exists($cacheFile)) {
+            $cacheContent = @file_get_contents($cacheFile);
             if ($cacheContent) {
                 $cacheData = json_decode($cacheContent, true);
-
-                // Verificamos si el caché sigue siendo válido (menor a 1 hora)
                 if (isset($cacheData['timestamp']) && (time() - $cacheData['timestamp'] < $this->cacheTime)) {
-                    // Retornamos caché y evitamos la llamada externa lenta
-                    return $cacheData['data'];
+                    $rate = $cacheData['data'];
+                    // Removemos metadata extra que rompa algo
+                    return [
+                        'buy' => $rate['buy'],
+                        'sell' => $rate['sell'],
+                        'avg' => $rate['avg'],
+                        'updated' => $rate['updated'],
+                        'source' => 'api_cache'
+                    ];
                 }
             }
         }
 
-        // 2. SI NO HAY CACHÉ (O EXPIRÓ), CONSULTAMOS API EXTERNA
-        $defaultRates = [
-            'buy' => 1200,
-            'sell' => 1240,
-            'avg' => 1220,
-            'updated' => date('Y-m-d H:i:s')
-        ];
-
+        // INTENTO CONSULTAR API VIVA
         try {
             $arrContextOptions = [
                 "ssl" => ["verify_peer" => false, "verify_peer_name" => false],
-                "http" => ["timeout" => 3] // Bajamos timeout a 3s para no colgar
+                "http" => ["timeout" => 4] // Bajamos timeout para no colgar
             ];
 
-            $json = @file_get_contents($this->apiUrl, false, stream_context_create($arrContextOptions));
+            $json = @file_get_contents($apiUrl, false, stream_context_create($arrContextOptions));
 
             if ($json) {
                 $data = json_decode($json, true);
                 if(isset($data['compra']) && isset($data['venta'])) {
 
                     $rates = [
-                        'buy' => $data['compra'],
-                        'sell' => $data['venta'],
-                        'avg' => ($data['compra'] + $data['venta']) / 2,
+                        'buy' => floatval($data['compra']),
+                        'sell' => floatval($data['venta']),
+                        'avg' => (floatval($data['compra']) + floatval($data['venta'])) / 2,
                         'updated' => $data['fechaActualizacion'] ?? date('Y-m-d H:i:s')
                     ];
 
-                    // 3. GUARDAMOS EN CACHÉ PARA LA PRÓXIMA
-                    @file_put_contents($this->cacheFile, json_encode([
+                    // GUARDAMOS EN CACHÉ
+                    @file_put_contents($cacheFile, json_encode([
                         'timestamp' => time(),
                         'data' => $rates
                     ]));
+                    
+                    $rates['source'] = 'api_live';
 
                     return $rates;
                 }
             }
+            throw new \Exception("La API no devolvió valores compra y venta.");
         } catch (\Exception $e) {
             error_log("ExchangeService Error: " . $e->getMessage());
+            
+            // Opción 3 de contingencia: Si falló API, no hay caché, y no hay manual rate escrito...
+            // Rompemos a propósito con "API_DOWN" para que el frontend ataje esto y pida al usuario digitar.
+            throw new \Exception("API_DOWN");
         }
-
-        // Si falló API y teníamos un caché viejo, mejor devolvemos el viejo que el default
-        if (isset($cacheData) && isset($cacheData['data'])) {
-            return $cacheData['data'];
-        }
-
-        return $defaultRates;
     }
 
     public function convert($amount, $from, $to, $rates) {
         if ($from === $to) return $amount;
         if ($from === 'ARS' && $to === 'USD') return ($rates['sell'] > 0) ? $amount / $rates['sell'] : $amount;
-        if ($from === 'USD' && $to === 'ARS') return $amount * $rates['buy']; // O 'sell' si prefieres conservador
+        if ($from === 'USD' && $to === 'ARS') return $amount * $rates['buy'];
         return $amount;
     }
 }
