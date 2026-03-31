@@ -3,13 +3,6 @@ require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
 require_once __DIR__ . '/../../../src/Models/NotificationModel.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-require_once __DIR__ . '/../../../vendor/phpmailer/Exception.php';
-require_once __DIR__ . '/../../../vendor/phpmailer/PHPMailer.php';
-require_once __DIR__ . '/../../../vendor/phpmailer/SMTP.php';
-
 use App\Models\NotificationModel;
 
 header('Content-Type: application/json');

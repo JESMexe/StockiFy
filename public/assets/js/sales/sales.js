@@ -1,5 +1,6 @@
 /* public/assets/js/sales/sales.js */
 import {
+    getExchangeRate,
     getSaleResources,
     createSale,
     getSalesHistory,
@@ -206,7 +207,7 @@ export class SalesModule {
                                     
                                     <div class="totals-box">
                                         <div class="flex-row total-line"><span>Total valor Productos:</span> <span id="checkout-subtotal">$0,00</span></div>
-                                        <div class="flex-row total-line" style="color:var(--color-gray);"><span>Recargos:</span> <span id="checkout-surcharges">$0,00</span></div>
+                                        <div class="flex-row total-line" style="color:var(--color-gray);"><span>Recargos/Desc.:</span> <span id="checkout-surcharges">$0,00</span></div>
                                         <div class="flex-row total-line total-final"><span>Total a pagar:</span> <span id="checkout-total-final">$0,00</span></div>
                                         <div class="flex-row total-line" style="font-weight:bold;" id="change-row"><span>Falta para completar:</span> <span id="checkout-diff">$0,00</span></div>
                                     </div>
@@ -366,7 +367,7 @@ export class SalesModule {
 
     async openCreateModal() {
         try {
-            const rateData = await api.getExchangeRate();
+            const rateData = await getExchangeRate();
             let baseRate = 1200;
             if (rateData.avg) baseRate = parseFloat(rateData.avg);
             else if (rateData.sell) baseRate = parseFloat(rateData.sell);
@@ -516,7 +517,7 @@ export class SalesModule {
                     displayAmount = `<b>${symbol} ${parseFloat(p.original_amount).toFixed(2)}</b> <span style="font-size:0.8rem; color:#666;">(${fmtMoney(p.amount)})</span>`;
                 }
                 return `<div style="background:#FFF; border:1px solid #ddd; border-radius:4px; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
-                    <div><div style="font-size:0.9rem;">${displayAmount}</div><div style="font-size:0.75rem; color:#555;">${p.name}</div>${p.surcharge_val > 0 ? `<div style="font-size:0.7rem; color:var(--accent-color);">+ Recargo: ${fmtMoney(p.surcharge_val)}</div>` : ''}</div>
+                    <div><div style="font-size:0.9rem;">${displayAmount}</div><div style="font-size:0.75rem; color:#555;">${p.name}</div>${p.surcharge_val > 0 ? `<div style="font-size:0.7rem; color:var(--accent-color);">+ Recargo: ${fmtMoney(p.surcharge_val)}</div>` : p.surcharge_val < 0 ? `<div style="font-size:0.7rem; color:var(--accent-green);">- Descuento: ${fmtMoney(Math.abs(p.surcharge_val))}</div>` : ''}</div>
                     <span style="cursor:pointer; color:var(--accent-red);" class="rm-pay" data-idx="${idx}"><i class="ph ph-x-circle" style="font-size:1.2rem;"></i></span></div>`;
             }).join('');
             c.querySelectorAll('.rm-pay').forEach(b => b.addEventListener('click', () => { this.currentSale.payments.splice(b.dataset.idx, 1); this.recalcSale(); }));
@@ -617,7 +618,7 @@ export class SalesModule {
 
     fillSelect(id, list, valKey, textKey, placeholder) {
         const s = document.getElementById(id); s.innerHTML = placeholder ? `<option value="">${placeholder}</option>` : '';
-        list.forEach(i => { const op = document.createElement('option'); op.value = i[valKey]; let txt = i[textKey]; if(id === 'pay-method-select' && i.surcharge > 0) txt += ` (+${parseFloat(i.surcharge)}%)`; op.textContent = txt; s.appendChild(op); });
+        list.forEach(i => { const op = document.createElement('option'); op.value = i[valKey]; let txt = i[textKey]; if(id === 'pay-method-select' && parseFloat(i.surcharge) !== 0) txt += parseFloat(i.surcharge) > 0 ? ` (+${parseFloat(i.surcharge)}%)` : ` (${parseFloat(i.surcharge)}%)`; op.textContent = txt; s.appendChild(op); });
     }
 
     async submitSale() {

@@ -1,41 +1,46 @@
-﻿/* --- LAYOUT DIVIDIDO (Caja Izq | Form Der) --- */
+/* --- LAYOUT DIVIDIDO (Caja Izq | Form Der) --- */
 .login-split-screen {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
+    gap: 12vw; /* Mayor separación dinámica basada en pantalla */
     min-height: 85vh;
-    padding: 0rem;
+    padding: 2rem;
     overflow-x: hidden;
 }
 
 /* Columna de la Mascota */
 .mascot-side {
-    flex: 0 0 auto; /* No se estira ni encoge */
+    flex: 0 1 auto; /* Se adapta a la pantalla */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .login-mascot-container {
-    width: 950px;
-    height: 950px;
+    width: clamp(280px, 45vw, 600px); /* Tamaño fluido: mímino 280px, ideal 45% de la pantalla, máximo 600px */
+    height: auto;
+    aspect-ratio: 1 / 1; /* Mantiene la proporción cuadrada */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* --- OVERRIDE CRÍTICO PARA .box-22 --- */
-/* Esto arregla que la caja se vaya volando o se superponga */
+/* Integramos la mascota al layout Flex (removiendo el absolute problemático) */
 .login-split-screen .box-22 {
-    position: absolute !important; /* Importante para anular el absolute del main.css */
-    right: 1620px;
-    bottom: 340px !important;
+    position: relative !important; /* Importante para anular el absolute del main.css */
+    right: auto !important;
+    left: auto !important;
+    top: auto !important;
+    bottom: auto !important;
     width: 100% !important;
     height: 100% !important;
     opacity: 1 !important;
 
-    /* Mantenemos la animación de flotar si quieres */
+    /* Mantenemos la animación de flotar */
     animation: float-rotate-reverse 25s ease-in-out infinite;
-}
-
-.box {
-    width: 1050px;
-    height: 1050px;
 }
 
 /* Columna del Formulario */

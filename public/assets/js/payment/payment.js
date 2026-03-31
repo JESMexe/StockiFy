@@ -1,4 +1,4 @@
-﻿/**
+/**
  * public/assets/js/payments/payments.js
  * Version 2.0: Tipos, Monedas y Recargos.
  */
@@ -68,9 +68,9 @@ export class PaymentsModule {
                                     </div>
                                 </div>
                                 <div style="margin-bottom:15px;">
-                                    <label>Recargo / Comisión (%)</label>
-                                    <input type="number" id="pay-surcharge" class="rustic-input" style="width:100%;" value="0" step="0.01" placeholder="Ej: 10 para 10%">
-                                    <small style="color:#888;">Si cobrás un extra por usar este método (ej: Tarjeta).</small>
+                                    <label>Recargo / Descuento (%)</label>
+                                    <input type="number" id="pay-surcharge" class="rustic-input" style="width:100%;" value="0" step="0.01" placeholder="Ej: 10 o -10">
+                                    <small style="color:#888;">Positivo para recargos (ej: 10 para +10%), o Negativo para descuentos (ej: -15 para -15%).</small>
                                 </div>
                                 <div style="text-align: right;"><button type="submit" id="submit-pay-btn" class="btn btn-primary" >Guardar</button></div>
                             </form>
@@ -104,7 +104,7 @@ export class PaymentsModule {
                                         </select>
                                     </div>
                                 </div>
-                                <div style="margin-bottom:15px;"><label>Recargo (%)</label><input type="number" id="edit-pay-surcharge" class="rustic-input" style="width:100%;" step="0.01"></div>
+                                <div style="margin-bottom:15px;"><label>Recargo/Desc. (%)</label><input type="number" id="edit-pay-surcharge" class="rustic-input" style="width:100%;" step="0.01"></div>
                                 <div style="text-align: right;"><button type="submit" id="update-pay-btn" class="btn btn-primary" >Actualizar</button></div>
                             </form>
                         </div>
@@ -141,7 +141,9 @@ export class PaymentsModule {
                 return;
             }
             container.innerHTML = res.methods.map(m => {
-                const surchargeText = parseFloat(m.surcharge) > 0 ? `<span class="badge surcharge">+${parseFloat(m.surcharge)}%</span>` : '';
+                let surchargeText = '';
+                if (parseFloat(m.surcharge) > 0) surchargeText = `<span class="badge surcharge">+${parseFloat(m.surcharge)}%</span>`;
+                else if (parseFloat(m.surcharge) < 0) surchargeText = `<span class="badge" style="background: var(--accent-green); color: white; border-color: var(--accent-green);">${parseFloat(m.surcharge)}%</span>`;
 
                 // Traducción visual de tipos
                 let typeIcon = '<i class="ph ph-question"></i>';

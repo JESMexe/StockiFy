@@ -375,10 +375,8 @@ header {
 /* 1) La sección gallery no necesita tanto aire arriba */
 #section-gallery {
     padding-top: 90px !important;
-    /* antes 120px */
-    justify-content: flex-start;
-    gap: 18px;
-    /* antes 40px */
+    justify-content: center !important; /* Centra en pantallas altas en lugar de pegarlo a los bordes */
+    gap: 40px !important; /* Espacio fijo entre título y galería */
 }
 
 /* Título más compacto (tu div tenía margin-top:4rem inline) */
@@ -914,5 +912,45 @@ header {
         text-align: center;
         z-index: 10;
         display: block !important;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE ZOOM (BURBUJAS) PARA PREVENIR RECORTES EN PANTALLAS DE PC/LAPTOP
+========================================================= */
+@media (max-width: 1600px), (max-height: 960px) and (min-width: 769px) {
+    .scale-wrapper {
+        zoom: 0.85;
+    }
+}
+
+@media (max-width: 1366px), (max-height: 850px) and (min-width: 769px) {
+    .scale-wrapper {
+        zoom: 0.8;
+    }
+}
+
+@media (max-width: 1280px), (max-height: 750px) and (min-width: 769px) {
+    .scale-wrapper {
+        zoom: 0.75;
+    }
+}
+
+/* Soporte para Pixelbook Go (1080p con 125/150% de escala) o pantallas de <700px de altura utilizable */
+@media (max-height: 700px) and (min-width: 769px) {
+    .scale-wrapper {
+        zoom: 0.65;
+    }
+}
+
+@media (max-height: 600px) and (min-width: 769px) {
+    .scale-wrapper {
+        zoom: 0.55;
+    }
+}
+
+@media (max-width: 768px) {
+    .scale-wrapper {
+        zoom: 1 !important; /* Reset en móviles, donde ya se apilan correctamente */
     }
 }

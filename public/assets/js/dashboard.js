@@ -636,8 +636,12 @@ window.handleSort = (column) => {
 
 window.enableEditRow = (btn, id) => {
     editingRowId = id;
-    const filterableColumns = currentTableColumns.filter(c => c.toLowerCase() !== 'created_at');
-    renderTable(filterableColumns, allData);
+    if (typeof filterTable === 'function') {
+        filterTable();
+    } else {
+        const filterableColumns = currentTableColumns.filter(c => c.toLowerCase() !== 'created_at');
+        renderTable(filterableColumns, allData);
+    }
 };
 
 /* =========================================
@@ -4602,7 +4606,14 @@ export async function loadTableData() {
 
             // 5. RENDERIZADO (Ahora con los mapeos correctos ya cargados)
             console.log("[loadTableData] Renderizando tabla con mapeo activo:", columnMapping);
-            await renderTable(filterableColumns, allData);
+            
+            // Si hay filtros o un término de búsqueda, usamos filterTable que preserva la búsqueda 
+            // e internamente llama a renderTable con la data filtrada.
+            if (typeof filterTable === 'function') {
+                filterTable();
+            } else {
+                await renderTable(filterableColumns, allData);
+            }
 
             // Actualizar componentes de gestión
             if (typeof renderColumnList === 'function') renderColumnList();
@@ -4664,8 +4675,8 @@ function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            currentSearchTerm = e.target.value;
-            currentPage = 1; // Volver a primera página al buscar
+            window.currentSearchTerm = e.target.value;
+            window.currentPage = 1; // Volver a primera página al buscar
             loadTableData();
         });
     }

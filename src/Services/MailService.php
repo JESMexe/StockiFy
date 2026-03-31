@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1)
+declare(strict_types=1)
 ;
 
 namespace App\Services;
@@ -32,8 +32,7 @@ class MailService
         string $otpCode,
         string $actionType,
         string $userName
-        ): bool
-    {
+    ): bool {
         try {
             $mail = $this->getMailer();
             $mail->setFrom(MAIL_FROM_SECURITY, MAIL_NAME_SECURITY);
@@ -52,8 +51,7 @@ class MailService
             }
 
             return $mail->send();
-        }
-        catch (Exception|\Throwable $e) {
+        } catch (Exception | \Throwable $e) {
             error_log("MailService::sendSecurityOTP error: " . $e->getMessage());
             return false;
         }
@@ -65,8 +63,7 @@ class MailService
         string $productName,
         float $currentStock,
         float $minStock
-        ): bool
-    {
+    ): bool {
         try {
             $mail = $this->getMailer();
             $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Alertas');
@@ -78,8 +75,7 @@ class MailService
             $mail->AltBody = "Hola {$userName}, el producto '{$productName}' ha alcanzado un stock critico de {$currentStock} (Min: {$minStock}).";
 
             return $mail->send();
-        }
-        catch (Exception|\Throwable $e) {
+        } catch (Exception | \Throwable $e) {
             error_log("MailService::sendLowStockAlert error: " . $e->getMessage());
             return false;
         }
@@ -91,8 +87,7 @@ class MailService
         string $productName,
         float $salePrice,
         float $costPrice
-        ): bool
-    {
+    ): bool {
         try {
             $mail = $this->getMailer();
             $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Alertas');
@@ -104,8 +99,7 @@ class MailService
             $mail->AltBody = "Hola {$userName}, detectamos una venta de '{$productName}' a $ {$salePrice}, pero tu costo de compra es $ {$costPrice}. Estas perdiendo dinero.";
 
             return $mail->send();
-        }
-        catch (Exception|\Throwable $e) {
+        } catch (Exception | \Throwable $e) {
             error_log("MailService::sendNegativeProfitAlert error: " . $e->getMessage());
             return false;
         }
@@ -118,8 +112,7 @@ class MailService
         float $totalSales,
         float $totalPurchases,
         float $balance
-        ): bool
-    {
+    ): bool {
         try {
             $mail = $this->getMailer();
             $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Reportes');
@@ -131,8 +124,7 @@ class MailService
             $mail->AltBody = "Hola {$userName}, tu balance del {$date}: Ingresos $ {$totalSales} | Egresos $ {$totalPurchases} | Balance Final: $ {$balance}.";
 
             return $mail->send();
-        }
-        catch (Exception|\Throwable $e) {
+        } catch (Exception | \Throwable $e) {
             error_log("MailService::sendDailyBalance error: " . $e->getMessage());
             return false;
         }
@@ -227,8 +219,8 @@ class MailService
                             <td style="padding:0 32px 32px 32px;">
                                 <p style="margin:0; font-size:14px; line-height:1.6; color:#64748b;">
                                     ¿Necesitás ayuda? Escribinos a
-                                    <a href="mailto:soporte@stockify.app" style="color:#A3BE8C; text-decoration:none; font-weight:bold;">
-                                        soporte@stockify.app
+                                    <a href="mailto:soporte@stockify.com.ar" style="color:#A3BE8C; text-decoration:none; font-weight:bold;">
+                                        soporte@stockify.com.ar
                                     </a>
                                 </p>
                             </td>
