@@ -14,7 +14,7 @@ function render_nav($type = 'dashboard'): void
     switch ($type) {
         case 'dashboard':
             // Navegación principal dentro de la App
-            echo '        <a href="' . $baseUrl . 'configuration.php" class="btn btn-secondary"><i class="ph ph-gear"></i> Configuración</a>';
+            echo '        <a href="' . $baseUrl . 'settings.php" class="btn btn-secondary"><i class="ph ph-gear"></i> Configuración</a>';
             echo '        <a href="' . $baseUrl . 'logout.php" class="btn btn-secondary"><i class="ph ph-sign-out"></i> Salir</a>';
             break;
 

@@ -1,17 +1,17 @@
-﻿// assets/js/ui-helper.js
+// assets/js/ui-helper.js
 
 export const ui_helper = {
     // Definimos los tipos de botones para no repetir código
     buttons: {
         dashboard: () => `<a href="/select-db.php" class="btn btn-secondary">Ir al Panel</a>`,
-        config: () => `<a href="/configuration.php" class="btn btn-secondary">Configuración</a>`,
+        config: () => `<a href="/settings.php" class="btn btn-secondary">Configuración</a>`,
         logout: () => `<a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>`,
 
         // El Dropdown es un componente más complejo
         userDropdown: (extraLinks = []) => {
             const defaultLinks = [
-                { label: 'Configuración', href: 'configuration.php', icon: 'ph-gear' },
-                { label: 'Soporte', href: 'configuration.php?tab=soporte', icon: 'ph-lifebuoy' }
+                { label: 'Configuración', href: 'settings.php', icon: 'ph-gear' },
+                { label: 'Soporte', href: 'settings.php?tab=soporte', icon: 'ph-lifebuoy' }
             ];
             // Unimos los links por defecto con los que pida cada página
             const allLinks = [...defaultLinks, ...extraLinks, { label: 'Cerrar Sesión', href: 'logout.php', icon: 'ph-sign-out' }];

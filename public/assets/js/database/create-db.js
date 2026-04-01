@@ -1,4 +1,4 @@
-﻿// public/assets/js/database/create-db.js
+// public/assets/js/database/create-db.js
 import * as api from '../api.js';
 import * as setup from "../setupMiCuentaDropdown.js";
 
@@ -145,8 +145,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div id="dropdown-container">
                 <div class="btn btn-secondary" id="mi-cuenta-btn">Mi Cuenta</div>
                 <div class="flex-column hidden" id="mi-cuenta-dropdown">
-                    <a href="/configuration.php" class="btn btn-secondary">Configuración</a>
-                    <a href="/configuration.php" class="btn btn-secondary">Soporte</a>
+                    <a href="/settings.php" class="btn btn-secondary">Configuración</a>
+                    <a href="/settings.php" class="btn btn-secondary">Soporte</a>
                     <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
                 </div>
             </div>

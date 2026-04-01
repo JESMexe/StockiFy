@@ -1,5 +1,14 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    Options -MultiViews
+
+    # 1. Rutear TODO hacia la carpeta /public/ al instante (tal como tenías tu sistema original)
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteRule ^(.*)$ public/$1 [L]
+
+    # 2. Una vez que ya estamos dentro de /public/, buscar mágicamente el archivo .php
+    # (Esto permite que si entras a /dashboard o /api/auth/google-login funcione sin fallos)
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^(.*)$ $1.php [L]
 </IfModule>
