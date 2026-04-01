@@ -82,10 +82,10 @@ function setupAccordionToggles() {
         if (columnsContainer.classList.contains('hidden')) {
             columnsContainer.classList.remove('hidden');
             // Rotamos flecha si existe
-            if(arrowIcon) arrowIcon.style.transform = 'rotate(180deg)';
+            if (arrowIcon) arrowIcon.style.transform = 'rotate(180deg)';
         } else {
             columnsContainer.classList.add('hidden');
-            if(arrowIcon) arrowIcon.style.transform = 'rotate(0deg)';
+            if (arrowIcon) arrowIcon.style.transform = 'rotate(0deg)';
         }
     });
 
@@ -146,7 +146,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="btn btn-secondary" id="mi-cuenta-btn">Mi Cuenta</div>
                 <div class="flex-column hidden" id="mi-cuenta-dropdown">
                     <a href="/configuration.php" class="btn btn-secondary">Configuración</a>
-                    <a href="/configuration.php" class="btn btn-secondary">Modificaciones de Stock</a>
                     <a href="/configuration.php" class="btn btn-secondary">Soporte</a>
                     <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
                 </div>

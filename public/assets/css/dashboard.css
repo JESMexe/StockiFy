@@ -1,4 +1,4 @@
-﻿/* public/assets/css/dashboard.css (Versión Limpia y Única) */
+/* public/assets/css/dashboard.css (Versión Limpia y Única) */
 
 /* Layout General del Dashboard */
 .dashboard-container {
@@ -283,6 +283,7 @@
 /* Contenido Principal */
 .dashboard-main {
     flex-grow: 1;
+    min-width: 0; /* CLAVE para que la tabla no expanda el ancho del viewport */
     padding: 2rem;
     background-color: #f9f9f9;
     min-height: calc(100vh - 62px);
@@ -297,6 +298,7 @@
 /* Contenedor de la Tabla */
 .table-container {
     width: 100%;
+    max-width: 100%; /* Garantiza que la caja nunca supere el ancho disponible */
     height: 100%;
     background-color: var(--color-white);
     border: var(--border-strong);
@@ -348,8 +350,8 @@
     width: 100% !important;
     overflow-x: auto !important;
     /* Scroll Horizontal OBLIGATORIO */
-    overflow-y: auto !important;
-    /* Scroll Vertical */
+    overflow-y: visible !important;
+    /* Evita que atrape el scroll del mouse (scroll-trap bug) */
     position: relative;
     /* Para que el sticky header funcione */
 }
@@ -365,12 +367,17 @@
 
 .empty-image {
     /* Ancho relativo al contenedor (la tabla) */
-    width: 90%;
+    width: 100%;
+    max-width: min(500px, 80vw); /* Límite inteligente al viewport para pantallas chicas */
     height: auto;
-
     opacity: 0.9;
     transition: width 0.3s ease;
     /* Suavidad si redimensionas la ventana */
+}
+
+/* Evitamos que la tabla fuerce el scroll cuando está vacía */
+#data-table:has(.empty-state) {
+    width: 100% !important;
 }
 
 #data-table {
