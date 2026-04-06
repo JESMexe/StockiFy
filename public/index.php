@@ -20,7 +20,17 @@ $showDashboard = $currentUser ? '' : 'hidden';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StockiFy - Gestión Inteligente</title>
+    <title>StockiFy | Software de Gestión de Inventario y Ventas</title>
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Aumenta tus ganancias con StockiFy. Software inteligente y moderno para control de inventario, registro de ventas, alertas de stock mínimo e informes de negocio.">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="JESMdev">
+    <!-- Open Graph / Redes Sociales -->
+    <meta property="og:title" content="StockiFy | Tu solución de inventario">
+    <meta property="og:description" content="Automatiza tu stock y descubre fugas de liquidez y ganancia con herramientas precisas.">
+    <meta property="og:image" content="https://stockify.com.ar/assets/img/1.png">
+    <meta property="og:url" content="https://stockify.com.ar/">
+    <meta property="og:type" content="website">
 
     <script src="assets/js/theme.js"></script>
     <script src="assets/js/cycling-text.js"></script>
@@ -39,12 +49,12 @@ $showDashboard = $currentUser ? '' : 'hidden';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
 
-<div id="imgModal" class="img-modal" aria-hidden="true">
-    <button class="img-modal-close" type="button" aria-label="Cerrar">✕</button>
-    <img id="imgModalContent" alt="">
-</div>
-
 <body id="page-index">
+
+    <div id="imgModal" class="img-modal" aria-hidden="true">
+        <button class="img-modal-close" type="button" aria-label="Cerrar">✕</button>
+        <img id="imgModalContent" alt="Vista ampliada de demostración de StockiFy">
+    </div>
 
     <div class="side-nav">
         <div class="nav-dot active" data-id="section-hero" title="Inicio"
@@ -61,7 +71,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
     <header>
         <a href="index.php" id="header-logo">
-            <img src="assets/img/LogoE.png" alt="Stocky Logo">
+            <img src="assets/img/LogoE.png" alt="Logotipo Oficial de StockiFy">
         </a>
         <nav id="header-nav" style="display: flex; gap: 10px;">
             <?php if ($currentUser): ?>
@@ -198,7 +208,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
         </svg>
     </div>
 
-    <div class="scroll-container" id="main-scroller">
+    <main class="scroll-container" id="main-scroller">
 
         <section class="section bg-pattern" id="section-hero">
             <div class="flex-row all-center" id="welcome-container">
@@ -373,7 +383,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                     <div class="swiper-slide">
                         <div class="slide-img-container">
-                            <img src="./assets/img/1.png" alt="Tablas">
+                            <img src="./assets/img/1.png" alt="Control de Inventario y Tablas Dinámicas StockiFy">
                         </div>
                         <div class="slide-content">
                             <i class="ph ph-table slide-icon"></i>
@@ -384,7 +394,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                     <div class="swiper-slide">
                         <div class="slide-img-container">
-                            <img src="./assets/img/2.png" alt="Usuarios">
+                            <img src="./assets/img/2.png" alt="Gestión de Usuarios, Clientes y Proveedores">
                         </div>
                         <div class="slide-content">
                             <i class="ph ph-users slide-icon"></i>
@@ -396,7 +406,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                     <div class="swiper-slide">
                         <div class="slide-img-container">
-                            <img src="./assets/img/3.png" alt="Importar">
+                            <img src="./assets/img/3.png" alt="Importación masiva de datos en CSV para stock">
                         </div>
                         <div class="slide-content">
                             <i class="ph ph-file-csv slide-icon"></i>
@@ -407,7 +417,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                     <div class="swiper-slide">
                         <div class="slide-img-container">
-                            <img src="./assets/img/4.png" alt="Alertas">
+                            <img src="./assets/img/4.png" alt="Notificaciones en tiempo real y alertas de Stock bajo">
                         </div>
                         <div class="slide-content">
                             <i class="ph ph-bell slide-icon"></i>
@@ -418,7 +428,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
 
                     <div class="swiper-slide">
                         <div class="slide-img-container">
-                            <img src="./assets/img/5.png" alt="telefonos">
+                            <img src="./assets/img/5.png" alt="Interfaz responsiva en teléfono móvil para el sistema">
                         </div>
                         <div class="slide-content">
                             <i class="ph ph-device-mobile slide-icon"></i>
@@ -561,7 +571,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
             </footer>
         </section>
 
-    </div>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="assets/js/main.js"></script>

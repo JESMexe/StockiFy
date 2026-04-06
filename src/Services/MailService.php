@@ -24,6 +24,15 @@ class MailService
         $mail->Port = SMTP_PORT;
         $mail->CharSet = 'UTF-8';
 
+        // Evitar el error de certificado de Ferozo (*.ferozo.com vs mail.stockify.com.ar)
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
+
         return $mail;
     }
 

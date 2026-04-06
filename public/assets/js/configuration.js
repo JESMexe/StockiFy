@@ -1,4 +1,4 @@
-﻿import { pop_ups } from './notifications/pop-up.js';
+import { pop_ups } from './notifications/pop-up.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
@@ -85,7 +85,7 @@ function initSecurityHandlers() {
             id="new-password-input"
             type="password"
             class="swal2-input stockify-password-input"
-            placeholder="Nueva contraseña (mín. 6 caracteres)"
+            placeholder="Nueva contraseña (mín. 8 caracteres)"
             autocomplete="new-password"
         >
     `,
@@ -93,6 +93,7 @@ function initSecurityHandlers() {
                 confirmButtonText: 'Actualizar contraseña',
                 showCancelButton: true,
                 cancelButtonText: 'Cancelar',
+                showLoaderOnConfirm: true,
                 didOpen: () => {
                     const slots = Array.from(document.querySelectorAll('.stockify-otp-slot'));
                     const passwordInput = document.getElementById('new-password-input');
@@ -154,7 +155,7 @@ function initSecurityHandlers() {
                         });
                     });
                 },
-                preConfirm: () => {
+                preConfirm: async () => {
                     const slots = Array.from(document.querySelectorAll('.stockify-otp-slot'));
                     const code = slots.map(slot => slot.value.trim()).join('');
                     const pass = document.getElementById('new-password-input')?.value || '';
@@ -164,37 +165,38 @@ function initSecurityHandlers() {
                         return false;
                     }
 
-                    if (pass.length < 6) {
-                        Swal.showValidationMessage('La nueva contraseña debe tener al menos 6 caracteres');
+                    if (pass.length < 8) {
+                        Swal.showValidationMessage('La nueva contraseña debe tener al menos 8 caracteres');
                         return false;
                     }
 
-                    return {
-                        code,
-                        new_password: pass
-                    };
+                    try {
+                        const res = await fetch('./../api/auth/finalize-password-change.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ code, new_password: pass })
+                        });
+                        
+                        const data = await res.json();
+                        if (!res.ok || !data.success) {
+                            Swal.showValidationMessage(data.message || 'Error al actualizar la contraseña');
+                            return false;
+                        }
+                        
+                        return data;
+                    } catch (e) {
+                         Swal.showValidationMessage('No se pudo conectar con el servidor.');
+                         return false;
+                    }
                 }
             });
 
             if (!formValues) return;
 
-            const resFinal = await fetch('./../api/auth/finalize-password-change.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(formValues)
-            });
-
-            const dataFinal = await resFinal.json();
-
-            if (!resFinal.ok || !dataFinal.success) {
-                Swal.fire('Error', dataFinal.message || 'No se pudo actualizar la contraseña.', 'error');
-                return;
-            }
-
-            Swal.fire('¡Éxito!', dataFinal.message, 'success');
+            Swal.fire('¡Éxito!', formValues.message || 'Contraseña actualizada correctamente.', 'success');
 
         } catch (e) {
             Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error');
