@@ -1,5 +1,4 @@
 <?php
-// public/api/sales/create.php
 header('Content-Type: application/json');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -16,10 +15,8 @@ try {
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
 
-    // Leer Input
     $input = json_decode(file_get_contents('php://input'), true);
 
-    // Mapeo de Datos Principal
     $primaryMethodId = null;
     if (!empty($input['payments']) && is_array($input['payments'])) {
         $primaryMethodId = $input['payments'][0]['method_id'] ?? null;
@@ -31,7 +28,6 @@ try {
         'change_returned'   => (float)($input['change_returned'] ?? 0),
         'commission_amount' => (float)($input['commission_amount'] ?? 0),
 
-        // DATO NUEVO: Snapshot de la cotización global del momento
         'exchange_rate_snapshot' => (float)($input['exchange_rate_snapshot'] ?? 1),
 
         'seller_id'         => !empty($input['seller_id']) ? (int)$input['seller_id'] : null,
@@ -40,15 +36,11 @@ try {
         'notes'             => $input['notes'] ?? null,
         'items'             => $input['items'] ?? [],
 
-        // PAGOS ENRIQUECIDOS: Pasamos el array tal cual viene del JS,
-        // que ya incluye currency_id, original_amount, etc.
-        // El SalesModel debe estar preparado para leer estos keys en su bucle de inserción.
         'payments'          => $input['payments'] ?? []
     ];
 
     $clientId = !empty($input['customer_id']) ? (int)$input['customer_id'] : null;
 
-    // Obtener inventario activo (Estricto por Session)
     if (session_status() === PHP_SESSION_NONE) { session_start(); }
     $inventoryId = $input['inventory_id'] ?? $_SESSION['active_inventory_id'] ?? null;
     

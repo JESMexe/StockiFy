@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 messageDiv.style.paddingTop = '2px';
                 messageDiv.style.color = 'var(--accent-green)';
                 messageDiv.textContent = '¡Inicio de sesión exitoso! Redirigiendo...';
-                window.location.href = 'index.php';
+                window.location.href = 'index';
             } else {
                 messageDiv.style.paddingTop = '2px';
                 messageDiv.style.color = 'var(--accent-red)';

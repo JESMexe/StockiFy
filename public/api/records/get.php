@@ -1,5 +1,4 @@
 <?php
-// Devuelve los registros de la tabla seleccionada (solo tablas permitidas)
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use App\core\Database;

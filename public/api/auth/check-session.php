@@ -1,6 +1,5 @@
 <?php
 
-// public/api/auth/check-session.php
 
 session_start();
 

@@ -22,9 +22,6 @@ try {
         $stmt->execute([$inventoryID]);
         $databaseName = $stmt->fetch(PDO::FETCH_COLUMN);
 
-        // CORRECCIÓN CRÍTICA: Usamos SELECT * para traer las columnas tal cual estén (identificadas o no)
-        // Si el usuario identificó "Producto" como "name", vendrá la columna 'name'.
-        // Si no, vendrá 'Producto' y el JS sabrá que falta 'name'.
         $sql = "SELECT * FROM `$databaseName`";
 
         $productsStmt = $pdo->prepare($sql);
@@ -32,14 +29,9 @@ try {
         $products = $productsStmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach($products as $product){
-            // Pasamos el producto completo.
-            // Si las columnas "standard" existen, el JS las usará.
-            // Añadimos IDs de referencia para el sistema.
             $product['pID'] = $product['id'];
             $product['tID'] = $inventoryID;
 
-            // Normalización estricta para el buscador del frontend (solo si existe name)
-            // Si 'name' no está definido, search_data quedará limitado, pero no fallará.
             $searchName = $product['name'] ?? '';
             $searchSku  = $product['sku'] ?? ''; // Asumiendo que sku puede existir
             $product['search_data'] = strtolower("$searchName $searchSku");

@@ -7,7 +7,6 @@ use App\core\Database;
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-//ESTAS 4 ESTADISTICAS SON INDEPENDIENTES DE LA TABLA SELECCIONADA YA QUE NO INVOLUCRAN TABLAS
 try{
     $pdo = Database::getInstance();
     $user = getCurrentUser();
@@ -47,9 +46,7 @@ try{
         $nuevosProveedoresSQL = $nuevosProveedoresSQL->fetchColumn();
         $nuevosProveedores[] = (int)$nuevosProveedoresSQL;
 
-        //ESTAS ESTADISTICAS DEBEN SER FILTRADAS POR LA TABLA SELECCIONADA (O TODAS)
         if ($tableID === 'all'){
-            //CONSULTAS PARA TODAS LAS TABLAS
             $stockIngresadoSQL = $pdo->prepare("SELECT COALESCE(SUM(ri.quantity)) AS total FROM receipt_items ri JOIN receipts r ON ri.receipt_id = r.id WHERE r.user_id = ? AND DATE(r.receipt_date) = CURDATE() AND HOUR(r.receipt_date) = ?");
             $stockIngresadoSQL->execute([$user_id,$counter]);
             $stockIngresadoSQL = $stockIngresadoSQL->fetchColumn();
@@ -69,7 +66,6 @@ try{
             $ganancias[] = (float)$ingresosSQL - (float)$gastosSQL;
         }
         else{
-            //CONSULTAS PARA UNA TABLA ESPECIFICA
             $stockIngresadoSQL = $pdo->prepare("SELECT COALESCE(SUM(ri.quantity)) AS total FROM receipt_items ri JOIN receipts r ON ri.receipt_id = r.id WHERE ri.inventory_id = ? AND DATE(r.receipt_date) = CURDATE() AND HOUR(r.receipt_date) = ?");
             $stockIngresadoSQL->execute([$tableID,$counter]);
             $stockIngresadoSQL = $stockIngresadoSQL->fetchColumn();

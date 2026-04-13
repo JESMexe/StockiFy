@@ -1,5 +1,4 @@
 <?php
-// public/api/database/get-preferences-current.php
 header('Content-Type: application/json');
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';

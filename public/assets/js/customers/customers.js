@@ -1,6 +1,4 @@
 ﻿/**
- * public/assets/js/customers/customers.js
- * Módulo de Clientes (CRUD Completo + UI Mejorada)
  */
 import * as api from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
@@ -47,7 +45,6 @@ export class CustomerModule {
                 .form-row { display: flex; gap: 15px; }
                 .form-col { flex: 1; }
                 
-                /* Detalles Estilizados */
                 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
                 .detail-item { 
                     background-color: rgba(0,0,0,0.1); 
@@ -67,7 +64,6 @@ export class CustomerModule {
                 }
                 .detail-value { font-weight: 600; color: #333; }
                 
-                /* Grupo de botones de acción */
                 .btn-icon-group { display: flex; gap: 8px; justify-content: center; }
             </style>
 
@@ -151,7 +147,6 @@ export class CustomerModule {
     }
 
     attachEvents() {
-        // --- Ordenamiento ---
         const sortBtn = document.getElementById('customers-sort-btn');
         if(sortBtn) {
             sortBtn.addEventListener('click', () => {
@@ -166,7 +161,6 @@ export class CustomerModule {
             });
         }
 
-        // --- Botón Nuevo Cliente ---
         document.getElementById('customers-create-btn')?.addEventListener('click', () => {
             this.editingId = null;
             document.getElementById('modal-cust-title').textContent = "Nuevo Cliente";
@@ -176,7 +170,6 @@ export class CustomerModule {
             m.classList.remove('hidden'); m.style.display='flex';
         });
 
-        // --- Cerrar Modales ---
         document.getElementById('close-customer-modal')?.addEventListener('click', () => {
             const m = document.getElementById('create-customer-modal');
             m.classList.add('hidden'); m.style.display='none';
@@ -187,7 +180,6 @@ export class CustomerModule {
             m.classList.add('hidden'); m.style.display='none';
         });
 
-        // --- Submit ---
         document.getElementById('create-customer-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleFormSubmit();
@@ -208,10 +200,8 @@ export class CustomerModule {
             email: document.getElementById('cust-email').value,
             address: document.getElementById('cust-address').value,
             birth_date: document.getElementById('cust-birth').value,
-            // currency: document.getElementById('pay-currency').value,
         };
 
-        // Decidimos endpoint
         const endpoint = this.editingId ? '/api/customers/update.php' : '/api/customers/create.php';
 
         try {
@@ -245,7 +235,7 @@ export class CustomerModule {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
 
         try {
-            const response = await fetch('/api/customers/get-all.php?order=' + order);
+            const response = await fetch('/api/customers/get-all?order=' + order);
             const data = await response.json();
 
             if (!data.success || !data.customers.length) {
@@ -284,7 +274,6 @@ export class CustomerModule {
                 </tr>
             `}).join('');
 
-            // Listeners
             tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
             tbody.querySelectorAll('.edit').forEach(b => {
                 b.addEventListener('click', () => {
@@ -311,7 +300,6 @@ export class CustomerModule {
         document.getElementById('cust-email').value = c.email || '';
         document.getElementById('cust-address').value = c.address || '';
         document.getElementById('cust-birth').value = c.birth_date || '';
-        //document.getElementById('pay-currency').value = method.currency || 'ARS';
 
         const m = document.getElementById('create-customer-modal');
         m.classList.remove('hidden');
@@ -323,7 +311,7 @@ export class CustomerModule {
         if(!confirm) return;
 
         try {
-            const response = await fetch('/api/customers/delete.php', {
+            const response = await fetch('/api/customers/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: id })

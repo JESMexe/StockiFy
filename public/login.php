@@ -1,3 +1,6 @@
+<?php
+//TODO: limitar las peticiones al login por seguridad
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,7 +13,7 @@
 </head>
 <body>
 <header>
-    <a href="index.php" id="header-logo">
+    <a href="index" id="header-logo">
         <img src="assets/img/LogoE.png" alt="StockiFy Logo">
     </a>
 </header>
@@ -111,11 +114,11 @@
             </form>
             <div id="message"></div>
             <footer class="auth-footer">
-                <p>¿No tienes una cuenta? <a href="register.php">Regístrate aquí</a></p>
+                <p>¿No tienes una cuenta? <a href="register">Regístrate aquí</a></p>
             </footer>
         </div>
         <div class="google-btn-container" style="margin-top: 20px; text-align: center;">
-            <a href="./api/auth/google-login.php" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <a href="./api/auth/google-login" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" alt="Google">
                 Continuar con Google
             </a>

@@ -1,6 +1,4 @@
 ﻿/**
- * public/assets/js/providers/providers.js
- * Módulo de Gestión de Proveedores (CRUD + Sorting + UI Mejorada)
  */
 import { getProviderList, getProviderDetails } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
@@ -55,7 +53,6 @@ export class ProviderModule {
                 .detail-label { display: block; font-size: 0.8rem; color: var(--accent-color); margin-bottom: 2px; }
                 .detail-value { font-weight: 600; color: #333; }
                 
-                /* Estilos específicos para este módulo inyectados aquí o en CSS global */
                 .btn-icon-group { display: flex; gap: 8px; justify-content: center; }
             </style>
 
@@ -136,14 +133,11 @@ export class ProviderModule {
     }
 
     attachEvents() {
-        // --- EVENTO ORDENAR ---
         const sortBtn = document.getElementById('prov-sort-btn');
         if(sortBtn) {
             sortBtn.addEventListener('click', () => {
-                // Alternar orden
                 this.currentSortOrder = (this.currentSortOrder === 'DESC') ? 'ASC' : 'DESC';
 
-                // Actualizar icono visualmente
                 const icon = document.getElementById('sort-icon');
                 if(this.currentSortOrder === 'ASC') {
                     icon.classList.replace('ph-sort-ascending', 'ph-sort-descending');
@@ -151,12 +145,10 @@ export class ProviderModule {
                     icon.classList.replace('ph-sort-descending', 'ph-sort-ascending');
                 }
 
-                // Recargar lista
                 this.loadProviders(this.currentSortOrder);
             });
         }
 
-        // Abrir Modal Crear
         document.getElementById('prov-create-btn')?.addEventListener('click', () => {
             this.editingId = null;
             document.getElementById('modal-prov-title').textContent = "Nuevo Proveedor";
@@ -259,7 +251,6 @@ export class ProviderModule {
                 </tr>
             `}).join('');
 
-            // Asignar eventos
             tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
             tbody.querySelectorAll('.edit').forEach(b => {
                 b.addEventListener('click', () => {
@@ -293,7 +284,7 @@ export class ProviderModule {
         if(!confirm) return;
 
         try {
-            const response = await fetch('/api/providers/delete.php', {
+            const response = await fetch('/api/providers/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: id })

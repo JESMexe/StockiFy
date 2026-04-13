@@ -1,10 +1,6 @@
-// public/assets/js/database/create-db.js
 import * as api from '../api.js';
 import * as setup from "../setupMiCuentaDropdown.js";
 
-/**
- * Función auxiliar para leer valores numéricos de inputs.
- */
 function getNum(id) {
     const el = document.getElementById(id);
     if (!el || el.classList.contains('hidden')) {
@@ -14,9 +10,6 @@ function getNum(id) {
     return (value === '' || isNaN(parseFloat(value))) ? 0 : parseFloat(value);
 }
 
-/**
- * LÓGICA CLAVE: Lee la configuración de preferencias.
- */
 function getUserPreferences() {
     const getActiveState = (selector) => {
         const btn = document.querySelector(`.rc-btn[data-toggle="${selector}"]`);
@@ -64,24 +57,16 @@ function getUserPreferences() {
     return preferences;
 }
 
-/**
- * SOLUCIÓN ACORDEÓN:
- * Usamos 'hidden' para garantizar que se muestre/oculte sin depender de transiciones complejas CSS.
- */
 function setupAccordionToggles() {
-    // 1. Lógica del Acordeón Principal
     const rcToggleHeader = document.getElementById('rc-toggle-header');
     const columnsContainer = document.getElementById('recomended-columns-form');
     const arrowIcon = rcToggleHeader.querySelector('.rc-arrow');
 
     rcToggleHeader.addEventListener('click', () => {
-        // Alternamos la clase 'open' para estilos visuales (color, negrita, etc)
         rcToggleHeader.classList.toggle('open');
 
-        // Alternamos la visibilidad real del contenedor
         if (columnsContainer.classList.contains('hidden')) {
             columnsContainer.classList.remove('hidden');
-            // Rotamos flecha si existe
             if (arrowIcon) arrowIcon.style.transform = 'rotate(180deg)';
         } else {
             columnsContainer.classList.add('hidden');
@@ -89,14 +74,12 @@ function setupAccordionToggles() {
         }
     });
 
-    // 2. Lógica de los botones internos (Stock, Ganancia, etc.)
     document.querySelectorAll('.rc-btn[data-toggle]').forEach(btn => {
         btn.addEventListener('click', () => {
             const active = btn.classList.toggle('active');
             const col = btn.dataset.toggle;
             const extra = document.getElementById(`${col}-extra`);
             if (extra) {
-                // Si está activo, quitamos el hidden. Si no, lo ponemos.
                 if (active) {
                     extra.classList.remove('hidden');
                 } else {
@@ -106,7 +89,6 @@ function setupAccordionToggles() {
         });
     });
 
-    // 3. Lógica del checkbox "Establecer ahora"
     const setNow = document.getElementById('set-stock-now');
     const stockInput = document.getElementById('stock-value');
     if (setNow && stockInput) {
@@ -124,47 +106,42 @@ async function checkUserStatus() {
     try {
         const profileData = await api.getUserProfile();
         if (!profileData.success) {
-            window.location.href = '/login.php';
+            window.location.href = '/login';
         }
     } catch (error) {
         console.error("Error:", error);
-        window.location.href = '/login.php';
+        window.location.href = '/login';
     }
 }
 
 
-// --- INICIO DE EJECUCIÓN ---
 document.addEventListener('DOMContentLoaded', async () => {
 
     await checkUserStatus();
 
-    // === Header y menú “Mi cuenta” ===
     const nav = document.getElementById('header-nav');
     if (nav) {
         nav.innerHTML = `
             <div id="dropdown-container">
                 <div class="btn btn-secondary" id="mi-cuenta-btn">Mi Cuenta</div>
                 <div class="flex-column hidden" id="mi-cuenta-dropdown">
-                    <a href="/settings.php" class="btn btn-secondary">Configuración</a>
-                    <a href="/settings.php" class="btn btn-secondary">Soporte</a>
-                    <a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>
+                    <a href="/settings" class="btn btn-secondary">Configuración</a>
+                    <a href="/settings" class="btn btn-secondary">Soporte</a>
+                    <a href="/logout" class="btn btn-secondary">Cerrar Sesión</a>
                 </div>
             </div>
         `;
         setup.setupMiCuenta();
     }
 
-    // === Inicializar Acordeón ===
     setupAccordionToggles();
 
-    // === Formulario ===
     const createDbForm = document.getElementById('createDbForm');
     const messageDiv = document.getElementById('message');
     const columnsInput = document.getElementById('columnsInput');
 
     if (!createDbForm) return;
 
-    // --- ENVÍO DEL FORMULARIO ---
     createDbForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -172,17 +149,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dbName = document.getElementById('dbNameInput').value.trim();
         const submitButton = createDbForm.querySelector('button[type="submit"]');
 
-        // Lógica de columnas
         let columnList = columnsInput.value.split(',')
             .map(col => col.trim().toLowerCase().replace(/ /g, ''))
             .filter(col => col.length > 0);
 
         columnList = [...new Set(columnList)];
 
-        // Aseguramos 'stock'
         if (!columnList.includes('stock')) columnList.unshift('stock');
 
-        // Columnas recomendadas activas
         if (preferences.min_stock.active && !columnList.includes('min_stock')) columnList.push('min_stock');
         if (preferences.sale_price.active && !columnList.includes('sale_price')) columnList.push('sale_price');
         if (preferences.receipt_price.active && !columnList.includes('receipt_price')) columnList.push('receipt_price');
@@ -222,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 messageDiv.textContent = result.message + "\nRedirigiendo...";
 
                 setTimeout(() => {
-                    window.location.href = '/dashboard.php';
+                    window.location.href = '/dashboard';
                 }, 1000);
             } else {
                 messageDiv.textContent = `Error: ${result.message}`;
@@ -235,5 +209,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Se eliminó la lógica del botón Prepare Import porque el botón ya no existe.
 });

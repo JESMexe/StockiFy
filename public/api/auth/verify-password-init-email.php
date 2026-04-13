@@ -17,7 +17,6 @@ $input = json_decode(file_get_contents('php://input'), true);
 $currentPassword = $input['current_password'] ?? '';
 $newEmail = $input['new_email'] ?? '';
 
-// 1. Verificar Contraseña Actual
 $userModel = new UserModel();
 $dbUser = $userModel->findById($user['id']);
 
@@ -26,16 +25,12 @@ if (!password_verify($currentPassword, $dbUser['password_hash'])) {
     exit;
 }
 
-// 2. Verificar que el email nuevo no exista
 if ($userModel->findByEmail($newEmail)) {
     echo json_encode(['success' => false, 'message' => 'Este email ya está en uso.']);
     exit;
 }
 
-// 3. Generar OTP y enviar al NUEVO email
 $otp = (string)rand(100000, 999999);
-// Guardamos el OTP en la DB asociado al usuario (aunque se envíe al nuevo email, valida al usuario actual)
-// TRUCO: Guardamos el "nuevo email" en la sesión temporalmente para validarlo en el paso 2
 $_SESSION['temp_new_email'] = $newEmail;
 $userModel->setOtp($user['id'], $otp, 'email_change');
 

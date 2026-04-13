@@ -1,5 +1,4 @@
 <?php
-// public/api/cron/daily-balance.php
 header('Content-Type: application/json');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -10,7 +9,6 @@ try {
     require_once $root . '/src/core/Database.php';
     require_once $root . '/src/Services/MailService.php';
 
-    // Basic security token to prevent external spam execution
     $secretToken = 'STOCKIFY_CRON_2026';
     if (!isset($_GET['token']) || $_GET['token'] !== $secretToken) {
         http_response_code(403);
@@ -22,7 +20,6 @@ try {
     $tz = new DateTimeZone('America/Argentina/Buenos_Aires');
     $now = new DateTime('now', $tz);
 
-    // Fechas de Hoy exactas
     $start = new DateTime($now->format('Y-m-d 00:00:00'), $tz);
     $end   = (clone $start)->modify('+1 day');
     $startDate = $start->format('Y-m-d H:i:s');
@@ -33,7 +30,6 @@ try {
     
     $mailService = new \App\Services\MailService();
 
-    // Buscar todos los usuarios con suscripcion activa
     $stmtUsers = $db->query("SELECT id, email, full_name FROM users WHERE subscription_active > 0 AND email IS NOT NULL AND email != ''");
     $users = $stmtUsers->fetchAll(PDO::FETCH_ASSOC);
 
@@ -42,7 +38,6 @@ try {
     foreach ($users as $u) {
         $userId = $u['id'];
         
-        // Ventas (Ingresos del dia)
         $stmtSales = $db->prepare("
             SELECT SUM(total_amount) as total_sales, COUNT(*) as count_sales
             FROM sales
@@ -51,7 +46,6 @@ try {
         $stmtSales->execute([$userId, $startDate, $endDate]);
         $salesData = $stmtSales->fetch(PDO::FETCH_ASSOC);
 
-        // Compras (Egresos del dia)
         $stmtPurchases = $db->prepare("
             SELECT SUM(total) as total_purchases, COUNT(*) as count_purchases
             FROM purchases
@@ -67,7 +61,6 @@ try {
         $countSales = (int)($salesData['count_sales'] ?? 0);
         $countPurchases = (int)($purchasesData['count_purchases'] ?? 0);
 
-        // Enviar reporte SOLAMENTE si hubo flujo de dinero ese dia
         if ($countSales > 0 || $countPurchases > 0) {
             $mailService->sendDailyBalance(
                 $u['email'], 

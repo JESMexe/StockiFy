@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () =>{
         }
         else
         {
-            fetch('/../send-email-change.php', {
+            fetch('/../send-email-change', {
                 method: 'POST',
                 body: formData
             })
@@ -51,8 +51,6 @@ document.addEventListener('DOMContentLoaded', () =>{
 
         const formData = new FormData(this);
 
-        //No checkeo si el parseo será válido ya que ya se realizo la verificación del
-        //ingreso en el form.
         const userCode = parseInt(formData.get('code'));
         console.log(userCode);
         console.log(emailCode);

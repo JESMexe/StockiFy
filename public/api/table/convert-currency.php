@@ -29,7 +29,6 @@ try {
     $db = Database::getInstance();
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // 1. Obtener Tabla y Preferencias
     $stmtInv = $db->prepare("SELECT t.table_name, i.preferences FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId AND i.user_id = :uid");
     $stmtInv->execute([':invId' => $inventoryId, ':uid' => $user['id']]);
     $invData = $stmtInv->fetch(PDO::FETCH_ASSOC);
@@ -38,7 +37,6 @@ try {
 
     $tableName = "`" . str_replace("`", "``", $invData['table_name']) . "`";
 
-    // 2. Resolver Columna
     $prefs = json_decode($invData['preferences'] ?? '{}', true);
     $mapping = $prefs['mapping'] ?? [];
     $realColumnName = $mapping[$columnType] ?? $columnType;
@@ -48,35 +46,22 @@ try {
 
     $safeCol = "`" . str_replace("`", "``", $realColumnName) . "`";
 
-    // ---------------------------------------------------------
-    // SOLUCIÓN RAÍZ 1: ESTRUCTURA (Precisión)
-    // ---------------------------------------------------------
-    // Antes de convertir, el sistema GARANTIZA que la columna soporte 6 decimales.
-    // Esto aplica hoy y para cualquier tabla futura que use esta función.
     try {
         $db->exec("ALTER TABLE $tableName MODIFY COLUMN $safeCol DECIMAL(20, 6) DEFAULT '0.000000'");
     } catch (Exception $e) {
-        // Si hay basura, limpiamos y reintentamos. Es la única forma de garantizar la integridad matemática.
         $db->exec("UPDATE $tableName SET $safeCol = '0' WHERE $safeCol NOT REGEXP '^[0-9]+(\.[0-9]+)?$'");
         $db->exec("ALTER TABLE $tableName MODIFY COLUMN $safeCol DECIMAL(20, 6) DEFAULT '0.000000'");
     }
 
-    // 3. Preparar Metadata
     $metaCol = ($columnType === 'sale_price') ? '_meta_currency_sale' : '_meta_currency_buy';
     if (!in_array($metaCol, $cols)) {
         $db->exec("ALTER TABLE $tableName ADD COLUMN $metaCol VARCHAR(10) DEFAULT 'ARS'");
     }
 
-    // ---------------------------------------------------------
-    // SOLUCIÓN RAÍZ 2: MATEMÁTICA (Eliminar Brecha)
-    // ---------------------------------------------------------
-    // Obtenemos la tasa contextual configurada por el usuario (Manual o API)
     $exchangeConfig = $prefs['exchange_config'] ?? null;
     $service = new ExchangeService();
     $rates = $service->getContextualRate($exchangeConfig);
 
-    // Calculamos el PROMEDIO. Esto hace que la operación sea simétrica.
-    // (Compra + Venta) / 2
     $buy = floatval($rates['buy']);
     $sell = floatval($rates['sell']);
 
@@ -86,16 +71,13 @@ try {
         $rate = $sell > 0 ? $sell : 1200; // Fallback
     }
 
-    // 4. TRANSACCIÓN
     $db->beginTransaction();
 
     if ($targetCurrency === 'USD') {
-        // ARS -> USD (División por Promedio)
         $sql = "UPDATE $tableName 
                 SET $safeCol = (CAST($safeCol AS DECIMAL(65,30)) / :rate), $metaCol = 'USD' 
                 WHERE $metaCol != 'USD' AND $safeCol > 0";
     } else {
-        // USD -> ARS (Multiplicación por Promedio)
         $sql = "UPDATE $tableName 
                 SET $safeCol = (CAST($safeCol AS DECIMAL(65,30)) * :rate), $metaCol = 'ARS' 
                 WHERE $metaCol = 'USD' AND $safeCol > 0";

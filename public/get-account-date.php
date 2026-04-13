@@ -2,7 +2,6 @@
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-    //CONSULTA A LA BASE DE DATOS UTILIZANDO EL ID
 
     $databaseDate = "2024-1-12 12:30:00";
 

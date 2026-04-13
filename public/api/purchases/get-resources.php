@@ -1,5 +1,4 @@
 <?php
-// public/api/purchases/get-resources.php
 header('Content-Type: application/json');
 ini_set('display_errors', 0); error_reporting(E_ALL);
 
@@ -25,7 +24,6 @@ try {
     $userId = $user['id'];
     $db = Database::getInstance();
 
-    // 1. PROVEEDORES
     $providers = [];
     try {
         $stmt = $db->prepare("SELECT id, full_name FROM providers WHERE user_id = ? AND inventory_id = ? ORDER BY full_name ASC");
@@ -33,10 +31,8 @@ try {
         $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {}
 
-    // 2. PRODUCTOS
     $products = [];
 
-    // [CORRECCIÓN] Buscar INVENTARIO ACTIVO
     $stmtInv = $db->prepare("SELECT id, preferences FROM inventories WHERE id = ? AND user_id = ?");
     $stmtInv->execute([$activeInventoryId, $userId]);
     $inv = $stmtInv->fetch(PDO::FETCH_ASSOC);
@@ -46,7 +42,6 @@ try {
         $mapping = $prefs['mapping'] ?? [];
 
         $colName = $mapping['name'] ?? null;
-        // Prioridad: Costo (buy_price). Si no, Precio Recibo (receipt_price).
         $colPrice = $mapping['buy_price'] ?? $mapping['receipt_price'] ?? null;
         $colStock = $mapping['stock'] ?? null;
 
@@ -77,7 +72,6 @@ try {
 
                 $finalStock = ($colStock && isset($row[$colStock])) ? (float)$row[$colStock] : 0;
 
-                // Moneda de COMPRA (Metadata)
                 $currencyBuy = $row['_meta_currency_buy'] ?? 'ARS';
 
                 $products[] = [

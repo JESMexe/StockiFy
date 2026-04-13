@@ -21,11 +21,9 @@ function initTabs() {
     const containerSoporte = document.getElementById('soporte-container');
 
     const switchTab = (activeBtn, inactiveBtn, showContainer, hideContainer) => {
-        // 1. Manejo de Clases en los Botones
         activeBtn.classList.add('btn-option-selected');
         inactiveBtn.classList.remove('btn-option-selected');
 
-        // 2. Manejo de Visibilidad de Contenedores
         showContainer.classList.remove('hidden');
         hideContainer.classList.add('hidden');
     };
@@ -52,7 +50,7 @@ function initSecurityHandlers() {
         if (!isConfirmed) return;
 
         try {
-            const res = await fetch('./../api/auth/init-password-change.php', {
+            const res = await fetch('./../api/auth/init-password-change', {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' }
             });
@@ -171,7 +169,7 @@ function initSecurityHandlers() {
                     }
 
                     try {
-                        const res = await fetch('./../api/auth/finalize-password-change.php', {
+                        const res = await fetch('./../api/auth/finalize-password-change', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -245,7 +243,7 @@ function initGeneralProfile() {
         };
 
         try {
-            const response = await fetch('/api/user/update.php', {
+            const response = await fetch('/api/user/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

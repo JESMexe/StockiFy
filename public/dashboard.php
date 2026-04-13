@@ -5,13 +5,12 @@ require_once __DIR__ . '/../src/helpers/auth_helper.php';
 $currentUser = getCurrentUser();
 
 if (!$currentUser) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
-// THE IMPENETRABLE BARRIER: Access control for Subscriptions
 if (!isset($currentUser['subscription_active']) || $currentUser['subscription_active'] == 0) {
-    header('Location: index.php#section-pricing');
+    header('Location: index#section-pricing');
     exit; // Immediately kills server execution. Zero bytes sent to browser.
 }
 ?>
@@ -23,7 +22,6 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Control - StockiFy</title>
 
-    <!-- Tus hojas de estilo (se respetan versiones y orden) -->
     <link rel="stylesheet" href="assets/css/main.css?v=1.2">
     <link rel="stylesheet" href="assets/css/dashboard.css?v=1.3">
     <link rel="stylesheet" href="assets/css/notifications.css?v=1.0">
@@ -31,7 +29,6 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     <link rel="stylesheet" href="assets/css/purchases.css?v=1.2">
     <link rel="stylesheet" href="assets/css/payments.css?v=1.2">
 
-    <!-- Iconos -->
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
     <link rel="stylesheet" type="text/css"
@@ -39,13 +36,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
 
-    <!-- Tema -->
     <script src="assets/js/theme.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.css"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
-    <!-- (Se mantienen también tus enlaces “plain” por compatibilidad con otras vistas) -->
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/analytics.css">
@@ -60,7 +55,6 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
         <nav id="header-nav"></nav>
     </header>
 
-    <!-- ===================== FONDO GRIS Y MODALES DE TRANSACCIONES (del compañero) ===================== -->
     <div id="grey-background" class="hidden" style="z-index: 21">
         <div id="new-transaction-container" class="hidden">
             <div id="return-btn" class="return-btn" style="top: 0; left: 0">Volver</div>
@@ -114,7 +108,6 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
             <button class="btn btn-primary" id="close-inventory-info-modal">Cerrar</button>
         </div>
     </div>
-    <!-- ===================== FIN FONDO GRIS Y MODALES DE TRANSACCIONES ===================== -->
 
     <div class="desktop-app-view">
         <div class="dashboard-container">
@@ -122,17 +115,14 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                 <nav class="main-menu">
                     <h3>Base de Datos</h3>
                     <ul>
-                        <!--                     CODIGO DE NANO                        -->
-                        <!--        MODIFICACION DE ORDEN DE MENUS, MENUS NUEVOS       -->
                         <li><button class="menu-btn active" data-target-view="view-db"><i class="ph ph-table"></i> Ver
                                 Datos</button></li>
                         <li><button class="menu-btn" data-target-view="config-db"><i class="ph ph-gear"></i> Configurar
                                 Tabla</button></li>
-                        <li><a href="select-db.php" class="menu-link"><i class="ph ph-database"></i> Cambiar Base de
+                        <li><a href="select-db" class="menu-link"><i class="ph ph-database"></i> Cambiar Base de
                                 Datos</a></li>
 
                         <?php
-                        // Verify Inventory limit for Tier 1
                         $dbInstance = \App\core\Database::getInstance();
                         $stmtCount = $dbInstance->prepare("SELECT COUNT(*) FROM inventories WHERE user_id = ?");
                         $stmtCount->execute([$currentUser['id']]);
@@ -141,7 +131,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         ?>
 
                         <?php if ($canCreateDb): ?>
-                            <li><a href="create-db.php" class="menu-link"><i class="ph ph-plus-circle"></i> Crear Nueva Base
+                            <li><a href="create-db" class="menu-link"><i class="ph ph-plus-circle"></i> Crear Nueva Base
                                     de Datos</a></li>
                             <?php
                         else: ?>
@@ -200,12 +190,10 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         <li><button class="menu-btn" data-target-view="payments"><i class="ph ph-wallet"></i> Métodos de
                                 Pago</button></li>
                     </ul>
-                    <!--                          FIN DE CODIGO                        -->
                 </nav>
             </aside>
 
             <main class="dashboard-main">
-                <!-- ===================== VER DATOS ===================== -->
                 <div id="view-db" class="dashboard-view">
                     <div class="table-container">
                         <div class="table-header">
@@ -258,7 +246,6 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
 
 
-                                <!-- (Se respeta tu botón para añadir fila) -->
                                 <button id="add-row-btn" class="btn btn-primary" style="width: auto; margin-top: 0;">+
                                     Añadir Fila</button>
                             </div>
@@ -277,9 +264,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         </div>
                     </div>
                 </div>
-                <!-- ===================== FIN VER DATOS ===================== -->
 
-                <!-- ===================== CONFIGURAR TABLA ===================== -->
                 <div id="config-db" class="dashboard-view hidden">
                     <h2><i class="ph ph-gear"></i> Configuración de Inventario</h2>
                     <p>Personalizá cómo StockiFy entiende y procesa tus datos.</p>
@@ -543,14 +528,10 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
                     </div>
                 </div>
-                <!-- ===================== FIN CONFIGURAR TABLA ===================== -->
 
-                <!-- ===================== ESTADÍSTICAS DIARIAS ===================== -->
                 <div id="analysis" class="dashboard-view hidden">
                 </div>
-                <!-- ===================== FIN ESTADÍSTICAS DIARIAS ===================== -->
 
-                <!-- ===================== NOTIFICACIONES ===================== -->
                 <div id="notifications" class="dashboard-view hidden">
                     <h2><i class="ph ph-bell"></i> Notificaciones</h2>
                     <p>Gestioná tus avisos y recordatorios del inventario actual.</p>
@@ -587,37 +568,24 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         <p>Cargando notificaciones...</p>
                     </div>
                 </div>
-                <!-- ===================== FIN NOTIFICACIONES ===================== -->
 
-                <!-- ===================== VENTAS ===================== -->
                 <div id="sales" class="dashboard-view hidden">
                 </div>
-                <!-- ===================== FIN VENTAS ===================== -->
 
-                <!-- ===================== COMPRAS ===================== -->
                 <div id="receipts" class="dashboard-view hidden">
                 </div>
-                <!-- ===================== FIN COMPRAS ===================== -->
 
-                <!-- ===================== CLIENTES ===================== -->
                 <div id="customers" class="dashboard-view hidden">
                 </div>
-                <!-- ===================== FIN CLIENTES ===================== -->
 
-                <!-- ===================== PROVEEDORES ===================== -->
                 <div id="providers" class="dashboard-view hidden">
                 </div>
-                <!-- ===================== FIN PROVEEDORES ===================== -->
 
-                <!-- ===================== EMPLEADOS ===================== -->
                 <div id="employees" class="dashboard-view hidden">
                 </div>
-                <!-- ===================== FIN EMPLEADOS ===================== -->
 
-                <!-- ===================== PAYMENT ===================== -->
                 <div id="payments" class="dashboard-view hidden">
                 </div>
-                <!-- ===================== FIN PAYMENT ===================== -->
 
             </main>
         </div>
@@ -699,7 +667,6 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
         </div>
     </div>
 
-    <!-- ===================== MODALES GENERALES ===================== -->
     <div id="import-modal" class="modal-overlay hidden">
         <div class="modal-content view-container import-modal"> <button id="close-modal-btn"
                 class="modal-close-btn">&times;</button>
@@ -770,9 +737,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
             </div>
         </div>
     </div>
-    <!-- ===================== FIN MODALES GENERALES ===================== -->
 
-    <!-- Notificaciones/toasts -->
     <div id="toast-container"></div>
 
     <div id="custom-prompt-modal" class="modal-overlay hidden">
@@ -942,11 +907,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     </div>
 
 
-    <!-- ===================== SCRIPTS ===================== -->
-    <!-- Librería para gráficos (necesaria para Estadísticas Diarias del compañero) -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    <!-- Tus módulos (mantengo orden y rutas) -->
 
     <script type="module" src="assets/js/import.js"></script>
     <script type="module" src="assets/js/dashboard.js"></script>

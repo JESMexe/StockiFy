@@ -1,5 +1,4 @@
 <?php
-// public/api/import/execute-import.php
 header('Content-Type: application/json');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -42,7 +41,6 @@ try {
 
     $db = Database::getInstance();
 
-    // Revalidar ownership
     $stmt = $db->prepare("
         SELECT t.table_name
         FROM user_tables t
@@ -58,7 +56,6 @@ try {
 
     $tableName = "`" . str_replace("`", "``", $rawTableName) . "`";
 
-    // Preparar INSERT
     $safeCols = array_map(fn($c) => "`" . str_replace("`", "``", $c) . "`", $cols);
     $placeholders = "(" . implode(", ", array_fill(0, count($cols), "?")) . ")";
     $sqlInsert = "INSERT INTO $tableName (" . implode(", ", $safeCols) . ") VALUES $placeholders";

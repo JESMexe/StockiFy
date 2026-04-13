@@ -9,7 +9,6 @@ if ($currentUser) {
     $nombre = explode(' ', $name)[0];
 }
 
-// Lógica de visibilidad (PHP simple)
 $showWelcome = !$currentUser ? '' : 'hidden';
 $showDashboard = $currentUser ? '' : 'hidden';
 ?>
@@ -21,11 +20,9 @@ $showDashboard = $currentUser ? '' : 'hidden';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockiFy | Software de Gestión de Inventario y Ventas</title>
-    <!-- SEO Meta Tags -->
     <meta name="description" content="Aumenta tus ganancias con StockiFy. Software inteligente y moderno para control de inventario, registro de ventas, alertas de stock mínimo e informes de negocio.">
     <meta name="robots" content="index, follow">
     <meta name="author" content="JESMdev">
-    <!-- Open Graph / Redes Sociales -->
     <meta property="og:title" content="StockiFy | Tu solución de inventario">
     <meta property="og:description" content="Automatiza tu stock y descubre fugas de liquidez y ganancia con herramientas precisas.">
     <meta property="og:image" content="https://stockify.com.ar/assets/img/1.png">
@@ -70,15 +67,15 @@ $showDashboard = $currentUser ? '' : 'hidden';
     </div>
 
     <header>
-        <a href="index.php" id="header-logo">
+        <a href="index" id="header-logo">
             <img src="assets/img/LogoE.png" alt="Logotipo Oficial de StockiFy">
         </a>
         <nav id="header-nav" style="display: flex; gap: 10px;">
             <?php if ($currentUser): ?>
-                <a href="select-db.php" class="btn btn-primary" style="margin:0;">Ir al Panel</a>
-                <a href="logout.php" class="btn btn-secondary" style="margin:0;">Cerrar Sesión</a>
+                <a href="select-db" class="btn btn-primary" style="margin:0;">Ir al Panel</a>
+                <a href="logout" class="btn btn-secondary" style="margin:0;">Cerrar Sesión</a>
             <?php else: ?>
-                <a href="login.php" class="btn btn-secondary" style="margin:0;">Iniciar Sesión</a>
+                <a href="login" class="btn btn-secondary" style="margin:0;">Iniciar Sesión</a>
             <?php endif; ?>
         </nav>
     </header>
@@ -228,8 +225,8 @@ $showDashboard = $currentUser ? '' : 'hidden';
                         <h3>Vemos que aún no has iniciado sesión.</h3>
                         <p>Inicia sesión o regístrate para comenzar.</p>
                         <div id="welcome-buttons" class="menu-buttons">
-                            <a href="login.php" class="btn btn-secondary">Iniciar Sesión</a>
-                            <a href="register.php" class="btn btn-primary">Crear una Cuenta</a>
+                            <a href="login" class="btn btn-secondary">Iniciar Sesión</a>
+                            <a href="register" class="btn btn-primary">Crear una Cuenta</a>
                         </div>
                     </div>
 
@@ -237,7 +234,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
                         <h2>¡Bienvenido, <?php echo $nombre ?>!</h2>
                         <p>Estamos felices por volver a verte.</p>
                         <div class="menu-buttons">
-                            <a href="select-db.php" class="btn btn-primary">Ir al Panel</a>
+                            <a href="select-db" class="btn btn-primary">Ir al Panel</a>
                         </div>
                     </div>
                 </div>
@@ -442,8 +439,6 @@ $showDashboard = $currentUser ? '' : 'hidden';
             </div>
         </section>
 
-        <!-- ======================= SECCIÓN DE PRECIOS ======================= -->
-        <!-- force-cache-flush-v2 -->
         <section class="section bg-pattern" id="section-pricing"
             style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; gap: 2rem; padding: 4rem 1rem;">
             <div style="z-index: 2; text-align: center; margin-bottom: 2rem;">
@@ -455,7 +450,6 @@ $showDashboard = $currentUser ? '' : 'hidden';
             <div id="pricing-carousel-container" style="width: 100%; max-width: 100vw; overflow: visible;">
                 <div class="pricing-wrapper scale-wrapper" id="pricing-wrapper">
 
-                    <!-- Plan Emprendedor (Básico) -->
                     <div class="pricing-card-v2 card-theme-dark">
                         <h3>Básico</h3>
                         <div class="price-val">$240.000<span style="font-size: 1rem; opacity: 0.7;">/mes</span></div>
@@ -465,7 +459,6 @@ $showDashboard = $currentUser ? '' : 'hidden';
                             <li><i class="ph-bold ph-check"></i> Analíticas y Cierre de Caja</li>
                             <li><i class="ph-bold ph-check"></i> Importación de Datos</li>
 
-                            <!-- Separador premium -->
                             <div style="height: 1px; background: rgba(128,128,128,0.2); margin: 0.5rem 0;"></div>
 
                             <li style="opacity: 0.6; border-bottom: none;"><i class="ph-bold ph-lock-key"
@@ -476,7 +469,6 @@ $showDashboard = $currentUser ? '' : 'hidden';
                             target="_blank" class="btn-pricing">Consultar Plan</a>
                     </div>
 
-                    <!-- Plan Profesiones (Profesional) -->
                     <div class="pricing-card-v2 card-theme-pro">
                         <div class="pro-badge">Recomendado</div>
                         <h3>Profesional</h3>
@@ -499,7 +491,6 @@ $showDashboard = $currentUser ? '' : 'hidden';
                             target="_blank" class="btn-pricing">Adquirir Plan</a>
                     </div>
 
-                    <!-- Plan Empresarial -->
                     <div class="pricing-card-v2 card-theme-dark">
                         <div class="dark-badge">A Medida</div>
                         <h3>Empresarial</h3>
@@ -523,7 +514,6 @@ $showDashboard = $currentUser ? '' : 'hidden';
                             target="_blank" class="btn-pricing">Contactar Ventas</a>
                     </div>
 
-                    <!-- Plan Vitalicio -->
                     <div class="pricing-card-v2 card-theme-vital">
                         <div class="vital-badge">Único Pago</div>
                         <h3>Vitalicio</h3>
@@ -546,15 +536,13 @@ $showDashboard = $currentUser ? '' : 'hidden';
                         <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20la%20Licencia%20Vitalicia%20(Edición%20Fundadores)%20de%20StockiFy.%20¿Cómo%20avanzamos?"
                             target="_blank" class="btn-pricing">Inversión Única</a>
                     </div>
-
-                    <!-- Pagination dinámica para mobile -->
-                    <div class="swiper-pagination pricing-pagination" id="pricing-pagination" style="display: none;">
-                    </div>
                 </div>
+                
+                <div class="swiper-pagination pricing-pagination" id="pricing-pagination" style="display: none;"></div>
+            </div>
 
         </section>
 
-        <!-- ======================= FOOTER ======================= -->
         <section class="section bg-pattern" style="min-height: auto !important; padding: 0;">
 
             <footer class="footer footer-snap" style="width: 100%; z-index: 2;">

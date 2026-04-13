@@ -1,6 +1,4 @@
-// assets/js/dashboard.js
 
-// --- 1. IMPORTACIONES ---
 import * as api from './api.js';
 import * as setup from './setupMiCuentaDropdown.js';
 import { notificationConfig, pop_ups } from './notifications/pop-up.js';
@@ -14,7 +12,6 @@ import { paymentsModuleInstance } from './payment/payment.js';
 import { openImportModal } from './import.js';
 import { ui_helper } from "./ui-helper.js";
 
-// --- 2. VARIABLES GLOBALES ---
 export let activeInventoryId = null;
 let allData = []; // Guardo todos los datos para filtrar
 let currentTableColumns = []; // Guardo las columnas de la tabla actual
@@ -42,7 +39,6 @@ let activeFeatures = { min_stock: false, gain: false, gain_type: 'percent' };
 function formatColumnName(col) {
     const lowerCol = col.toLowerCase();
 
-    // 1. Mapeo exacto de columnas del sistema a Español
     const map = {
         'id': 'ID',
         'name': 'Nombre',
@@ -68,15 +64,12 @@ function checkCriticalStatus() {
     const btn = document.getElementById('critical-filter-btn');
     if (!btn) return;
 
-    // Recorremos los datos para ver si AL MENOS UNO es crítico
     const hasCriticalItems = allData.some(row => {
-        // 1. Chequeo de Stock
         if (activeFeatures.min_stock) {
             const stock = parseFloat(row[columnMapping.stock]) || 0;
             const min = parseFloat(row['min_stock']) || 0;
             if (stock <= min) return true;
         }
-        // 2. Chequeo de Ganancia (Pérdida)
         if (activeFeatures.gain) {
             const sale = parseFloat(row['sale_price']) || 0;
             const buy = parseFloat(row['receipt_price']) || 0;
@@ -85,12 +78,10 @@ function checkCriticalStatus() {
         return false;
     });
 
-    // Mostrar u ocultar botón
     if (hasCriticalItems) {
         btn.classList.remove('hidden');
     } else {
         btn.classList.add('hidden');
-        // Si el botón desaparece y estaba activo, desactivamos el filtro
         if (isCriticalFilterActive) {
             isCriticalFilterActive = false;
             btn.style.backgroundColor = '#fff0f0';
@@ -100,7 +91,6 @@ function checkCriticalStatus() {
     }
 }
 
-// -- Manejo de Stock --
 async function handleStockUpdate(event) {
     const button = event.target.closest('.stock-btn');
     const input = event.target.closest('.stock-input');
@@ -163,28 +153,22 @@ async function handleStockUpdate(event) {
 
 
 
-/**
- * renderTable
- */
+// hay que revisar la paginacion cuando pasen los 500 registros porque capas la query se pone lenta. dejar anotado para el prox refactor.
 async function renderTable(columns, data) {
     if (data && Array.isArray(data) && data.length > 0) {
         window.allData = data;
         console.log("Datos sincronizados con Móvil");
     }
 
-    // --- 1. DEFINICIONES CRÍTICAS (Las que faltaban) ---
     const currencySaleKey = '_meta_currency_sale';
     const currencyBuyKey = '_meta_currency_buy';
 
     const tableHead = document.querySelector('#data-table thead');
     const tableBody = document.querySelector('#data-table tbody');
 
-    // Validación de seguridad
     if (!tableHead || !tableBody) return;
 
-    // --- 2. CARGA DE PREFERENCIAS ---
     try {
-        // Intentamos cargar preferencias si no están en memoria
         if (!columnMapping.name) {
             const prefs = await api.getCurrentInventoryPreferences();
             if (prefs && prefs.success) {
@@ -193,7 +177,6 @@ async function renderTable(columns, data) {
                 window.activeFeatures = activeFeatures;
                 if (prefs.features) activeFeatures = prefs.features;
 
-                // Cargar visibilidad y orden si existen
                 window.currentUserPreferences = window.currentUserPreferences || {};
                 if (prefs.visible_columns) window.currentUserPreferences.visible_columns = prefs.visible_columns;
                 if (prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
@@ -201,16 +184,13 @@ async function renderTable(columns, data) {
         }
     } catch (e) { console.warn("Usando prefs por defecto o error al cargar"); }
 
-    // Definir columnas base si no vienen
     if ((!columns || columns.length === 0) && data && data.length > 0) {
         columns = Object.keys(data[0]);
         currentTableColumns = columns;
     }
 
-    // --- 3. LÓGICA MAESTRA DE ORDEN Y VISIBILIDAD ---
     let displayColumns = [...columns];
 
-    // A. Ordenamiento Personalizado (Drag & Drop)
     if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.column_order)) {
         const savedOrder = window.currentUserPreferences.column_order;
 
@@ -218,7 +198,6 @@ async function renderTable(columns, data) {
             const idxA = savedOrder.indexOf(a);
             const idxB = savedOrder.indexOf(b);
 
-            // Si es columna nueva (no está en el orden guardado), al final
             if (idxA === -1 && idxB === -1) return 0;
             if (idxA === -1) return 1;
             if (idxB === -1) return -1;
@@ -226,7 +205,6 @@ async function renderTable(columns, data) {
             return idxA - idxB;
         });
     } else {
-        // FALLBACK: Orden por defecto (Sistema al final)
         const mappedBuyCol = columnMapping.buy_price;
         const mappedSaleCol = columnMapping.sale_price;
         const minStockCol = 'min_stock';
@@ -247,21 +225,18 @@ async function renderTable(columns, data) {
         displayColumns = [...normalColumns, ...orderedSpecialColumns];
     }
 
-    // B. Filtro de Visibilidad (Gestor de Columnas)
     if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.visible_columns)) {
         const visibleSet = window.currentUserPreferences.visible_columns;
         if (visibleSet.length > 0) {
             displayColumns = displayColumns.filter(col => visibleSet.includes(col));
         }
     } else {
-        // Si no hay config, ocultamos IDs y timestamps por limpieza
         const systemHiddenDefault = ['created_at', 'user_id', 'inventory_id', 'updated_at'];
         displayColumns = displayColumns.filter(col => !systemHiddenDefault.includes(col.toLowerCase()));
     }
 
     activeDisplayColumns = displayColumns;
 
-    // --- 4. RENDERIZADO DEL HEADER ---
     let actionsTh = '';
     if (!isActionsHidden) {
         actionsTh = `<th class="actions-header" onclick="window.toggleActionsColumn()" title="Ocultar columna">Acciones <i class="ph ph-caret-right" style="vertical-align: middle; margin-left: 5px;"></i></th>`;
@@ -271,14 +246,12 @@ async function renderTable(columns, data) {
         let niceName = formatColumnName(col); // Asegúrate que esta función exista globalmente
         let label = niceName;
 
-        // Iconos identificadores
         if (col === columnMapping.stock) label += ' <i class="ph-bold ph-package"></i>';
         if (col === columnMapping.sale_price) label += ' <i class="ph-bold ph-coin-vertical"></i>';
         if (col === columnMapping.buy_price) label += ' <i class="ph-bold ph-shopping-cart"></i>';
         if (col === columnMapping.name) label += '<i class="ph-bold ph-article"></i>';
         if (col === 'min_stock') label += ' <i class="ph-bold ph-folder-simple-minus"></i>';
 
-        // Icono de ordenamiento
         let sortIcon = ' <i class="ph-fill ph-caret-up-down" style="font-size: 1.4em; color: var(--color-gray);"></i>';
         if (currentSort.column === col) {
             if (currentSort.state === 1) sortIcon = ' <i class="ph-fill ph-caret-up" style="font-size: 1.3em; color: var(--accent-color);"></i>';
@@ -296,7 +269,6 @@ async function renderTable(columns, data) {
 
     tableHead.innerHTML = `<tr>${headerHTML}${gainHeader}${actionsTh}</tr>`;
 
-    // --- 5. RENDERIZADO DEL BODY ---
     if (!data || data.length === 0) {
         tableBody.innerHTML = `
         <div style="
@@ -326,25 +298,21 @@ async function renderTable(columns, data) {
                 let value = row[col] ?? '-';
                 let cellClass = '';
 
-                // Lógica de Stocks y Precios
                 const isSale = (col.toLowerCase() === columnMapping.sale_price?.toLowerCase());
                 const isBuy = (col.toLowerCase() === columnMapping.buy_price?.toLowerCase());
 
-                // Alerta Stock Mínimo
                 if (col === columnMapping.stock && activeFeatures.min_stock) {
                     const min = parseFloat(row['min_stock']) || 0;
                     const current = parseFloat(value) || 0;
                     if (current <= min) cellClass = 'status-critical';
                 }
 
-                // Moneda
                 let currency = 'ARS';
                 if (isSale) currency = row[currencySaleKey] || 'ARS'; // ¡AQUÍ ESTABA EL ERROR!
                 if (isBuy) currency = row[currencyBuyKey] || 'ARS';   // ¡Y AQUÍ!
 
                 const symbol = (currency === 'USD') ? 'US$' : '$';
 
-                // Formateo de Valor
                 if ((isSale || isBuy) && !isNaN(value) && value !== '-') {
                     const numVal = parseFloat(value);
                     if (Math.abs(numVal) < 10 && numVal % 1 !== 0) {
@@ -354,7 +322,6 @@ async function renderTable(columns, data) {
                     }
                 }
 
-                // Modo Edición
                 if (isEditing) {
                     const colKey = String(col).toLowerCase().trim();
                     const isIdCol = (colKey === 'id' || colKey === ' id' || colKey === 'ID');
@@ -382,7 +349,6 @@ async function renderTable(columns, data) {
                 return `<td class="${cellClass}">${value}</td>`;
             }).join('');
 
-            // --- LÓGICA DE GANANCIA ---
             let gainHTML = '';
             if (activeFeatures.gain) {
                 const saleColName = columnMapping.sale_price;
@@ -398,7 +364,6 @@ async function renderTable(columns, data) {
                 let displayProfit = '-';
                 let profitClass = '';
 
-                // Cálculo con cotización
                 if (currentDollarRate > 0 && rawSale > 0 && rawBuy > 0) {
                     const saleInArs = (saleCurrency === 'USD') ? rawSale * currentDollarRate : rawSale;
                     const buyInArs = (buyCurrency === 'USD') ? rawBuy * currentDollarRate : rawBuy;
@@ -412,7 +377,6 @@ async function renderTable(columns, data) {
                             displayProfit = `$${profit.toFixed(2)}`;
                         }
                     } else {
-                        // Porcentaje
                         if (buyInArs > 0) {
                             profit = ((saleInArs - buyInArs) / buyInArs) * 100;
                             displayProfit = `${profit.toFixed(2)}%`;
@@ -432,7 +396,6 @@ async function renderTable(columns, data) {
                     displayProfit = 'Err Cotiz.';
                     profitClass = 'text-gray-500';
                 } else if (rawSale > 0 && rawBuy > 0) {
-                    // Sin conversión (todo ARS o todo USD sin cotización explícita)
                     if (activeFeatures.gain_type === 'fixed') {
                         profit = rawSale - rawBuy;
                         displayProfit = `$${profit.toFixed(2)}`;
@@ -448,7 +411,6 @@ async function renderTable(columns, data) {
                 gainHTML = `<td class="${profitClass}" style="${style}">${displayProfit}</td>`;
             }
 
-            // --- LÓGICA DE ACCIONES ---
             let actionsHTML = '';
             if (!isActionsHidden) {
                 if (isEditing) {
@@ -490,10 +452,8 @@ window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
     try {
         const rateData = await api.getExchangeRate();
 
-        // LÓGICA DE PROMEDIO (Simétrica)
         let rate = 0;
 
-        // Si la API ya devuelve avg, usalo. Si no, calculalo.
         if (rateData.avg) {
             rate = parseFloat(rateData.avg);
         } else if (rateData.buy && rateData.sell) {
@@ -510,9 +470,7 @@ window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
             newVal = val * rate;
         }
 
-        // VISUALIZACIÓN: Si es chico, mostrar hasta 6 decimales. Si es grande, 2.
         if (Math.abs(newVal) < 10 && newVal !== 0) {
-            // Cortamos ceros innecesarios (ej: 0.005000 -> 0.005)
             input.value = parseFloat(newVal.toFixed(6));
         } else {
             input.value = newVal.toFixed(2);
@@ -520,10 +478,8 @@ window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
 
         btn.textContent = targetCurr;
 
-        // Reconfigurar botón para permitir volver
         btn.onclick = () => window.toggleRowCurrency(btn, rowId, type, targetCurr);
 
-        // Guardar metadata para el saveRowChanges
         input.dataset.newCurrency = targetCurr;
         input.dataset.currencyType = type;
 
@@ -534,7 +490,6 @@ window.toggleRowCurrency = async (btn, rowId, type, currentCurr) => {
     }
 };
 
-// --- FUNCIONES DE ACCIONES DE LA TABLA ---
 
 window.showRowHistory = (dateString, id) => {
     pop_ups.info(`Este registro (ID: ${id}) fue creado el: <br><b>${dateString}</b>`, "Historial de Creación");
@@ -551,7 +506,7 @@ window.confirmDeleteRow = async (id) => {
     }
 
     try {
-        const response = await fetch('/api/table/delete-row.php', {
+        const response = await fetch('/api/table/delete-row', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: id })
@@ -581,7 +536,6 @@ window.confirmDeleteRow = async (id) => {
 window.toggleActionsColumn = () => {
     isActionsHidden = !isActionsHidden; // Invertir estado
 
-    // Manejo de la Pestaña Flotante
     const tab = document.getElementById('restore-actions-tab');
     if (tab) {
         if (isActionsHidden) {
@@ -594,9 +548,7 @@ window.toggleActionsColumn = () => {
     filterTable(); // Re-renderizar la tabla
 };
 
-// --- FUNCIÓN DE ORDENAMIENTO (NUEVA) ---
 window.handleSort = (column) => {
-    // 1. Calcular nuevo estado
     if (currentSort.column === column) {
         currentSort.state = (currentSort.state + 1) % 3; // Ciclo 0 -> 1 -> 2 -> 0
     } else {
@@ -604,33 +556,26 @@ window.handleSort = (column) => {
         currentSort.state = 1; // Si es nueva columna, empieza Ascendente
     }
 
-    // 2. Aplicar Orden
     if (currentSort.state === 0) {
-        // Estado 0: Volver al orden original (copia de seguridad)
         allData = [...originalData];
     } else {
-        // Estado 1 (Asc) o 2 (Desc)
         const direction = currentSort.state === 1 ? 1 : -1;
 
         allData.sort((a, b) => {
             let valA = a[column] ?? '';
             let valB = b[column] ?? '';
 
-            // Detectar si son números para ordenar correctamente (1, 2, 10 en vez de 1, 10, 2)
             const numA = parseFloat(valA);
             const numB = parseFloat(valB);
 
-            // Si ambos son números válidos, comparamos matemáticamente
             if (!isNaN(numA) && !isNaN(numB) && valA !== '' && valB !== '') {
                 return (numA - numB) * direction;
             }
 
-            // Si no, comparamos como texto (case insensitive)
             return String(valA).toLowerCase().localeCompare(String(valB).toLowerCase()) * direction;
         });
     }
 
-    // 3. Refrescar tabla (respetando filtros de búsqueda si los hay)
     filterTable();
 };
 
@@ -644,11 +589,7 @@ window.enableEditRow = (btn, id) => {
     }
 };
 
-/* =========================================
-   2. GUARDAR CAMBIOS
-   ========================================= */
 window.saveRowChanges = async (btn, id) => {
-    // 1. Localizar la fila
     let row = document.querySelector(`tr[data-id="${id}"]`);
     if (!row && btn) row = btn.closest('tr');
 
@@ -657,30 +598,23 @@ window.saveRowChanges = async (btn, id) => {
         return;
     }
 
-    // 2. Recolectar datos
-    // Buscamos por la clase 'editing-input' que pusimos en renderTable
     const inputs = row.querySelectorAll('.editing-input');
     const updates = {};
     const metaUpdates = {};
     let hasData = false;
 
     inputs.forEach(input => {
-        // Intentamos leer data-column (nuevo estándar) o data-col (viejo)
         const colName = input.dataset.column || input.dataset.col;
         const val = input.value;
 
-        // --- FILTRO DE SEGURIDAD ---
-        // Si colName es undefined, vacío, o la cadena literal "undefined", LO SALTAMOS.
         if (!colName || colName === 'undefined' || colName === 'null') {
             console.warn("Input ignorado por falta de nombre de columna:", input);
             return;
         }
 
-        // Guardamos dato
         updates[colName] = val;
         hasData = true;
 
-        // Guardamos metadata de moneda (si hubo cambio)
         if (input.dataset.newCurrency) {
             const type = input.dataset.currencyType;
             const key = (type === 'sale') ? '_meta_currency_sale' : '_meta_currency_buy';
@@ -693,12 +627,10 @@ window.saveRowChanges = async (btn, id) => {
         return;
     }
 
-    // 3. UI Feedback
     const originalContent = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
 
-    // 4. Enviar al Backend
     try {
         const payload = {
             id: id,
@@ -707,7 +639,7 @@ window.saveRowChanges = async (btn, id) => {
             meta: metaUpdates
         };
 
-        const response = await fetch('/api/table/update-row.php', {
+        const response = await fetch('/api/table/update-row', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -739,7 +671,6 @@ window.cancelEditRow = (id) => {
 };
 
 
-// Función auxiliar para moneda
 function formatCurrency(value) {
     if (value === undefined || value === null || value === '') return '-';
     return `$${parseFloat(value).toFixed(2)}`;
@@ -789,7 +720,6 @@ function filterTable() {
         }
     });
 
-    // Renderizar
     const filterableColumns = currentTableColumns.filter(col => col.toLowerCase() !== 'created_at');
     renderTable(filterableColumns, filteredData);
 }
@@ -810,14 +740,11 @@ function setupMenuNavigation() {
         button.addEventListener('click', () => {
             const targetView = button.dataset.targetView;
 
-            // Lógica específica para Notificaciones
             if (targetView === 'notifications') {
                 loadNotifications();
             }
 
-            // Lógica específica para Ventas (CONECTANDO TU NUEVO MÓDULO)
             if (targetView === 'sales') {
-                // Llamamos al init() del módulo que creamos en el Paso 2
                 salesModuleInstance.init();
             }
 
@@ -825,7 +752,6 @@ function setupMenuNavigation() {
                 purchaseModuleInstance.init();
             }
 
-            // Lógica existente de ventas/compras...
             if (targetView === 'customers') {
                 customerModuleInstance.init();
             }
@@ -857,23 +783,16 @@ function setupMenuNavigation() {
     console.log("Navegación del menú lateral configurada.");
 }
 
-/* =========================================================
-   BOTÓN "CIERRE DE CAJA" TAMBIÉN EN ANALÍTICAS (PC)
-   Reusa el modal #mobile-balance-modal ya existente
-========================================================= */
 
-// Fallback: si por algún motivo NO existieran, definimos open/close básicos
 if (typeof window.openCashBalance !== 'function') {
     window.openCashBalance = () => {
         const modal = document.getElementById('mobile-balance-modal');
         if (!modal) return;
 
         modal.classList.remove('hidden');
-        // opcional: bloquear scroll del fondo
         document.documentElement.style.overflow = 'hidden';
         document.body.style.overflow = 'hidden';
 
-        // si tu app ya tiene esta función en otro archivo, la usamos
         if (typeof window.loadBalanceData === 'function') {
             window.loadBalanceData('today');
         }
@@ -895,14 +814,11 @@ function injectCashButtonIntoAnalytics() {
     const analysis = document.getElementById('analysis');
     if (!analysis) return;
 
-    // Evitar duplicarlo
     if (analysis.querySelector('#btn-cash-balance-desktop')) return;
 
-    // Esperamos a que el módulo de analíticas renderice su HTML
     setTimeout(() => {
         if (analysis.querySelector('#btn-cash-balance-desktop')) return;
 
-        // En tu analytics.js (por lo que venías usando) suele existir .table-header
         const header = analysis.querySelector('.table-header') || analysis;
 
         const btn = document.createElement('button');
@@ -926,7 +842,6 @@ function setupAccordion() {
 
     try {
         headers.forEach(header => {
-            // Evitamos duplicar listeners si la función se llama varias veces
             if (header.dataset.attached) return;
             header.dataset.attached = 'true';
 
@@ -935,15 +850,11 @@ function setupAccordion() {
                 const isOpen = header.classList.toggle('active'); // Alternamos estado
 
                 if (isOpen) {
-                    // --- ABRIR ---
                     header.setAttribute('aria-expanded', 'true');
                     content.classList.add('open');
 
-                    // 1. Asignamos la altura exacta actual para iniciar la animación
                     content.style.maxHeight = content.scrollHeight + "px";
 
-                    // 2. TRUCO CLAVE: Al terminar la animación (400ms), quitamos el límite.
-                    // Esto permite que el contenido crezca dinámicamente (ej: al agregar columnas o desplegar opciones).
                     setTimeout(() => {
                         if (header.classList.contains('active')) {
                             content.style.maxHeight = 'none';
@@ -952,18 +863,13 @@ function setupAccordion() {
                     }, 400);
 
                 } else {
-                    // --- CERRAR ---
                     header.setAttribute('aria-expanded', 'false');
 
-                    // 1. Restauramos la altura en píxeles (porque estaba en 'none')
-                    // Esto es necesario para que la animación de cierre funcione.
                     content.style.maxHeight = content.scrollHeight + "px";
                     content.style.overflow = 'hidden';
 
-                    // 2. Forzamos un "reflow" para que el navegador registre el cambio
                     void content.offsetHeight;
 
-                    // 3. Colapsamos a 0
                     content.style.maxHeight = '0';
                     content.classList.remove('open');
                 }
@@ -1036,18 +942,15 @@ function handleEditClick(button) {
 }
 
 async function handleSaveClick(button) {
-    // Buscar la fila (Soporte para tr.editing-row o tr normal en edición)
     const row = button.closest('tr');
     if (!row) return;
 
-    // Obtener ID (Soporte para data-itemId o data-id)
     const itemId = row.dataset.itemId || row.dataset.id;
 
     const dataToUpdate = {};
     const metaUpdates = {}; // Para monedas (ARS/USD)
     let allInputsValid = true;
 
-    // Usamos el selector corregido: input[data-column]
     const inputs = row.querySelectorAll('input[data-column]');
 
     if (inputs.length === 0) {
@@ -1059,14 +962,12 @@ async function handleSaveClick(button) {
         const colName = input.dataset.column;
         const value = input.value;
 
-        // Validación básica de números
         if (input.type === 'number' && isNaN(parseFloat(value)) && value !== '') {
             allInputsValid = false;
         }
 
         dataToUpdate[colName] = value;
 
-        // Capturar cambios de moneda (_meta_currency)
         if (input.dataset.newCurrency) {
             const type = input.dataset.currencyType; // 'sale' o 'buy'
             const key = (type === 'sale') ? '_meta_currency_sale' : '_meta_currency_buy';
@@ -1079,26 +980,20 @@ async function handleSaveClick(button) {
         return;
     }
 
-    // Feedback visual
     button.disabled = true;
     const originalContent = button.innerHTML;
     button.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
 
     try {
-        // Enviamos data y meta (si existe)
         const payload = {
             id: itemId, // Aseguramos enviar el ID en el cuerpo también
             ...dataToUpdate,
             ...metaUpdates
         };
 
-        // NOTA: Tu API espera (itemId, dataToUpdate). Si necesitas enviar meta,
-        // revisa si api.updateTableRow soporta un 3er argumento o si debes meterlo en dataToUpdate.
-        // Asumo envío estándar según tu código original:
         const result = await api.updateTableRow(itemId, payload);
 
         if (result.success) {
-            // Actualizar datos locales
             if (result.updatedItem) {
                 const rowIndex = allData.findIndex(r => (r.id ?? r.Id ?? r.ID) == itemId);
                 if (rowIndex > -1) {
@@ -1109,7 +1004,6 @@ async function handleSaveClick(button) {
             pop_ups.success("Guardado correctamente");
             editingRowId = null;
 
-            // Recargar tabla manteniendo filtros
             const filterableColumns = currentTableColumns.filter(
                 col => col.toLowerCase() !== 'created_at'
             );
@@ -1149,7 +1043,6 @@ function openDeleteModal() {
 
     deleteModal.classList.remove('hidden');
 
-    // --- NUEVO: Bloquear Scroll del Body ---
     document.body.style.overflow = 'hidden';
 }
 
@@ -1160,13 +1053,11 @@ function closeDeleteModal() {
 }
 
 function handleDeleteConfirmInput() {
-    // Habilito el botón solo si el texto coincide exactamente
     if (deleteConfirmInput.value === currentDbNameToDelete) {
         confirmDeleteBtn.disabled = false;
         deleteErrorMsg.textContent = '';
     } else {
         confirmDeleteBtn.disabled = true;
-        // Muestro un error sutil si empiezan a escribir mal
         if (deleteConfirmInput.value.length > 0) {
             deleteErrorMsg.textContent = 'El nombre no coincide.';
         } else {
@@ -1183,7 +1074,7 @@ async function handleConfirmDelete() {
         const result = await api.deleteDatabase();
         if (result.success) {
             pop_ups.info(result.message, "Base de Datos Eliminada.");
-            window.location.href = '/select-db.php';
+            window.location.href = '/select-db';
         } else {
             throw new Error(result.message);
         }
@@ -1200,12 +1091,9 @@ function renderColumnList() {
 
     const messageLoading = document.getElementById('column-list-status');
 
-    // Columnas protegidas siempre
     const protectedCols = ['id', 'created_at', 'updated_at'];
-    // Columnas protegidas si están activas (Features)
     if (activeFeatures.min_stock) protectedCols.push('min_stock');
 
-    // Filtramos para mostrar solo las gestionables
     const manageableColumns = currentTableColumns.filter(
         col => !protectedCols.includes(col.toLowerCase())
     );
@@ -1224,7 +1112,6 @@ function renderColumnList() {
     messageLoading.style.display = 'none';
 }
 
-// Manejador del Click en el Ojo
 columnListContainer?.addEventListener('click', (e) => {
     const btn = e.target.closest('.visibility-btn');
     if (btn) {
@@ -1334,7 +1221,6 @@ async function handleRenameColumn(e) {
     }
 }
 
-// dashboard.js - Función loadNotifications
 async function loadNotifications() {
     const listContainer = document.getElementById('notifications-list');
     if (!listContainer) return;
@@ -1342,7 +1228,6 @@ async function loadNotifications() {
     listContainer.innerHTML = '<p>Cargando historial...</p>';
 
     try {
-        // Agregamos un timestamp para evitar cache de la API
         const response = await fetch(`/api/notifications/get.php?t=${new Date().getTime()}`);
         const data = await response.json();
 
@@ -1369,18 +1254,13 @@ async function loadNotifications() {
                 let icon, color;
 
                 if (config) {
-                    // TIPO SISTEMA (Warning, Info, Success reales)
-                    // Usamos la configuración tal cual
                     icon = config.icon;
                     color = config.color;
                 } else {
-                    // TIPO MANUAL (Es un color, ej: 'var(--accent-green)' o '#ff0000')
-                    // Forzamos el ícono de nota y usamos el tipo como color
                     icon = 'ph-note';
                     color = n.type;
                 }
 
-                // CORRECCIÓN CLAVE: Agregamos style="color: ${color}" DIRECTAMENTE al ícono
                 html += `
                 <div class="toast-notification show" 
                      style="--toast-color: ${color}; position: relative; margin-bottom: 1rem; max-width: 100%; border-left: 4px solid ${color};"
@@ -1407,7 +1287,6 @@ async function loadNotifications() {
     }
 }
 
-/* --- AGREGAR EN dashboard.js --- */
 
 function populateProductPicker() {
     const container = document.querySelector('#item-picker-modal .picker-list');
@@ -1420,19 +1299,16 @@ function populateProductPicker() {
         return;
     }
 
-    // Usamos el mapping para saber qué columna es qué (por si en la DB se llama 'nombre_prod' en vez de 'name')
     const nameCol = columnMapping.name || 'name';
     const stockCol = columnMapping.stock || 'stock';
     const priceCol = columnMapping.sale_price || 'sale_price';
 
     allData.forEach(item => {
-        // Normalizamos valores
         const name = item[nameCol] || 'Sin Nombre';
         const stock = parseFloat(item[stockCol]) || 0;
         const price = parseFloat(item[priceCol]) || 0;
         const id = item.id || item.Id || item.ID;
 
-        // Creamos el elemento HTML usando las clases que definimos en el CSS nuevo
         const itemDiv = document.createElement('div');
         itemDiv.className = `product-picker-item ${stock <= 0 ? 'disabled' : ''}`; // Deshabilitar si no hay stock
         itemDiv.dataset.id = id;
@@ -1449,14 +1325,11 @@ function populateProductPicker() {
             </div>
         `;
 
-        // Evento Click: Seleccionar producto
         itemDiv.addEventListener('click', () => {
             if (stock <= 0) return; // Evitar click en sin stock
 
-            // Toggle de selección visual
             itemDiv.classList.toggle('selected');
 
-            // Habilitar botón de confirmar si hay al menos uno seleccionado
             const hasSelection = container.querySelectorAll('.product-picker-item.selected').length > 0;
             const confirmBtn = document.querySelector('#item-picker-modal .picker-confirm-btn');
             if (confirmBtn) confirmBtn.disabled = !hasSelection;
@@ -1497,20 +1370,17 @@ async function createEditableRow(columns) {
     const tr = document.createElement('tr');
     tr.classList.add('editing-row');
 
-    // 1. Defaults de Precios
     let inventoryDefaults = {};
     try {
         const res = await api.getCurrentInventoryDefaults();
         if (res.success) inventoryDefaults = res;
     } catch (e) { }
 
-    // 2. Iteramos las columnas VISUALES
     columns.forEach(col => {
         const td = document.createElement('td');
         const colName = col;
         const colLower = col.toLowerCase();
 
-        // --- A. Columnas de Sistema (Solo lectura - Guion) ---
         if (['id', 'created_at', 'updated_at', 'ganancia', 'percentage_gain', 'hard_gain'].includes(colLower)) {
             td.textContent = '-';
             td.style.textAlign = 'center';
@@ -1520,13 +1390,11 @@ async function createEditableRow(columns) {
             return;
         }
 
-        // --- B. Definir Inputs ---
         let inputType = 'text';
         let align = 'left';
         let val = '';
         let extraAttrs = '';
 
-        // Lógica Numérica
         if (columnMapping.stock === colName || ['stock', 'min_stock', 'cantidad', 'amount'].includes(colLower)) {
             inputType = 'number';
             align = 'center';
@@ -1540,7 +1408,6 @@ async function createEditableRow(columns) {
             if (colName === columnMapping.buy_price) val = inventoryDefaults.receipt_price || 0;
         }
 
-        // Excepción de Texto
         if (['nombre', 'name', 'categoria', 'category', 'sku', 'detalle', 'codigo'].includes(colLower)) {
             inputType = 'text';
             align = 'left';
@@ -1552,7 +1419,6 @@ async function createEditableRow(columns) {
         tr.appendChild(td);
     });
 
-    // 3. Celda Virtual para Ganancia (Si existe en la tabla visual)
     const headers = document.querySelectorAll('#data-table thead th');
     const hasGainHeader = Array.from(headers).some(th => th.textContent.includes('Ganancia'));
 
@@ -1565,7 +1431,6 @@ async function createEditableRow(columns) {
         tr.appendChild(tdGain);
     }
 
-    // 4. BOTONES DE ACCIÓN (ESTILO IDÉNTICO A EDICIÓN)
     const actionTd = document.createElement('td');
     actionTd.classList.add('actions-cell'); // Usamos la misma clase que en tu ejemplo
     actionTd.style.verticalAlign = 'middle';
@@ -1621,7 +1486,6 @@ async function handleAddRowClick() {
     const tableBody = document.querySelector('#data-table tbody');
     if (!tableBody || tableBody.querySelector('.editing-row')) return;
 
-    // Abrir columna de acciones si está cerrada para ver el botón Guardar
     if (isActionsHidden && typeof toggleActionsColumn === 'function') {
         toggleActionsColumn();
     }
@@ -1630,8 +1494,6 @@ async function handleAddRowClick() {
     if (addBtn) addBtn.disabled = true;
 
     try {
-        // CORRECCIÓN: Usamos activeDisplayColumns para respetar el orden visual (Nombre, Precio, Stock...)
-        // Si por alguna razón está vacía, usamos currentTableColumns como respaldo.
         const colsToUse = (activeDisplayColumns && activeDisplayColumns.length > 0)
             ? activeDisplayColumns
             : currentTableColumns;
@@ -1643,7 +1505,6 @@ async function handleAddRowClick() {
         newRow.querySelector('.save-new-row-btn')?.addEventListener('click', handleSaveNewRow);
         newRow.querySelector('.cancel-new-row-btn')?.addEventListener('click', handleCancelNewRow);
 
-        // Foco en el primer input real
         const firstInput = newRow.querySelector('input:not([disabled]):not([type="hidden"])');
         if (firstInput) firstInput.focus();
 
@@ -1675,7 +1536,7 @@ async function handleSaveNewRow(event) {
             inventory_id: activeInventoryId
         }
 
-        const response = await fetch('/api/table/add-item.php', {
+        const response = await fetch('/api/table/add-item', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1699,7 +1560,6 @@ async function handleSaveNewRow(event) {
     }
 }
 
-// **--- INICIO: FUNCIONES AUXILIARES NECESARIAS ---**
 function setupGreyBg() {
     const greyBg = document.getElementById('grey-background');
     const transactionModal = document.getElementById('transaction-picker-modal');
@@ -1723,16 +1583,13 @@ function setupGreyBg() {
 }
 
 
-// --- 4. INICIALIZACIÓN (LA ÚNICA FUNCIÓN init) ---
-// --- 4. INICIALIZACIÓN (LA ÚNICA FUNCIÓN init) ---
 async function init() {
     console.log("[INIT] Iniciando dashboard...");
 
-    // 1. HEADER (LÓGICA DE NANO - RUTAS LIMPIAS Y EN INGLÉS)
     const response = await api.checkUserAdmin();
     if (!response.success) {
         alert('Ha ocurrido un error interno. Será deslogeado');
-        window.location.href = '/logout.php';
+        window.location.href = '/logout';
         return; // Agregado return para detener ejecución si falla
     }
     const isAdmin = response.isAdmin;
@@ -1741,17 +1598,13 @@ async function init() {
     ui_helper.renderHeader('dashboard');
     console.log("[INIT] nav-bar iniciado.");
 
-    // PREPARA LOS FONDOS GRISES DE LOS MODALES
     setupGreyBg();
     setupMobileMenu();
 
-    // PREPARA EL DROPDOWN DE "MI CUENTA"
     setup.setupMiCuenta();
 
-    // 2. CONFIGURACIÓN BÁSICA DE LA VISTA
     const tableTitleElement = document.getElementById('table-title');
 
-    // --- Selecciono Elementos del Modal de Eliminación ---
     deleteModal = document.getElementById('delete-confirm-modal');
     deleteConfirmInput = document.getElementById('delete-confirm-input');
     confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -1767,7 +1620,6 @@ async function init() {
     const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
     const deleteDbBtn = document.getElementById('delete-db-btn');
 
-    // --- Conecto Eventos del Modal de Eliminación ---
     deleteDbBtn?.addEventListener('click', openDeleteModal);
     closeDeleteBtn?.addEventListener('click', closeDeleteModal);
     cancelDeleteBtn?.addEventListener('click', closeDeleteModal);
@@ -1887,8 +1739,6 @@ async function init() {
         }
     });
 
-    // Debug Toast y Notificaciones
-    // dashboard.js - Evento de crear nota
     document.getElementById('create-note-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -1896,9 +1746,6 @@ async function init() {
         const title = document.getElementById('note-title').value;
         const message = document.getElementById('note-message').value;
 
-        // --- EL TRUCO ---
-        // Si el usuario eligió un tipo de sistema (ej: 'success'), extraemos su COLOR.
-        // Guardamos el COLOR como 'type'. Así el lector lo tratará como nota personalizada (Ícono Nota + Color).
         const config = notificationConfig[rawType];
         const finalType = config ? config.color : rawType;
 
@@ -1910,7 +1757,7 @@ async function init() {
         };
 
         try {
-            const response = await fetch('/api/notifications/create.php', {
+            const response = await fetch('/api/notifications/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -1940,7 +1787,7 @@ async function init() {
             notificationDiv.style.opacity = '0.5';
 
             try {
-                const response = await fetch('/api/notifications/delete.php', {
+                const response = await fetch('/api/notifications/delete', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: notificationId })
@@ -1963,7 +1810,6 @@ async function init() {
         }
     });
 
-    // 3. CARGA DE DATOS Y FEATURE SETUP
     try {
         console.log("[INIT] Cargando datos de tabla...");
         await loadTableData(); // ESTA ES LA ÚNICA LLAMADA QUE DEBE QUEDAR
@@ -1986,24 +1832,14 @@ async function init() {
         pop_ups.error(`Error al cargar el panel: ${error.message}. Serás redirigido.`, "Error Crítico de Carga");
 
         if (error.message.includes('No autorizado')) {
-            window.location.href = '/login.php';
+            window.location.href = '/login';
         } else {
-            window.location.href = '/select-db.php';
+            window.location.href = '/select-db';
         }
     }
 }
-// ------------------------------------------------------------------------------------------------------
 
 function setupMobileMenu() {
-    /*
-    const menuBtn = document.getElementById('open-mobile-menu-btn')
-    menuBtn.addEventListener('click', () => {
-        const mobileMenu = document.getElementById('mobile-menu');
-        const greyBg = document.getElementById('grey-background');
-        greyBg.classList.remove('hidden');
-        mobileMenu.classList.remove('hidden');
-    })
-    */
 }
 
 function getReloadVariables() {
@@ -2118,7 +1954,6 @@ function showSaleModal(saleInfo) {
     showTransactionInfoModal();
 }
 
-// --- NUEVAS FUNCIONES PARA EDICIÓN DE VENTAS ---
 
 async function enableSaleEditing() {
     const modal = document.getElementById('transaction-info-modal');
@@ -2504,7 +2339,6 @@ function newProviderInfo(providerInfo) {
             </div>`;
 }
 
-// --- NUEVAS FUNCIONES PARA EDICIÓN DE COMPRAS ---
 
 async function enableReceiptEditing() {
     const modal = document.getElementById('transaction-info-modal');
@@ -2644,7 +2478,6 @@ function handleCancelReceipt() {
 
 function setupOrderBy() {
 
-    //DECLARACION DE VARIABLES IMPORTANTES
 
     const orderByBtns = document.querySelectorAll('.order-by-btn');
     const directionBtns = document.querySelectorAll('.direction-btn');
@@ -2653,7 +2486,6 @@ function setupOrderBy() {
     let viewOrder = '';
     let viewDirection = 'descending';
 
-    //COMPORTAMIENTOS DEL DROPDOWN
 
     orderByBtns.forEach(button => {
         button.addEventListener('click', (e) => {
@@ -2682,7 +2514,6 @@ function setupOrderBy() {
     })
 
 
-    //SELECCION DE ORDEN
     orderButtons.forEach(button => {
         button.addEventListener('click', () => {
             const menuContainer = button.closest('.menu-container');
@@ -2695,7 +2526,6 @@ function setupOrderBy() {
         })
     })
 
-    //SELECCION DE DIRECCION
 
     directionBtns.forEach(button => {
         button.addEventListener('click', () => {
@@ -2726,7 +2556,6 @@ function setupOrderBy() {
     })
 }
 
-//CAMBIO DE VIEW SEGUN EL ORDEN SELECCIONADO
 
 function showTransactionView(viewOrder, viewDirection, menuContainer) {
     menuContainer.querySelectorAll('.transaction-view').forEach(view => view.classList.add('hidden'));
@@ -2785,12 +2614,10 @@ function renderProductList(itemList, transactionType) {
     totalPriceText.textContent = `$${total.toFixed(2)}`;
     totalPriceInput.value = total;
 
-    // Conectar eventos de esta renderización
     connectItemEvents(itemList, transactionType);
 }
 
 function connectItemEvents(itemList, transactionType) {
-    // Botón Menos
     document.querySelectorAll('.qty-btn.minus').forEach(btn => {
         btn.addEventListener('click', () => {
             const idx = btn.dataset.index;
@@ -2801,11 +2628,9 @@ function connectItemEvents(itemList, transactionType) {
         });
     });
 
-    // Botón Más
     document.querySelectorAll('.qty-btn.plus').forEach(btn => {
         btn.addEventListener('click', () => {
             const idx = btn.dataset.index;
-            // Validar stock máximo
             if (itemList[idx].amount < itemList[idx].stock) {
                 itemList[idx].amount++;
                 renderProductList(itemList, transactionType);
@@ -2815,7 +2640,6 @@ function connectItemEvents(itemList, transactionType) {
         });
     });
 
-    // Botón Borrar
     document.querySelectorAll('.delete-item-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const idx = btn.dataset.index;
@@ -3194,7 +3018,7 @@ async function saveProviderChanges(providerID) {
         }
     }
     pop_ups.success('Proveedor actualizado con exito. Será redirigido', "Proveedor actualizado.");
-    window.location.href = '/dashboard.php?location=customers';
+    window.location.href = '/dashboard?location=customers';
 }
 
 function showTransactionInfoModal() {
@@ -3416,7 +3240,7 @@ async function saveCustomerChanges(customerID) {
         }
     }
     pop_ups.success('Cliente actualizado con exito. Será redirigido', "Cliente actualizado.");
-    window.location.href = '/dashboard.php?location=customers';
+    window.location.href = '/dashboard?location=customers';
 }
 
 async function completeProvider() {
@@ -3522,7 +3346,6 @@ async function sendSaleEmail(emailInfo) {
         if (response.success) {
             sendEmailBtn.textContent = '✓ Enviado';
             sendEmailBtn.style.backgroundColor = 'var(--success-color)';
-            // Deshabilitar permanentemente después de éxito
             sendEmailBtn.onclick = null;
         } else {
             throw new Error(response.error || 'Error al enviar el email');
@@ -3531,7 +3354,6 @@ async function sendSaleEmail(emailInfo) {
         console.error('Error:', error);
         sendEmailBtn.textContent = '✗ Error al enviar';
         sendEmailBtn.style.backgroundColor = 'var(--error-color)';
-        // Permitir reintentar después de 2 segundos
         setTimeout(() => {
             sendEmailBtn.textContent = originalText;
             sendEmailBtn.style.backgroundColor = 'var(--accent-color-medium-opacity)';
@@ -3552,7 +3374,6 @@ function showTransactionSuccess(body) {
 }
 
 
-//  ---- Funciones auxiliares de Transacciones ----
 
 
 function getForm(transactionType) {
@@ -3662,7 +3483,6 @@ function showTransactionError(message) {
     });
 }
 
-//'Picker modal' Son los container para seleccionar productos y clientes/proveedores para agregar a la transaccion.
 function showPickerModal(pickerModalID) {
     document.querySelectorAll('.picker-modal').forEach(modal => modal.classList.add('hidden'));
     const allBtns = document.querySelectorAll('.picker-confirm-btn');
@@ -3708,7 +3528,6 @@ function hideTransactionError() {
 }
 
 
-// Funciones globales para usar en onclick (por simplicidad)
 window.updateCartQty = (index, delta) => {
     const item = saleCart[index];
     const newQty = item.qty + delta;
@@ -3726,11 +3545,7 @@ window.updateCartQty = (index, delta) => {
 };
 
 
-/* =========================================
-   CONFIGURACIÓN RECOMENDADA (COMPLETA)
-   ========================================= */
 async function setupRecomendedColumns() {
-    // 1. Cargar Preferencias Actuales desde el Backend
     let prefs = {};
     try {
         const res = await api.getCurrentInventoryPreferences();
@@ -3741,7 +3556,6 @@ async function setupRecomendedColumns() {
         }
     } catch (e) { console.error("Error cargando prefs:", e); }
 
-    // --- A. FORMULARIO DE MAPEO (Identificación de Columnas) ---
     const mapForm = document.getElementById('mapping-columns-form');
     if (mapForm) {
         const systemFields = [
@@ -3773,10 +3587,8 @@ async function setupRecomendedColumns() {
                         <select id="${field.id}" class="rustic-select">
                             <option value="">-- Sin Asignar --</option>
                             ${currentTableColumns.map(col => {
-                // Filtramos columnas internas del sistema para que no molesten
                 if (['id', 'created_at', 'min_stock'].includes(col.toLowerCase())) return '';
 
-                // Marcamos como seleccionada si coincide con lo guardado
                 const isSelected = (col.toLowerCase() === String(currentValue).toLowerCase()) ? 'selected' : '';
                 return `<option value="${col}" ${isSelected}>${formatColumnName(col)}</option>`;
             }).join('')}
@@ -3797,7 +3609,6 @@ async function setupRecomendedColumns() {
 
         mapForm.innerHTML = html;
 
-        // Guardar Mapeo
         mapForm.onsubmit = async (e) => {
             e.preventDefault();
             const newMap = {
@@ -3815,14 +3626,12 @@ async function setupRecomendedColumns() {
         };
     }
 
-    // --- B. FEATURES (Alertas y Ganancias) ---
     const featForm = document.getElementById('automated-features-form');
     if (featForm) {
         const chkMin = document.getElementById('feature-min-stock');
         const chkGain = document.getElementById('feature-gain');
         const radiosGain = document.getElementsByName('gain-type');
 
-        // Tipo de Cambio
         const radiosExchange = document.getElementsByName('exchange-type');
         const selApiSource = document.getElementById('exchange-api-source');
         const inpManualRate = document.getElementById('exchange-manual-rate');
@@ -3848,7 +3657,6 @@ async function setupRecomendedColumns() {
             }
         });
 
-        // Lógica de Preview en vivo de la cotización
         const liveValueSpan = document.getElementById('exchange-api-live-value');
         const btnRefreshLive = document.getElementById('exchange-api-force-refresh');
 
@@ -3879,14 +3687,12 @@ async function setupRecomendedColumns() {
             });
         }
 
-        // Cargar estado actual de los checkbox
         if (prefs.features) {
             if (chkMin) chkMin.checked = !!prefs.features.min_stock;
             if (chkGain) chkGain.checked = !!prefs.features.gain;
             radiosGain.forEach(r => { if (r.value === prefs.features.gain_type) r.checked = true; });
         }
 
-        // Cargar estado de Tipo de Cambio
         if (prefs.exchange_config) {
             const ext = prefs.exchange_config;
             radiosExchange.forEach(r => { if (r.value === ext.type) r.checked = true; });
@@ -3899,7 +3705,6 @@ async function setupRecomendedColumns() {
             fetchPreviewRate('blue');
         }
 
-        // Lógica de importación de Min Stock
         const selImport = document.getElementById('import-min-stock-source');
         const btnImport = document.getElementById('btn-import-min-stock');
 
@@ -3923,7 +3728,6 @@ async function setupRecomendedColumns() {
             };
         }
 
-        // Guardar Features
         featForm.onsubmit = async (e) => {
             e.preventDefault();
             const newFeat = {
@@ -3946,14 +3750,12 @@ async function setupRecomendedColumns() {
                 prefs.exchange_config = newExchangeConfig;
                 pop_ups.success("Configuración aplicada.");
 
-                // Forzar sincronización usando DOM como fuente de verdad
                 setTimeout(() => toggleExchangeViews(), 100);
 
                 await loadTableData();
             }
         };
 
-        // Lógica visual para desplegar opciones (Toggle)
         const setupToggle = (chk, id) => {
             const el = document.getElementById(id);
             if (!chk || !el) return;
@@ -3970,20 +3772,15 @@ async function setupRecomendedColumns() {
         setupToggle(chkGain, 'wrap-gain');
     }
 
-    // --- C. CONVERSIÓN DE MONEDA (NUEVO MÓDULO) ---
     const currencyForm = document.getElementById('currency-conversion-form');
 
-    // Si no existe el div en el HTML, intentamos crearlo dinámicamente al final del contenedor principal
     if (!currencyForm) {
-        // Fallback por si te olvidaste de agregarlo en dashboard.php
         const parent = document.getElementById('mapping-columns-form')?.parentNode;
         if (parent) {
             const newDiv = document.createElement('div');
             newDiv.id = 'currency-conversion-form';
             newDiv.style.marginTop = '20px';
             parent.appendChild(newDiv);
-            // Volvemos a llamar recursivamente para que ahora sí entre al if de abajo
-            // O simplemente continuamos con la variable newDiv
         }
     }
 
@@ -4031,7 +3828,6 @@ async function setupRecomendedColumns() {
                 const colType = colSelect.value;
                 const targetCurr = targetSelect.value;
 
-                // Texto amigable para la confirmación
                 const colName = colSelect.options[colSelect.selectedIndex].text;
 
                 if (!await pop_ups.confirm(
@@ -4046,7 +3842,7 @@ async function setupRecomendedColumns() {
                 try {
                     const rateToSend = (currentDollarRate && currentDollarRate > 0) ? currentDollarRate : 1;
 
-                    const res = await fetch('/api/table/convert-currency.php', {
+                    const res = await fetch('/api/table/convert-currency', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -4060,10 +3856,8 @@ async function setupRecomendedColumns() {
 
                     if (data.success) {
                         pop_ups.success(data.message || "Conversión finalizada.");
-                        // Mostrar detalle técnico (cotización usada)
                         let rateText = "";
                         if (data.rate_used) {
-                            // rate_used puede venir como objeto o float simple según tu PHP
                             const val = (typeof data.rate_used === 'object') ? data.rate_used.sell : data.rate_used;
                             rateText = `(Cotización aplicada: $${val})`;
                         }
@@ -4128,7 +3922,6 @@ function getUserPreferences() {
     return preferences;
 }
 
-// -- Estadisticas --
 
 async function updateDailyStatistics(inventoryId) {
     const hourlyStatistics = await api.getDailyStatistics(inventoryId);
@@ -4468,7 +4261,6 @@ async function setupInventoryPicker() {
 
         const response = await api.getUserVerifiedTables();
 
-        // Debug para ver qué devuelve realmente la API
         console.log("Respuesta API Inventarios:", response);
 
         if (!response.success) {
@@ -4476,8 +4268,6 @@ async function setupInventoryPicker() {
             return;
         }
 
-        // CORRECCIÓN: Buscamos la propiedad correcta.
-        // Si no es 'verifiedInventories', intentamos con 'data', 'tables' o 'inventories'.
         const inventories = response.verifiedInventories || response.inventories || response.data || [];
 
         if (!Array.isArray(inventories)) {
@@ -4490,14 +4280,11 @@ async function setupInventoryPicker() {
 
         inventoriesDropdown.innerHTML = ''; // Limpiar antes de llenar
 
-        // Opción "Todos" (si la lógica lo requiere)
-        // inventoriesDropdown.innerHTML = '<div class="inventory-btn" data-value="all"><h4>Todos</h4></div>';
 
         inventories.forEach(inventory => {
             const inventoryBtn = document.createElement('div');
             inventoryBtn.className = 'inventory-btn';
             inventoryBtn.dataset.value = inventory.id;
-            // Aseguramos que 'name' exista, si no usamos un fallback
             const name = inventory.name || inventory.table_name || 'Inventario ' + inventory.id;
             inventoryBtn.innerHTML = `<h4>${name}</h4>`;
             inventoriesDropdown.appendChild(inventoryBtn);
@@ -4506,24 +4293,19 @@ async function setupInventoryPicker() {
         const inventoryPicker = document.getElementById('inventory-picker');
         if (!inventoryPicker) return;
 
-        // Delegación de eventos (más limpio que agregar listener a cada btn)
         inventoriesDropdown.addEventListener('click', (e) => {
             const btn = e.target.closest('.inventory-btn');
             if (btn) {
-                // Actualizar estadísticas
                 if (typeof updateDailyStatistics === 'function') {
                     updateDailyStatistics(btn.dataset.value);
                 }
-                // Actualizar texto del botón principal
                 inventoryPicker.innerHTML = `<h4>${btn.innerText}</h4>`;
 
-                // Cerrar dropdown
                 inventoriesDropdown.classList.add('hidden');
                 inventoryPicker.classList.remove('clicked');
             }
         });
 
-        // Toggle del dropdown
         inventoryPicker.addEventListener('click', (e) => {
             e.stopPropagation();
             const isClosed = inventoriesDropdown.classList.contains('hidden');
@@ -4537,7 +4319,6 @@ async function setupInventoryPicker() {
             }
         });
 
-        // Cerrar al hacer clic fuera
         window.addEventListener('click', (event) => {
             if (!inventoryPicker.contains(event.target) && !inventoriesDropdown.contains(event.target)) {
                 inventoriesDropdown.classList.add('hidden');
@@ -4549,23 +4330,18 @@ async function setupInventoryPicker() {
         console.error("Error fatal en setupInventoryPicker:", error);
     }
 }
-/* ---------------------- FIN DE FUNCIONES DE NANO  ---------------------- */
 
-/* ---------------------- Gestionar columnas ---------------------- */
 
 export async function loadTableData() {
     try {
         console.log("[loadTableData] Iniciando carga de seguridad y sincronización...");
 
-        // 1. RESET TOTAL de variables globales
-        // Esto es crucial para que la DB nueva no intente usar nombres de columnas de la anterior
         allData = [];
         originalData = [];
         currentTableColumns = [];
         columnMapping = { name: null, stock: null, sale_price: null, buy_price: null };
         activeFeatures = { min_stock: false, gain: false, gain_type: 'percent' };
 
-        // 2. OBTENER DATOS DE LA TABLA (Backend usa $_SESSION['active_inventory_id'])
         console.log("[loadTableData] Llamando a api.getTableData...");
         const result = await api.getTableData();
 
@@ -4574,15 +4350,12 @@ export async function loadTableData() {
             originalData = [...allData];
             currentTableColumns = result.columns || [];
 
-            // Sincronizar IDs de inventario activo
             activeInventoryId = result.inventoryId || result.inventory_id;
             window.activeInventoryId = activeInventoryId;
             console.log("Sincronizando Inventario ID:", activeInventoryId);
             window.allData = result.data;
             console.log("Datos cargados en Móvil:", window.allData.length);
 
-            // 3. CARGA CRÍTICA: Obtener preferencias reales guardadas para este ID
-            // Hacemos esto ANTES de renderizar para que el sistema sepa cómo se llaman las columnas
             const prefs = await api.getCurrentInventoryPreferences();
             if (prefs && prefs.success) {
                 columnMapping = prefs.mapping || columnMapping;
@@ -4596,7 +4369,6 @@ export async function loadTableData() {
                 console.log("[loadTableData] Preferencias recuperadas con éxito.");
             }
 
-            // 4. PREPARACIÓN DE UI
             const filterableColumns = currentTableColumns.filter(
                 col => col.toLowerCase() !== 'created_at'
             );
@@ -4604,25 +4376,19 @@ export async function loadTableData() {
             const tableTitle = document.getElementById('table-title');
             if (tableTitle) tableTitle.textContent = result.inventoryName || 'Inventario';
 
-            // 5. RENDERIZADO (Ahora con los mapeos correctos ya cargados)
             console.log("[loadTableData] Renderizando tabla con mapeo activo:", columnMapping);
             
-            // Si hay filtros o un término de búsqueda, usamos filterTable que preserva la búsqueda 
-            // e internamente llama a renderTable con la data filtrada.
             if (typeof filterTable === 'function') {
                 filterTable();
             } else {
                 await renderTable(filterableColumns, allData);
             }
 
-            // Actualizar componentes de gestión
             if (typeof renderColumnList === 'function') renderColumnList();
             if (typeof setupRecomendedColumns === 'function') await setupRecomendedColumns();
 
             checkCriticalStatus();
 
-            // 6. RECONSTRUCCIÓN DEL BUSCADOR
-            // Filtramos las columnas de precio del buscador basándonos en el mapeo cargado
             if (searchColumnDropdown) {
                 searchColumnDropdown.innerHTML = `
                   <button class="search-dropdown-item ${selectedSearchColumn === 'all' ? 'active' : ''}" data-column="all">
@@ -4635,7 +4401,6 @@ export async function loadTableData() {
 
                 filterableColumns.forEach(col => {
                     const colLower = col.toLowerCase();
-                    // Si la columna está mapeada como precio o es un cálculo de sistema, la excluimos
                     if (colLower === saleCol || colLower === buyCol || excludedSystemCols.includes(colLower)) {
                         return;
                     }
@@ -4659,19 +4424,14 @@ export async function loadTableData() {
         pop_ups.error(error.message || String(error), "Error de Sincronización");
 
         if (error.message.includes('No autorizado')) {
-            window.location.href = '/login.php';
+            window.location.href = '/login';
         } else {
-            // Si el error persiste, volvemos a la selección de DB para limpiar sesión
-            setTimeout(() => { window.location.href = '/select-db.php'; }, 1500);
+            setTimeout(() => { window.location.href = '/select-db'; }, 1500);
         }
     }
 }
 
-/* =========================================
-   LISTENERS GENERALES (Búsqueda, Paginación, etc.)
-   ========================================= */
 function setupEventListeners() {
-    // 1. Buscador
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -4681,7 +4441,6 @@ function setupEventListeners() {
         });
     }
 
-    // 1b. Botón de Recarga Manual
     const refreshTableBtn = document.getElementById('refresh-table-btn');
     if (refreshTableBtn) {
         refreshTableBtn.addEventListener('click', async () => {
@@ -4700,7 +4459,6 @@ function setupEventListeners() {
         });
     }
 
-    // 2. Selector de Filas por página
     const rowCountSelect = document.getElementById('row-count');
     if (rowCountSelect) {
         rowCountSelect.addEventListener('change', (e) => {
@@ -4710,7 +4468,6 @@ function setupEventListeners() {
         });
     }
 
-    // 3. Paginación (Anterior / Siguiente)
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
 
@@ -4725,21 +4482,16 @@ function setupEventListeners() {
 
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
-            // La validación de si hay más páginas se hace visualmente en updatePagination
-            // pero aquí intentamos avanzar y loadTableData manejará los límites
             currentPage++;
             loadTableData();
         });
     }
 
-    // 4. Checkbox "Seleccionar Todo" (Si existe en tu HTML estático, aunque renderTable lo suele recrear)
     const selectAll = document.getElementById('select-all-rows');
     if (selectAll) {
         selectAll.addEventListener('change', (e) => {
             const checkboxes = document.querySelectorAll('.row-select');
             checkboxes.forEach(cb => cb.checked = e.target.checked);
-            // Si tenés una función para mostrar el botón de borrar masivo, llámala acá
-            // toggleBulkDeleteButton();
         });
     }
 }
@@ -4756,7 +4508,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupEventListeners();
 
-    const ratePromise = fetch('/api/table/get-rate.php')
+    const ratePromise = fetch('/api/table/get-rate')
         .then(res => res.json())
         .catch(err => { console.warn("Fallo cotización", err); return null; });
 
@@ -4779,9 +4531,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-/* =======================================================
-   GESTIÓN DE COLUMNAS (VISIBILIDAD)
-   ======================================================= */
 
 window.openColumnManager = function () {
     const modal = document.getElementById('column-manager-modal');
@@ -4790,7 +4539,6 @@ window.openColumnManager = function () {
 
     if (!modal || !listContainer) return;
 
-    // 1. Inyectar Banner Explicativo (Solo si no existe ya)
     if (!modalBody.querySelector('.info-banner')) {
         const banner = document.createElement('div');
         banner.className = 'info-banner';
@@ -4802,11 +4550,9 @@ window.openColumnManager = function () {
                 Desmarca la casilla para ocultar la columna.</p>
             </div>
         `;
-        // Insertar al principio del body, antes de la lista
         modalBody.insertBefore(banner, listContainer);
     }
 
-    // 2. Obtener y Ordenar Columnas (Igual que antes)
     let allCols = currentTableColumns || [];
 
     if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.column_order)) {
@@ -4826,22 +4572,18 @@ window.openColumnManager = function () {
         visibleCols = window.currentUserPreferences.visible_columns;
     }
 
-    // 3. Generar HTML (NUEVO DISEÑO)
     listContainer.innerHTML = '';
 
     allCols.forEach(col => {
-        // Filtramos columnas técnicas
         if (['created_at', 'updated_at', 'user_id', 'inventory_id'].includes(col.toLowerCase())) return;
 
         const isChecked = visibleCols.includes(col);
         const niceName = formatColumnName(col);
 
         const item = document.createElement('div');
-        // Usamos la nueva clase .sortable-item
         item.className = 'sortable-item';
         item.dataset.column = col;
 
-        // ESTRUCTURA VISUAL: [Handle] [Nombre] [Checkbox]
         item.innerHTML = `
             <div style="display:flex; align-items:center; flex-grow:1;">
                 <div class="drag-handle" title="Arrastrar para mover">
@@ -4860,7 +4602,6 @@ window.openColumnManager = function () {
 
     modal.classList.remove('hidden');
 
-    // 4. Inicializar Sortable (Con handle específico)
     if (columnSorter) columnSorter.destroy();
     columnSorter = new Sortable(listContainer, {
         animation: 150,
@@ -4877,7 +4618,6 @@ window.closeColumnManager = function () {
 
 window.saveColumnPreferences = async function () {
     const listContainer = document.getElementById('column-manager-list');
-    // Obtenemos todos los items del modal (ya ordenados visualmente por el usuario)
     const items = listContainer.querySelectorAll('.sortable-item');
 
     const visibleCols = [];
@@ -4887,10 +4627,8 @@ window.saveColumnPreferences = async function () {
         const colName = item.dataset.column;
         const checkbox = item.querySelector('input[type="checkbox"]');
 
-        // Guardamos TODAS las columnas en el orden que quedaron (para saber el orden futuro)
         orderedCols.push(colName);
 
-        // Si está marcada, la agregamos a visibles
         if (checkbox.checked) {
             visibleCols.push(colName);
         }
@@ -4911,7 +4649,6 @@ window.saveColumnPreferences = async function () {
 
             window.closeColumnManager();
 
-            // Redibujamos la tabla
             if (typeof renderTable === 'function') {
                 await renderTable(currentTableColumns, allData);
             } else {
@@ -4934,12 +4671,8 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// =========================================================
-// Balance modal (usable en PC también)
-// =========================================================
 (function () {
     function getBalanceModal() {
-        // Si quedó duplicado por error, esto agarra el primero
         return document.getElementById('mobile-balance-modal');
     }
 
@@ -4950,11 +4683,9 @@ document.addEventListener('keydown', (e) => {
             return;
         }
 
-        // Abrir aunque el CSS mobile lo tenga oculto en desktop
         modal.classList.remove('hidden');
         modal.classList.add('is-open');
 
-        // Fuerza visual (por si hay media queries)
         modal.style.display = 'flex';
         modal.style.position = 'fixed';
         modal.style.inset = '0';
@@ -4963,7 +4694,6 @@ document.addEventListener('keydown', (e) => {
         document.documentElement.style.overflow = 'hidden';
         document.body.style.overflow = 'hidden';
 
-        // Cargar data
         if (typeof window.loadBalanceData === 'function') {
             window.loadBalanceData('today');
         }
@@ -4976,7 +4706,6 @@ document.addEventListener('keydown', (e) => {
         modal.classList.add('hidden');
         modal.classList.remove('is-open');
 
-        // Limpia overrides
         modal.style.display = '';
         modal.style.position = '';
         modal.style.inset = '';
@@ -4986,7 +4715,6 @@ document.addEventListener('keydown', (e) => {
         document.body.style.overflow = '';
     };
 
-    // Cerrar con ESC + click afuera
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const modal = getBalanceModal();

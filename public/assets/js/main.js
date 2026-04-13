@@ -1,13 +1,8 @@
-/* ==========================================================================
-   LÓGICA DEL INDEX (LANDING PAGE) - ACTUALIZADO
-   ========================================================================== */
 document.addEventListener('DOMContentLoaded', function () {
 
-    // Solo ejecutar si estamos en el index
     if (document.getElementById('page-index')) {
         console.log("Index Logic Loaded");
 
-        // 1. SWIPER CONFIGURACIÓN (Estilo Vertical/Tarjeta)
         if (typeof Swiper !== 'undefined') {
             var swiper = new Swiper(".mySwiper", {
                 effect: "coverflow",
@@ -15,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 centeredSlides: true,
                 slidesPerView: "auto",
                 initialSlide: 1,
-                // Espacio entre slides
                 spaceBetween: 30,
                 coverflowEffect: {
                     rotate: 0,      // IMPORTANTE: 0 rotación para que se vean rectas
@@ -31,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // 2. NAV DOTS & SVG ANIMATION (Lógica mejorada)
         const sections = document.querySelectorAll('.section');
         const navDots = document.querySelectorAll('.nav-dot');
         const svgWrapper = document.querySelector('.background-animation-wrapper');
@@ -39,7 +32,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    // A. Puntos de Navegación
                     navDots.forEach(dot => {
                         dot.classList.remove('active');
                         if (dot.getAttribute('data-id') === entry.target.id) {
@@ -47,12 +39,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     });
 
-                    // B. Movimiento del SVG (Usando clases CSS)
                     if (svgWrapper) {
-                        // Limpiar clases
                         svgWrapper.classList.remove('pos-right', 'pos-left');
 
-                        // Lógica: Alternar Derecha / Izquierda
                         const id = entry.target.id;
                         if (id === 'section-hero' || id === 'section-pillars') {
                             svgWrapper.classList.add('pos-right');
@@ -66,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         sections.forEach(s => observer.observe(s));
 
-        // 3. PESTAÑAS (About Section)
         const options = document.querySelectorAll('.about-option');
         const panels = document.querySelectorAll('.content-panel');
 
@@ -85,7 +73,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // 4. PRICING CAROUSEL DEDICADO Y SEGURO (Solo Mobile)
         let pricingSwiperInstance = null;
 
         function handlePricingCarousel() {
@@ -95,9 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!container || !wrapper) return;
 
-            // Límite de 1024px para considerarse Mobile / Tablet
             if (window.innerWidth <= 1024) {
-                // Inyectar clases de Swiper para armar el Carrusel
                 container.classList.add('swiper', 'pricingSwiper');
                 container.style.overflow = 'hidden'; // Requerido por swiper en móvil
                 wrapper.classList.add('swiper-wrapper');
@@ -120,13 +105,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                     });
                     
-                    // Forzar el snap al slide 1 (Profesional)
                     setTimeout(() => {
                         if (pricingSwiperInstance) pricingSwiperInstance.slideTo(1, 0);
                     }, 50);
                 }
             } else {
-                // Modo PC: Destruir cualquier rastro del carrusel para no mutar el diseño Matrix
                 if (pricingSwiperInstance) {
                     pricingSwiperInstance.destroy(true, true);
                     pricingSwiperInstance = null;
@@ -148,11 +131,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // Ejecutar en la carga y al cambiar de tamaño
         handlePricingCarousel();
         window.addEventListener('resize', handlePricingCarousel);
 
-        // 5. Footer Year
         const yearEl = document.getElementById("year");
         if (yearEl) yearEl.textContent = new Date().getFullYear();
     }

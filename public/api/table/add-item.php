@@ -36,7 +36,6 @@ try {
 
     $db = Database::getInstance();
 
-    // 1) Obtener tabla del inventario validando propiedad
     $stmtInv = $db->prepare("
         SELECT t.table_name
         FROM user_tables t
@@ -53,11 +52,9 @@ try {
 
     $tableName = "`" . str_replace("`", "``", $rawTableName) . "`";
 
-    // 2) Traer columnas válidas reales
     $validCols = $db->query("SHOW COLUMNS FROM $tableName")->fetchAll(PDO::FETCH_COLUMN);
     $validMap = array_flip($validCols); // lookup rápido
 
-    // 3) Limpiar y filtrar data (no permitir id/created_at)
     $insertData = [];
     foreach ($data as $col => $val) {
         if (!is_string($col)) continue;
@@ -75,9 +72,6 @@ try {
         throw new Exception("No hay datos válidos para las columnas de esta tabla.");
     }
 
-    // 4) Construir INSERT dinámico:
-    //    - Columnas con backticks (permiten espacios)
-    //    - Placeholders seguros :v0, :v1... (SIN espacios)
     $cols = array_keys($insertData);
 
     $safeCols = [];

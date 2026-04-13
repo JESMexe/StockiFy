@@ -5,16 +5,15 @@ require_once __DIR__ . '/../src/helpers/auth_helper.php';
 $currentUser = getCurrentUser();
 
 if (!$currentUser) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
 if (!isset($currentUser['subscription_active']) || $currentUser['subscription_active'] == 0) {
-    header('Location: index.php#section-pricing');
+    header('Location: index#section-pricing');
     exit;
 }
 
-// LÍMITE DEL PLAN BÁSICO (1 Base de Datos)
 if ($currentUser['subscription_active'] == 1) {
     $dbInstance = \App\core\Database::getInstance();
     $stmtCount = $dbInstance->prepare("SELECT COUNT(*) FROM inventories WHERE user_id = ?");
@@ -45,7 +44,7 @@ if ($currentUser['subscription_active'] == 1) {
                         Para crear múltiples inventarios y desbloquear todo el potencial de tu negocio, adquiere el <strong style="color: var(--accent-green)">Plan Profesional</strong>.
                     </p>
                     <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                        <a href="dashboard.php" class="btn btn-secondary" style="margin: 0;">Volver al Panel</a>
+                        <a href="dashboard" class="btn btn-secondary" style="margin: 0;">Volver al Panel</a>
                         <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20ampliar%20el%20límite%20de%20mis%20inventarios%20y%20pasar%20al%20Plan%20Profesional." target="_blank" class="btn btn-primary" style="margin: 0; background-color: var(--accent-green); color: var(--color-white); border-color: var(--accent-green);">Mejorar mi Plan</a>
                     </div>
                 </div>
@@ -77,7 +76,7 @@ if ($currentUser['subscription_active'] == 1) {
 <body>
 
     <header>
-        <a href="index.php" id="header-logo">
+        <a href="index" id="header-logo">
             <img src="assets/img/LogoE.png" alt="StockiFy Logo">
         </a>
     </header>

@@ -1,15 +1,12 @@
 <?php
-// public/api/sales/get-details.php
 header('Content-Type: application/json');
 
-// Ajuste de rutas para llegar a la raíz (subir 3 niveles desde public/api/sales)
 require_once dirname(__DIR__, 3) . '/vendor/autoload.php';
 require_once dirname(__DIR__, 3) . '/src/helpers/auth_helper.php';
 require_once dirname(__DIR__, 3) . '/src/Models/SalesModel.php';
 
 use App\Models\SalesModel;
 
-// 1. Verificación de Auth
 try {
     $user = getCurrentUser();
     if (!$user) {
@@ -29,7 +26,6 @@ try {
         exit;
     }
 
-    // 2. Usar el Modelo para obtener los datos correctos (Tablas nuevas en Inglés)
     $model = new SalesModel();
     $data = $model->getDetails($saleId, $user['id'], $activeInventoryId);
 
@@ -38,8 +34,6 @@ try {
         exit;
     }
 
-    // 3. Estructurar la respuesta para JS
-    // sales.js espera: res.sale.items y res.sale.payments
     $sale = $data['sale'];
     $sale['items'] = $data['items'] ?? [];
     $sale['payments'] = $data['payments'] ?? [];

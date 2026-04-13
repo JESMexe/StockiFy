@@ -1,11 +1,8 @@
-// public/assets/js/api_FINAL.js
 
 import { pop_ups } from "./notifications/pop-up.js";
 
 
-//import { isLoggedIn } from "./main.js";
 
-/* ------------------- FUNCIONES INTERNAS ------------------- */
 async function handleResponse(response) {
     if (!response.ok) {
         const errorData = await response.json().catch(() => null);
@@ -16,9 +13,8 @@ async function handleResponse(response) {
     return response.json();
 }
 
-/* ------------------- AUTENTICACIÓN ------------------- */
 export async function loginUser(credentials) {
-    const response = await fetch('/api/auth/login.php', {
+    const response = await fetch('/api/auth/login', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
@@ -27,7 +23,7 @@ export async function loginUser(credentials) {
 }
 
 export async function registerUser(userData) {
-    const response = await fetch('/api/auth/register.php', {
+    const response = await fetch('/api/auth/register', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
@@ -35,9 +31,10 @@ export async function registerUser(userData) {
     return handleResponse(response);
 }
 
+//falta manejar mejor la excepcion cuando el token expira, por ahora lo dejo asi porque en el front ya frena el acceso
 export async function checkSessionStatus() {
     try {
-        const response = await fetch('/api/auth/check-session.php');
+        const response = await fetch('/api/auth/check-session');
         if (!response.ok) return false;
         const data = await response.json();
         return data.isLoggedIn;
@@ -47,7 +44,6 @@ export async function checkSessionStatus() {
     }
 }
 
-/* ------------------- BASES DE DATOS ------------------- */
 export async function getDatabases() {
     const response = await fetch('/api/database/list');
     if (!response.ok) throw new Error('Error al conectar con el servidor.');
@@ -55,7 +51,7 @@ export async function getDatabases() {
 }
 
 export async function selectDatabase(inventoryId) {
-    const response = await fetch('/api/database/select.php', {
+    const response = await fetch('/api/database/select', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inventoryId }),
@@ -64,7 +60,7 @@ export async function selectDatabase(inventoryId) {
 }
 
 export async function createDatabase(databaseData) {
-    const response = await fetch('/api/database/create.php', {
+    const response = await fetch('/api/database/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(databaseData),
@@ -73,7 +69,7 @@ export async function createDatabase(databaseData) {
 }
 
 export async function deleteDatabase() {
-    const response = await fetch('/api/database/delete.php', {
+    const response = await fetch('/api/database/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
     });
@@ -81,7 +77,7 @@ export async function deleteDatabase() {
 }
 
 export async function getCurrentInventoryPreferences() {
-    const response = await fetch('/api/database/get-preferences-current.php', {
+    const response = await fetch('/api/database/get-preferences-current', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
     });
@@ -89,7 +85,7 @@ export async function getCurrentInventoryPreferences() {
 }
 
 export async function getCurrentInventoryDefaults() {
-    const response = await fetch('/api/database/get-defaults-current.php', {
+    const response = await fetch('/api/database/get-defaults-current', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
     });
@@ -97,12 +93,12 @@ export async function getCurrentInventoryDefaults() {
 }
 
 export async function getInventoryProductsForChecker() {
-    const response = await fetch('/api/inventory/get-products.php');
+    const response = await fetch('/api/inventory/get-products');
     return handleResponse(response);
 }
 
 export async function setCurrentInventoryPreferences(preferences) {
-    const response = await fetch('/api/database/set-preferences-current.php', {
+    const response = await fetch('/api/database/set-preferences-current', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),
@@ -111,7 +107,7 @@ export async function setCurrentInventoryPreferences(preferences) {
 }
 
 export async function getUserVerifiedTables() {
-    const response = await fetch('/api/database/get-verified-tables.php', {
+    const response = await fetch('/api/database/get-verified-tables', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
     });
@@ -119,7 +115,7 @@ export async function getUserVerifiedTables() {
 }
 
 export async function saveInventoryPreferences(data) {
-    const response = await fetch('/api/table/save-prefs.php', {
+    const response = await fetch('/api/table/save-prefs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -127,14 +123,13 @@ export async function saveInventoryPreferences(data) {
     return handleResponse(response);
 }
 
-/* ------------------- TABLAS ------------------- */
 export async function getTableData() {
-    const response = await fetch('/api/table/get.php');
+    const response = await fetch('/api/table/get');
     return handleResponse(response);
 }
 
 export async function addItemToTable(itemData) {
-    const response = await fetch('/api/table/add.php', {
+    const response = await fetch('/api/table/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(itemData),
@@ -143,7 +138,7 @@ export async function addItemToTable(itemData) {
 }
 
 export async function updateTableRow(itemId, dataToUpdate) {
-    const response = await fetch('/api/table/update-row.php', {
+    const response = await fetch('/api/table/update-row', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, dataToUpdate }),
@@ -152,7 +147,7 @@ export async function updateTableRow(itemId, dataToUpdate) {
 }
 
 export async function manageTableColumn(action, data) {
-    const response = await fetch('/api/table/manage-column.php', {
+    const response = await fetch('/api/table/manage-column', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...data }),
@@ -160,15 +155,13 @@ export async function manageTableColumn(action, data) {
     return handleResponse(response);
 }
 
-/* ------------------- ANALÍTICAS ------------------- */
 export async function getAnalyticsDashboard() {
-    const response = await fetch('/api/analytics/get-dashboard.php');
+    const response = await fetch('/api/analytics/get-dashboard');
     return handleResponse(response);
 }
 
-/* ------------------- STOCK ------------------- */
 export async function updateStock(itemId, action, value) {
-    const response = await fetch('/api/stock/update.php', {
+    const response = await fetch('/api/stock/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, action, value }),
@@ -176,9 +169,8 @@ export async function updateStock(itemId, action, value) {
     return handleResponse(response);
 }
 
-/* ------------------- IMPORTACIÓN CSV ------------------- */
 export async function getCsvHeaders(formData) {
-    const response = await fetch('/api/import/get-csv-headers.php', {
+    const response = await fetch('/api/import/get-csv-headers', {
         method: 'POST',
         body: formData,
     });
@@ -186,7 +178,7 @@ export async function getCsvHeaders(formData) {
 }
 
 export async function prepareCsvImport(formData) {
-    const response = await fetch('/api/import/prepare-csv.php', {
+    const response = await fetch('/api/import/prepare-csv', {
         method: 'POST',
         body: formData,
     });
@@ -194,7 +186,7 @@ export async function prepareCsvImport(formData) {
 }
 
 export async function executeImport() {
-    const res = await fetch('/api/import/execute-import.php', {
+    const res = await fetch('/api/import/execute-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ _ts: Date.now() })
@@ -202,23 +194,21 @@ export async function executeImport() {
     return res.json();
 }
 
-/* ------------------- USUARIOS ------------------- */
 export async function getUserProfile() {
-    const response = await fetch('/api/user/profile.php');
+    const response = await fetch('/api/user/profile');
     return handleResponse(response);
 }
 
 export async function checkUserAdmin(){
-    const response = await fetch('/api/auth/check-admin.php', {
+    const response = await fetch('/api/auth/check-admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
     })
     return handleResponse(response);
 }
 
-/* ------------------- ESTADÍSTICAS ------------------- */
 export async function updateStatistics(tableID, dates) {
-    const response = await fetch('/api/statistics/update.php', {
+    const response = await fetch('/api/statistics/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableID, dates }),
@@ -227,7 +217,7 @@ export async function updateStatistics(tableID, dates) {
 }
 
 export async function getDailyStatistics(tableID) {
-    const response = await fetch('/api/statistics/update-daily.php', {
+    const response = await fetch('/api/statistics/update-daily', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableID }),
@@ -235,19 +225,18 @@ export async function getDailyStatistics(tableID) {
     return handleResponse(response);
 }
 
-/* ------------------- CLIENTES ------------------- */
 export async function getAllClients() {
-    const response = await fetch('/api/customers/get-all-customers.php', { method: 'POST' });
+    const response = await fetch('/api/customers/get-all-customers', { method: 'POST' });
     return handleResponse(response);
 }
 
 export async function getOrderedClients() {
-    const response = await fetch('/api/customers/get-ordered-customers.php', { method: 'POST' });
+    const response = await fetch('/api/customers/get-ordered-customers', { method: 'POST' });
     return handleResponse(response);
 }
 
 export async function updateCustomer(customer){
-    const response = await fetch('/api/customers/update.php', {
+    const response = await fetch('/api/customers/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(customer),
@@ -261,7 +250,7 @@ export async function getCustomerList(order = 'desc') {
 }
 
 export async function createCustomerNew(data) {
-    const response = await fetch('/api/customers/create.php', {
+    const response = await fetch('/api/customers/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -275,7 +264,7 @@ export async function getCustomerDetails(id) {
 }
 
 export async function createClient(client) {
-    const response = await fetch('/api/customers/create-customer.php', {
+    const response = await fetch('/api/customers/create-customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client }),
@@ -284,7 +273,7 @@ export async function createClient(client) {
 }
 
 export async function getCustomerById(id) {
-    const response = await fetch('/api/customers/get-by-id.php', {
+    const response = await fetch('/api/customers/get-by-id', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
@@ -292,7 +281,6 @@ export async function getCustomerById(id) {
     return handleResponse(response);
 }
 
-/* ------------------- EMPLEADOS ------------------- */
 
 export async function getEmployeeList(order = 'desc') {
     const response = await fetch(`/api/employees/get-all.php?order=${order}`);
@@ -300,7 +288,7 @@ export async function getEmployeeList(order = 'desc') {
 }
 
 export async function createEmployeeNew(name) {
-    const response = await fetch('/api/employees/create.php', {
+    const response = await fetch('/api/employees/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name })
@@ -308,9 +296,7 @@ export async function createEmployeeNew(name) {
     return handleResponse(response);
 }
 
-/* ------------------- PROVEEDORES ------------------- */
 
-// === PROVEEDORES (PROVIDERS) ===
 
 export async function getProviderList(order = 'desc') {
     const response = await fetch(`/api/providers/get-all.php?order=${order}`);
@@ -318,7 +304,7 @@ export async function getProviderList(order = 'desc') {
 }
 
 export async function createProviderNew(data) {
-    const response = await fetch('/api/providers/create.php', {
+    const response = await fetch('/api/providers/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -333,17 +319,17 @@ export async function getProviderDetails(id) {
 
 
 export async function getAllProviders() {
-    const response = await fetch('/api/providers/get-all.php', { method: 'POST' });
+    const response = await fetch('/api/providers/get-all', { method: 'POST' });
     return handleResponse(response);
 }
 
 export async function getOrderedProviders() {
-    const response = await fetch('/api/providers/get-ordered.php', { method: 'POST' });
+    const response = await fetch('/api/providers/get-ordered', { method: 'POST' });
     return handleResponse(response);
 }
 
 export async function createProvider(provider) {
-    const response = await fetch('/api/providers/create.php', {
+    const response = await fetch('/api/providers/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider }),
@@ -352,7 +338,7 @@ export async function createProvider(provider) {
 }
 
 export async function updateProvider(provider){
-    const response = await fetch('/api/providers/update.php', {
+    const response = await fetch('/api/providers/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(provider),
@@ -361,7 +347,7 @@ export async function updateProvider(provider){
 }
 
 export async function getProdivderById(id){
-    const response = await fetch('/api/providers/get-by-id.php', {
+    const response = await fetch('/api/providers/get-by-id', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({id}),
@@ -369,14 +355,13 @@ export async function getProdivderById(id){
     return handleResponse(response);
 }
 
-/* ------------------- PRODUCTOS ------------------- */
 export async function getAllProducts() {
-    const response = await fetch('/api/products/get-all.php', { method: 'POST' });
+    const response = await fetch('/api/products/get-all', { method: 'POST' });
     return handleResponse(response);
 }
 
 export async function getProductData(productID,tableID){
-    const response = await fetch('/api/products/get-product-data.php', {
+    const response = await fetch('/api/products/get-product-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({productID,tableID}),
@@ -385,7 +370,7 @@ export async function getProductData(productID,tableID){
 }
 
 export async function getTableProducts(table) {
-    const response = await fetch('/api/products/get-all-from-table.php', {
+    const response = await fetch('/api/products/get-all-from-table', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(table),
@@ -394,7 +379,7 @@ export async function getTableProducts(table) {
 }
 
 export async function getFullReceiptInfo(receiptID){
-    const response = await fetch('/api/receipts/get-info.php', {
+    const response = await fetch('/api/receipts/get-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receiptID),
@@ -402,14 +387,13 @@ export async function getFullReceiptInfo(receiptID){
     return handleResponse(response);
 }
 
-/* ------------------- MÉTODOS DE PAGO ------------------- */
 export async function getAllPaymentMethods() {
-    const response = await fetch('/api/payment-methods/get-all.php');
+    const response = await fetch('/api/payment-methods/get-all');
     return handleResponse(response);
 }
 
 export async function createPaymentMethod(data) { // Recibe objeto data completo
-    const response = await fetch('/api/payment-methods/create.php', {
+    const response = await fetch('/api/payment-methods/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -418,7 +402,7 @@ export async function createPaymentMethod(data) { // Recibe objeto data completo
 }
 
 export async function updatePaymentMethod(id, data) { // Recibe objeto data completo
-    const response = await fetch('/api/payment-methods/update.php', {
+    const response = await fetch('/api/payment-methods/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...data })
@@ -427,7 +411,7 @@ export async function updatePaymentMethod(id, data) { // Recibe objeto data comp
 }
 
 export async function deletePaymentMethod(id) {
-    const response = await fetch('/api/payment-methods/delete.php', {
+    const response = await fetch('/api/payment-methods/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
@@ -435,9 +419,8 @@ export async function deletePaymentMethod(id) {
     return handleResponse(response);
 }
 
-/* ------------------- VENTAS Y COMPRAS ------------------- */
 export async function createSale(saleInfo) {
-    const response = await fetch('/api/sales/create.php', {
+    const response = await fetch('/api/sales/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(saleInfo),
@@ -451,7 +434,7 @@ export async function getSaleDetailsNew(id) {
 }
 
 export async function updatePurchaseProvider(purchaseId, providerId) {
-    const response = await fetch('/api/purchases/update-provider.php', {
+    const response = await fetch('/api/purchases/update-provider', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ purchase_id: purchaseId, provider_id: providerId })
@@ -460,7 +443,7 @@ export async function updatePurchaseProvider(purchaseId, providerId) {
 }
 
 export async function updateSaleCustomer(saleId, clientId) {
-    const response = await fetch('/api/sales/update-customer.php', {
+    const response = await fetch('/api/sales/update-customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sale_id: saleId, client_id: clientId })
@@ -468,16 +451,12 @@ export async function updateSaleCustomer(saleId, clientId) {
     return handleResponse(response);
 }
 
-// --- MÓDULO VENTAS V2 (API) ---
 
-// Obtener todas las ventas (Listado)
 export async function getAllSales() {
-    // Apunta al nuevo archivo get-all.php
-    const response = await fetch('/api/sales/get-all.php');
+    const response = await fetch('/api/sales/get-all');
     return handleResponse(response);
 }
 
-// Obtener detalles de UNA venta
 export async function getSaleDetails(id) {
     const response = await fetch(`/api/sales/get-details.php?id=${id}`);
     return handleResponse(response);
@@ -489,12 +468,12 @@ export async function getSalesHistory(order = 'desc') {
 }
 
 export async function getSaleResources() {
-    const response = await fetch('/api/sales/get-resources.php');
+    const response = await fetch('/api/sales/get-resources');
     return handleResponse(response);
 }
 
 export async function updateSaleList(productList){
-    const response = await fetch('/api/sales/update-product-list.php', {
+    const response = await fetch('/api/sales/update-product-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productList),
@@ -503,12 +482,12 @@ export async function updateSaleList(productList){
 }
 
 export async function getPurchaseResources() {
-    const response = await fetch('/api/purchases/get-resources.php');
+    const response = await fetch('/api/purchases/get-resources');
     return handleResponse(response);
 }
 
 export async function createPurchase(data) {
-    const response = await fetch('/api/purchases/create.php', {
+    const response = await fetch('/api/purchases/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -527,7 +506,7 @@ export async function getPurchaseDetails(id) {
 }
 
 export async function createReceipt(receiptInfo) {
-    const response = await fetch('/api/receipts/create.php', {
+    const response = await fetch('/api/receipts/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receiptInfo),
@@ -536,7 +515,7 @@ export async function createReceipt(receiptInfo) {
 }
 
 export async function updateRececiptList(productList){
-    const response = await fetch('/api/receipts/update-product-list.php', {
+    const response = await fetch('/api/receipts/update-product-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productList),
@@ -545,7 +524,7 @@ export async function updateRececiptList(productList){
 }
 
 export async function sendSaleEmail(emailInfo) {
-    const response = await fetch('/api/sales/send-email.php', {
+    const response = await fetch('/api/sales/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emailInfo }),
@@ -554,17 +533,17 @@ export async function sendSaleEmail(emailInfo) {
 }
 
 export async function getUserSales() {
-    const response = await fetch('/api/sales/get-user-sales.php', { method: 'POST' });
+    const response = await fetch('/api/sales/get-user-sales', { method: 'POST' });
     return handleResponse(response);
 }
 
 export async function getUserReceipts() {
-    const response = await fetch('/api/receipts/get-user-receipts.php', { method: 'POST' });
+    const response = await fetch('/api/receipts/get-user-receipts', { method: 'POST' });
     return handleResponse(response);
 }
 
 export async function getSaleItemlist(saleId) {
-    const response = await fetch('/api/sales/get-product-list.php', {
+    const response = await fetch('/api/sales/get-product-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(saleId),
@@ -573,7 +552,7 @@ export async function getSaleItemlist(saleId) {
 }
 
 export async function getReceiptItemlist(receiptId) {
-    const response = await fetch('/api/receipts/get-product-list.php', {
+    const response = await fetch('/api/receipts/get-product-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receiptId),
@@ -582,7 +561,7 @@ export async function getReceiptItemlist(receiptId) {
 }
 
 export async function registerContactForm(contactData){
-    const response = await fetch('/StockiFy/api/contact/register-contact-email.php', {
+    const response = await fetch('/StockiFy/api/contact/register-contact-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(contactData),
@@ -590,7 +569,6 @@ export async function registerContactForm(contactData){
     return handleResponse(response);
 }
 
-// --- DIVISAS / EXCHANGE RATE (Con Fallback Activo) ---
 export async function getExchangeRate(forceRefresh = false) {
     try {
         const url = forceRefresh ? '/api/table/get-rate.php?force_refresh=true' : '/api/table/get-rate.php';
@@ -627,7 +605,6 @@ async function promptManualRateFallback() {
             throw new Error("Valor manual inválido");
         }
 
-        // Auto-guardar 
         const newConfig = { type: 'manual', manual_rate: rate, api_source: 'blue' };
         await setCurrentInventoryPreferences({ exchange_config: newConfig });
 

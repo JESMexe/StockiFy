@@ -15,7 +15,6 @@ $inventoryId = $_SESSION['active_inventory_id'] ?? null;
 if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
 $input = json_decode(file_get_contents('php://input'), true);
 
-// Validación básica: Solo Nombre es obligatorio
 if (empty($input['name'])) {
     echo json_encode(['success'=>false, 'message'=>'El nombre es obligatorio']);
     exit;

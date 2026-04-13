@@ -1,8 +1,6 @@
 <?php
-// public/api/table/manage-column.php
 header('Content-Type: application/json');
 
-// Desactivar errores HTML
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -15,27 +13,19 @@ try {
     require_once $root . '/src/helpers/auth_helper.php';
     require_once $root . '/src/Models/InventoryModel.php';
 
-    // 1. Auth
     if (!function_exists('getCurrentUser')) throw new Exception('Auth helper error');
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
 
-    // 2. Input
     $input = json_decode(file_get_contents('php://input'), true);
     $action = $input['action'] ?? '';
     $inventoryId = $input['inventoryId'] ?? null;
 
-    // --- CRÍTICO: OBTENER INVENTARIO ACTIVO ---
-    // Si el JS no mandó el ID (a veces pasa en acciones globales), lo buscamos.
-    // Pero idealmente debería venir del frontend.
     if (!$inventoryId) {
         $db = Database::getInstance();
-        // Buscamos el último inventario MODIFICADO o CREADO (Mejor puntería)
-        // O buscamos si hay alguna variable de sesión 'active_inventory'
         if (isset($_SESSION['active_inventory_id'])) {
             $inventoryId = $_SESSION['active_inventory_id'];
         } else {
-            // Fallback: El último creado
             $stmt = $db->prepare("SELECT id FROM inventories WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
             $stmt->execute([$user['id']]);
             $inv = $stmt->fetch();
@@ -50,7 +40,6 @@ try {
     $message = '';
 
     switch ($action) {
-        // CASO 1: COPIAR DATOS (IMPORTAR)
         case 'copy_data':
             $source = $input['source'] ?? '';
             $target = $input['target'] ?? '';
@@ -59,7 +48,6 @@ try {
                 throw new Exception("Faltan columnas origen o destino.");
             }
 
-            // Ahora pasamos el inventoryId CORRECTO
             if ($model->copyColumnData($inventoryId, $source, $target)) {
                 $success = true;
                 $message = "Datos importados correctamente.";
@@ -68,7 +56,6 @@ try {
             }
             break;
 
-        // CASO 2: AÑADIR COLUMNA
         case 'add_column':
             $colName = $input['columnName'] ?? '';
             if (empty($colName)) throw new Exception("Nombre vacío.");
@@ -77,7 +64,6 @@ try {
             $message = "Columna añadida.";
             break;
 
-        // CASO 3: ELIMINAR COLUMNA
         case 'drop_column':
             $colName = $input['columnName'] ?? '';
             if (empty($colName)) throw new Exception("Nombre vacío.");
@@ -86,7 +72,6 @@ try {
             $message = "Columna eliminada.";
             break;
 
-        // CASO 4: RENOMBRAR COLUMNA
         case 'rename_column':
             $old = $input['oldName'] ?? '';
             $new = $input['newName'] ?? '';
@@ -104,7 +89,6 @@ try {
     echo json_encode(['success' => $success, 'message' => $message]);
 
 } catch (Exception $e) {
-    // --- MANEJO DE ERRORES ---
     $errorCode = 500;
     $userMessage = 'Ocurrió un error inesperado.';
 

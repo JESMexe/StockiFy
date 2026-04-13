@@ -87,7 +87,6 @@ foreach ($listaFechas as $fechaSQL) {
     $gastosGeneral[] = $gastosVal;
     $gananciaGeneral[] = $gananciaVal;
 
-    // ventas por inventario
     $stockVendidoT = execConsult(
         "SELECT COALESCE(SUM(si.quantity), 0) AS total
              FROM sale_items si

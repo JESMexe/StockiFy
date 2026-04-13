@@ -11,7 +11,6 @@ use App\Services\MailService;
 header('Content-Type: application/json');
 
 $user = getCurrentUser();
-// IMPORTANTE: Leer el JSON del fetch
 $input = json_decode(file_get_contents('php://input'), true);
 $newEmail = $input['new_email'] ?? '';
 
@@ -27,7 +26,6 @@ if ($userModel->setOtp($user['id'], $otp, 'email_change')) {
     $_SESSION['temp_new_email'] = $newEmail;
     $mailService = new MailService();
 
-    // Intentar enviar y capturar si falla
     $userName = $user['full_name'] ?? $user['username'] ?? 'Usuario';
     if ($mailService->sendSecurityOTP($newEmail, $otp, 'email_change', $userName)) {
         echo json_encode(['success' => true]);

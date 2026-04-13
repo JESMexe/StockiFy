@@ -1,7 +1,3 @@
-/**
- * public/assets/js/purchases/purchases.js
- * Módulo de Compras (Final Estilizado)
- */
 import { pop_ups } from '../notifications/pop-up.js';
 import * as api from "../api.js";
 
@@ -63,7 +59,6 @@ export class PurchaseModule {
         console.log("PurchaseModule inicializado");
     }
 
-    // --- CARGA DE HISTORIAL ---
     async loadHistory(order = 'DESC') {
         const tableBody = document.getElementById('purchases-list-body');
         tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Cargando...</td></tr>';
@@ -91,7 +86,6 @@ export class PurchaseModule {
     }
 
     renderBaseStructure() {
-        // Mismo HTML que antes, sin cambios estructurales
         return `
             <div class="purchases-layout">
                 <style>.action-btn { width: 32px; height: 32px; border: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; font-size: 1.1rem; } .action-btn:hover { transform: translateY(-2px); } .btn-icon-group { display: flex; gap: 8px; justify-content: center; } .product-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; } .product-card:hover { border-color: var(--accent-color); transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); } .product-card.disabled { opacity: 0.6; pointer-events: none; background: #f9f9f9; } .prod-info { flex: 1; overflow: hidden; } .prod-name { font-weight: 600; color: #333; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .prod-meta { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; margin-top: 2px; } .prod-pricing { text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; } .main-price { font-weight: 700; color: var(--sale-green); font-size: 1.1rem; } .badge-usd { font-size: 0.7rem; background-color: var(--accent-color-quat-opacity); color: var(--color-black); padding: 2px 4px; border-radius: 4px; font-weight: 500; margin-top: 2px; white-space: nowrap; } .stock-tag { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.7rem; color: #555; } .stock-tag.warning { background: #fff3cd; color: #856404; } .cart-card { background: #fff; border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 12px; position: relative; } .cart-row-top { display: flex; justify-content: space-between; align-items: flex-start; } .cart-name { font-weight: 700; font-size: 1rem; color: #000; line-height: 1.2; flex: 1; padding-right: 10px; } .cart-unit-price { font-size: 0.85rem; color: #666; white-space: nowrap; text-align: right; } .cart-row-bottom { display: flex; justify-content: space-between; align-items: center; } .cart-total { font-weight: 800; font-size: 1.3rem; color: var(--accent-color); letter-spacing: -0.5px; } .cart-controls-wrapper { display: flex; align-items: center; gap: 4px; background: #f9f9f9; padding: 2px; border-radius: 6px; border: 1px solid #ddd; } .ctrl-btn { width: 28px; height: 28px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #444; font-size: 1rem; transition: background 0.2s; } .ctrl-btn:hover { background: #eee; } .qty-val { min-width: 24px; text-align: center; font-weight: 700; font-size: 1rem; line-height: 28px; cursor: default; } .del-btn { width: 28px; height: 28px; border: 1px solid #ffcccc; background: #fff5f5; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #d65b5b; transition: background 0.2s; margin-left: 4px; } .del-btn:hover { background: #ffe6e6; border-color: #ffb3b3; }</style>
@@ -141,7 +135,6 @@ export class PurchaseModule {
         `;
     }
 
-    // --- NUEVO MÉTODO DE CONTROL DE VISTAS (IDÉNTICO A VENTAS) ---
     setMobileView(view) {
         const stepProv = document.getElementById('step-purch-provider');
         const stepProd = document.getElementById('step-purch-products');
@@ -152,14 +145,12 @@ export class PurchaseModule {
 
         if (window.innerWidth > 768 || !bar) return;
 
-        // Ocultar todo
         if (stepProv) stepProv.style.display = 'none';
         if (stepProd) stepProd.style.display = 'none';
         if (stepCheck) stepCheck.style.display = 'none';
         bar.style.display = 'block';
 
         if (view === 'provider') {
-            // PANTALLA 1: PROVEEDOR
             if (stepProv) stepProv.style.display = 'block';
             if (btnBack) btnBack.style.display = 'none'; // Sin botón atrás
 
@@ -170,7 +161,6 @@ export class PurchaseModule {
             }
 
         } else if (view === 'products') {
-            // PANTALLA 2: PRODUCTOS
             if (stepProd) stepProd.style.display = 'block';
             if (btnBack) {
                 btnBack.style.display = 'flex'; // Flecha visible
@@ -184,7 +174,6 @@ export class PurchaseModule {
             }
 
         } else if (view === 'checkout') {
-            // PANTALLA 3: RESUMEN
             if (stepCheck) stepCheck.style.display = 'block';
             if (btnBack) {
                 btnBack.style.display = 'flex';
@@ -200,7 +189,6 @@ export class PurchaseModule {
     }
 
     attachEvents() {
-        // Eventos generales
         document.getElementById('purchases-create-btn')?.addEventListener('click', () => this.openCreateModal());
         document.getElementById('close-purchase-modal')?.addEventListener('click', () => this.closeModal('create-purchase-modal'));
         document.getElementById('purch-search-provider')?.addEventListener('input', (e) => this.filterProviders(e.target.value));
@@ -235,14 +223,10 @@ export class PurchaseModule {
             this.loadHistory(this.currentSortOrder);
         });
 
-        // Eventos móviles (Flecha del header)
-        // El botón inferior se controla en setMobileView
         const btnBack = document.getElementById('mobile-back-purch-step');
         if (btnBack) {
             btnBack.addEventListener('click', (e) => {
                 e.preventDefault();
-                // La lógica exacta depende del paso, pero setMobileView reasigna el onclick correcto.
-                // Este listener es por seguridad.
             });
         }
     }
@@ -255,26 +239,21 @@ export class PurchaseModule {
             const p = res.purchase;
             const items = res.items || [];
 
-            // Gasto rápido
             if (p.category) {
                 await this.openQuickModal(p);
                 return;
             }
 
-            // Compra inventario: abrimos modal normal y precargamos
             await this.openCreateModal();
             this.editingId = p.id;
 
-            // provider
             if (p.provider_id) {
                 const prov = this.availableProviders.find(x => x.id == p.provider_id);
                 if (prov) this.selectProvider(prov);
             }
 
-            // items → carrito
             this.currentPurchase.items = [];
             items.forEach(it => {
-                // buscá producto en availableProducts por id
                 const prod = this.availableProducts.find(x => x.id == (it.product_id || it.id));
                 const name = prod?.name || it.product_name || it.nombre_producto || 'Producto';
                 const price = parseFloat(it.unit_price || it.precio_unitario || prod?.price || 0);
@@ -318,7 +297,6 @@ export class PurchaseModule {
         this.updateCartUI();
         this.updateProviderUI();
 
-        // [IMPORTANTE] INICIAR EN VISTA PROVEEDOR
         this.setMobileView('provider');
     }
 
@@ -345,8 +323,6 @@ export class PurchaseModule {
 
         c.querySelectorAll('.prov-trigger').forEach(b => b.addEventListener('click', () => {
             this.selectProvider(this.availableProviders.find(x => x.id == b.dataset.id));
-            // [CORRECCIÓN] YA NO SALTAMOS AUTOMÁTICAMENTE
-            // if(window.innerWidth <= 768) this.setMobileView('products');
         }));
     }
 
@@ -439,7 +415,6 @@ export class PurchaseModule {
         btn.textContent = 'Confirmar Compra'; btn.disabled = false;
     }
 
-    // Funciones adicionales (Gasto rápido, detalles, etc. simplificadas para brevedad pero funcionales)
     fillProviderSelect(selectId, selectedId = null) { const sel = document.getElementById(selectId); if (!sel) return; sel.innerHTML = '<option value="">-- Desconocido / Ninguno --</option>'; if (this.availableProviders) { this.availableProviders.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.full_name; if (p.id == selectedId) opt.selected = true; sel.appendChild(opt); }); } }
     async openQuickModal(d) { if (!this.availableProviders.length) await this.fetchResources(); this.fillProviderSelect('quick-provider'); const m = document.getElementById('quick-expense-modal'), f = document.getElementById('quick-expense-form'), t = document.getElementById('quick-modal-title'), b = document.getElementById('submit-quick-btn'); f.reset(); document.getElementById('quick-date').valueAsDate = new Date; if (d) { this.editingId = d.id; t.innerHTML = '<i class="ph ph-pencil-simple"></i> Editar Gasto'; b.textContent = "Actualizar Gasto"; document.getElementById('quick-amount').value = d.total; document.getElementById('quick-provider').value = d.provider_id || ""; document.getElementById('quick-category').value = d.category || "General"; document.getElementById('quick-note').value = d.notes || ""; if (d.created_at) document.getElementById('quick-date').value = d.created_at.split(' ')[0] } else { this.editingId = null; t.innerHTML = '<i class="ph-bold ph-lightning"></i> Gasto Rápido'; b.textContent = "Registrar Gasto" } m.classList.remove('hidden'); m.style.display = 'flex'; document.getElementById('quick-amount').focus() }
     async submitQuickExpense(e) { e.preventDefault(); const b = document.getElementById('submit-quick-btn'); b.disabled = true; const ot = b.textContent; b.textContent = 'Procesando...'; const a = parseFloat(document.getElementById('quick-amount').value); if (isNaN(a) || a <= 0) { pop_ups.warning("Monto inválido"); b.disabled = false; b.textContent = ot; return } const p = { id: this.editingId, total: a, provider_id: document.getElementById('quick-provider').value || null, category: document.getElementById('quick-category').value || 'General', notes: document.getElementById('quick-note').value || null, created_at: document.getElementById('quick-date').value + ' ' + new Date().toLocaleTimeString(), items: [] }; const ep = this.editingId ? '/api/purchases/update.php' : '/api/purchases/create.php'; try { const r = await this.sendRequest(ep, p); if (r.success) { this.closeModal('quick-expense-modal'); this.loadHistory(this.currentSortOrder); pop_ups.info(this.editingId ? 'Actualizado' : 'Registrado') } else pop_ups.error(r.message) } catch (e) { pop_ups.error("Error de conexión") } b.disabled = false; b.textContent = ot }

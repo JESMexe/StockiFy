@@ -1,4 +1,3 @@
-// public/assets/js/import.js
 
 import * as api from './api.js';
 import { pop_ups } from "./notifications/pop-up.js";
@@ -9,7 +8,6 @@ let uploadedFile = null;
 let currentStockifyColumns = [];
 let detectedDelimiter = ','; // Variable para guardar el delimitador detectado
 
-// Exponer función para recibir columnas del sistema
 window.setStockifyColumns = function(columns) {
     currentStockifyColumns = columns || [];
 };
@@ -18,7 +16,6 @@ export function openImportModal() {
     modalElement = document.getElementById('import-modal');
     if (!modalElement) return;
 
-    // Reiniciar estado
     modalElement.classList.remove('hidden');
     importStatus = document.getElementById('import-status');
     fileInput = document.getElementById('csv-file-input');
@@ -34,7 +31,6 @@ export function openImportModal() {
     detectedDelimiter = ',';
     if (fileInput) fileInput.value = '';
 
-    // Configurar Listeners (si no existen ya)
     setupEventListeners();
 }
 
@@ -55,7 +51,6 @@ function setupEventListeners() {
     closeModalBtn = document.getElementById('close-modal-btn');
     importCancelBtn = document.getElementById('import-cancel-btn');
 
-    // Remover listeners viejos para evitar duplicados (clonando nodos)
     if(closeModalBtn) {
         const newBtn = closeModalBtn.cloneNode(true);
         closeModalBtn.parentNode.replaceChild(newBtn, closeModalBtn);
@@ -77,7 +72,6 @@ function setupEventListeners() {
         validatePrepareBtn.addEventListener('click', handlePrepareImport);
     }
 
-    // Drag & Drop
     if(dropZone) {
         const newZone = dropZone.cloneNode(true);
         dropZone.parentNode.replaceChild(newZone, dropZone);
@@ -104,7 +98,6 @@ function setupEventListeners() {
 }
 
 async function handleFileSelect(file) {
-    // Validar tipo (permitir .csv y textos planos)
     if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
         pop_ups.error("Por favor selecciona un archivo CSV válido.", "Archivo Incorrecto");
         return;

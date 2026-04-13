@@ -1,7 +1,3 @@
-/**
- * public/assets/js/payments/payments.js
- * Version 2.0: Tipos, Monedas y Recargos.
- */
 import { getAllPaymentMethods, createPaymentMethod, deletePaymentMethod, updatePaymentMethod } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
 
@@ -115,7 +111,6 @@ export class PaymentsModule {
     }
 
     attachEvents() {
-        // Create
         document.getElementById('pay-create-btn')?.addEventListener('click', () => {
             document.getElementById('create-pay-form').reset();
             const m = document.getElementById('create-payment-modal'); m.classList.remove('hidden'); m.style.display='flex';
@@ -125,7 +120,6 @@ export class PaymentsModule {
         });
         document.getElementById('create-pay-form')?.addEventListener('submit', (e) => { e.preventDefault(); this.submitCreate(); });
 
-        // Edit
         document.getElementById('close-edit-pay-modal')?.addEventListener('click', () => {
             const m = document.getElementById('edit-payment-modal'); m.classList.add('hidden'); m.style.display='none';
         });
@@ -145,7 +139,6 @@ export class PaymentsModule {
                 if (parseFloat(m.surcharge) > 0) surchargeText = `<span class="badge surcharge">+${parseFloat(m.surcharge)}%</span>`;
                 else if (parseFloat(m.surcharge) < 0) surchargeText = `<span class="badge" style="background: var(--accent-green); color: white; border-color: var(--accent-green);">${parseFloat(m.surcharge)}%</span>`;
 
-                // Traducción visual de tipos
                 let typeIcon = '<i class="ph ph-question"></i>';
                 if(m.type === 'Cash') typeIcon = '<i class="ph ph-money"></i>';
                 if(m.type === 'Card') typeIcon = '<i class="ph ph-credit-card"></i>';
@@ -169,7 +162,6 @@ export class PaymentsModule {
                 </div>`;
             }).join('');
 
-            // Bind events (usando find para pasar objeto completo al editar)
             container.querySelectorAll('.edit-trigger').forEach(b => b.addEventListener('click', () => {
                 const m = res.methods.find(i => i.id == b.dataset.id);
                 this.openEdit(m);

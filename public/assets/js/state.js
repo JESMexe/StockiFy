@@ -1,4 +1,3 @@
-// Contenedores de las diferentes "vistas" de la aplicación
 export const views = {
     loading: document.getElementById('loading-view'),
     login: document.getElementById('login-view'),
@@ -8,7 +7,6 @@ export const views = {
     dbData: document.getElementById('db-data-view'),
 };
 
-// Elementos interactivos de la interfaz de usuario
 export const elements = {
     dbList: document.getElementById('db-list'),
     goToLoginBtn: document.getElementById('go-to-login-btn'),

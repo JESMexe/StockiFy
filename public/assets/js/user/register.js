@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 messageDiv.style.paddingTop = '2px';
                 messageDiv.style.color = 'var(--accent-green)';
                 messageDiv.textContent = '¡Registro exitoso! Redirigiendo...';
-                setTimeout(() => { window.location.href = '/login.php'; }, 2000);
+                setTimeout(() => { window.location.href = '/login'; }, 2000);
             } else {
                 messageDiv.style.paddingTop = '2px';
                 messageDiv.style.color = 'var(--accent-red)';

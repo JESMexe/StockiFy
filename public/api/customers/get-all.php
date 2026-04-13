@@ -3,14 +3,12 @@ header('Content-Type: application/json');
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-// Reporte de errores OFF para producción (evita romper JSON)
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 use App\Models\CustomerModel;
 
 try {
-    // Definir raíz del proyecto (asumiendo public/api/customers/get-all.php)
     $projectRoot = dirname(__DIR__, 3);
 
     require_once $projectRoot . '/vendor/autoload.php';

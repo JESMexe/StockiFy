@@ -1,5 +1,4 @@
 <?php
-// public/api/notifications/create.php
 
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';

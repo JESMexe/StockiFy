@@ -8,7 +8,6 @@ use App\core\Database;
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-//ESTAS 4 ESTADISTICAS SON INDEPENDIENTES DE LA TABLA SELECCIONADA YA QUE NO INVOLUCRAN TABLAS
 
 $response = [];
 try {

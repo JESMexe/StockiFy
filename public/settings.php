@@ -23,12 +23,12 @@ require_once __DIR__ . '/../src/helpers/auth_helper.php';
 $currentUser = getCurrentUser();
 
 if (!$currentUser) {
-    header('Location: index.php');
+    header('Location: index');
     exit;
 }
 
 if (!isset($currentUser['subscription_active']) || $currentUser['subscription_active'] == 0) {
-    header('Location: index.php#section-pricing');
+    header('Location: index#section-pricing');
     exit;
 }
 ?>
@@ -37,11 +37,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     <div id="grey-background" class="hidden"></div>
 
     <header>
-        <a href="dashboard.php" id="header-logo">
+        <a href="dashboard" id="header-logo">
             <img src="assets/img/LogoE.png" alt="Stocky Logo">
         </a>
         <nav id="header-nav">
-            <a href="dashboard.php" class="btn btn-secondary"><i class="ph ph-arrow-left"></i> Volver al Dashboard</a>
+            <a href="dashboard" class="btn btn-secondary"><i class="ph ph-arrow-left"></i> Volver al Dashboard</a>
         </nav>
     </header>
 

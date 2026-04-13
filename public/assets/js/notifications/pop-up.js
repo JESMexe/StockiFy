@@ -27,7 +27,7 @@ function _showToast(type, title, message, duration = 5000) {
         <div class="toast-timer" style="animation-duration: ${duration}ms"></div>
     `;
 
-    fetch('/api/notifications/create.php', {
+    fetch('/api/notifications/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -46,10 +46,8 @@ function _showToast(type, title, message, duration = 5000) {
 
     container.appendChild(toast);
 
-    // Animación de entrada
     setTimeout(() => toast.classList.add('show'), 100);
 
-    // Lógica de cierre
     const closeBtn = toast.querySelector('.toast-close-btn');
     const timer = setTimeout(() => _close(toast), duration);
 

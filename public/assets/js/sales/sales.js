@@ -1,4 +1,3 @@
-/* public/assets/js/sales/sales.js */
 import {
     getExchangeRate,
     getSaleResources,
@@ -10,7 +9,6 @@ import {
 } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
 
-/* --- HELPERS --- */
 const fmtMoney = (amount, currency = 'ARS') => {
     if (amount === undefined || amount === null || isNaN(amount)) return '$ 0,00';
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: currency, minimumFractionDigits: 2 }).format(amount);
@@ -32,7 +30,6 @@ export class SalesModule {
         this.resources = { products: [], customers: [], paymentMethods: [], employees: [], config: null };
         this.currentSortOrder = 'DESC';
 
-        // ESTADO DE LA UI
         this.activePaymentTab = 'ARS';
         this.rates = { USD: 1, USDT: 1 };
         this.showingCartInUSD = false;
@@ -49,7 +46,6 @@ export class SalesModule {
         if (container) {
             container.innerHTML = this.renderBaseStructure();
 
-            // [FIX MOVIL] Mover modales al body para que se vean
             const modalCreate = document.getElementById('create-sale-modal');
             const modalDetail = document.getElementById('detail-sale-modal');
 
@@ -57,7 +53,6 @@ export class SalesModule {
             if (modalDetail) document.body.appendChild(modalDetail);
 
         } else {
-            // Fallback si no existe la vista de tabla
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = this.renderBaseStructure();
             tempDiv.querySelectorAll('.modal-overlay').forEach(m => document.body.appendChild(m));
@@ -244,7 +239,6 @@ export class SalesModule {
         `;
     }
 
-    // [IMPORTANTE] Este método ahora es parte de la CLASE
     setMobileView(view) {
         const btnCheckout = document.getElementById('btn-go-to-checkout');
         const btnBackHeader = document.getElementById('mobile-back-to-products');
@@ -252,22 +246,17 @@ export class SalesModule {
         const stepCheck = document.getElementById('step-checkout');
         const bar = document.getElementById('mobile-checkout-bar');
 
-        // Solo actuar si estamos en modo móvil (existe la barra)
         if (!bar || window.innerWidth > 768) return;
 
         if (view === 'checkout') {
-            // --- MODO CHECKOUT ---
             if(stepProd) stepProd.style.display = 'none';
             if(stepCheck) stepCheck.style.display = 'contents';
 
-            // Mostrar flecha volver arriba
             if(btnBackHeader) btnBackHeader.style.display = 'flex';
 
-            // Configurar botón de abajo como "Seguir Agregando"
             if(btnCheckout) {
                 btnCheckout.innerHTML = '<i class="ph-bold ph-plus"></i> Seguir Agregando';
                 btnCheckout.className = 'btn btn-secondary';
-                // Al hacer clic, volver a productos
                 btnCheckout.onclick = (e) => {
                     e.preventDefault(); e.stopPropagation();
                     this.setMobileView('products');
@@ -275,18 +264,14 @@ export class SalesModule {
             }
 
         } else {
-            // --- MODO PRODUCTOS (DEFAULT) ---
             if(stepProd) stepProd.style.display = 'flex';
             if(stepCheck) stepCheck.style.display = 'none';
 
-            // Ocultar flecha volver arriba
             if(btnBackHeader) btnBackHeader.style.display = 'none';
 
-            // Configurar botón de abajo como "Ir a Pagar"
             if(btnCheckout) {
                 btnCheckout.innerHTML = 'Ir a Pagar <i class="ph-bold ph-arrow-right"></i>';
                 btnCheckout.className = 'btn btn-primary';
-                // Al hacer clic, ir a checkout
                 btnCheckout.onclick = (e) => {
                     e.preventDefault(); e.stopPropagation();
                     this.setMobileView('checkout');
@@ -312,7 +297,7 @@ export class SalesModule {
         document.getElementById('sales-renumber-btn')?.addEventListener('click', async () => {
             if(await pop_ups.confirm("¿Renumerar Historial?", "Se asignarán nuevos IDs...")) {
                 try {
-                    const res = await fetch('/api/sales/reset-ids.php');
+                    const res = await fetch('/api/sales/reset-ids');
                     const data = await res.json();
                     if(data.success) { pop_ups.info("Historial reorganizado."); await this.loadHistory(this.currentSortOrder); }
                     else { pop_ups.error("Error: " + (data.message || "No se pudo renumerar")); }
@@ -347,7 +332,6 @@ export class SalesModule {
         document.getElementById('sale-commission-pct')?.addEventListener('input', () => this.calculateCommission());
         document.getElementById('confirm-sale-btn')?.addEventListener('click', () => this.submitSale());
 
-        // CONFIGURAR EVENTO DE LA FLECHA DE ARRIBA (Volver)
         const btnBackHeader = document.getElementById('mobile-back-to-products');
         if(btnBackHeader) {
             btnBackHeader.addEventListener('click', (e) => {
@@ -376,7 +360,6 @@ export class SalesModule {
 
         await this.fetchResources();
 
-        // [IMPORTANTE] Resetear la vista móvil al abrir
         this.setMobileView('products');
 
         const map = this.resources.config;
@@ -559,7 +542,6 @@ export class SalesModule {
         if (diff >= -0.01) { rowDiff.style.color = 'var(--accent-color)'; rowDiff.querySelector('span:first-child').textContent = "Vuelto a dar:"; diffEl.textContent = fmtMoney(Math.abs(diff)); }
         else { rowDiff.style.color = 'var(--accent-red)'; rowDiff.querySelector('span:first-child').textContent = "Falta por completar:"; diffEl.textContent = fmtMoney(Math.abs(diff)); }
 
-        // ACTUALIZAR BARRA MÓVIL
         const mobTotal = document.getElementById('mob-bar-total');
         const mobCount = document.getElementById('mob-bar-count');
         if(mobTotal && mobCount) {
@@ -641,9 +623,7 @@ export class SalesModule {
                 await this.loadHistory(this.currentSortOrder); 
                 pop_ups.success("Venta Exitosa"); 
                 
-                // Procesar Alertas
                 if (res.alerts && res.alerts.length > 0) {
-                    // Mostrar alertas visuales amarillas rápidas en la UI
                     res.alerts.forEach(a => {
                         if (a.type === 'low_stock') {
                             pop_ups.warning(`Stock mínimo alcanzado en ${a.product_name}. Actual: ${a.current_stock}. Min: ${a.min_stock}`, 'Bajo Stock');
@@ -652,11 +632,10 @@ export class SalesModule {
                         }
                     });
                     
-                    // Mostrar popup de espera
                     btn.textContent = 'Enviando Correos...'; 
                     pop_ups.info("Espere. Generando reportes y enviándolos al mail...");
                     try {
-                        const emailRes = await fetch('/api/sales/send-queued-emails.php', {
+                        const emailRes = await fetch('/api/sales/send-queued-emails', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ alerts: res.alerts })
@@ -765,7 +744,7 @@ export class SalesModule {
         if(!await pop_ups.confirm("¿Editar Venta?", "Esto ELIMINARÁ la venta actual, devolverá el stock y cargará los productos en el carrito.")) return;
         try {
             const res = await getSaleDetails(id); if(!res.success) throw new Error("Error leyendo venta"); const oldSale = res.sale;
-            await fetch('/api/sales/delete.php', {method:'POST', body:JSON.stringify({id})});
+            await fetch('/api/sales/delete', {method:'POST', body:JSON.stringify({id})});
             await this.openCreateModal();
             document.getElementById('sale-customer').value = oldSale.customer_id || '';
             document.getElementById('sale-seller').value = oldSale.seller_id || '';
@@ -778,7 +757,7 @@ export class SalesModule {
 
     async deleteSale(id) {
         if(!await pop_ups.confirm("Eliminar Venta", "Se devolverá el stock y anulará el registro. ¿Seguro?")) return;
-        try { await fetch('/api/sales/delete.php', {method:'POST', body:JSON.stringify({id})}); this.loadHistory(); pop_ups.info("Venta eliminada"); } catch(e){ pop_ups.error("Error al eliminar"); }
+        try { await fetch('/api/sales/delete', {method:'POST', body:JSON.stringify({id})}); this.loadHistory(); pop_ups.info("Venta eliminada"); } catch(e){ pop_ups.error("Error al eliminar"); }
     }
 }
 

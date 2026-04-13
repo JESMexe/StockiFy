@@ -85,7 +85,6 @@ try {
             try {
                 $db->exec("ALTER TABLE $tableName ADD COLUMN $safeCol VARCHAR(10) DEFAULT 'ARS'");
             } catch (Throwable $e) {
-                // ignorar si ya existe u otro error no crítico
             }
         }
 

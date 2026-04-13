@@ -114,12 +114,10 @@ export class AnalyticsModule {
             this.renderChart(data.chart_data);
             this.renderTopProducts(data.top_products);
 
-            // NUEVO: Renderizar gráfico de dona
             if (data.payment_distribution) {
                 this.renderPaymentChart(data.payment_distribution);
             }
 
-            // Dentro de loadData()
             if (data.currency_distribution) {
                 this.renderCurrencyChart(data.currency_distribution);
             }
@@ -183,17 +181,14 @@ export class AnalyticsModule {
         const el = document.getElementById('peak-hours-chart');
         el.innerHTML = '';
 
-        // Preparamos array de 24 horas (0 a 23) vacíos
         const hours = Array.from({length: 24}, (_, i) => i);
         const counts = new Array(24).fill(0);
 
-        // Llenamos con datos reales
         data.forEach(d => {
             const h = parseInt(d.hour);
             if (h >= 0 && h < 24) counts[h] = parseInt(d.count);
         });
 
-        // Colores dinámicos según intensidad
         const maxVal = Math.max(...counts);
         const colors = counts.map(val => val === maxVal && val > 0 ? 'var(--accent-color)' : '#88C0D0'); // Rojo para el pico máximo, Azul resto
 
@@ -237,7 +232,6 @@ export class AnalyticsModule {
             series: series,
             labels: labels,
             chart: { type: 'donut', height: 280, fontFamily: 'inherit' },
-            // Colores sugeridos para monedas: Verde (Dólar), Azul (Peso), Amarillo (Crypto/USDT)
             colors: ['#88C0D0', '#A3BE8C', '#EBCB8B', '#BF616A', '#B48EAD', '#88C0D0', '#A3BE8C', '#EBCB8B', '#BF616A'],
             dataLabels: { enabled: false },
             legend: { position: 'bottom' },
@@ -251,7 +245,6 @@ export class AnalyticsModule {
                                 show: true,
                                 label: 'Total',
                                 formatter: function (w) {
-                                    // Formato simple para total mixto
                                     const sum = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
                                     return "$" + sum.toLocaleString('es-AR', {maximumFractionDigits: 0});
                                 }
@@ -373,7 +366,6 @@ export class AnalyticsModule {
         const colorGreen = styles.getPropertyValue('--accent-green').trim() || '#28a745';
         const colorRed = styles.getPropertyValue('--accent-red').trim() || '#dc3545';
 
-        // Armamos labels dd/MM para que se vean lindo sin datetime
         const labels = dates.map(ds => {
             const [y, m, d] = ds.split('-');
             return `${d}/${m}`;

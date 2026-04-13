@@ -1,5 +1,4 @@
 <?php
-// public/api/sales/send-queued-emails.php
 header('Content-Type: application/json');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -25,7 +24,6 @@ try {
     $mailSvc = new \App\Services\MailService();
     $sentCount = 0;
     
-    // Obtenemos el mail del usuario de la DB
     require_once $root . '/src/core/Database.php';
     $db = \App\core\Database::getInstance();
     $stmtUser = $db->prepare("SELECT email, full_name FROM users WHERE id = :id");

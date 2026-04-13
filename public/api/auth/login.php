@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
-// public/api/auth/login.php
 
 use App\Controllers\AuthController;
 
@@ -14,5 +13,4 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $data = json_decode(file_get_contents('php://input'), true);
 
 $authController = new AuthController();
-// Paso el array decodificado, no $_POST
 $authController->login($data);

@@ -41,14 +41,6 @@ try {
 
     $userModel = new UserModel();
 
-    /**
-     * RATE LIMIT BÁSICO:
-     * evita que el usuario pida OTP continuamente.
-     *
-     * Este método debería devolver:
-     * true  => puede pedir uno nuevo
-     * false => debe esperar
-     */
     $canRequestOtp = $userModel->canRequestPasswordOtp($userId, 60); // 60 segundos entre envíos
 
     if (!$canRequestOtp) {
@@ -58,9 +50,6 @@ try {
         ]);
     }
 
-    /**
-     * OTP seguro de 6 dígitos
-     */
     try {
         $otp = (string) random_int(100000, 999999);
     } catch (\Exception $e) {
@@ -71,21 +60,8 @@ try {
         ]);
     }
 
-    /**
-     * Expiración: 10 minutos
-     */
     $expiresAt = (new DateTimeImmutable('+10 minutes'))->format('Y-m-d H:i:s');
 
-    /**
-     * Guardar TODO el estado del OTP.
-     *
-     * Este método debería:
-     * - guardar otp_hash
-     * - guardar otp_expires_at
-     * - resetear otp_attempts a 0
-     * - guardar otp_last_sent_at = NOW()
-     * - opcionalmente guardar otp_action_type
-     */
     $saved = $userModel->setOtp(
         userId: $userId,
         otp: $otp,
@@ -103,12 +79,6 @@ try {
 
     $mailService = new MailService();
 
-    /**
-     * Nueva firma más prolija:
-     * sendSecurityOTP(string $toEmail, string $otpCode, string $actionType, string $userName): bool
-     *
-     * Esto evita que MailService dependa de getCurrentUser()
-     */
     $sent = $mailService->sendSecurityOTP(
         $userEmail,
         $otp,
@@ -131,7 +101,6 @@ try {
     ]);
 
 } catch (\Exception $e) {
-    // Exception from random_int caught below if any, otherwise general exception
     error_log('init-password-change: error inesperado. ' . $e->getMessage());
     jsonResponse(500, [
         'success' => false,

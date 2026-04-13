@@ -17,8 +17,6 @@
             min-height: 100vh;
         }
 
-        /* Opcionalmente añadirle un leve fondo semi-transparente al contenedor
-           para que las letras sigan legibles pase lo que pase con el SVG */
         #selection-view {
             background: rgba(255, 255, 255, 0.9) !important;
             backdrop-filter: blur(8px);
@@ -47,7 +45,7 @@
                 <li>Cargando...</li>
             </div>
             <hr>
-            <a href="create-db.php" class="btn btn-secondary">O crear una nueva</a>
+            <a href="create-db" class="btn btn-secondary">O crear una nueva</a>
         </div>
     </main>
 

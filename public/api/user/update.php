@@ -1,5 +1,4 @@
 <?php
-// public/api/user/update.php
 
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
@@ -9,7 +8,6 @@ use App\Models\UserModel;
 
 header('Content-Type: application/json');
 
-// 1. Verificación de Seguridad
 if (session_status() === PHP_SESSION_NONE) session_start();
 $user = getCurrentUser();
 
@@ -19,7 +17,6 @@ if (!$user || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// 2. Obtención de Datos
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!$input) {
@@ -31,17 +28,12 @@ if (!$input) {
 try {
     $userModel = new UserModel();
 
-    // 3. Ejecución
-    // Nota: El frontend mandará 'full_name', no 'name' y 'surname' separados,
-    // para respetar la estructura de tu DB.
     $success = $userModel->updateProfile($user['id'], $input);
 
     if ($success) {
-        // Si cambió el nombre completo, actualizamos la sesión
         if (isset($input['full_name'])) {
             $_SESSION['user_name'] = $input['full_name'];
         }
-        // Si cambió el username, actualizamos la sesión
         if (isset($input['username'])) {
             $_SESSION['username'] = $input['username'];
         }

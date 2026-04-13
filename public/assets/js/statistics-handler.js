@@ -280,7 +280,6 @@ function setupHeader(){
     ui_helper.renderHeader('stats');
 }
 
-//INIT
 async function init(){
 
     const isLoggedIn = await api.checkSessionStatus();
@@ -304,7 +303,7 @@ async function init(){
         }
     }
     else{
-        window.location.href = '/logout.php';
+        window.location.href = '/logout';
     }
 }
 

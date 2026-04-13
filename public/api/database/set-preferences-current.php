@@ -1,8 +1,6 @@
 <?php
-// public/api/database/set-preferences-current.php
 header('Content-Type: application/json');
 
-// Desactivar errores HTML para no romper JSON
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -13,10 +11,8 @@ require_once __DIR__ . '/../../../src/core/Database.php';
 use App\core\Database;
 
 try {
-    // 1. Auth y Datos
     if (!function_exists('getCurrentUser')) throw new Exception('Auth helper error');
 
-    // Asegurarnos de que la sesión esté iniciada para leer active_inventory_id
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -28,20 +24,16 @@ try {
         exit;
     }
 
-    // --- CORRECCIÓN CLAVE AQUÍ ---
-    // Obtenemos el ID del inventario activo desde la sesión
     $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
 
     if (!$activeInventoryId) {
         http_response_code(400);
         throw new Exception("No hay un inventario seleccionado en la sesión actual.");
     }
-    // -----------------------------
 
     $input = json_decode(file_get_contents('php://input'), true);
     $db = Database::getInstance();
 
-    // 2. Obtener EL Inventario Activo Específico (No el último creado)
     $stmt = $db->prepare("SELECT id, preferences, min_stock FROM inventories WHERE id = ? AND user_id = ?");
     $stmt->execute([$activeInventoryId, $user['id']]);
     $inv = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -54,18 +46,15 @@ try {
     $invId = $inv['id'];
     $currentPrefs = json_decode($inv['preferences'] ?? '{}', true) ?? [];
 
-    // 3. Actualizar MAPEO (Si viene)
     if (isset($input['mapping'])) {
         $currentPrefs['mapping'] = $input['mapping'];
     }
 
-    // 4. Actualizar FEATURES (Si viene)
     if (isset($input['features'])) {
         $currentPrefs['features'] = $input['features'];
 
         $minStockActive = $input['features']['min_stock'];
 
-        // Compatibilidad con flags viejos en tabla inventories
         $stmtUpdateFlag = $db->prepare("UPDATE inventories SET min_stock = ?, hard_gain = ? WHERE id = ?");
         $stmtUpdateFlag->execute([
             $minStockActive ? 1 : 0,
@@ -73,41 +62,33 @@ try {
             $invId
         ]);
 
-        // --- GESTIÓN INTELIGENTE DE COLUMNAS FÍSICAS ---
-        // Buscamos la tabla real del usuario
         $stmtTable = $db->prepare("SELECT table_name, columns_json FROM user_tables WHERE inventory_id = ?");
         $stmtTable->execute([$invId]);
         $tableData = $stmtTable->fetch(PDO::FETCH_ASSOC);
 
         if ($tableData) {
             $tableName = $tableData['table_name'];
-            // Sanitizamos nombre de tabla por seguridad (aunque viene de DB)
             $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
 
             $colsMeta = json_decode($tableData['columns_json'], true) ?? [];
             $metaUpdated = false;
 
             if ($minStockActive) {
-                // A. Verificar si existe FÍSICAMENTE
                 $checkPhysical = $db->query("SHOW COLUMNS FROM $safeTable LIKE 'min_stock'");
                 $physicalExists = $checkPhysical->rowCount() > 0;
 
-                // B. Si NO existe físicamente, la creamos
                 if (!$physicalExists) {
                     $defVal = (int)($input['features']['min_stock_val'] ?? 0);
                     $db->exec("ALTER TABLE $safeTable ADD COLUMN `min_stock` INT DEFAULT $defVal");
                 }
 
-                // C. Si NO está en los metadatos (JSON), la agregamos
                 if (!in_array('min_stock', $colsMeta)) {
                     $colsMeta[] = 'min_stock';
                     $metaUpdated = true;
                 }
             } else {
-                // Si desactivan, por ahora NO borramos físicamente para no perder datos.
             }
 
-            // Guardar cambios en user_tables si hubo
             if ($metaUpdated) {
                 $stmtMeta = $db->prepare("UPDATE user_tables SET columns_json = ? WHERE inventory_id = ?");
                 $stmtMeta->execute([json_encode(array_values($colsMeta)), $invId]);
@@ -127,14 +108,12 @@ try {
         $currentPrefs['exchange_config'] = $input['exchange_config'];
     }
 
-    // 5. Guardar Preferencias JSON en inventories
     $stmtSave = $db->prepare("UPDATE inventories SET preferences = ? WHERE id = ?");
     $stmtSave->execute([json_encode($currentPrefs), $invId]);
 
     echo json_encode(['success' => true]);
 
 } catch (Exception $e) {
-    // --- MANEJO DE ERRORES PERSONALIZADO ---
 
     if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && ($e->errorInfo[1] == 1050 || $e->errorInfo[1] == 1062))) {
         http_response_code(409);

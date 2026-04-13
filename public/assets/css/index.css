@@ -27,6 +27,7 @@ body {
 }
 
 .scroll-container {
+    display: block; /* Previene heredar display: flex y encogerse */
     height: 100dvh;
     width: 100%;
     overflow-y: scroll;
@@ -109,6 +110,7 @@ header {
     z-index: 1;
     /* Esto evita que el scroll "coma" parte del contenido por el header */
     scroll-margin-top: 0;
+    flex-shrink: 0; /* Previene el aplastamiento de las secciones en contextos flex */
 }
 
 /* --- Nav Lateral --- */
@@ -253,19 +255,7 @@ header {
     margin: 0;
 }
 
-/* Paginación */
-.swiper-pagination-bullet {
-    width: 12px;
-    height: 12px;
-    background: #1b1b1b;
-    opacity: 0.2;
-    border-radius: 0;
-}
-
-.swiper-pagination-bullet-active {
-    opacity: 1;
-    background: var(--accent-color);
-}
+/* Paginación - Se gestiona globalmente más abajo */
 
 /* Responsive para Móviles */
 @media (max-width: 768px) {
@@ -457,7 +447,8 @@ header {
 
     /* Ajuste específico del carrousel en teléfonos */
     #section-gallery .swiper-slide {
-        width: 85vw !important;
+        width: 90% !important;
+        max-width: 320px !important;
         min-width: 0 !important;
         /* CRÍTICO: anula el min-width: 1300px que estaba rompiendo todo en móvil */
         height: auto !important;
@@ -535,7 +526,7 @@ header {
 .swiper-pagination-bullet {
     width: 8px;
     height: 8px;
-    background: #cfcfcf;
+    background: rgba(0, 0, 0, 0.45); /* Color oscuro para que se vean las esferas apagadas */
     opacity: 1;
     transition: all .2s ease;
 }
@@ -547,7 +538,7 @@ header {
 
 .swiper {
     --swiper-pagination-color: var(--accent-color);
-    --swiper-pagination-bullet-inactive-color: #cfcfcf;
+    --swiper-pagination-bullet-inactive-color: rgba(0, 0, 0, 0.45);
 }
 
 /* =========================================================
@@ -918,19 +909,19 @@ header {
 /* =========================================================
    RESPONSIVE ZOOM (BURBUJAS) PARA PREVENIR RECORTES EN PANTALLAS DE PC/LAPTOP
 ========================================================= */
-@media (max-width: 1600px), (max-height: 960px) and (min-width: 769px) {
+@media (max-width: 1600px) and (min-width: 769px), (max-height: 960px) and (min-width: 769px) {
     .scale-wrapper {
         zoom: 0.85;
     }
 }
 
-@media (max-width: 1366px), (max-height: 850px) and (min-width: 769px) {
+@media (max-width: 1366px) and (min-width: 769px), (max-height: 850px) and (min-width: 769px) {
     .scale-wrapper {
         zoom: 0.8;
     }
 }
 
-@media (max-width: 1280px), (max-height: 750px) and (min-width: 769px) {
+@media (max-width: 1280px) and (min-width: 769px), (max-height: 750px) and (min-width: 769px) {
     .scale-wrapper {
         zoom: 0.75;
     }
@@ -946,11 +937,5 @@ header {
 @media (max-height: 600px) and (min-width: 769px) {
     .scale-wrapper {
         zoom: 0.55;
-    }
-}
-
-@media (max-width: 768px) {
-    .scale-wrapper {
-        zoom: 1 !important; /* Reset en móviles, donde ya se apilan correctamente */
     }
 }

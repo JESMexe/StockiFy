@@ -1,5 +1,4 @@
 <?php
-// public/api/database/select.php
 
 session_start();
 

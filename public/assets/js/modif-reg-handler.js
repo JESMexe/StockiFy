@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded',() =>{
 
-    //Esta es una variable DE PRUEBA para mostrar el comportamiento de la página con los registros recibidos
-    //a partir de las consultas del back-end.
 
     const registrosRecibidos = [{
         productName: "Remera XL",
@@ -26,7 +24,6 @@ document.addEventListener('DOMContentLoaded',() =>{
     contenedorRegistros.innerHTML = '';
 
     registrosRecibidos.forEach(reg => {
-        //Si la accion es 'Aumento', será color verde; si es 'Baja' será rojo.
         const action = (reg.stock > reg.prevStock) ? 'Aumento' : 'Baja';
         const multStock = (reg.stock > 1) ? 'es' : '';
         const lowStock = (reg.stock < reg.minStock);
@@ -56,7 +53,6 @@ document.addEventListener('DOMContentLoaded',() =>{
     contenedorRegistros.addEventListener('click', (event) =>{
         const clickedReg = event.target.closest('.item-registro');
 
-        //Verifico si lo clickeado fue un registro
 
         if (clickedReg) {
             const id = parseInt(clickedReg.dataset.id);

@@ -1,6 +1,4 @@
 ﻿/**
- * public/assets/js/employees/employees.js
- * Módulo de Gestión de Empleados (CRUD Completo)
  */
 import { getEmployeeList } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
@@ -85,7 +83,6 @@ export class EmployeeModule {
         const modal = document.getElementById('create-employee-modal');
         const form = document.getElementById('create-emp-form');
 
-        // Cerrar Modal
         const closeModal = () => {
             modal.classList.add('hidden');
             modal.style.display = 'none';
@@ -93,7 +90,6 @@ export class EmployeeModule {
             this.editingId = null; // Limpiamos ID de edición
         };
 
-        // Abrir Modal (Crear)
         document.getElementById('emp-create-btn')?.addEventListener('click', () => {
             this.editingId = null;
             document.getElementById('modal-emp-title').textContent = "Registrar Nuevo Empleado";
@@ -106,13 +102,11 @@ export class EmployeeModule {
         document.getElementById('close-emp-modal')?.addEventListener('click', closeModal);
         document.getElementById('cancel-emp-btn')?.addEventListener('click', closeModal);
 
-        // Submit (Crear o Editar)
         form?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleFormSubmit();
         });
 
-        // Delegación de eventos para botones Editar/Borrar en las tarjetas
         document.getElementById('emp-list-body')?.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.btn-edit-emp');
             const deleteBtn = e.target.closest('.btn-delete-emp');
@@ -189,7 +183,7 @@ export class EmployeeModule {
         if (!confirmed) return;
 
         try {
-            const response = await fetch('/api/employees/delete.php', {
+            const response = await fetch('/api/employees/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: id })

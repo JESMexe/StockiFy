@@ -12,7 +12,6 @@ try {
 
     date_default_timezone_set('America/Argentina/Buenos_Aires');
 
-    // ✅ Fuerza timezone AR para evitar “salto” de día
     $tz = new DateTimeZone('America/Argentina/Buenos_Aires');
     $now = new DateTime('now', $tz);
 
@@ -27,7 +26,6 @@ try {
 
     $db->query("SET time_zone = '-03:00'");
 
-    // ✅ Rangos robustos: [start, end)
     if ($period === 'month') {
         $start = new DateTime($now->format('Y-m-01 00:00:00'), $tz);
         $end   = (clone $start)->modify('+1 month');
@@ -42,7 +40,6 @@ try {
     $startDate = $start->format('Y-m-d H:i:s');
     $endDate   = $end->format('Y-m-d H:i:s');
 
-    // 1) Ventas (Ingresos) — sale_date
     $stmtSales = $db->prepare("
         SELECT SUM(total_amount) as total_sales, COUNT(*) as count_sales
         FROM sales
@@ -51,7 +48,6 @@ try {
     $stmtSales->execute([$inventoryId, $startDate, $endDate]);
     $salesData = $stmtSales->fetch(PDO::FETCH_ASSOC);
 
-    // 2) Compras (Egresos) — created_at
     $stmtPurchases = $db->prepare("
         SELECT SUM(total) as total_purchases, COUNT(*) as count_purchases
         FROM purchases

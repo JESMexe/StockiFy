@@ -2,7 +2,6 @@
 import * as api from '../api.js';
 import {pop_ups} from "../notifications/pop-up.js";
 
-// ---- MANEJADORES ----
 async function handleSelectDatabase(event) {
     const target = event.target.closest('button.db-list-item');
     if (!target) return;
@@ -10,7 +9,7 @@ async function handleSelectDatabase(event) {
     const inventoryId = target.dataset.dbId;
     try {
         await api.selectDatabase(inventoryId);
-        window.location.href = '/dashboard.php';
+        window.location.href = '/dashboard';
     } catch (error) {
         pop_ups.warning(`Error al seleccionar la base de datos: ${error.message}`);
     }
@@ -30,10 +29,9 @@ function populateDbList(databases, dbListElement) {
     dbListElement.appendChild(container);
 }
 
-// ---- INICIALIZACIÓN ----
 async function init() {
     const nav = document.getElementById('header-nav');
-    if (nav) nav.innerHTML = `<a href="/logout.php" class="btn btn-secondary">Cerrar Sesión</a>`;
+    if (nav) nav.innerHTML = `<a href="/logout" class="btn btn-secondary">Cerrar Sesión</a>`;
 
     const dbList = document.getElementById('db-list');
     if (!dbList) return;
@@ -44,11 +42,11 @@ async function init() {
             populateDbList(profileData.databases, dbList);
             dbList.addEventListener('click', handleSelectDatabase);
         } else {
-            window.location.href = '/create-db.php';
+            window.location.href = '/create-db';
         }
     } catch (error) {
         pop_ups.error(`Error: ${error}`);
-        window.location.href = '/login.php';
+        window.location.href = '/login';
     }
 }
 

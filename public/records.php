@@ -4,7 +4,7 @@ require_once __DIR__ . '/../src/helpers/auth_helper.php';
 
 $currentUser = getCurrentUser();
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /index.php');
+    header('Location: /index');
     exit;
 }
 ?>
@@ -20,14 +20,14 @@ if (!isset($_SESSION['user_id'])) {
 </head>
 <body>
   <header>
-    <a href="/index.php" id="header-logo">
+    <a href="/index" id="header-logo">
       <img src="assets/img/LogoE.png" alt="Stocky Logo">
     </a>
     <nav id="header-nav"></nav>
   </header>
   <main>
     <div class="registros-container">
-      <a href="/dashboard.php" class="back-btn">← Volver al Dashboard</a>
+      <a href="/dashboard" class="back-btn">← Volver al Dashboard</a>
       <h1>Registro de Modificaciones</h1>
       <div class="registros-header">
         <label for="tabla-selector">Ver registros de:</label>

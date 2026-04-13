@@ -1,6 +1,4 @@
 ﻿/**
- * STOCKIFY MOBILE COMPANION - FINAL ROBUSTO
- * Lógica exclusiva para la versión móvil.
  */
 import { pop_ups } from "../notifications/pop-up.js";
 import * as api from "../api.js";
@@ -26,13 +24,11 @@ export function initMobileApp() {
         returnBtn.addEventListener('click', closeMobileTransaction);
     }
 
-    // Configurar cierre de Price Checker
     const closeChecker = document.querySelector('#mobile-price-checker-modal .close-icon');
     if(closeChecker) closeChecker.onclick = window.closePriceChecker;
 }
 
 function closeMobileTransaction() {
-    // Intentamos cerrar todos los posibles modales
     const ids = ['create-sale-modal', 'create-purchase-modal', 'grey-background', 'new-transaction-container'];
     ids.forEach(id => {
         const el = document.getElementById(id);
@@ -43,9 +39,6 @@ function closeMobileTransaction() {
     });
 }
 
-// --------------------------------------------------------
-// 1. APERTURA DE TRANSACCIONES (VENTA / COMPRA)
-// --------------------------------------------------------
 
 window.openMobileTransaction = function(type) {
     console.log("Iniciando transacción:", type);
@@ -65,16 +58,12 @@ window.openMobileTransaction = function(type) {
             console.log(`✅ Módulo ${type} conectado en intento ${attempts}`);
 
             try {
-                // 1. Inicializar el módulo (crea el HTML si no existe)
                 if (module.init && !module.isInitialized) module.init();
 
-                // [FIX NUCLEAR] EL SECUESTRO DE VENTANA
-                // Buscamos la ventana del módulo y la movemos al BODY para que sea visible
                 const modalId = type === 'sale' ? 'create-sale-modal' : 'create-purchase-modal';
                 const modal = document.getElementById(modalId);
 
                 if (modal) {
-                    // Si el modal está "atrapado" dentro de otro div que no sea el body, lo sacamos.
                     if (modal.parentElement !== document.body) {
                         console.warn(`🔧 Moviendo ${modalId} al body para hacerlo visible.`);
                         document.body.appendChild(modal);
@@ -83,7 +72,6 @@ window.openMobileTransaction = function(type) {
                     console.error(`⚠️ No se encontró el modal #${modalId}`);
                 }
 
-                // 2. Abrir la ventana
                 setTimeout(() => {
                     if (module.openCreateModal) {
                         module.openCreateModal();
@@ -104,15 +92,7 @@ window.openMobileTransaction = function(type) {
     }, 100);
 };
 
-// NOTE:
-// La versión móvil NO debe depender de dashboard.js para tener mapping/data.
-// Cargamos lo necesario directamente desde la API:
-// - getCurrentInventoryPreferences()  -> mapping/features del inventario activo
-// - getTableData()                   -> filas del inventario activo (usa $_SESSION['active_inventory_id'])
 
-// --------------------------------------------------------
-// 2. CONSULTOR DE PRECIOS (PRICE CHECKER)
-// --------------------------------------------------------
 window.openMobilePriceChecker = async function() {
     const modal = document.getElementById('mobile-price-checker-modal');
     if (!modal) return;
@@ -211,9 +191,6 @@ window.performPriceCheck = function(directProduct = null) {
     }
 };
 
-// --------------------------------------------------------
-// 3. CIERRE DE CAJA
-// --------------------------------------------------------
 window.openCashBalance = function() {
     const modal = document.getElementById('mobile-balance-modal');
     if(modal) {
@@ -265,7 +242,6 @@ window.loadBalanceData = async function(period) {
 };
 
 async function ensureCheckerDataLoaded() {
-    // 1) Mapping (preferencias del inventario activo)
     const needsMapping =
         !window.columnMapping ||
         !window.columnMapping.name ||
@@ -280,7 +256,6 @@ async function ensureCheckerDataLoaded() {
         window.activeFeatures = pref.features || {};
     }
 
-    // Validación mínima (esto es lo que realmente necesita el Price Checker)
     const map = window.columnMapping || {};
     const required = [];
     if (!map.name) required.push('Nombre');
@@ -290,10 +265,7 @@ async function ensureCheckerDataLoaded() {
         throw new Error(`Faltan columnas obligatorias en Configuraciones: ${required.join(', ')}`);
     }
 
-    // buy_price no es obligatorio para listar, pero sí para mostrar "Costo".
-    // Si no está, mostramos costo = 0 sin romper.
 
-    // 2) Productos del inventario activo
     if (!window.allData || !Array.isArray(window.allData) || window.allData.length === 0) {
         const table = await api.getTableData();
         if (!table || !table.success) throw new Error(table?.message || "No se pudieron cargar productos del inventario");
