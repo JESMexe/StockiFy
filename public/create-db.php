@@ -140,13 +140,26 @@ if ($currentUser['subscription_active'] == 1) {
                     </div>
                 </section>
 
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label for="columnsInput">Nombres de las Columnas (separados por coma):</label>
                     <textarea id="columnsInput" name="columns" rows="3"
                         placeholder="Ej: SKU, Producto, Precio, Cantidad"></textarea>
-                    <small style="color: var(--color-gray); display: block; margin-top: 5px;">
-                        Define aquí las columnas extra que necesites.
-                    </small>
+                    
+                    <div style="margin-top: 15px;">
+                        <span style="font-weight: 500; font-size: 0.9rem; color: var(--color-black);">Ejemplos o recomendaciones:</span>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-simple" style="margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px;">Simple</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-moderate" style="margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px;">Moderado</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-large" style="margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px;">Completo</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; background: #fafafa; padding: 12px; border-radius: 8px; min-height: 40px; border: 1px dashed #ccc;">
+                        <span style="font-size: 0.85rem; color: #666; display: block; margin-bottom: 8px; font-weight: 500;">Columnas que se crearían:</span>
+                        <div id="column-preview-tags" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <span style="color: #999; font-size: 0.85rem; font-style: italic;">Escribí las columnas arriba separadas por coma...</span>
+                        </div>
+                    </div>
                 </div>
 
                 <hr>

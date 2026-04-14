@@ -169,7 +169,7 @@ async function renderTable(columns, data) {
     if (!tableHead || !tableBody) return;
 
     try {
-        if (!columnMapping.name) {
+        if (!columnMapping.name || !window.currentUserPreferences || !window.currentUserPreferences.column_colors) {
             const prefs = await api.getCurrentInventoryPreferences();
             if (prefs && prefs.success) {
                 if (prefs.mapping) columnMapping = prefs.mapping;
@@ -178,8 +178,10 @@ async function renderTable(columns, data) {
                 if (prefs.features) activeFeatures = prefs.features;
 
                 window.currentUserPreferences = window.currentUserPreferences || {};
-                if (prefs.visible_columns) window.currentUserPreferences.visible_columns = prefs.visible_columns;
+                if (prefs.hidden_columns) window.currentUserPreferences.hidden_columns = prefs.hidden_columns;
+                else if (prefs.visible_columns) window.currentUserPreferences.hidden_columns = currentTableColumns.filter(c => !prefs.visible_columns.includes(c));
                 if (prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
+                if (prefs.column_colors) window.currentUserPreferences.column_colors = prefs.column_colors;
             }
         }
     } catch (e) { console.warn("Usando prefs por defecto o error al cargar"); }
@@ -225,10 +227,10 @@ async function renderTable(columns, data) {
         displayColumns = [...normalColumns, ...orderedSpecialColumns];
     }
 
-    if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.visible_columns)) {
-        const visibleSet = window.currentUserPreferences.visible_columns;
-        if (visibleSet.length > 0) {
-            displayColumns = displayColumns.filter(col => visibleSet.includes(col));
+    if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.hidden_columns)) {
+        const hiddenSet = window.currentUserPreferences.hidden_columns;
+        if (hiddenSet.length > 0) {
+            displayColumns = displayColumns.filter(col => !hiddenSet.includes(col));
         }
     } else {
         const systemHiddenDefault = ['created_at', 'user_id', 'inventory_id', 'updated_at'];
@@ -4376,9 +4378,12 @@ export async function loadTableData() {
                 columnMapping = prefs.mapping || columnMapping;
                 activeFeatures = prefs.features || activeFeatures;
 
-                if (prefs.visible_columns) {
+                if (prefs.visible_columns || prefs.hidden_columns || prefs.column_order || prefs.column_colors) {
                     window.currentUserPreferences = window.currentUserPreferences || {};
-                    window.currentUserPreferences.visible_columns = prefs.visible_columns;
+                    if (prefs.hidden_columns) window.currentUserPreferences.hidden_columns = prefs.hidden_columns;
+                    else if (prefs.visible_columns) window.currentUserPreferences.hidden_columns = currentTableColumns.filter(c => !prefs.visible_columns.includes(c));
+                    if (prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
+                    if (prefs.column_colors) window.currentUserPreferences.column_colors = prefs.column_colors;
                 }
 
                 console.log("[loadTableData] Preferencias recuperadas con éxito.");
@@ -4585,9 +4590,9 @@ window.openColumnManager = function () {
         });
     }
 
-    let visibleCols = allCols;
-    if (window.currentUserPreferences && window.currentUserPreferences.visible_columns) {
-        visibleCols = window.currentUserPreferences.visible_columns;
+    let hiddenCols = [];
+    if (window.currentUserPreferences && window.currentUserPreferences.hidden_columns) {
+        hiddenCols = window.currentUserPreferences.hidden_columns;
     }
     
     let columnColors = {};
@@ -4600,7 +4605,7 @@ window.openColumnManager = function () {
     allCols.forEach(col => {
         if (['created_at', 'updated_at', 'user_id', 'inventory_id'].includes(col.toLowerCase())) return;
 
-        const isChecked = visibleCols.includes(col);
+        const isChecked = !hiddenCols.includes(col);
         const niceName = formatColumnName(col);
         const colColor = columnColors[col] || '';
 
@@ -4609,14 +4614,14 @@ window.openColumnManager = function () {
         item.dataset.column = col;
 
         item.innerHTML = `
-            <div style="display:flex; align-items:center; flex-grow:1;">
+            <div style="display:flex; align-items:center; justify-content:center; flex-grow:1;">
                 <div class="drag-handle" title="Arrastrar para mover">
                     <i class="ph-bold ph-dots-six-vertical"></i>
                 </div>
                 
                 <span class="col-name" style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block;">${niceName}</span>
                 
-                <select class="color-picker rustic-select" data-col="${col}" style="margin-left:auto; margin-right: 15px; padding: 2px 5px; height: 32px; font-size: 0.85rem; width: auto; min-width: 130px;">
+                <select class="color-picker rustic-select" data-col="${col}" style="margin-left:auto; margin-right: 15px; font-size: 0.85rem; width: auto; min-width: 120px;">
                     <option value="" ${colColor === '' ? 'selected' : ''}>Ninguno</option>
                     <option value="accent-green" ${colColor === 'accent-green' ? 'selected' : ''}>Verde</option>
                     <option value="accent-yellow" ${colColor === 'accent-yellow' ? 'selected' : ''}>Amarillo</option>
@@ -4654,9 +4659,10 @@ window.closeColumnManager = function () {
 
 window.saveColumnPreferences = async function () {
     const listContainer = document.getElementById('column-manager-list');
-    const items = listContainer.querySelectorAll('.sortable-item');
+    if (!listContainer) return;
 
-    const visibleCols = [];
+    const items = listContainer.querySelectorAll('.sortable-item');
+    const hiddenCols = [];
     const orderedCols = [];
     const colColors = {};
 
@@ -4666,13 +4672,18 @@ window.saveColumnPreferences = async function () {
         const colorSelect = item.querySelector('.color-picker');
 
         orderedCols.push(colName);
-        if (checkbox.checked) visibleCols.push(colName);
-        if (colorSelect && colorSelect.value !== '') colColors[colName] = colorSelect.value;
+        if (checkbox && !checkbox.checked) {
+            hiddenCols.push(colName);
+        }
+        
+        if (colorSelect && colorSelect.value !== '') {
+            colColors[colName] = colorSelect.value;
+        }
     });
 
     try {
         const response = await api.setCurrentInventoryPreferences({
-            visible_columns: visibleCols,
+            hidden_columns: hiddenCols,
             column_order: orderedCols,
             column_colors: colColors
         });
@@ -4681,7 +4692,7 @@ window.saveColumnPreferences = async function () {
             pop_ups.success("Configuración guardada.", "Éxito");
 
             if (!window.currentUserPreferences) window.currentUserPreferences = {};
-            window.currentUserPreferences.visible_columns = visibleCols;
+            window.currentUserPreferences.hidden_columns = hiddenCols;
             window.currentUserPreferences.column_order = orderedCols;
             window.currentUserPreferences.column_colors = colColors;
 

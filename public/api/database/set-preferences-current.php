@@ -100,6 +100,10 @@ try {
         $currentPrefs['visible_columns'] = $input['visible_columns'];
     }
 
+    if (isset($input['hidden_columns'])) {
+        $currentPrefs['hidden_columns'] = $input['hidden_columns'];
+    }
+
     if (isset($input['column_order'])) {
         $currentPrefs['column_order'] = $input['column_order'];
     }

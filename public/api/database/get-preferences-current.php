@@ -36,6 +36,7 @@ if ($inv) {
         'features' => $prefs['features'] ?? [],
         'exchange_config' => $prefs['exchange_config'] ?? null,
         'visible_columns' => $prefs['visible_columns'] ?? [],
+        'hidden_columns' => $prefs['hidden_columns'] ?? null,
         'column_order' => $prefs['column_order'] ?? [],
         'column_colors' => $prefs['column_colors'] ?? []
     ];

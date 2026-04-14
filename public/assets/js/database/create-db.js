@@ -142,6 +142,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!createDbForm) return;
 
+    // --- LOGICA DE RECOMENDACIONES Y PREVIEW ---
+    const btnSimple = document.getElementById('btn-tmpl-simple');
+    const btnModerate = document.getElementById('btn-tmpl-moderate');
+    const btnLarge = document.getElementById('btn-tmpl-large');
+    const previewContainer = document.getElementById('column-preview-tags');
+
+    const tmplSimple = "Nombre, Precio, Stock, Descripción, Categoría";
+    const tmplModerate = "Nombre, Precio de Venta, Precio de Compra, Stock, SKU, Código de Barras, Descripción, Categoría General, Categoría Específica";
+    const tmplLarge = "ID, SKU, Código de Barras, Nombre, Stock, Categoría General, Categoría Específica, Marca, Línea, Temporada, Precio de Venta, Precio de Compra, Material, Peso, Garantía, Ubicación, Proveedor";
+
+    const updatePreview = () => {
+        if(!previewContainer) return;
+        const val = columnsInput.value;
+        const cols = val.split(',').map(c => c.trim().replace(/\s+/g, ' ')).filter(c => c.length > 0);
+        
+        if(cols.length === 0){
+            previewContainer.innerHTML = '<span style="color: #999; font-size: 0.85rem; font-style: italic;">Escribí las columnas arriba separadas por coma...</span>';
+            return;
+        }
+
+        const uniqueCols = [...new Set(cols)];
+        previewContainer.innerHTML = uniqueCols.map(c => `
+            <span style="background: var(--accent-color-20); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 12px; padding: 2px 10px; font-size: 0.8rem; white-space: nowrap;">
+                ${c}
+            </span>
+        `).join('');
+    };
+
+    if (btnSimple && btnModerate && btnLarge && columnsInput) {
+        btnSimple.addEventListener('click', () => { columnsInput.value = tmplSimple; updatePreview(); });
+        btnModerate.addEventListener('click', () => { columnsInput.value = tmplModerate; updatePreview(); });
+        btnLarge.addEventListener('click', () => { columnsInput.value = tmplLarge; updatePreview(); });
+        columnsInput.addEventListener('input', updatePreview);
+    }
+    // ------------------------------------------
+
     createDbForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
