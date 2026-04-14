@@ -239,6 +239,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
 
 
+                                <button id="open-export-modal-btn" class="btn btn-secondary"
+                                    style="display: flex; align-items: center; gap: 8px;" title="Exportar a Excel" onclick="window.openExportModal()">
+                                    <i class="ph ph-export"></i> Exportar
+                                </button>
+
                                 <button id="open-import-modal-btn" class="btn btn-secondary"
                                     style="display: flex; align-items: center; gap: 8px;">
                                     <i class="ph ph-download-simple"></i> Importar Datos
@@ -659,7 +664,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         <div class="icon"><i class="ph-fill ph-arrow-up-right"></i></div>
                         <div class="info">
                             <span>Egresos (Compras)</span>
-                            <h4 id="balance-expense">$0.00</h4>
+                                                    <h4 id="balance-expense">$0.00</h4>
                         </div>
                     </div>
                 </div>
@@ -667,6 +672,52 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
         </div>
     </div>
 
+    <!-- Export Modal -->
+    <div id="export-modal" class="modal-overlay hidden" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 500px; padding: 30px; border-radius: 12px;">
+            <div class="modal-header" style="margin-bottom: 20px;">
+                <h2 style="margin: 0;">Exportar a Excel</h2>
+                <button class="modal-close-btn" onclick="window.closeExportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 25px; font-size: 0.95rem; color: var(--color-gray); line-height: 1.5;">Seleccioná qué hojas querés generar en tu reporte final:</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 18px;">
+                    <label style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
+                        <input type="checkbox" id="export-chk-inventory" checked style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <strong style="color: var(--color-black); font-size: 1rem;">Inventario Actual</strong>
+                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Exporta el estado completo de stock, precios y categorías.</span>
+                        </div>
+                    </label>
+
+                    <label style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
+                        <input type="checkbox" id="export-chk-sales" checked style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <strong style="color: var(--color-black); font-size: 1rem;">Historial de Ventas</strong>
+                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Crea una hoja ideal para proyecciones de Flujo de Caja.</span>
+                        </div>
+                    </label>
+
+                    <label style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
+                        <input type="checkbox" id="export-chk-analytics" checked style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <strong style="color: var(--color-black); font-size: 1rem;">Métricas (Top Rendimiento)</strong>
+                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Listados estáticos con mejores clientes y productos más vendidos.</span>
+                        </div>
+                    </label>
+                </div>
+                
+                <div id="export-status" style="margin-top: 20px; color: var(--accent-color); font-weight: 500; font-size: 0.95rem; min-height: 20px;"></div>
+            </div>
+            <div class="modal-footer" style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #eee; padding-top: 20px;">
+                <button class="btn btn-secondary" onclick="window.closeExportModal()" style="margin: 0; padding: 10px 20px;">Cancelar</button>
+                <button class="btn btn-primary" id="btn-run-export" onclick="window.runExport()" style="margin: 0; padding: 10px 24px;">Generar Excel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
     <div id="import-modal" class="modal-overlay hidden">
         <div class="modal-content view-container import-modal"> <button id="close-modal-btn"
                 class="modal-close-btn">&times;</button>
@@ -908,9 +959,10 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
     <script type="module" src="assets/js/import.js?v=1.2"></script>
+    <script type="module" src="assets/js/export-excel.js?v=1.1"></script>
     <script type="module" src="assets/js/dashboard.js?v=1.2"></script>
     <script type="module" src="assets/js/sales/sales.js?v=1.2"></script>
     <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>

@@ -147,10 +147,10 @@ if ($currentUser['subscription_active'] == 1) {
                     
                     <div style="margin-top: 15px;">
                         <span style="font-weight: 500; font-size: 0.9rem; color: var(--color-black);">Ejemplos o recomendaciones:</span>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-simple" style="margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px;">Simple</button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-moderate" style="margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px;">Moderado</button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-large" style="margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px;">Completo</button>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-simple" style="width: auto; flex: 1; margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; box-shadow: none;">Simple</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-moderate" style="width: auto; flex: 1; margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; box-shadow: none;">Moderado</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-tmpl-large" style="width: auto; flex: 1; margin:0; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; box-shadow: none;">Completo</button>
                         </div>
                     </div>
                     
