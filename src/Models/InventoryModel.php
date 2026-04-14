@@ -266,25 +266,25 @@ class InventoryModel
 
     /**
      * Sanitiza un nombre de columna para prevenir inyección SQL.
-     * Permite solo alfanuméricos y guión bajo.
+     * Permite alfanuméricos, espacios, guión bajo y letras con acentos.
      */
     public function sanitizeColumnName(string $columnName): string
     {
-        $safeName = preg_replace('/[^a-zA-Z0-9_ ]/', '', $columnName);
+        $safeName = preg_replace('/[^\p{L}0-9_ \-]/u', '', $columnName);
         if (empty($safeName) || is_numeric(substr($safeName, 0, 1))) {
             throw new \InvalidArgumentException("El nombre de la columna es inválido.");
         }
-        return $safeName;
+        return trim($safeName);
     }
 
     public function sanitizeTableName(string $baseTableName): string
     {
         // La misma lógica que usábamos antes, ahora encapsulada
-        $safeBaseName = preg_replace('/[^a-zA-Z0-9_ ]/', '', $baseTableName);
+        $safeBaseName = preg_replace('/[^\p{L}0-9_ \-]/u', '', $baseTableName);
         if (empty($safeBaseName)) {
             throw new \InvalidArgumentException("El nombre base de la tabla es inválido después de sanitizar.");
         }
-        return $safeBaseName;
+        return trim($safeBaseName);
     }
 
     /**
@@ -489,7 +489,7 @@ class InventoryModel
      * @param int $quantity Cantidad a descontar.
      * @return bool True si se actualizó, False si falló.
      */
-    public function decreaseStock(int $userId, $productId, int $quantity, $inventoryId = null, string $productNameFallback = null, array &$alerts = null): bool
+    public function decreaseStock(int $userId, $productId, int $quantity, $inventoryId = null, ?string $productNameFallback = null, ?array &$alerts = null): bool
     {
         try {
             // 1. Identificar la tabla correcta

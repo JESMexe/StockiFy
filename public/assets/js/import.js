@@ -139,6 +139,16 @@ function generateMappingTable(csvHeaders, uiHeaders) {
     gridContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
     gridContainer.style.gap = '15px';
 
+    const aliasMap = {
+        'min_stock': ['stockminimo', 'stockmnimo', 'minimo'],
+        'sale_price': ['preciodeventa', 'precioventa', 'venta'],
+        'receipt_price': ['preciodecompra', 'preciocompra', 'compra', 'costo'],
+        'hard_gain': ['ganancia', 'gananciafija'],
+        'percentage_gain': ['porcentaje', 'gananciaporcentaje']
+    };
+
+    const usedCsvHeaders = new Set();
+
     currentStockifyColumns.forEach(sysCol => {
         if (['id', 'created_at', 'updated_at'].includes(sysCol.toLowerCase())) return;
 
@@ -170,6 +180,8 @@ function generateMappingTable(csvHeaders, uiHeaders) {
         defaultOption.style.color = '#999';
         select.appendChild(defaultOption);
 
+        let mapped = false;
+
         csvHeaders.forEach((headerVal, index) => {
             const option = document.createElement('option');
             option.value = headerVal;
@@ -178,12 +190,27 @@ function generateMappingTable(csvHeaders, uiHeaders) {
             const cleanSys = sysCol.toLowerCase().replace(/[^a-z0-9]/g, '');
             const cleanCsv = headerVal.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-            if (cleanSys === cleanCsv || cleanCsv.includes(cleanSys) || cleanSys.includes(cleanCsv)) {
+            const isAliasMatch = aliasMap[sysCol] && aliasMap[sysCol].some(alias => cleanCsv.includes(alias) || alias.includes(cleanCsv));
+
+            if (!mapped && (cleanSys === cleanCsv || cleanCsv.includes(cleanSys) || cleanSys.includes(cleanCsv) || isAliasMatch)) {
                 option.selected = true;
                 select.style.borderColor = 'var(--primary-color, #4CAF50)';
                 select.style.backgroundColor = '#f0fff4';
+                usedCsvHeaders.add(headerVal);
+                mapped = true;
             }
             select.appendChild(option);
+        });
+
+        // Event listener para actualizar dinámicamente las columnas usadas (opcional pero lo dejamos simple capturando al validar)
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.style.borderColor = 'var(--primary-color, #4CAF50)';
+                this.style.backgroundColor = '#f0fff4';
+            } else {
+                this.style.border = '1px solid #ccc';
+                this.style.backgroundColor = '';
+            }
         });
 
         card.appendChild(label);
@@ -192,6 +219,67 @@ function generateMappingTable(csvHeaders, uiHeaders) {
     });
 
     mappingForm.appendChild(gridContainer);
+    
+    setTimeout(() => {
+        const currentSelects = mappingForm.querySelectorAll('select');
+        const actuallyUsed = new Set();
+        currentSelects.forEach(sel => { if(sel.value) actuallyUsed.add(sel.value); });
+        
+        const unmappedCsvHeaders = csvHeaders.filter(h => !actuallyUsed.has(h) && h.trim() !== '');
+
+        if (unmappedCsvHeaders.length > 0) {
+            const extraSection = document.createElement('div');
+            extraSection.style.marginTop = '30px';
+            extraSection.innerHTML = `
+                <hr style="border: 1px dashed var(--border-color, #ccc); margin-bottom: 20px;">
+                <h5 style="color: var(--text-color, #555); font-size: 15px; font-weight: 600; margin-bottom: 15px;">
+                    ✨ Otras columnas detectadas en tu archivo:
+                    <span style="display: block; font-size: 12px; font-weight: 400; color: #888; margin-top: 5px;">
+                        Seleccionalas para crear la columna e importar sus datos al vuelo.
+                    </span>
+                </h5>
+                <div id="dynamic-columns-container" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+            `;
+            mappingForm.appendChild(extraSection);
+
+            const dynContainer = document.getElementById('dynamic-columns-container');
+            unmappedCsvHeaders.forEach(col => {
+                const wrap = document.createElement('label');
+                wrap.style.display = 'flex';
+                wrap.style.alignItems = 'center';
+                wrap.style.gap = '8px';
+                wrap.style.padding = '8px 14px';
+                wrap.style.background = 'var(--bg-secondary, #f8f9fa)';
+                wrap.style.border = '1px solid var(--border-color, #eaeaea)';
+                wrap.style.borderRadius = '20px';
+                wrap.style.cursor = 'pointer';
+                wrap.style.fontSize = '13px';
+                wrap.style.transition = 'all 0.2s';
+                
+                wrap.onmouseover = () => wrap.style.borderColor = 'var(--primary-color, #4CAF50)';
+                wrap.onmouseout = () => { if(!check.checked) wrap.style.borderColor = 'var(--border-color, #eaeaea)'; }
+
+                const check = document.createElement('input');
+                check.type = 'checkbox';
+                check.className = 'dynamic-column-checkbox';
+                check.value = col;
+                
+                check.addEventListener('change', () => {
+                    if (check.checked) {
+                        wrap.style.background = '#e8f5e9';
+                        wrap.style.borderColor = 'var(--primary-color, #4CAF50)';
+                    } else {
+                        wrap.style.background = 'var(--bg-secondary, #f8f9fa)';
+                        wrap.style.borderColor = 'var(--border-color, #eaeaea)';
+                    }
+                });
+
+                wrap.appendChild(check);
+                wrap.appendChild(document.createTextNode(col));
+                dynContainer.appendChild(wrap);
+            });
+        }
+    }, 100);
 }
 
 function formatColumnName(name) {
@@ -212,6 +300,36 @@ async function handlePrepareImport() {
             hasMapping = true;
         }
     });
+
+    const dynamicCheckboxes = mappingForm.querySelectorAll('.dynamic-column-checkbox:checked');
+    if (dynamicCheckboxes.length > 0) {
+        if(validatePrepareBtn) {
+            validatePrepareBtn.disabled = true;
+            validatePrepareBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Preparando DB...';
+        }
+        for (const cb of dynamicCheckboxes) {
+            try {
+                const addReq = await fetch('/api/table/manage-column.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        action: 'add_column',
+                        inventoryId: typeof activeInventoryId !== 'undefined' ? activeInventoryId : window.activeInventoryId,
+                        columnName: cb.value
+                    })
+                });
+                const addRes = await addReq.json();
+                if(addRes.success) {
+                    mappingData[cb.value] = cb.value;
+                    hasMapping = true;
+                } else {
+                    console.error("Error backend al añadir columna: " + cb.value, addRes.message);
+                }
+            } catch (e) {
+                console.error("No se pudo crear red: " + cb.value, e);
+            }
+        }
+    }
 
     if (!hasMapping) {
         pop_ups.alert("Debes mapear al menos una columna para continuar.", "Atención");

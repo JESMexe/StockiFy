@@ -150,27 +150,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const submitButton = createDbForm.querySelector('button[type="submit"]');
 
         let columnList = columnsInput.value.split(',')
-            .map(col => col.trim().toLowerCase().replace(/ /g, ''))
+            .map(col => col.trim().replace(/\s+/g, ' '))
             .filter(col => col.length > 0);
 
         columnList = [...new Set(columnList)];
 
-        if (!columnList.includes('stock')) columnList.unshift('stock');
+        const lowerCols = columnList.map(c => c.toLowerCase());
 
-        if (preferences.min_stock.active && !columnList.includes('min_stock')) columnList.push('min_stock');
-        if (preferences.sale_price.active && !columnList.includes('sale_price')) columnList.push('sale_price');
-        if (preferences.receipt_price.active && !columnList.includes('receipt_price')) columnList.push('receipt_price');
+        if (!lowerCols.includes('stock')) columnList.unshift('stock');
 
-        if (preferences.percentage_gain.active && !columnList.includes('percentage_gain')) {
+        if (preferences.min_stock.active && !lowerCols.includes('min_stock')) columnList.push('min_stock');
+        if (preferences.sale_price.active && !lowerCols.includes('sale_price')) columnList.push('sale_price');
+        if (preferences.receipt_price.active && !lowerCols.includes('receipt_price')) columnList.push('receipt_price');
+
+        if (preferences.percentage_gain.active && !lowerCols.includes('percentage_gain')) {
             columnList.push('percentage_gain');
         }
-        if (preferences.hard_gain.active && !columnList.includes('hard_gain')) {
+        if (preferences.hard_gain.active && !lowerCols.includes('hard_gain')) {
             columnList.push('hard_gain');
         }
 
         const finalColumns = columnList.join(',');
 
-        if (!dbName || !finalColumns || finalColumns === "stock,name") {
+        if (!dbName || !finalColumns || finalColumns.toLowerCase() === "stock,name") {
             messageDiv.textContent = 'Por favor, completa el nombre y al menos una columna personalizada.';
             return;
         }
