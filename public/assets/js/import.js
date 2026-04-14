@@ -17,6 +17,7 @@ export function openImportModal() {
     if (!modalElement) return;
 
     modalElement.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
     importStatus = document.getElementById('import-status');
     fileInput = document.getElementById('csv-file-input');
     dropZone = document.getElementById('import-drop-zone');
@@ -35,7 +36,10 @@ export function openImportModal() {
 }
 
 function closeImportModal() {
-    if (modalElement) modalElement.classList.add('hidden');
+    if (modalElement) {
+        modalElement.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
 }
 
 function showStep(stepNumber) {
@@ -256,7 +260,7 @@ function generateMappingTable(csvHeaders, uiHeaders) {
                 wrap.style.fontSize = '13px';
                 wrap.style.transition = 'all 0.2s';
 
-                wrap.onmouseover = () => wrap.style.borderColor = 'var(--primary-color, #4CAF50)';
+                wrap.onmouseover = () => wrap.style.borderColor = 'var(--accent-color, var(--primary-color, #4CAF50))';
                 wrap.onmouseout = () => { if (!check.checked) wrap.style.borderColor = 'var(--border-color, #eaeaea)'; }
 
                 const check = document.createElement('input');
@@ -266,8 +270,8 @@ function generateMappingTable(csvHeaders, uiHeaders) {
 
                 check.addEventListener('change', () => {
                     if (check.checked) {
-                        wrap.style.background = '#e8f5e9';
-                        wrap.style.borderColor = 'var(--primary-color, #4CAF50)';
+                        wrap.style.background = 'var(--accent-color-quat-opacity, #e8f5e9)';
+                        wrap.style.borderColor = 'var(--accent-color, #4CAF50)';
                     } else {
                         wrap.style.background = 'var(--bg-secondary, #f8f9fa)';
                         wrap.style.borderColor = 'var(--border-color, #eaeaea)';

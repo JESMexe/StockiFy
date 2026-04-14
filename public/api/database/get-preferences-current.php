@@ -34,7 +34,10 @@ if ($inv) {
                 'buy_price' => null
             ],
         'features' => $prefs['features'] ?? [],
-        'exchange_config' => $prefs['exchange_config'] ?? null
+        'exchange_config' => $prefs['exchange_config'] ?? null,
+        'visible_columns' => $prefs['visible_columns'] ?? [],
+        'column_order' => $prefs['column_order'] ?? [],
+        'column_colors' => $prefs['column_colors'] ?? []
     ];
     echo json_encode($response);
 } else {

@@ -242,6 +242,11 @@ async function renderTable(columns, data) {
         actionsTh = `<th class="actions-header" onclick="window.toggleActionsColumn()" title="Ocultar columna">Acciones <i class="ph ph-caret-right" style="vertical-align: middle; margin-left: 5px;"></i></th>`;
     }
 
+    let columnColors = {};
+    if (window.currentUserPreferences && window.currentUserPreferences.column_colors) {
+        columnColors = window.currentUserPreferences.column_colors;
+    }
+
     const headerHTML = displayColumns.map(col => {
         let niceName = formatColumnName(col); // Asegúrate que esta función exista globalmente
         let label = niceName;
@@ -257,8 +262,13 @@ async function renderTable(columns, data) {
             if (currentSort.state === 1) sortIcon = ' <i class="ph-fill ph-caret-up" style="font-size: 1.3em; color: var(--accent-color);"></i>';
             if (currentSort.state === 2) sortIcon = ' <i class="ph-fill ph-caret-down" style="; font-size: 1.3em; color: var(--accent-color);"></i>';
         }
+        
+        let thStyle = 'border-radius: 0; cursor: pointer; user-select: none;';
+        if (columnColors[col]) {
+            thStyle += ` background-color: var(--${columnColors[col]}-20);`;
+        }
 
-        return `<th onclick="window.handleSort('${col}')" style="border-radius: 0; cursor: pointer; user-select: none;" title="Ordenar por ${niceName}">${sortIcon}${label}</th>`;
+        return `<th onclick="window.handleSort('${col}')" style="${thStyle}" title="Ordenar por ${niceName}">${sortIcon}${label}</th>`;
     }).join('');
 
     let gainHeader = '';
@@ -322,17 +332,22 @@ async function renderTable(columns, data) {
                     }
                 }
 
+                let tdStyle = '';
+                if (columnColors[col]) {
+                    tdStyle = ` style="background-color: var(--${columnColors[col]}-20);"`;
+                }
+
                 if (isEditing) {
                     const colKey = String(col).toLowerCase().trim();
                     const isIdCol = (colKey === 'id' || colKey === ' id' || colKey === 'ID');
 
                     if (isIdCol) {
                         const shown = (row[col] ?? value ?? '-');
-                        return `<td class="${cellClass}"><span class="readonly-cell">${shown}</span></td>`;
+                        return `<td class="${cellClass}"${tdStyle}><span class="readonly-cell">${shown}</span></td>`;
                     }
                     if (isSale || isBuy) {
                         return `
-                        <td>
+                        <td${tdStyle}>
                             <div class="flex-row" style="gap:0;">
                                 <button type="button" class="btn-currency-toggle" 
                                     onclick="window.toggleRowCurrency(this, '${rowId}', '${isSale ? 'sale' : 'buy'}', '${currency}')"
@@ -344,9 +359,9 @@ async function renderTable(columns, data) {
                             </div>
                         </td>`;
                     }
-                    return `<td><input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" style="width:100%"></td>`;
+                    return `<td${tdStyle}><input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" style="width:100%"></td>`;
                 }
-                return `<td class="${cellClass}">${value}</td>`;
+                return `<td class="${cellClass}"${tdStyle}>${value}</td>`;
             }).join('');
 
             let gainHTML = '';
@@ -4539,6 +4554,8 @@ window.openColumnManager = function () {
 
     if (!modal || !listContainer) return;
 
+    document.body.style.overflow = 'hidden';
+
     if (!modalBody.querySelector('.info-banner')) {
         const banner = document.createElement('div');
         banner.className = 'info-banner';
@@ -4547,6 +4564,7 @@ window.openColumnManager = function () {
             <div>
                 <p><strong>Personaliza tu vista.</strong><br>
                 Arrastra desde los puntos para reordenar.<br>
+                Asigná un color temático a las columnas.<br>
                 Desmarca la casilla para ocultar la columna.</p>
             </div>
         `;
@@ -4571,6 +4589,11 @@ window.openColumnManager = function () {
     if (window.currentUserPreferences && window.currentUserPreferences.visible_columns) {
         visibleCols = window.currentUserPreferences.visible_columns;
     }
+    
+    let columnColors = {};
+    if (window.currentUserPreferences && window.currentUserPreferences.column_colors) {
+        columnColors = window.currentUserPreferences.column_colors;
+    }
 
     listContainer.innerHTML = '';
 
@@ -4579,6 +4602,7 @@ window.openColumnManager = function () {
 
         const isChecked = visibleCols.includes(col);
         const niceName = formatColumnName(col);
+        const colColor = columnColors[col] || '';
 
         const item = document.createElement('div');
         item.className = 'sortable-item';
@@ -4590,7 +4614,16 @@ window.openColumnManager = function () {
                     <i class="ph-bold ph-dots-six-vertical"></i>
                 </div>
                 
-                <span class="col-name">${niceName}</span>
+                <span class="col-name" style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block;">${niceName}</span>
+                
+                <select class="color-picker rustic-select" data-col="${col}" style="margin-left:auto; margin-right: 15px; padding: 2px 5px; height: 32px; font-size: 0.85rem; width: auto; min-width: 130px;">
+                    <option value="" ${colColor === '' ? 'selected' : ''}>Ninguno</option>
+                    <option value="accent-green" ${colColor === 'accent-green' ? 'selected' : ''}>Verde</option>
+                    <option value="accent-yellow" ${colColor === 'accent-yellow' ? 'selected' : ''}>Amarillo</option>
+                    <option value="accent-blue" ${colColor === 'accent-blue' ? 'selected' : ''}>Azul</option>
+                    <option value="accent-violet" ${colColor === 'accent-violet' ? 'selected' : ''}>Violeta</option>
+                    <option value="accent-red" ${colColor === 'accent-red' ? 'selected' : ''}>Rojo</option>
+                </select>
             </div>
             
             <input type="checkbox" value="${col}" ${isChecked ? 'checked' : ''} 
@@ -4612,7 +4645,10 @@ window.openColumnManager = function () {
 
 window.closeColumnManager = function () {
     const modal = document.getElementById('column-manager-modal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
 };
 
 
@@ -4622,22 +4658,23 @@ window.saveColumnPreferences = async function () {
 
     const visibleCols = [];
     const orderedCols = [];
+    const colColors = {};
 
     items.forEach(item => {
         const colName = item.dataset.column;
         const checkbox = item.querySelector('input[type="checkbox"]');
+        const colorSelect = item.querySelector('.color-picker');
 
         orderedCols.push(colName);
-
-        if (checkbox.checked) {
-            visibleCols.push(colName);
-        }
+        if (checkbox.checked) visibleCols.push(colName);
+        if (colorSelect && colorSelect.value !== '') colColors[colName] = colorSelect.value;
     });
 
     try {
         const response = await api.setCurrentInventoryPreferences({
             visible_columns: visibleCols,
-            column_order: orderedCols // [NUEVO] Enviamos el orden
+            column_order: orderedCols,
+            column_colors: colColors
         });
 
         if (response.success) {
@@ -4646,6 +4683,7 @@ window.saveColumnPreferences = async function () {
             if (!window.currentUserPreferences) window.currentUserPreferences = {};
             window.currentUserPreferences.visible_columns = visibleCols;
             window.currentUserPreferences.column_order = orderedCols;
+            window.currentUserPreferences.column_colors = colColors;
 
             window.closeColumnManager();
 

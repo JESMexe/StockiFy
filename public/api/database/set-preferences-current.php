@@ -104,6 +104,10 @@ try {
         $currentPrefs['column_order'] = $input['column_order'];
     }
 
+    if (isset($input['column_colors'])) {
+        $currentPrefs['column_colors'] = $input['column_colors'];
+    }
+
     if (isset($input['exchange_config'])) {
         $currentPrefs['exchange_config'] = $input['exchange_config'];
     }
@@ -113,15 +117,10 @@ try {
 
     echo json_encode(['success' => true]);
 
-} catch (Exception $e) {
-
+} catch (PDOException $e) {
     if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && ($e->errorInfo[1] == 1050 || $e->errorInfo[1] == 1062))) {
         http_response_code(409);
         echo json_encode(['success' => false, 'message' => 'Ya existe una columna o registro con ese nombre.']);
-    }
-    else if ($e instanceof \InvalidArgumentException) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
     else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1054)) {
         http_response_code(400);
@@ -129,7 +128,7 @@ try {
     }
     else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1059)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => "El nombre de la columna es demasiado largo. Por favor, usa menos de 64 caracteres."]);
+        echo json_encode(['success' => false, 'message' => "El nombre de la columna es demasiado largo."]);
     }
     else if (str_contains($e->getMessage(), '42S01') || (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1060)) {
         http_response_code(400);
@@ -164,6 +163,14 @@ try {
         echo json_encode(['success' => false, 'message' => "Se esperaba un número entero pero se recibió texto o decimales."]);
     }
     else {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Ocurrió un error inesperado en la base de datos: ' . $e->getMessage()]);
+    }
+} catch (Exception $e) {
+    if ($e instanceof \InvalidArgumentException) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    } else {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Ocurrió un error inesperado al procesar la solicitud: ' . $e->getMessage()]);
     }
