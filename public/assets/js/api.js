@@ -156,7 +156,7 @@ export async function manageTableColumn(action, data) {
 }
 
 export async function getAnalyticsDashboard() {
-    const response = await fetch('/api/analytics/get-dashboard');
+    const response = await fetch('/api/analytics/get-dashboard.php');
     return handleResponse(response);
 }
 

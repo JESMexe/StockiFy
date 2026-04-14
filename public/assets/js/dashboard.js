@@ -327,10 +327,14 @@ async function renderTable(columns, data) {
 
                 if ((isSale || isBuy) && !isNaN(value) && value !== '-') {
                     const numVal = parseFloat(value);
-                    if (Math.abs(numVal) < 10 && numVal % 1 !== 0) {
-                        value = `${symbol} ${parseFloat(numVal.toFixed(6))}`;
+                    if (currency === 'ARS') {
+                        value = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(numVal);
                     } else {
-                        value = `${symbol} ${numVal.toFixed(2)}`;
+                        if (Math.abs(numVal) < 10 && numVal % 1 !== 0) {
+                            value = `${symbol} ${parseFloat(numVal.toFixed(6))}`;
+                        } else {
+                            value = `${symbol} ${numVal.toFixed(2)}`;
+                        }
                     }
                 }
 

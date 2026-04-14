@@ -962,8 +962,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
     <script type="module" src="assets/js/import.js?v=1.2"></script>
-    <script type="module" src="assets/js/export-excel.js?v=1.1"></script>
-    <script type="module" src="assets/js/dashboard.js?v=1.2"></script>
+    <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
+    <script type="module" src="assets/js/dashboard.js?v=1.4"></script>
     <script type="module" src="assets/js/sales/sales.js?v=1.2"></script>
     <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>
 

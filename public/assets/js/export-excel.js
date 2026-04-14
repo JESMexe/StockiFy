@@ -89,28 +89,95 @@ window.runExport = async () => {
             XLSX.utils.book_append_sheet(wb, wsSales, "Ventas_y_FlujoCaja");
         }
 
-        // 3. HOJA DE ANALÍTICAS / METRICAS
+        // 3. HOJA DE ANALÍTICAS / METRICAS (MEGA-EXPORT)
         if (chkAnalytics.checked) {
-            statusDiv.textContent = 'Reuniendo Métricas (Top Clientes)...';
-            const clientsRes = await api.getOrderedClients();
-            let clientsData = [];
-            if (clientsRes && clientsRes.customers) {
-                clientsData = clientsRes.customers.map(client => ({
-                    'Ranking': '', // Lo dejamos para llenarlo secuencial
-                    'Nombre Cliente': client.first_name + ' ' + (client.last_name || ''),
-                    'Teléfono': client.phone || '',
-                    'Total Gastado ($)': parseFloat(client.amount_spent) || 0,
-                    'Compras Realizadas': parseInt(client.purchases_made) || 0,
-                }));
-                // Asignar pos ranking
-                clientsData.forEach((c, index) => c['Ranking'] = `#${index + 1}`);
-            }
-            if (clientsData.length === 0) {
-                clientsData.push({ Mensaje: "No hay clientes suficientes para generar métricas." });
-            }
+            statusDiv.textContent = 'Calculando Mega-Analíticas...';
+            // Cache buster for Analytics bypassing api.js cache if needed
+            const response = await fetch(`/api/analytics/get-dashboard.php?_t=${Date.now()}`);
+            const dashboardRes = await response.json();
             
-            const wsAnalytics = XLSX.utils.json_to_sheet(clientsData);
-            XLSX.utils.book_append_sheet(wb, wsAnalytics, "Top_Clientes");
+            if (dashboardRes && dashboardRes.success) {
+                // --- HOJA A: RESUMEN FINANCIERO ---
+                const fin = dashboardRes.financials || {};
+                const invVal = dashboardRes.inventory_value || 0;
+                
+                const resumenData = [
+                    { 'Métrica': 'Ingresos Totales (Ventas)', 'Valor ($)': parseFloat(fin.total_revenue) || 0 },
+                    { 'Métrica': 'Gastos Totales (Compras)', 'Valor ($)': parseFloat(fin.total_expense) || 0 },
+                    { 'Métrica': 'Balance Neto', 'Valor ($)': parseFloat(fin.net_balance) || 0 },
+                    { 'Métrica': 'Ticket Promedio (Ventas)', 'Valor ($)': parseFloat(fin.average_ticket) || 0 },
+                    { 'Métrica': 'Cantidad Ventas Totales', 'Valor ($)': parseInt(fin.total_sales_count) || 0 },
+                    { 'Métrica': 'Valorización Inventario Inicial', 'Valor ($)': parseFloat(invVal) || 0 }
+                ];
+                const wsResumen = XLSX.utils.json_to_sheet(resumenData);
+                XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen_Financiero");
+
+                // --- HOJA B: TOP RENDIMIENTO ---
+                // Vamos a juntar Top Productos, Clientes y Vendedores rellenando con espacios blancos para no chocar columnas
+                let topRendimiento = [];
+                const maxRows = Math.max(
+                    (dashboardRes.top_products || []).length, 
+                    (dashboardRes.top_clients || []).length, 
+                    (dashboardRes.top_sellers || []).length,
+                    1
+                );
+                
+                for(let i=0; i<maxRows; i++) {
+                    const prod = dashboardRes.top_products ? dashboardRes.top_products[i] : null;
+                    const cli = dashboardRes.top_clients ? dashboardRes.top_clients[i] : null;
+                    const sell = dashboardRes.top_sellers ? dashboardRes.top_sellers[i] : null;
+                    
+                    topRendimiento.push({
+                        '--- PRODUCTOS MÁS VENDIDOS ---': prod ? prod.name || prod.product_name : '',
+                        'Prod_Cant': prod ? parseInt(prod.sold_quantity) || 0 : '',
+                        'Prod_Ingreso': prod ? parseFloat(prod.total_revenue) || 0 : '',
+                        '|': '|',
+                        '--- MEJORES CLIENTES ---': cli ? cli.client_name || cli.first_name : '',
+                        'Cli_Compras': cli ? parseInt(cli.purchases_count || cli.purchases_made) || 0 : '',
+                        'Cli_Gasto': cli ? parseFloat(cli.total_spent || cli.amount_spent) || 0 : '',
+                        '||': '||',
+                        '--- MEJORES VENDEDORES ---': sell ? sell.employee_name || sell.username || sell.name : '',
+                        'Vend_Ventas': sell ? parseInt(sell.sales_count) || 0 : '',
+                        'Vend_Ingreso': sell ? parseFloat(sell.total_revenue) || 0 : ''
+                    });
+                }
+                const wsRendimiento = XLSX.utils.json_to_sheet(topRendimiento);
+                XLSX.utils.book_append_sheet(wb, wsRendimiento, "Top_Rendimiento");
+
+                // --- HOJA C: USOS Y MÉTRICAS ---
+                let usosMetricas = [];
+                const maxRowsUsos = Math.max(
+                    (dashboardRes.payment_distribution || []).length, 
+                    (dashboardRes.currency_distribution || []).length, 
+                    (dashboardRes.peak_hours || []).length,
+                    1
+                );
+                
+                for(let i=0; i<maxRowsUsos; i++) {
+                    const pay = dashboardRes.payment_distribution ? dashboardRes.payment_distribution[i] : null;
+                    const curr = dashboardRes.currency_distribution ? dashboardRes.currency_distribution[i] : null;
+                    const peak = dashboardRes.peak_hours ? dashboardRes.peak_hours[i] : null;
+                    
+                    usosMetricas.push({
+                        '--- MEDIOS DE PAGO ---': pay ? pay.pt_name || pay.name : '',
+                        'Pago_Cant': pay ? parseInt(pay.usage_count) || 0 : '',
+                        'Pago_Ingreso': pay ? parseFloat(pay.total_amount) || 0 : '',
+                        '|': '|',
+                        '--- MONEDAS ---': curr ? curr.currency_name || curr.name : '',
+                        'Moneda_Total': curr ? parseFloat(curr.total_amount) || 0 : '',
+                        '||': '||',
+                        '--- HORARIOS PICO ---': peak ? peak.sale_hour + ':00' : '',
+                        'Hora_Ventas': peak ? parseInt(peak.sales_count) || 0 : ''
+                    });
+                }
+                const wsUsos = XLSX.utils.json_to_sheet(usosMetricas);
+                XLSX.utils.book_append_sheet(wb, wsUsos, "Usos_y_Metricas");
+
+            } else {
+                // Fallback si no hay datos de analíticas
+                let fallback = [{ Mensaje: "No se pudieron obtener métricas." }];
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fallback), "Analiticas_Error");
+            }
         }
 
         statusDiv.textContent = 'Iniciando descarga...';
