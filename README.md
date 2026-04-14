@@ -1,5 +1,5 @@
 ﻿# 📦 StockiFy — Sistema de Gestión de Inventarios
-![Static Badge](https://img.shields.io/badge/Status%20-EN%20DESARROLLO-orange)
+![Static Badge](https://img.shields.io/badge/Status%20-FINALIZADO-green)
 ![Static Badge](https://img.shields.io/badge/Backend-PHP-blue)
 ![Static Badge](https://img.shields.io/badge/Database-MySQL-green)
 ![Static Badge](https://img.shields.io/badge/Release%20date-2026-yellow)
