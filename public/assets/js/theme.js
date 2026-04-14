@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.style.setProperty('--accent-red', '#BF616A'); // error
     document.documentElement.style.setProperty('--accent-green', '#A3BE8C'); // ok
     document.documentElement.style.setProperty('--accent-yellow', '#EBCB8B'); // warning
-    document.documentElement.style.setProperty('--accent-blue', '#88C0D0');
-    document.documentElement.style.setProperty('--accent-violet', '#B48EAD');
+    document.documentElement.style.setProperty('--accent-blue', '#88C0D0'); // info
+    document.documentElement.style.setProperty('--accent-violet', '#B48EAD'); // warning
 
     document.documentElement.style.setProperty('--accent-red-50', '#BF616A80');
     document.documentElement.style.setProperty('--accent-red-20', '#BF616A33');

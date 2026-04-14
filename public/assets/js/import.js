@@ -8,7 +8,7 @@ let uploadedFile = null;
 let currentStockifyColumns = [];
 let detectedDelimiter = ','; // Variable para guardar el delimitador detectado
 
-window.setStockifyColumns = function(columns) {
+window.setStockifyColumns = function (columns) {
     currentStockifyColumns = columns || [];
 };
 
@@ -26,7 +26,7 @@ export function openImportModal() {
     mappingForm = document.getElementById('mapping-form');
 
     showStep(1);
-    if(importStatus) importStatus.textContent = '';
+    if (importStatus) importStatus.textContent = '';
     uploadedFile = null;
     detectedDelimiter = ',';
     if (fileInput) fileInput.value = '';
@@ -43,36 +43,36 @@ function showStep(stepNumber) {
     step1.classList.toggle('hidden', stepNumber !== 1);
     step2.classList.toggle('hidden', stepNumber !== 2);
 
-    if(validatePrepareBtn) validatePrepareBtn.classList.toggle('hidden', stepNumber !== 2);
-    if(mappingForm) mappingForm.classList.toggle('hidden', stepNumber !== 2);
+    if (validatePrepareBtn) validatePrepareBtn.classList.toggle('hidden', stepNumber !== 2);
+    if (mappingForm) mappingForm.classList.toggle('hidden', stepNumber !== 2);
 }
 
 function setupEventListeners() {
     closeModalBtn = document.getElementById('close-modal-btn');
     importCancelBtn = document.getElementById('import-cancel-btn');
 
-    if(closeModalBtn) {
+    if (closeModalBtn) {
         const newBtn = closeModalBtn.cloneNode(true);
         closeModalBtn.parentNode.replaceChild(newBtn, closeModalBtn);
         closeModalBtn = newBtn;
         closeModalBtn.addEventListener('click', closeImportModal);
     }
 
-    if(importCancelBtn) {
+    if (importCancelBtn) {
         const newCancel = importCancelBtn.cloneNode(true);
         importCancelBtn.parentNode.replaceChild(newCancel, importCancelBtn);
         importCancelBtn = newCancel;
         importCancelBtn.addEventListener('click', closeImportModal);
     }
 
-    if(validatePrepareBtn) {
+    if (validatePrepareBtn) {
         const newValidate = validatePrepareBtn.cloneNode(true);
         validatePrepareBtn.parentNode.replaceChild(newValidate, validatePrepareBtn);
         validatePrepareBtn = newValidate;
         validatePrepareBtn.addEventListener('click', handlePrepareImport);
     }
 
-    if(dropZone) {
+    if (dropZone) {
         const newZone = dropZone.cloneNode(true);
         dropZone.parentNode.replaceChild(newZone, dropZone);
         dropZone = newZone;
@@ -87,7 +87,7 @@ function setupEventListeners() {
         });
     }
 
-    if(fileInput) {
+    if (fileInput) {
         const newInput = fileInput.cloneNode(true);
         fileInput.parentNode.replaceChild(newInput, fileInput);
         fileInput = newInput;
@@ -104,7 +104,7 @@ async function handleFileSelect(file) {
     }
 
     uploadedFile = file;
-    if(importStatus) importStatus.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Analizando <b>${file.name}</b>...`;
+    if (importStatus) importStatus.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Analizando <b>${file.name}</b>...`;
 
     const formData = new FormData();
     formData.append('csv_file', file);
@@ -118,13 +118,13 @@ async function handleFileSelect(file) {
 
             generateMappingTable(response.headers, response.ui_headers || response.headers);
             showStep(2);
-            if(importStatus) importStatus.textContent = '';
+            if (importStatus) importStatus.textContent = '';
         } else {
             throw new Error(response.message || 'Error al leer cabeceras.');
         }
     } catch (error) {
         console.error(error);
-        if(importStatus) importStatus.textContent = '';
+        if (importStatus) importStatus.textContent = '';
         pop_ups.error(error.message, "Error de Lectura");
     }
 }
@@ -203,7 +203,7 @@ function generateMappingTable(csvHeaders, uiHeaders) {
         });
 
         // Event listener para actualizar dinámicamente las columnas usadas (opcional pero lo dejamos simple capturando al validar)
-        select.addEventListener('change', function() {
+        select.addEventListener('change', function () {
             if (this.value) {
                 this.style.borderColor = 'var(--primary-color, #4CAF50)';
                 this.style.backgroundColor = '#f0fff4';
@@ -219,12 +219,12 @@ function generateMappingTable(csvHeaders, uiHeaders) {
     });
 
     mappingForm.appendChild(gridContainer);
-    
+
     setTimeout(() => {
         const currentSelects = mappingForm.querySelectorAll('select');
         const actuallyUsed = new Set();
-        currentSelects.forEach(sel => { if(sel.value) actuallyUsed.add(sel.value); });
-        
+        currentSelects.forEach(sel => { if (sel.value) actuallyUsed.add(sel.value); });
+
         const unmappedCsvHeaders = csvHeaders.filter(h => !actuallyUsed.has(h) && h.trim() !== '');
 
         if (unmappedCsvHeaders.length > 0) {
@@ -233,7 +233,7 @@ function generateMappingTable(csvHeaders, uiHeaders) {
             extraSection.innerHTML = `
                 <hr style="border: 1px dashed var(--border-color, #ccc); margin-bottom: 20px;">
                 <h5 style="color: var(--text-color, #555); font-size: 15px; font-weight: 600; margin-bottom: 15px;">
-                    ✨ Otras columnas detectadas en tu archivo:
+                    Otras columnas detectadas en tu archivo:
                     <span style="display: block; font-size: 12px; font-weight: 400; color: #888; margin-top: 5px;">
                         Seleccionalas para crear la columna e importar sus datos al vuelo.
                     </span>
@@ -255,15 +255,15 @@ function generateMappingTable(csvHeaders, uiHeaders) {
                 wrap.style.cursor = 'pointer';
                 wrap.style.fontSize = '13px';
                 wrap.style.transition = 'all 0.2s';
-                
+
                 wrap.onmouseover = () => wrap.style.borderColor = 'var(--primary-color, #4CAF50)';
-                wrap.onmouseout = () => { if(!check.checked) wrap.style.borderColor = 'var(--border-color, #eaeaea)'; }
+                wrap.onmouseout = () => { if (!check.checked) wrap.style.borderColor = 'var(--border-color, #eaeaea)'; }
 
                 const check = document.createElement('input');
                 check.type = 'checkbox';
                 check.className = 'dynamic-column-checkbox';
                 check.value = col;
-                
+
                 check.addEventListener('change', () => {
                     if (check.checked) {
                         wrap.style.background = '#e8f5e9';
@@ -303,7 +303,7 @@ async function handlePrepareImport() {
 
     const dynamicCheckboxes = mappingForm.querySelectorAll('.dynamic-column-checkbox:checked');
     if (dynamicCheckboxes.length > 0) {
-        if(validatePrepareBtn) {
+        if (validatePrepareBtn) {
             validatePrepareBtn.disabled = true;
             validatePrepareBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Preparando DB...';
         }
@@ -311,7 +311,7 @@ async function handlePrepareImport() {
             try {
                 const addReq = await fetch('/api/table/manage-column.php', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'add_column',
                         inventoryId: typeof activeInventoryId !== 'undefined' ? activeInventoryId : window.activeInventoryId,
@@ -319,7 +319,7 @@ async function handlePrepareImport() {
                     })
                 });
                 const addRes = await addReq.json();
-                if(addRes.success) {
+                if (addRes.success) {
                     mappingData[cb.value] = cb.value;
                     hasMapping = true;
                 } else {
@@ -345,7 +345,7 @@ async function handlePrepareImport() {
     const overwrite = document.getElementById('import-overwrite-toggle')?.checked ? '1' : '0';
     formData.append('overwrite', overwrite);
 
-    if(validatePrepareBtn) {
+    if (validatePrepareBtn) {
         validatePrepareBtn.disabled = true;
         validatePrepareBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...';
     }
@@ -370,7 +370,7 @@ async function handlePrepareImport() {
     } catch (error) {
         pop_ups.error(error.message, "Error en Importación");
     } finally {
-        if(validatePrepareBtn) {
+        if (validatePrepareBtn) {
             validatePrepareBtn.disabled = false;
             validatePrepareBtn.textContent = 'Confirmar e Importar';
         }
