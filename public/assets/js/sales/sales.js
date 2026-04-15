@@ -26,7 +26,7 @@ export class SalesModule {
     constructor() {
         this.containerId = 'sales';
         this.isInitialized = false;
-        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, total_final: 0, exchange_rate: 1 };
+        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total_final: 0, exchange_rate: 1 };
         this.resources = { products: [], customers: [], paymentMethods: [], employees: [], config: null };
         this.currentSortOrder = 'DESC';
 
@@ -159,6 +159,17 @@ export class SalesModule {
                                         <label class="form-section-title">Notas de Venta</label>
                                         <textarea id="sale-notes" class="rustic-input" placeholder="Opcional..." style="height:40px; width:100%; resize:none;"></textarea>
                                     </div>
+                                    <div class="form-section" style="margin-bottom: 15px; border: 1px dashed var(--accent-color); padding: 10px; border-radius: 8px; background: #fffdf5;">
+                                        <label class="form-section-title" style="color: var(--accent-color);"><i class="ph-bold ph-tag"></i> Descuento Manual</label>
+                                        <div style="display:flex; gap:8px; align-items:center;">
+                                            <input type="number" id="sale-discount-value" class="rustic-input" placeholder="0" min="0" style="flex:1;">
+                                            <select id="sale-discount-type" class="rustic-select" style="width:auto; min-width:100px;">
+                                                <option value="fixed">$ Monto</option>
+                                                <option value="percent">% Porcentaje</option>
+                                            </select>
+                                        </div>
+                                        <div id="discount-applied-display" style="text-align:right; font-size:0.8rem; color:var(--accent-color); margin-top:5px; font-weight:700;"></div>
+                                    </div>
                                     <div class="scrollable-list" style="padding-right: 5px; overflow-x: visible;">
                                         <div class="form-section">
                                             <label class="form-section-title">Cliente</label>
@@ -202,6 +213,7 @@ export class SalesModule {
                                     
                                     <div class="totals-box">
                                         <div class="flex-row total-line"><span>Total valor Productos:</span> <span id="checkout-subtotal">$0,00</span></div>
+                                        <div class="flex-row total-line" id="checkout-discount-row" style="color:var(--accent-color); display:none;"><span>Descuento:</span> <span id="checkout-discount">-$0,00</span></div>
                                         <div class="flex-row total-line" style="color:var(--color-gray);"><span>Recargos/Desc.:</span> <span id="checkout-surcharges">$0,00</span></div>
                                         <div class="flex-row total-line total-final"><span>Total a pagar:</span> <span id="checkout-total-final">$0,00</span></div>
                                         <div class="flex-row total-line" style="font-weight:bold;" id="change-row"><span>Falta para completar:</span> <span id="checkout-diff">$0,00</span></div>
@@ -330,6 +342,8 @@ export class SalesModule {
 
         document.getElementById('toggle-cart-currency-btn')?.addEventListener('click', () => this.toggleCartCurrency());
         document.getElementById('sale-commission-pct')?.addEventListener('input', () => this.calculateCommission());
+        document.getElementById('sale-discount-value')?.addEventListener('input', () => this.recalcSale());
+        document.getElementById('sale-discount-type')?.addEventListener('change', () => this.recalcSale());
         document.getElementById('confirm-sale-btn')?.addEventListener('click', () => this.submitSale());
 
         const btnBackHeader = document.getElementById('mobile-back-to-products');
@@ -377,11 +391,14 @@ export class SalesModule {
             document.getElementById('sale-modal-body').style.display = 'flex';
         }
 
-        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, total_final: 0, exchange_rate: this.rates.USD };
+        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total_final: 0, exchange_rate: this.rates.USD };
         this.activePaymentTab = 'ARS';
         this.showingCartInUSD = false;
 
         document.getElementById('sale-notes').value = '';
+        const discInput = document.getElementById('sale-discount-value'); if(discInput) discInput.value = '';
+        const discType = document.getElementById('sale-discount-type'); if(discType) discType.value = 'fixed';
+        const discDisplay = document.getElementById('discount-applied-display'); if(discDisplay) discDisplay.textContent = '';
         this.switchPaymentTab('ARS');
         this.renderProducts(this.resources.products);
         this.fillSelect('sale-customer', this.resources.customers, 'id', 'full_name', 'Cliente General');
@@ -464,8 +481,10 @@ export class SalesModule {
             }
             exist.cantidad++;
         } else {
+            let costInArs = p.cost_price != null ? parseFloat(p.cost_price) : null;
+            if (costInArs != null && p.currency === 'USD') costInArs = costInArs * this.rates.USD;
             this.currentSale.items.push({
-                id: p.id, nombre: p.name, cantidad: 1, precio: priceInArs, original_currency: p.currency, max_stock: parseFloat(p.stock)
+                id: p.id, nombre: p.name, cantidad: 1, precio: priceInArs, precio_original: priceInArs, cost_price: costInArs, original_currency: p.currency, max_stock: parseFloat(p.stock)
             });
         }
         this.recalcSale();
@@ -528,9 +547,39 @@ export class SalesModule {
         const rawSubtotal = this.currentSale.items.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
         const rawSurcharges = this.currentSale.payments.reduce((sum, p) => sum + p.surcharge_val, 0);
         const rawPaid = this.currentSale.payments.reduce((sum, p) => sum + p.amount + p.surcharge_val, 0);
+
+        // Descuento manual
+        const discValInput = document.getElementById('sale-discount-value');
+        const discTypeInput = document.getElementById('sale-discount-type');
+        let discountAmount = 0;
+        if (discValInput && discTypeInput) {
+            const discVal = parseFloat(discValInput.value) || 0;
+            const discType = discTypeInput.value;
+            if (discType === 'percent') {
+                discountAmount = round(rawSubtotal * (discVal / 100));
+            } else {
+                discountAmount = round(discVal);
+            }
+            if (discountAmount < 0) discountAmount = 0;
+            if (discountAmount > rawSubtotal) discountAmount = rawSubtotal;
+        }
+        this.currentSale.discount_amount = discountAmount;
+
+        const discDisplay = document.getElementById('discount-applied-display');
+        const discRow = document.getElementById('checkout-discount-row');
+        const discEl = document.getElementById('checkout-discount');
+        if (discountAmount > 0) {
+            if (discDisplay) discDisplay.textContent = `Descuento aplicado: -${fmtMoney(discountAmount)}`;
+            if (discRow) discRow.style.display = 'flex';
+            if (discEl) discEl.textContent = `-${fmtMoney(discountAmount)}`;
+        } else {
+            if (discDisplay) discDisplay.textContent = '';
+            if (discRow) discRow.style.display = 'none';
+        }
+
         this.currentSale.subtotal_items = rawSubtotal;
         this.currentSale.total_surcharges = rawSurcharges;
-        this.currentSale.total_final = round(rawSubtotal + rawSurcharges);
+        this.currentSale.total_final = round(rawSubtotal - discountAmount + rawSurcharges);
         const totalPaid = round(rawPaid);
         const diff = round(totalPaid - this.currentSale.total_final);
         document.getElementById('checkout-subtotal').textContent = fmtMoney(this.currentSale.subtotal_items);
@@ -558,12 +607,43 @@ export class SalesModule {
         const c = document.getElementById('sale-cart-items');
         if(this.currentSale.items.length === 0) { c.innerHTML = '<div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>'; }
         else {
-            c.innerHTML = this.currentSale.items.map((item, idx) => `
-                <div class="cart-card">
-                    <div class="cart-row-top"><div class="cart-name">${item.nombre}</div><div class="cart-unit-price">${fmtMoney(item.precio)} c/u</div></div>
+            c.innerHTML = this.currentSale.items.map((item, idx) => {
+                const wasEdited = item.precio_original && Math.abs(item.precio - item.precio_original) > 0.01;
+                const editedBadge = wasEdited ? `<span style="font-size:0.65rem; color:var(--accent-color); margin-left:4px;" title="Precio original: ${fmtMoney(item.precio_original)}">✏️</span>` : '';
+                const belowCost = item.cost_price != null && item.precio < item.cost_price;
+                const costWarning = belowCost ? `<div style="font-size:0.65rem; color:var(--accent-red); font-weight:bold;">⚠ Bajo costo (${fmtMoney(item.cost_price)})</div>` : '';
+                return `<div class="cart-card">
+                    <div class="cart-row-top"><div class="cart-name">${item.nombre}</div><div class="cart-unit-price editable-price" data-idx="${idx}" title="Doble click para editar precio">${fmtMoney(item.precio)} c/u${editedBadge}</div></div>
+                    ${costWarning}
                     <div class="cart-row-bottom"><div class="cart-total">${fmtMoney(item.precio * item.cantidad)}</div>
                     <div class="cart-controls-wrapper"><button class="ctrl-btn sub" data-idx="${idx}">-</button><div class="qty-val">${item.cantidad}</div><button class="ctrl-btn add" data-idx="${idx}">+</button><button class="del-btn del" data-idx="${idx}" title="Eliminar"><i class="ph ph-trash"></i></button></div></div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
+            // Doble-click para editar precio
+            c.querySelectorAll('.editable-price').forEach(el => {
+                el.style.cursor = 'pointer';
+                el.addEventListener('dblclick', () => {
+                    const idx = el.dataset.idx;
+                    const item = this.currentSale.items[idx];
+                    const currentVal = item.precio;
+                    el.innerHTML = `<input type="number" class="rustic-input inline-price-edit" value="${currentVal}" step="0.01" min="0" style="width:80px; padding:2px 5px; font-size:0.85rem; text-align:right;">`;
+                    const input = el.querySelector('input');
+                    input.focus();
+                    input.select();
+                    const commitEdit = () => {
+                        const newPrice = parseFloat(input.value);
+                        if (!isNaN(newPrice) && newPrice >= 0) {
+                            item.precio = newPrice;
+                            if (item.cost_price != null && newPrice < item.cost_price) {
+                                pop_ups.warning(`⚠️ El precio de "${item.nombre}" (${fmtMoney(newPrice)}) está por debajo del costo de compra (${fmtMoney(item.cost_price)})`);
+                            }
+                        }
+                        this.recalcSale();
+                    };
+                    input.addEventListener('blur', commitEdit);
+                    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } if (e.key === 'Escape') { this.recalcSale(); } });
+                });
+            });
             c.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => { 
                 const item = this.currentSale.items[b.dataset.idx]; 
                 if (item.cantidad >= item.max_stock) {
@@ -610,6 +690,7 @@ export class SalesModule {
             customer_id: document.getElementById('sale-customer').value || null,
             seller_id: document.getElementById('sale-seller').value || null,
             commission_amount: this.currentSale.subtotal_items * (pct / 100),
+            discount_amount: this.currentSale.discount_amount || 0,
             total_final: this.currentSale.total_final,
             notes: document.getElementById('sale-notes').value,
             exchange_rate_snapshot: this.currentSale.exchange_rate,
@@ -666,8 +747,10 @@ export class SalesModule {
         try {
             const data = await getSalesHistory(order);
             if(!data.success || !data.sales || data.sales.length === 0) { b.innerHTML='<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No hay ventas registradas</td></tr>'; return; }
-            b.innerHTML = data.sales.map(s => {
-                const dateStr = s.created_at; const total = s.total; const seller = s.seller_name; const comm = s.commission;
+            b.innerHTML = data.sales.map((s, idx) => {
+                const total = data.sales.length;
+                const displayNum = order.toLowerCase() === 'desc' ? total - idx : idx + 1;
+                const dateStr = s.created_at; const total_amount = s.total; const seller = s.seller_name; const comm = s.commission;
                 let payBadge = '';
                 if (s.payments && s.payments.length > 0) {
                     const first = s.payments[0]; const extra = s.payments.length - 1; const plus = extra > 0 ? ` <b style="color:var(--accent-color);">+${extra}</b>` : '';
@@ -677,7 +760,7 @@ export class SalesModule {
                 if (seller && seller !== '-' && seller !== 'No asignado') {
                     sellerHtml = `<div style="line-height:1.2;"><div style="font-weight:600; color:#333;"><i class="ph ph-identification-badge" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${seller}</div>${comm > 0 ? `<div style="font-size:0.75rem; color:var(--sale-green); font-weight:600;">Com: ${fmtMoney(comm)}</div>` : ''}</div>`;
                 }
-                return `<tr style="border-bottom:1px solid #eee;"><td style="padding:10px 15px;">${fmtDate(dateStr)}<div style="font-size:0.75rem; color:#999;">#${s.id}</div></td><td style="padding:10px 15px;"><div style="font-weight:600; color:#444;"><i class="ph ph-user-focus" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${s.customer_name}</div></td><td style="padding:10px 15px;">${sellerHtml}</td><td style="padding:10px 15px; text-align:right;"><div style="font-weight:800; color:var(--sale-green); font-size:1.1rem; line-height:1.2;">${fmtMoney(total)}</div>${payBadge}</td><td style="padding:10px 15px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" title="Ver Ticket" onclick="window.salesModuleInstance.showDetails('${s.id}')"><i class="ph ph-receipt"></i></button><button class="action-btn edit" title="Editar" onclick="window.salesModuleInstance.editSale('${s.id}')"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" title="Eliminar" onclick="window.salesModuleInstance.deleteSale('${s.id}')"><i class="ph ph-trash"></i></button></div></td></tr>`;
+                return `<tr style="border-bottom:1px solid #eee;"><td style="padding:10px 15px;">${fmtDate(dateStr)}<div style="font-size:0.75rem; color:#999;">#${displayNum}</div></td><td style="padding:10px 15px;"><div style="font-weight:600; color:#444;"><i class="ph ph-user-focus" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${s.customer_name}</div></td><td style="padding:10px 15px;">${sellerHtml}</td><td style="padding:10px 15px; text-align:right;"><div style="font-weight:800; color:var(--sale-green); font-size:1.1rem; line-height:1.2;">${fmtMoney(total_amount)}</div>${payBadge}</td><td style="padding:10px 15px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" title="Ver Ticket" onclick="window.salesModuleInstance.showDetails('${s.id}')"><i class="ph ph-receipt"></i></button><button class="action-btn edit" title="Editar" onclick="window.salesModuleInstance.editSale('${s.id}')"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" title="Eliminar" onclick="window.salesModuleInstance.deleteSale('${s.id}')"><i class="ph ph-trash"></i></button></div></td></tr>`;
             }).join('');
         } catch(e) { console.error(e); b.innerHTML='<tr><td colspan="5" style="text-align:center; color:red;">Error de visualización</td></tr>'; }
     }
@@ -717,7 +800,7 @@ export class SalesModule {
             const res = await getSaleDetails(id); if(!res.success) throw new Error(res.message || "Error al cargar detalles");
             const s = res.sale;
             const bodyContainer = document.getElementById('detail-modal-content');
-            let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;"><div style="font-size:1.3rem; font-weight:900; letter-spacing:1px;">TICKET #${s.id}</div><div style="font-size:0.9rem; margin-top:5px;">${fmtDate(s.created_at)}</div></div>`;
+            let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;"><div style="font-size:1.3rem; font-weight:900; letter-spacing:1px;">TICKET DE VENTA</div><div style="font-size:0.9rem; margin-top:5px;">${fmtDate(s.created_at)}</div></div>`;
             html += `<div class="ticket-row" style="margin-bottom:10px;"><div style="display:flex; flex-direction:column; width:100%;"><span style="font-size:0.7rem; text-transform:uppercase; color:#666; font-weight:bold;">CLIENTE:</span><span style="font-size:1rem; font-weight:800;">${s.customer_name || 'Consumidor Final'}</span></div></div>`;
             let sellerDisplay = "No especificado"; let commissionDisplay = "";
             if (s.seller_name && s.seller_name !== '-') {
@@ -730,14 +813,183 @@ export class SalesModule {
             const productsTable = document.createElement('table'); productsTable.innerHTML = `<thead><tr><th style="text-align:left;">DESCRIPCIÓN</th><th style="text-align:center; width:40px;">CANT</th><th style="text-align:right;">TOTAL</th></tr></thead><tbody id="detail-items-list"></tbody>`;
             bodyContainer.appendChild(productsTable);
             document.getElementById('detail-items-list').innerHTML = s.items.map(i => `<tr><td style="text-align:left; line-height:1.2;">${i.product_name}<div style="font-size:0.75rem; color:#666;">Unit: ${fmtMoney(i.price)}</div></td><td style="text-align:center; font-weight:bold; vertical-align:top;">${parseFloat(i.quantity)}</td><td style="text-align:right; font-weight:800; vertical-align:top;">${fmtMoney(i.subtotal)}</td></tr>`).join('');
+            const discAmt = s.discount_amount ? parseFloat(s.discount_amount) : 0;
+            if (discAmt > 0) {
+                bodyContainer.insertAdjacentHTML('beforeend', `<div style="display:flex; justify-content:space-between; padding:8px 0; color:var(--accent-color); font-weight:700; border-top:1px dotted #ccc; margin-top:10px;"><span>Descuento:</span><span>-${fmtMoney(discAmt)}</span></div>`);
+            }
             bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-total-section"><span id="detail-total-label">TOTAL A PAGAR</span><span id="detail-total">${fmtMoney(s.total_final)}</span></div>`);
             bodyContainer.insertAdjacentHTML('beforeend', '<h4>FORMA DE PAGO</h4>');
             const paymentsTable = document.createElement('table'); paymentsTable.innerHTML = '<tbody id="detail-payments-list"></tbody>';
             bodyContainer.appendChild(paymentsTable);
             document.getElementById('detail-payments-list').innerHTML = s.payments.map(p => `<tr class="ticket-row" style="border:none;"><td style="text-align:left; font-weight:600;">${p.payment_method_name}</td><td style="text-align:right; font-weight:800;">${fmtMoney(p.amount)}</td></tr>`).join('');
             if(s.notes) bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-notes"><strong>NOTAS:</strong><br>${s.notes}</div>`);
+            
+            // EMAIL BOTON
+            let emailBtnHTML = '';
+            if (s.customer_email) {
+                emailBtnHTML = `<button id="send-ticket-email-btn" class="btn btn-primary" style="margin-top: 20px; width: 100%;"><i class="ph-bold ph-envelope-simple"></i> Enviar ticket vía mail al cliente</button>`;
+            } else {
+                emailBtnHTML = `<div style="position: relative; display: inline-block; width: 100%; margin-top: 20px;" title="El cliente no posee email registrado"><button id="send-ticket-email-btn" class="btn btn-secondary" style="width: 100%; opacity: 0.5; cursor: not-allowed;" disabled><i class="ph-bold ph-envelope-simple"></i> Enviar ticket vía mail al cliente</button></div>`;
+            }
+            bodyContainer.insertAdjacentHTML('beforeend', emailBtnHTML);
+            
             const modal = document.getElementById('detail-sale-modal'); modal.classList.remove('hidden'); modal.style.display = 'flex';
+
+            const btnSendMail = document.getElementById('send-ticket-email-btn');
+            if (btnSendMail && s.customer_email) {
+                btnSendMail.onclick = async () => {
+                    btnSendMail.disabled = true;
+                    btnSendMail.innerHTML = '<i class="ph-bold ph-spinner spinner-icon"></i> Enviando...';
+                    
+                    const htmlTicket = this.generateTicketEmailHTML(s);
+                    try {
+                        const emailRes = await fetch('/api/sales/send-email.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                emailInfo: {
+                                    to: s.customer_email,
+                                    subject: 'Ticket de Venta - Stockify',
+                                    from: 'no_reply@stockify.com.ar',
+                                    fromName: 'Stockify',
+                                    html: htmlTicket
+                                }
+                            })
+                        });
+                        const data = await emailRes.json();
+                        if (data.success) {
+                            pop_ups.success(`Ticket enviado exitosamente a ${s.customer_email}`);
+                            // Llamar para crear notificación simulada en la base de datos
+                            fetch('/api/notifications/create', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    type: 'var(--accent-green)',
+                                    title: 'Email Enviado',
+                                    message: `Mail enviado al cliente ${s.customer_name || 'Desconocido'}. Mail: ${s.customer_email}. Venta ID: ${s.id}.`,
+                                    inventory_id: s.inventory_id || null // El obj venta trae inventory_id. Fallback null
+                                })
+                            }).catch(e => console.error("Error al crear notif:", e));
+                            
+                            btnSendMail.innerHTML = '<i class="ph-bold ph-check"></i> Enviado correctamente';
+                        } else {
+                            pop_ups.error("Error al enviar email: " + (data.error || "Desconocido"));
+                            btnSendMail.innerHTML = '<i class="ph-bold ph-envelope-simple"></i> Reintentar Envío';
+                            btnSendMail.disabled = false;
+                        }
+                    } catch (err) {
+                        pop_ups.error("Error de conexión al enviar email.");
+                        btnSendMail.innerHTML = '<i class="ph-bold ph-envelope-simple"></i> Reintentar Envío';
+                        btnSendMail.disabled = false;
+                    }
+                };
+            }
         } catch(e) { pop_ups.error("Error: " + e.message); }
+    }
+
+    generateTicketEmailHTML(s) {
+        let itemsHtml = s.items.map(i => `
+            <tr>
+                <td style="padding: 10px 5px; border-bottom: 1px dotted #ccc;">
+                    <div style="font-weight: bold; color: #333;">${i.product_name}</div>
+                    <div style="font-size: 0.8rem; color: #666;">Unit: ${fmtMoney(i.price)}</div>
+                </td>
+                <td style="padding: 10px 5px; border-bottom: 1px dotted #ccc; text-align: center; font-weight: bold;">
+                    ${parseFloat(i.quantity)}
+                </td>
+                <td style="padding: 10px 5px; border-bottom: 1px dotted #ccc; text-align: right; font-weight: bold; color: #333;">
+                    ${fmtMoney(i.subtotal)}
+                </td>
+            </tr>
+        `).join('');
+
+        let paymentsHtml = s.payments.map(p => `
+            <tr>
+                <td style="padding: 10px 5px; border-bottom: 1px dotted #ccc; font-weight: bold; color: #666;">
+                    ${p.payment_method_name}
+                </td>
+                <td style="padding: 10px 5px; border-bottom: 1px dotted #ccc; text-align: right; font-weight: bold; color: #333;">
+                    ${fmtMoney(p.amount)}
+                </td>
+            </tr>
+        `).join('');
+
+        let sellerDisplay = "No especificado";
+        if (s.seller_name && s.seller_name !== '-') {
+            sellerDisplay = s.seller_name;
+        }
+
+        const emailDiscAmt = s.discount_amount ? parseFloat(s.discount_amount) : 0;
+        let discountHtml = '';
+        if (emailDiscAmt > 0) {
+            discountHtml = `
+                <div style="display: flex; justify-content: space-between; padding: 10px 5px; border-top: 1px dotted #ccc; color: #cc7700; font-weight: bold; font-size: 14px;">
+                    <span>Descuento:</span>
+                    <span>-${fmtMoney(emailDiscAmt)}</span>
+                </div>
+            `;
+        }
+
+        // Diseño del email
+        return `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Ticket de Venta</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
+            <div style="max-width: 450px; margin: 0 auto; background-color: #ffffff; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px;">
+                <div style="text-align: center; margin-bottom: 25px; border-bottom: 2px dashed #999; padding-bottom: 20px;">
+                    <h2 style="margin: 0; color: #333; letter-spacing: 1px; font-size: 24px;">TICKET DE VENTA</h2>
+                    <p style="margin: 5px 0 0 0; color: #777; font-size: 14px;">${fmtDate(s.created_at)}</p>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <span style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: bold; display: block; margin-bottom: 2px;">CLIENTE:</span>
+                    <span style="font-size: 16px; font-weight: bold; color: #333;">${s.customer_name || 'Consumidor Final'}</span>
+                </div>
+
+                <div style="margin-bottom: 25px; border-bottom: 1px dotted #ccc; padding-bottom: 15px;">
+                    <span style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: bold; display: block; margin-bottom: 2px;">ATENDIDO POR:</span>
+                    <span style="font-size: 16px; font-weight: bold; color: #333;">${sellerDisplay}</span>
+                </div>
+
+                <h4 style="margin: 0 0 10px 0; color: #555; text-transform: uppercase; font-size: 13px; text-align: center;">PRODUCTOS</h4>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding-bottom: 8px; border-bottom: 2px solid #ddd; color: #777; font-size: 12px;">DESCRIPCIÓN</th>
+                            <th style="text-align: center; padding-bottom: 8px; border-bottom: 2px solid #ddd; color: #777; width: 40px; font-size: 12px;">CANT</th>
+                            <th style="text-align: right; padding-bottom: 8px; border-bottom: 2px solid #ddd; color: #777; font-size: 12px;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+
+                ${discountHtml}
+
+                <div style="background-color: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 4px; text-align: center; margin-bottom: 25px;">
+                    <span style="display: block; font-size: 12px; color: #777; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">TOTAL A PAGAR</span>
+                    <span style="display: block; font-size: 28px; font-weight: bold; color: #333;">${fmtMoney(s.total_final)}</span>
+                </div>
+
+                <h4 style="margin: 0 0 10px 0; color: #555; text-transform: uppercase; font-size: 13px; text-align: center;">FORMA DE PAGO</h4>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                    <tbody>
+                        ${paymentsHtml}
+                    </tbody>
+                </table>
+                <div style="margin-top: 30px; text-align: center; padding-top: 20px; border-top: 2px dashed #999;">
+                    <p style="color: #888; font-size: 13px; margin: 0;">¡Gracias por su compra!</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
     }
 
     async editSale(id) {

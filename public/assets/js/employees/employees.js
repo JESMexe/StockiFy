@@ -1,4 +1,4 @@
-﻿/**
+/**
  */
 import { getEmployeeList } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
@@ -7,7 +7,8 @@ export class EmployeeModule {
     constructor() {
         this.containerId = 'employees';
         this.isInitialized = false;
-        this.editingId = null; // Para saber si estamos editando
+        this.editingId = null;
+        this.allEmployees = [];
     }
 
     init() {
@@ -29,7 +30,9 @@ export class EmployeeModule {
             <div class="employees-layout">
                 <div class="table-header">
                     <h2>Gestión de Empleados</h2>
-                    <div class="table-controls">
+                    <div class="table-controls" style="display:flex; align-items:center; gap:10px;">
+                        <input type="text" id="emp-search-input" placeholder="Buscar por nombre, DNI o email..."
+                            style="padding:8px 12px; border:2px solid #1b1b1b; border-radius:8px; font-family:'Satoshi',sans-serif; font-weight:500; font-size:0.95rem; outline:none; width:280px; box-shadow:2px 2px 0px rgba(0,0,0,0.1); transition:all 0.2s; align-self:stretch;">
                         <button id="emp-create-btn" class="btn btn-primary">+ Nuevo Empleado</button>
                     </div>
                 </div>
@@ -120,6 +123,10 @@ export class EmployeeModule {
                 this.deleteEmployee(empId);
             }
         });
+
+        document.getElementById('emp-search-input')?.addEventListener('input', (e) => {
+            this.filterEmployees(e.target.value);
+        });
     }
 
     openEditModal(emp) {
@@ -206,9 +213,13 @@ export class EmployeeModule {
         if(!container) return;
         container.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Cargando...</p>';
 
+        const searchInput = document.getElementById('emp-search-input');
+        if (searchInput) searchInput.value = '';
+
         try {
             const data = await getEmployeeList();
             if (!data.success || !data.employees.length) {
+                this.allEmployees = [];
                 container.innerHTML = `
                     <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:#888;">
                         <i class="ph ph-users" style="font-size: 3rem; margin-bottom: 10px;"></i>
@@ -217,41 +228,71 @@ export class EmployeeModule {
                 return;
             }
 
-            container.innerHTML = data.employees.map(e => {
-                const empJson = JSON.stringify(e).replace(/"/g, '&quot;');
-
-                const phoneHtml = e.phone ? `<div title="Teléfono"><i class="ph ph-phone"></i> ${e.phone}</div>` : '';
-                const emailHtml = e.email ? `<div title="Email"><i class="ph ph-envelope"></i> ${e.email}</div>` : '';
-                const dniHtml = e.dni ? `<div title="DNI"><i class="ph ph-identification-card"></i> ${e.dni}</div>` : '';
-
-                return `
-                <div class="emp-card">
-                    <div class="emp-card-actions">
-                        <button class="btn-icon btn-edit-emp" data-employee="${empJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                        <button class="btn-icon btn-delete-emp" data-id="${e.id}" title="Eliminar"><i class="ph ph-trash" style="color:var(--accent-red)"></i></button>
-                    </div>
-
-                    <div class="emp-avatar">
-                        ${e.full_name.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="emp-name">${e.full_name}</div>
-                    
-                    <div class="emp-details">
-                        ${dniHtml}
-                        ${phoneHtml}
-                        ${emailHtml}
-                    </div>
-
-                    <div class="emp-footer">
-                         Registrado: ${new Date(e.created_at).toLocaleDateString()}
-                    </div>
-                </div>
-            `}).join('');
+            this.allEmployees = data.employees;
+            this.renderEmployeeCards(this.allEmployees);
 
         } catch (e) {
             console.error(e);
             container.innerHTML = '<p style="color:red; text-align:center;">Error al cargar lista.</p>';
         }
+    }
+
+    renderEmployeeCards(employees) {
+        const container = document.getElementById('emp-list-body');
+        if (!container) return;
+
+        if (!employees.length) {
+            container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:2rem; color:#999;">No se encontraron resultados.</div>`;
+            return;
+        }
+
+        container.innerHTML = employees.map(e => {
+            const empJson = JSON.stringify(e).replace(/"/g, '&quot;');
+            const phoneHtml = e.phone ? `<div title="Teléfono"><i class="ph ph-phone"></i> ${e.phone}</div>` : '';
+            const emailHtml = e.email ? `<div title="Email"><i class="ph ph-envelope"></i> ${e.email}</div>` : '';
+            const dniHtml = e.dni ? `<div title="DNI"><i class="ph ph-identification-card"></i> ${e.dni}</div>` : '';
+
+            return `
+            <div class="emp-card">
+                <div class="emp-card-actions">
+                    <button class="btn-icon btn-edit-emp" data-employee="${empJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                    <button class="btn-icon btn-delete-emp" data-id="${e.id}" title="Eliminar"><i class="ph ph-trash" style="color:var(--accent-red)"></i></button>
+                </div>
+                <div class="emp-avatar">
+                    ${e.full_name.charAt(0).toUpperCase()}
+                </div>
+                <div class="emp-name">${e.full_name}</div>
+                <div class="emp-details">
+                    ${dniHtml}
+                    ${phoneHtml}
+                    ${emailHtml}
+                </div>
+                <div class="emp-footer">
+                     Registrado: ${new Date(e.created_at).toLocaleDateString()}
+                </div>
+            </div>
+        `}).join('');
+    }
+
+    filterEmployees(term) {
+        const normalize = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const stripNonDigits = (str) => (str || '').replace(/\D/g, '');
+        const q = normalize(term);
+        const qDigits = stripNonDigits(term);
+        if (!q && !qDigits) {
+            this.renderEmployeeCards(this.allEmployees);
+            return;
+        }
+        const filtered = this.allEmployees.filter(e => {
+            const name = normalize(e.full_name);
+            const dni = normalize(e.dni);
+            const email = normalize(e.email);
+            const phone = stripNonDigits(e.phone);
+            if (q && (name.includes(q) || dni.includes(q) || email.includes(q))) return true;
+            if (qDigits && (phone.includes(qDigits) || stripNonDigits(e.dni).includes(qDigits))) return true;
+            return false;
+        });
+        this.renderEmployeeCards(filtered);
     }
 }
 

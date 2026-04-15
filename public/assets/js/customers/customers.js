@@ -1,4 +1,4 @@
-﻿/**
+/**
  */
 import * as api from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
@@ -9,6 +9,7 @@ export class CustomerModule {
         this.isInitialized = false;
         this.editingId = null;
         this.currentSortOrder = 'DESC';
+        this.allCustomers = [];
     }
 
     init() {
@@ -70,7 +71,9 @@ export class CustomerModule {
             <div class="customers-layout">
                 <div class="table-header">
                     <h2>Clientes</h2>
-                    <div class="table-controls">
+                    <div class="table-controls" style="display:flex; align-items:center; gap:10px;">
+                        <input type="text" id="cust-search-input" placeholder="Buscar por nombre, DNI o email..."
+                            style="padding:8px 12px; border:2px solid #1b1b1b; border-radius:8px; font-family:'Satoshi',sans-serif; font-weight:500; font-size:0.95rem; outline:none; width:280px; box-shadow:2px 2px 0px rgba(0,0,0,0.1); transition:all 0.2s; align-self:stretch;">
                         <button id="customers-sort-btn" class="btn btn-secondary" title="Ordenar por ID (Mayor/Menor)">
                             <i class="ph ph-sort-ascending" id="cust-sort-icon"></i>
                         </button>
@@ -184,6 +187,10 @@ export class CustomerModule {
             e.preventDefault();
             this.handleFormSubmit();
         });
+
+        document.getElementById('cust-search-input')?.addEventListener('input', (e) => {
+            this.filterCustomers(e.target.value);
+        });
     }
 
     async handleFormSubmit() {
@@ -234,11 +241,16 @@ export class CustomerModule {
         if(!tbody) return;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
 
+        // Limpiar búsqueda al recargar
+        const searchInput = document.getElementById('cust-search-input');
+        if (searchInput) searchInput.value = '';
+
         try {
             const response = await fetch('/api/customers/get-all?order=' + order);
             const data = await response.json();
 
             if (!data.success || !data.customers.length) {
+                this.allCustomers = [];
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="4" class="text-center" style="padding:3rem; color:#888;">
@@ -249,44 +261,81 @@ export class CustomerModule {
                 return;
             }
 
-            tbody.innerHTML = data.customers.map(c => {
-                const cJson = JSON.stringify(c).replace(/"/g, '&quot;');
-
-                return `
-                <tr style="border-bottom:1px solid #eee;">
-                    <td style="padding:12px;">
-                        <div style="font-weight:600; color:#333;">${c.full_name}</div>
-                        <small style="color:#888;">ID: ${c.id}</small>
-                    </td>
-                    <td style="padding:12px;">
-                        ${c.phone ? `<div style="display:flex; align-items:center; gap:5px;"><i class="ph-fill ph-chats" style="color:var(--accent-color);"></i> ${c.phone}</div>` : ''}
-                        ${c.email ? `<small style="color:#666; display:block; margin-top:2px;">${c.email}</small>` : ''}
-                        ${!c.phone && !c.email ? '<span style="color:#ccc;">-</span>' : ''}
-                    </td>
-                    <td style="padding:12px;">${c.address || '<span style="color:#ccc;">-</span>'}</td>
-                    <td style="padding:12px; text-align:center;">
-                         <div class="btn-icon-group">
-                            <button class="action-btn view" data-id="${c.id}" title="Ver Detalles"><i class="ph ph-eye"></i></button>
-                            <button class="action-btn edit" data-customer="${cJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                            <button class="action-btn delete" data-id="${c.id}" title="Eliminar"><i class="ph ph-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
-            `}).join('');
-
-            tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
-            tbody.querySelectorAll('.edit').forEach(b => {
-                b.addEventListener('click', () => {
-                    const data = JSON.parse(b.dataset.customer);
-                    this.openEditModal(data);
-                });
-            });
-            tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => this.deleteCustomer(b.dataset.id)));
+            this.allCustomers = data.customers;
+            this.renderCustomerRows(this.allCustomers);
 
         } catch (e) {
             console.error(e);
             tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:red">Error al cargar</td></tr>';
         }
+    }
+
+    renderCustomerRows(customers) {
+        const tbody = document.getElementById('customers-list-body');
+        if (!tbody) return;
+
+        if (!customers.length) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:2rem; color:#999;">No se encontraron resultados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = customers.map((c, idx) => {
+            const total = customers.length;
+            const displayNum = this.currentSortOrder === 'DESC' ? total - idx : idx + 1;
+            const cJson = JSON.stringify(c).replace(/"/g, '&quot;');
+            return `
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:12px;">
+                    <div style="font-weight:600; color:#333;">${c.full_name}</div>
+                    <small style="color:#888;">#${displayNum}</small>
+                </td>
+                <td style="padding:12px;">
+                    ${c.phone ? `<div style="display:flex; align-items:center; gap:5px;"><i class="ph-fill ph-chats" style="color:var(--accent-color);"></i> ${c.phone}</div>` : ''}
+                    ${c.email ? `<small style="color:#666; display:block; margin-top:2px;">${c.email}</small>` : ''}
+                    ${!c.phone && !c.email ? '<span style="color:#ccc;">-</span>' : ''}
+                </td>
+                <td style="padding:12px;">${c.address || '<span style="color:#ccc;">-</span>'}</td>
+                <td style="padding:12px; text-align:center;">
+                     <div class="btn-icon-group">
+                        <button class="action-btn view" data-id="${c.id}" title="Ver Detalles"><i class="ph ph-eye"></i></button>
+                        <button class="action-btn edit" data-customer="${cJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                        <button class="action-btn delete" data-id="${c.id}" title="Eliminar"><i class="ph ph-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `}).join('');
+
+        tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
+        tbody.querySelectorAll('.edit').forEach(b => {
+            b.addEventListener('click', () => {
+                const data = JSON.parse(b.dataset.customer);
+                this.openEditModal(data);
+            });
+        });
+        tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => this.deleteCustomer(b.dataset.id)));
+    }
+
+    filterCustomers(term) {
+        const normalize = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const stripNonDigits = (str) => (str || '').replace(/\D/g, '');
+        const q = normalize(term);
+        const qDigits = stripNonDigits(term);
+        if (!q && !qDigits) {
+            this.renderCustomerRows(this.allCustomers);
+            return;
+        }
+        const filtered = this.allCustomers.filter(c => {
+            const name = normalize(c.full_name);
+            const dni = normalize(c.tax_id);
+            const email = normalize(c.email);
+            const phone = stripNonDigits(c.phone);
+            // Text match (accent-insensitive)
+            if (q && (name.includes(q) || dni.includes(q) || email.includes(q))) return true;
+            // Digit-only match for phone/DNI
+            if (qDigits && (phone.includes(qDigits) || stripNonDigits(c.tax_id).includes(qDigits))) return true;
+            return false;
+        });
+        this.renderCustomerRows(filtered);
     }
 
     openEditModal(c) {
@@ -343,7 +392,7 @@ export class CustomerModule {
                             ${cust.full_name.charAt(0).toUpperCase()}
                         </div>
                         <h2 style="margin:0;">${cust.full_name}</h2>
-                        <small style="color:#888;">Cliente #${cust.id}</small>
+                        <small style="color:#888;">Ficha de Cliente</small>
                     </div>
                     
                     <div class="detail-grid">

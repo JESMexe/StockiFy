@@ -1,4 +1,4 @@
-﻿/* public/assets/css/sales.css */
+/* public/assets/css/sales.css */
 
 /* --- VARIABLES DE ESTILO --- */
 :root {
@@ -160,11 +160,11 @@ textarea.rustic-input {
     overflow-x: visible;
     padding-right: 5px;
     margin-bottom: 10px;
-    scrollbar-color: var(--color-gray);
+    scrollbar-color: #ccc transparent;
 }
 .scrollable-list::-webkit-scrollbar { width: 6px; }
 .scrollable-list::-webkit-scrollbar-track { background: transparent; }
-.scrollable-list::-webkit-scrollbar-thumb { background: var(--color-black); border-radius: 10px; }
+.scrollable-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
 
 /* --- PRODUCTOS --- */
 .resource-item {
@@ -374,7 +374,16 @@ textarea.rustic-input {
 
 sale-products-list {
     z-index: 1;
-    scrollbar-color: var(--color-gray);
+    scrollbar-color: #ccc transparent;
+}
+
+/* Fix alineación del select de descuento */
+#sale-discount-type {
+    margin-top: 0;
+    height: 40px;
+    line-height: 40px;
+    padding: 0 30px 0 12px;
+    box-shadow: none;
 }
 
 .flex-row span {

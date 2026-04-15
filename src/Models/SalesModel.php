@@ -37,9 +37,9 @@ class SalesModel {
             if (!$this->db->inTransaction()) $this->db->beginTransaction();
 
             $sql = "INSERT INTO sales 
-                    (user_id, inventory_id, customer_id, seller_id, payment_method_id, sale_date, total_amount, amount_tendered, change_returned, commission_amount, notes, proof_file) 
+                    (user_id, inventory_id, customer_id, seller_id, payment_method_id, sale_date, total_amount, amount_tendered, change_returned, commission_amount, discount_amount, notes, proof_file) 
                     VALUES 
-                    (:user, :inv, :client, :seller, :pay_method, NOW(), :total, :tendered, :change, :comm, :notes, :file)";
+                    (:user, :inv, :client, :seller, :pay_method, NOW(), :total, :tendered, :change, :comm, :disc, :notes, :file)";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
@@ -55,6 +55,7 @@ class SalesModel {
                 ':tendered'   => $data['amount_tendered'] ?? 0,
                 ':change'     => $data['change_returned'] ?? 0,
                 ':comm'       => $data['commission_amount'] ?? 0,
+                ':disc'       => $data['discount_amount'] ?? 0,
                 ':notes'      => $data['notes'] ?? null,
                 ':file'       => $data['proof_file'] ?? null
             ]);
@@ -262,6 +263,7 @@ class SalesModel {
                     s.total_amount as total_final,     -- JS usa 'total_final'
                     c.full_name as customer_name,
                     c.full_name as nombre_cliente,     -- Compatibilidad
+                    c.email as customer_email,
                     COALESCE(e.full_name, u.full_name, 'Sistema') as seller_name
                 FROM sales s
                 LEFT JOIN customers c ON s.customer_id = c.id

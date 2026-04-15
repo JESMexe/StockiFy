@@ -55,6 +55,12 @@ class MailService
                     $mail->AltBody = "Hola {$userName}, tu código de verificación para cambiar la contraseña es: {$otpCode}. Este código es temporal. Si no solicitaste este cambio, ignorá este correo.";
                     break;
 
+                case 'delete_inventory':
+                    $mail->Subject = '⚠️ ALERTA CRÍTICA: Solicitud de eliminación de inventario';
+                    $mail->Body = $this->generateDeleteInventoryOtpEmailHtml($otpCode, $userName);
+                    $mail->AltBody = "Hola {$userName}, tu código de verificación para ELIMINAR PERMANENTEMENTE un inventario es: {$otpCode}. Expira en 10 minutos. Si no iniciaste esta acción, cambiá tu contraseña inmediatamente.";
+                    break;
+
                 default:
                     throw new \InvalidArgumentException('Tipo de acción OTP no soportado.');
             }
@@ -137,6 +143,98 @@ class MailService
             error_log("MailService::sendDailyBalance error: " . $e->getMessage());
             return false;
         }
+    }
+
+    private function generateDeleteInventoryOtpEmailHtml(string $code, string $userName = 'Usuario'): string
+    {
+        return '
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Alerta Crítica de Seguridad | StockiFy</title>
+    </head>
+    <body style="margin:0; padding:0; background-color:#BF616A22; font-family:Arial, Helvetica, sans-serif; color:#1a1a1a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; margin:0; padding:32px 0;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:3px solid #BF616A; border-radius:14px; overflow:hidden;">
+                        
+                        <tr>
+                            <td style="padding:28px 32px; border-bottom:3px solid #BF616A; background:#BF616A11;">
+                                <div style="font-size:28px; font-weight:bold; color:#1a1a1a;">StockiFy</div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:36px 32px 16px 32px;">
+                                <p style="margin:0 0 10px 0; font-size:14px; color:#BF616A; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">
+                                    ⚠️ Alerta Crítica de Seguridad
+                                </p>
+                                <h1 style="margin:0 0 18px 0; font-size:28px; line-height:1.2; color:#1a1a1a;">
+                                    Solicitud de Eliminación de Inventario
+                                </h1>
+                                <p style="margin:0; font-size:16px; line-height:1.7; color:#475569;">
+                                    Hola <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>, alguien solicitó eliminar <strong>permanentemente</strong> un inventario en tu cuenta de StockiFy. Usá el siguiente código para confirmar esta acción.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:10px 32px 8px 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#BF616A22; border:2px dashed #BF616A; border-radius:12px;">
+                                    <tr>
+                                        <td align="center" style="padding:28px 16px;">
+                                            <p style="margin:0 0 12px 0; font-size:13px; color:#BF616A; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">
+                                                Código de Confirmación — Válido por 10 minutos
+                                            </p>
+                                            <p style="margin:0; font-size:42px; line-height:1; font-weight:bold; letter-spacing:12px; color:#BF616A;">
+                                                ' . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . '
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:18px 32px 0 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#BF616A33; border-left:5px solid #BF616A; border-radius:8px;">
+                                    <tr>
+                                        <td style="padding:16px 18px; font-size:14px; line-height:1.6; color:#7d2a2a; font-weight:bold;">
+                                            🔴 Si no sos vos quien realizó esta solicitud, NO compartas este código. Esta acción es irreversible. Cambiá tu contraseña inmediatamente y contactá soporte.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:20px 32px 0 32px;">
+                                <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">
+                                    Este código expira automáticamente a los 10 minutos de haber sido generado. No lo compartas con nadie.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:28px 32px 32px 32px;">
+                                <p style="margin:0; font-size:14px; line-height:1.6; color:#64748b;">
+                                    ¿Necesitás ayuda? Escribinos a
+                                    <a href="mailto:soporte@stockify.com.ar" style="color:#BF616A; text-decoration:none; font-weight:bold;">
+                                        soporte@stockify.com.ar
+                                    </a>
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>';
     }
 
     private function generateSecurityCodeEmailHtml(string $code, string $userName = 'Usuario'): string

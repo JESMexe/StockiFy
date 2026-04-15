@@ -1,4 +1,4 @@
-﻿/**
+/**
  */
 import { getProviderList, getProviderDetails } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
@@ -8,7 +8,8 @@ export class ProviderModule {
         this.containerId = 'providers';
         this.isInitialized = false;
         this.editingId = null;
-        this.currentSortOrder = 'DESC'; // Estado inicial del ordenamiento
+        this.currentSortOrder = 'DESC';
+        this.allProviders = [];
     }
 
     init() {
@@ -59,7 +60,9 @@ export class ProviderModule {
             <div class="providers-layout">
                 <div class="table-header">
                     <h2>Proveedores</h2>
-                    <div class="table-controls">
+                    <div class="table-controls" style="display:flex; align-items:center; gap:10px;">
+                        <input type="text" id="prov-search-input" placeholder="Buscar por nombre, CUIT o email..."
+                            style="padding:8px 12px; border:2px solid #1b1b1b; border-radius:8px; font-family:'Satoshi',sans-serif; font-weight:500; font-size:0.95rem; outline:none; width:280px; box-shadow:2px 2px 0px rgba(0,0,0,0.1); transition:all 0.2s; align-self:stretch;">
                         <button id="prov-sort-btn" class="btn btn-secondary" title="Ordenar por ID (Mayor/Menor)">
                             <i class="ph ph-sort-ascending" id="sort-icon"></i>
                         </button>
@@ -170,6 +173,10 @@ export class ProviderModule {
             e.preventDefault();
             this.handleFormSubmit();
         });
+
+        document.getElementById('prov-search-input')?.addEventListener('input', (e) => {
+            this.filterProviders(e.target.value);
+        });
     }
 
     async handleFormSubmit() {
@@ -214,9 +221,13 @@ export class ProviderModule {
         if(!tbody) return;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:20px;">Cargando...</td></tr>';
 
+        const searchInput = document.getElementById('prov-search-input');
+        if (searchInput) searchInput.value = '';
+
         try {
             const data = await getProviderList(order);
             if (!data.success || !data.providers.length) {
+                this.allProviders = [];
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="4" class="text-center" style="padding:3rem; color:#888;">
@@ -227,40 +238,75 @@ export class ProviderModule {
                 return;
             }
 
-            tbody.innerHTML = data.providers.map(p => {
-                const pJson = JSON.stringify(p).replace(/"/g, '&quot;');
-
-                return `
-                <tr style="border-bottom:1px solid #eee;">
-                    <td style="padding:12px;">
-                        <div style="font-weight:600; color:#333;">${p.full_name}</div>
-                        <small style="color:#888;">ID: ${p.id}</small>
-                    </td>
-                    <td style="padding:12px;">
-                        ${p.phone ? `<div style="display:flex; align-items:center; gap:5px;"><i class="ph-fill ph-chats" style="color:var(--accent-color);"></i> ${p.phone}</div>` : ''}
-                        ${p.email ? `<small style="color:#666; display:block; margin-top:2px;">${p.email}</small>` : ''}
-                    </td>
-                    <td style="padding:12px; color:#555;">${p.address || '-'}</td>
-                    <td style="padding:12px; text-align:center;">
-                        <div class="btn-icon-group">
-                            <button class="action-btn view" data-id="${p.id}" title="Ver Detalles"><i class="ph ph-eye"></i></button>
-                            <button class="action-btn edit" data-provider="${pJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                            <button class="action-btn delete" data-id="${p.id}" title="Eliminar"><i class="ph ph-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
-            `}).join('');
-
-            tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
-            tbody.querySelectorAll('.edit').forEach(b => {
-                b.addEventListener('click', () => {
-                    const data = JSON.parse(b.dataset.provider);
-                    this.openEditModal(data);
-                });
-            });
-            tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => this.deleteProvider(b.dataset.id)));
+            this.allProviders = data.providers;
+            this.renderProviderRows(this.allProviders);
 
         } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:red">Error al cargar</td></tr>'; }
+    }
+
+    renderProviderRows(providers) {
+        const tbody = document.getElementById('prov-list-body');
+        if (!tbody) return;
+
+        if (!providers.length) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:2rem; color:#999;">No se encontraron resultados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = providers.map((p, idx) => {
+            const total = providers.length;
+            const displayNum = this.currentSortOrder === 'DESC' ? total - idx : idx + 1;
+            const pJson = JSON.stringify(p).replace(/"/g, '&quot;');
+            return `
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:12px;">
+                    <div style="font-weight:600; color:#333;">${p.full_name}</div>
+                    <small style="color:#888;">#${displayNum}</small>
+                </td>
+                <td style="padding:12px;">
+                    ${p.phone ? `<div style="display:flex; align-items:center; gap:5px;"><i class="ph-fill ph-chats" style="color:var(--accent-color);"></i> ${p.phone}</div>` : ''}
+                    ${p.email ? `<small style="color:#666; display:block; margin-top:2px;">${p.email}</small>` : ''}
+                </td>
+                <td style="padding:12px; color:#555;">${p.address || '-'}</td>
+                <td style="padding:12px; text-align:center;">
+                    <div class="btn-icon-group">
+                        <button class="action-btn view" data-id="${p.id}" title="Ver Detalles"><i class="ph ph-eye"></i></button>
+                        <button class="action-btn edit" data-provider="${pJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                        <button class="action-btn delete" data-id="${p.id}" title="Eliminar"><i class="ph ph-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `}).join('');
+
+        tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
+        tbody.querySelectorAll('.edit').forEach(b => {
+            b.addEventListener('click', () => {
+                const data = JSON.parse(b.dataset.provider);
+                this.openEditModal(data);
+            });
+        });
+        tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => this.deleteProvider(b.dataset.id)));
+    }
+
+    filterProviders(term) {
+        const normalize = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const stripNonDigits = (str) => (str || '').replace(/\D/g, '');
+        const q = normalize(term);
+        const qDigits = stripNonDigits(term);
+        if (!q && !qDigits) {
+            this.renderProviderRows(this.allProviders);
+            return;
+        }
+        const filtered = this.allProviders.filter(p => {
+            const name = normalize(p.full_name);
+            const tax = normalize(p.tax_id);
+            const email = normalize(p.email);
+            const phone = stripNonDigits(p.phone);
+            if (q && (name.includes(q) || tax.includes(q) || email.includes(q))) return true;
+            if (qDigits && (phone.includes(qDigits) || stripNonDigits(p.tax_id).includes(qDigits))) return true;
+            return false;
+        });
+        this.renderProviderRows(filtered);
     }
 
     openEditModal(p) {
@@ -314,7 +360,7 @@ export class ProviderModule {
                             <i class="ph ph-truck"></i>
                         </div>
                         <h2 style="margin:0;">${p.full_name}</h2>
-                        <small style="color:#888;">Proveedor #${p.id}</small>
+                        <small style="color:#888;">Ficha de Proveedor</small>
                     </div>
                     <div class="detail-grid">
                         <div class="detail-item"><span class="detail-label">Teléfono</span><span class="detail-value">${p.phone || '-'}</span></div>

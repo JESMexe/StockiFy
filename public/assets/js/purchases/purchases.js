@@ -68,8 +68,10 @@ export class PurchaseModule {
                 tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No hay compras registradas</td></tr>';
                 return;
             }
-            tableBody.innerHTML = res.purchases.map(p => {
-                const dateHtml = `${fmtDate(p.created_at)} <div style="font-size:0.75rem; color:#999;">#${p.id}</div>`;
+            tableBody.innerHTML = res.purchases.map((p, idx) => {
+                const total = res.purchases.length;
+                const displayNum = order.toLowerCase() === 'desc' ? total - idx : idx + 1;
+                const dateHtml = `${fmtDate(p.created_at)} <div style="font-size:0.75rem; color:#999;">#${displayNum}</div>`;
                 const isInventory = !p.category;
                 const icon = isInventory ? '<i class="ph ph-truck" style="color:var(--accent-color);"></i>' : '<i class="ph ph-lightning" style="color:var(--accent-color);"></i>';
                 const title = p.provider_name !== '-' ? p.provider_name : (p.category || 'Gasto General');
@@ -428,7 +430,7 @@ export class PurchaseModule {
             const modal = document.getElementById('detail-purchase-modal');
             if (!modal) { alert("Error: No se encontró el modal #detail-purchase-modal"); return; }
             const bodyContainer = modal.querySelector('.purchase-modal-body');
-            let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;"><div style="font-size:1.3rem; font-weight:900; letter-spacing:1px; color:var(--ticket-color);">COMPRA #${p.id}</div><div style="font-size:0.9rem; margin-top:5px;">${fmtDate(p.created_at)}</div></div>`;
+            let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;"><div style="font-size:1.3rem; font-weight:900; letter-spacing:1px; color:var(--ticket-color);">DETALLE DE COMPRA</div><div style="font-size:0.9rem; margin-top:5px;">${fmtDate(p.created_at)}</div></div>`;
             const provName = p.provider_name || p.provider_real_name || '-'; const concept = (provName !== '-') ? provName : (p.category || 'Gasto General');
             html += `<div class="ticket-row" style="margin-bottom:15px;"><div style="display:flex; flex-direction:column; width:100%;"><span style="font-size:0.7rem; text-transform:uppercase; color:#666; font-weight:bold;">PROVEEDOR / CONCEPTO:</span><span style="font-size:1.1rem; font-weight:800; color:var(--ticket-color);">${concept}</span></div></div>`;
             if (items.length > 0) {
@@ -438,7 +440,6 @@ export class PurchaseModule {
                     <tr>
                         <td style="padding:8px 5px; font-size:0.9rem;">
                             <b>${i.product_name}</b>
-                            <div style="font-size:0.75rem; color:#888;">ID: ${i.product_id}</div>
                         </td>
                         <td style="padding:8px 5px; text-align:center; font-weight:bold;">${parseFloat(i.quantity)}</td>
                         <td style="padding:8px 5px; text-align:right;">${fmtMoney(i.unit_price)}</td>

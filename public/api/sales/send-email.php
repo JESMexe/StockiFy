@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../vendor/autoload.php';
-require_once __DIR__ . '/../../src/helpers/auth_helper.php';
-require_once __DIR__ . '/../../src/config/mail_config.php';
+require_once dirname(__DIR__, 3) . '/vendor/autoload.php';
+require_once dirname(__DIR__, 3) . '/src/helpers/auth_helper.php';
+require_once dirname(__DIR__, 3) . '/src/config/mail_config.php';
 
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -106,6 +106,15 @@ function createMailer(): PHPMailer
     $mail->Port = SMTP_PORT;
     $mail->CharSet = 'UTF-8';
 
+    // Workaround for strict SSL checks on DonWeb/Ferozo host
+    $mail->SMTPOptions = [
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true
+        ]
+    ];
+
     return $mail;
 }
 
@@ -187,7 +196,7 @@ function sendInvoiceEmail(array $emailInfo): array
         return ['success' => true];
     } catch (Exception $e) {
         error_log('send-email.php PHPMailer error: ' . $e->getMessage());
-        return ['success' => false, 'error' => 'No se pudo enviar el correo.'];
+        return ['success' => false, 'error' => 'No se pudo enviar el correo: ' . $e->getMessage()];
     } catch (\Throwable $e) {
         error_log('send-email.php error inesperado: ' . $e->getMessage());
         return ['success' => false, 'error' => 'Ocurrió un error inesperado al enviar el correo.'];

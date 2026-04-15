@@ -179,7 +179,12 @@ async function renderTable(columns, data) {
 
                 window.currentUserPreferences = window.currentUserPreferences || {};
                 if (prefs.hidden_columns) window.currentUserPreferences.hidden_columns = prefs.hidden_columns;
-                else if (prefs.visible_columns) window.currentUserPreferences.hidden_columns = currentTableColumns.filter(c => !prefs.visible_columns.includes(c));
+                else if (prefs.visible_columns) {
+                    // Solo ocultar columnas que existían al momento de guardar las preferencias
+                    // Las columnas nuevas (no presentes en visible_columns ni en column_order) se muestran por defecto
+                    const knownCols = prefs.column_order || prefs.visible_columns;
+                    window.currentUserPreferences.hidden_columns = currentTableColumns.filter(c => knownCols.includes(c) && !prefs.visible_columns.includes(c));
+                }
                 if (prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
                 if (prefs.column_colors) window.currentUserPreferences.column_colors = prefs.column_colors;
             }
@@ -282,25 +287,16 @@ async function renderTable(columns, data) {
     tableHead.innerHTML = `<tr>${headerHTML}${gainHeader}${actionsTh}</tr>`;
 
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `
-        <div style="
-            width:100%;
-            height:100%;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            overflow: hidden;
-        ">
-            <img src="/assets/img/ImagenSinDatos.svg" 
-                 alt="Sin datos"
-                 style="
-                    max-width:100%;
-                    max-height:100%;
-                    object-fit:contain;
-                    overflow: hidden;
-                 ">
-        </div>
-    `;
+        const totalCols = columns.length + (activeFeatures.gain ? 1 : 0) + 1; // +1 for actions
+        const searchInput = document.getElementById('search-input');
+        const isSearching = searchInput && searchInput.value.trim().length > 0;
+        if (isSearching) {
+            tableBody.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center; padding:40px; color:#999; font-size:1rem;">No se encontraron resultados para la búsqueda.</td></tr>`;
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center; padding:0; border:none; height: calc(100vh - 200px);">
+                <img src="/assets/img/ImagenSinDatos.svg" alt="Sin datos" style="width:100%; height:100%; object-fit:contain; display:block;">
+            </td></tr>`;
+        }
     } else {
         tableBody.innerHTML = data.map(row => {
             const rowId = row['id'] ?? row['Id'] ?? row['ID'];
@@ -753,6 +749,16 @@ function showDashboardView(viewId) {
     document.querySelectorAll('.menu-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.targetView === viewId);
     });
+
+    // Only show the "Acciones" restore tab when on the inventory view (view-db)
+    const restoreTab = document.getElementById('restore-actions-tab');
+    if (restoreTab) {
+        if (viewId === 'view-db' && isActionsHidden) {
+            restoreTab.classList.remove('hidden');
+        } else {
+            restoreTab.classList.add('hidden');
+        }
+    }
 }
 
 function setupMenuNavigation() {
@@ -1054,57 +1060,288 @@ function handleCancelNewRow(event) {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete Modal — 2FA Flow
+// ─────────────────────────────────────────────────────────────────────────────
+
+let deleteAuthType = null;       // 'google' | 'password'
+let deleteEmailHint = '';
+let deletePasswordVerified = false;
+let deleteOtpVerified = false;
+let otpCountdownInterval = null;
+
 function openDeleteModal() {
     currentDbNameToDelete = document.getElementById('table-title')?.textContent || '';
     if (!currentDbNameToDelete || !deleteModal) return;
-    deleteDbNameConfirmSpan.textContent = currentDbNameToDelete;
+
+    // Reset state
+    deleteAuthType = null;
+    deletePasswordVerified = false;
+    deleteOtpVerified = false;
+
+    document.getElementById('delete-db-name-confirm').textContent = currentDbNameToDelete;
     deleteConfirmInput.value = '';
-    confirmDeleteBtn.disabled = true;
     deleteErrorMsg.textContent = '';
+    confirmDeleteBtn.disabled = true;
+
+    // Reset Step 2 to hidden
+    _resetDeleteStep2();
 
     deleteModal.classList.remove('hidden');
-
     document.body.style.overflow = 'hidden';
+
+    // Fetch auth type in background
+    _fetchDeleteAuthType();
 }
 
-function closeDeleteModal() {
-    if (deleteModal)
-        deleteModal.classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-function handleDeleteConfirmInput() {
-    if (deleteConfirmInput.value === currentDbNameToDelete) {
-        confirmDeleteBtn.disabled = false;
-        deleteErrorMsg.textContent = '';
-    } else {
-        confirmDeleteBtn.disabled = true;
-        if (deleteConfirmInput.value.length > 0) {
-            deleteErrorMsg.textContent = 'El nombre no coincide.';
-        } else {
-            deleteErrorMsg.textContent = '';
+async function _fetchDeleteAuthType() {
+    try {
+        const res = await fetch('/api/auth/verify-delete-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'check_type' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            deleteAuthType = data.auth_type;
+            deleteEmailHint = data.email_hint || '';
         }
+    } catch (e) {
+        console.warn('[Delete] No se pudo determinar el tipo de auth:', e);
     }
 }
 
+function _resetDeleteStep2() {
+    const step2 = document.getElementById('delete-step-2');
+    step2?.classList.add('hidden');
+
+    // Google panel
+    document.getElementById('delete-auth-google')?.classList.add('hidden');
+    const otpInput = document.getElementById('delete-otp-input');
+    if (otpInput) { otpInput.value = ''; otpInput.classList.add('hidden'); }
+    document.getElementById('delete-otp-status')?.classList.add('hidden');
+    document.getElementById('delete-otp-countdown')?.classList.add('hidden');
+
+    // Password panel
+    document.getElementById('delete-auth-password')?.classList.add('hidden');
+    const passInput = document.getElementById('delete-password-input');
+    if (passInput) passInput.value = '';
+    document.getElementById('delete-password-error').textContent = '';
+    document.getElementById('delete-verify-password-btn').disabled = true;
+    document.getElementById('delete-otp-section')?.classList.add('hidden');
+    const otpPassInput = document.getElementById('delete-otp-input-pass');
+    if (otpPassInput) { otpPassInput.value = ''; otpPassInput.classList.add('hidden'); }
+    document.getElementById('delete-otp-status-pass')?.classList.add('hidden');
+    document.getElementById('delete-otp-countdown-pass')?.classList.add('hidden');
+
+    if (otpCountdownInterval) { clearInterval(otpCountdownInterval); otpCountdownInterval = null; }
+}
+
+function closeDeleteModal() {
+    if (deleteModal) deleteModal.classList.add('hidden');
+    document.body.style.overflow = '';
+    if (otpCountdownInterval) { clearInterval(otpCountdownInterval); otpCountdownInterval = null; }
+}
+
+function handleDeleteConfirmInput() {
+    const nameOk = deleteConfirmInput.value === currentDbNameToDelete;
+
+    if (!nameOk) {
+        confirmDeleteBtn.disabled = true;
+        const step2 = document.getElementById('delete-step-2');
+        step2?.classList.add('hidden');
+        document.getElementById('delete-auth-google')?.classList.add('hidden');
+        document.getElementById('delete-auth-password')?.classList.add('hidden');
+        deleteErrorMsg.textContent = deleteConfirmInput.value.length > 0 ? 'El nombre no coincide.' : '';
+        return;
+    }
+
+    deleteErrorMsg.textContent = '';
+
+    // Show step 2 based on auth type (may not be fetched yet)
+    const step2 = document.getElementById('delete-step-2');
+    step2?.classList.remove('hidden');
+
+    if (deleteAuthType === 'google') {
+        document.getElementById('delete-auth-google').classList.remove('hidden');
+        document.getElementById('delete-auth-password').classList.add('hidden');
+        const hint = document.getElementById('delete-email-hint');
+        if (hint) hint.textContent = `Código enviado a: ${deleteEmailHint}`;
+    } else {
+        document.getElementById('delete-auth-password').classList.remove('hidden');
+        document.getElementById('delete-auth-google').classList.add('hidden');
+        const hint = document.getElementById('delete-email-hint-pass');
+        if (hint) hint.textContent = `Código enviado a: ${deleteEmailHint}`;
+    }
+
+    _updateDeleteConfirmBtn();
+}
+
+function _updateDeleteConfirmBtn() {
+    const nameOk = deleteConfirmInput.value === currentDbNameToDelete;
+    if (deleteAuthType === 'google') {
+        confirmDeleteBtn.disabled = !(nameOk && deleteOtpVerified);
+    } else {
+        confirmDeleteBtn.disabled = !(nameOk && deletePasswordVerified && deleteOtpVerified);
+    }
+}
+
+// ── OTP sender helper ──────────────────────────────────────────────────────
+async function _sendDeleteOtp(sendBtnId, countdownId) {
+    const sendBtn = document.getElementById(sendBtnId);
+    const countdown = document.getElementById(countdownId);
+    if (!sendBtn) return;
+
+    const orig = sendBtn.innerHTML;
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Enviando...';
+
+    try {
+        const res = await fetch('/api/auth/verify-delete-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'send_otp' })
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            pop_ups.error(data.message || 'Error al enviar el código.', 'Error');
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = orig;
+            return;
+        }
+
+        pop_ups.success('Código enviado a tu correo.', '¡Enviado!');
+
+        // Show OTP input
+        const otpInputId = sendBtnId === 'delete-send-otp-btn' ? 'delete-otp-input' : 'delete-otp-input-pass';
+        document.getElementById(otpInputId)?.classList.remove('hidden');
+
+        // Start 60s countdown
+        if (countdown) {
+            countdown.classList.remove('hidden');
+            let secs = 60;
+            countdown.textContent = `Reenviar en ${secs}s`;
+            if (otpCountdownInterval) clearInterval(otpCountdownInterval);
+            otpCountdownInterval = setInterval(() => {
+                secs--;
+                if (secs <= 0) {
+                    clearInterval(otpCountdownInterval);
+                    otpCountdownInterval = null;
+                    countdown.classList.add('hidden');
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Reenviar código';
+                } else {
+                    countdown.textContent = `Reenviar en ${secs}s`;
+                }
+            }, 1000);
+        }
+    } catch (e) {
+        pop_ups.error('Error de red al enviar el código.', 'Error');
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = orig;
+    }
+}
+
+// ── Password verifier ──────────────────────────────────────────────────────
+async function _verifyDeletePassword() {
+    const passInput = document.getElementById('delete-password-input');
+    const passError = document.getElementById('delete-password-error');
+    const verifyBtn = document.getElementById('delete-verify-password-btn');
+    const password  = passInput?.value || '';
+
+    if (!password) return;
+
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verificando...';
+
+    try {
+        const res = await fetch('/api/auth/verify-delete-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'verify_password', password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            deletePasswordVerified = true;
+            passError.textContent = '';
+            passInput.disabled = true;
+            verifyBtn.textContent = '✓ Contraseña verificada';
+            verifyBtn.style.color = 'var(--accent-green)';
+            verifyBtn.style.borderColor = 'var(--accent-green)';
+
+            // Show OTP section
+            document.getElementById('delete-otp-section')?.classList.remove('hidden');
+        } else {
+            passError.textContent = data.message || 'Contraseña incorrecta.';
+            deletePasswordVerified = false;
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verificar contraseña';
+        }
+    } catch (e) {
+        passError.textContent = 'Error de red. Intentá de nuevo.';
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verificar contraseña';
+    }
+    _updateDeleteConfirmBtn();
+}
+
+// ── OTP validator (called on 6-digit input) ────────────────────────────────
+async function _verifyDeleteOtp(otpValue, statusId) {
+    if (!/^\d{6}$/.test(otpValue)) return;
+
+    const statusEl = document.getElementById(statusId);
+    if (statusEl) { statusEl.classList.remove('hidden'); statusEl.textContent = 'Verificando código...'; statusEl.style.color = '#888'; }
+
+    try {
+        const res = await fetch('/api/auth/verify-delete-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'verify_otp', otp: otpValue })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            deleteOtpVerified = true;
+            if (statusEl) { statusEl.textContent = '✓ Código verificado'; statusEl.style.color = 'var(--accent-green)'; }
+        } else {
+            deleteOtpVerified = false;
+            if (statusEl) { statusEl.textContent = data.message || 'Código incorrecto.'; statusEl.style.color = 'var(--accent-red)'; }
+        }
+    } catch (e) {
+        deleteOtpVerified = false;
+        if (statusEl) { statusEl.textContent = 'Error de red.'; statusEl.style.color = 'var(--accent-red)'; }
+    }
+    _updateDeleteConfirmBtn();
+}
+
 async function handleConfirmDelete() {
+    if (!deleteOtpVerified) return;
+    if (deleteAuthType === 'password' && !deletePasswordVerified) return;
     if (deleteConfirmInput.value !== currentDbNameToDelete) return;
+
     confirmDeleteBtn.disabled = true;
-    confirmDeleteBtn.textContent = 'Eliminando...';
+    confirmDeleteBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Eliminando...';
+
     try {
         const result = await api.deleteDatabase();
         if (result.success) {
-            pop_ups.info(result.message, "Base de Datos Eliminada.");
+            pop_ups.info(result.message, 'Base de Datos Eliminada.');
             window.location.href = '/select-db';
         } else {
             throw new Error(result.message);
         }
     } catch (error) {
-        pop_ups.error(`Error: ${error.message}`, "Error Crítico.");
+        pop_ups.error(`Error: ${error.message}`, 'Error Crítico.');
         confirmDeleteBtn.disabled = false;
-        confirmDeleteBtn.textContent = 'Eliminar Permanentemente';
+        confirmDeleteBtn.innerHTML = '<i class="ph ph-trash"></i> Eliminar Permanentemente';
+        // Reset OTP state so user must re-verify
+        deleteOtpVerified = false;
+        deletePasswordVerified = false;
     }
 }
+
 
 
 function renderColumnList() {
@@ -1167,6 +1404,10 @@ async function handleAddColumn(e) {
     try {
         const result = await api.manageTableColumn('add_column', { columnName });
         if (result.success) {
+            // Asegurar que la nueva columna nazca visible
+            if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.hidden_columns)) {
+                window.currentUserPreferences.hidden_columns = window.currentUserPreferences.hidden_columns.filter(c => c !== columnName);
+            }
             pop_ups.success(`${result.message}`, "Columna añadida con éxito.");
             await loadTableData();
         } else {
@@ -1649,7 +1890,59 @@ async function init() {
     if (deleteModal) {
         deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
     }
-    console.log("[INIT] Modal de Eliminación inicializado.");
+
+    // ── 2FA delete modal listeners ─────────────────────────────────────────
+
+    // OTP send buttons
+    document.getElementById('delete-send-otp-btn')?.addEventListener('click', () =>
+        _sendDeleteOtp('delete-send-otp-btn', 'delete-otp-countdown'));
+    document.getElementById('delete-send-otp-btn-pass')?.addEventListener('click', () =>
+        _sendDeleteOtp('delete-send-otp-btn-pass', 'delete-otp-countdown-pass'));
+
+    // OTP input auto-verify on 6 digits (Google flow)
+    document.getElementById('delete-otp-input')?.addEventListener('input', (e) => {
+        const val = e.target.value.replace(/\D/g, '');
+        e.target.value = val;
+        if (val.length === 6) _verifyDeleteOtp(val, 'delete-otp-status');
+    });
+
+    // OTP input auto-verify on 6 digits (password flow)
+    document.getElementById('delete-otp-input-pass')?.addEventListener('input', (e) => {
+        const val = e.target.value.replace(/\D/g, '');
+        e.target.value = val;
+        if (val.length === 6) _verifyDeleteOtp(val, 'delete-otp-status-pass');
+    });
+
+    // Password field — enable verify button when not empty
+    document.getElementById('delete-password-input')?.addEventListener('input', (e) => {
+        const verifyBtn = document.getElementById('delete-verify-password-btn');
+        if (verifyBtn) verifyBtn.disabled = e.target.value.length === 0 || deletePasswordVerified;
+        // Reset if user edits after verifying
+        if (deletePasswordVerified) {
+            deletePasswordVerified = false;
+            _updateDeleteConfirmBtn();
+        }
+    });
+
+    // Verify password button
+    document.getElementById('delete-verify-password-btn')?.addEventListener('click', _verifyDeletePassword);
+
+    // Password visibility toggle
+    document.getElementById('toggle-delete-password')?.addEventListener('click', () => {
+        const passInput = document.getElementById('delete-password-input');
+        const icon = document.querySelector('#toggle-delete-password i');
+        if (!passInput) return;
+        if (passInput.type === 'password') {
+            passInput.type = 'text';
+            if (icon) { icon.className = 'ph ph-eye-slash'; }
+        } else {
+            passInput.type = 'password';
+            if (icon) { icon.className = 'ph ph-eye'; }
+        }
+    });
+
+    console.log('[INIT] Modal de Eliminación con 2FA inicializado.');
+
 
     addColumnForm?.addEventListener('submit', handleAddColumn);
     columnListContainer?.addEventListener('click', (e) => {
@@ -4398,7 +4691,11 @@ export async function loadTableData() {
             );
 
             const tableTitle = document.getElementById('table-title');
-            if (tableTitle) tableTitle.textContent = result.inventoryName || 'Inventario';
+            if (tableTitle) {
+                const invName = result.inventoryName || 'Inventario';
+                tableTitle.textContent = invName;
+                tableTitle.title = invName;
+            }
 
             console.log("[loadTableData] Renderizando tabla con mapeo activo:", columnMapping);
             

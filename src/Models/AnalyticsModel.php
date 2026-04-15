@@ -230,7 +230,8 @@ class AnalyticsModel {
                     SUM(s.total_amount) as total
                 FROM sales s
                 JOIN customers c ON s.customer_id = c.id
-                WHERE s.user_id = :user AND s.inventory_id = :inv AND c.inventory_id = :inv
+                WHERE s.user_id = :user AND s.inventory_id = :inv
+                  AND s.customer_id IS NOT NULL
                 GROUP BY s.customer_id, c.full_name
                 ORDER BY total DESC
                 LIMIT 5

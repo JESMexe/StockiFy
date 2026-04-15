@@ -197,13 +197,13 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                 <div id="view-db" class="dashboard-view">
                     <div class="table-container">
                         <div class="table-header">
-                            <div style="display: flex; align-items: center; gap: 10px; height: 100%;">
+                            <div style="display: flex; align-items: center; gap: 10px; height: 100%; min-width: 0; overflow: hidden;">
                                 <h2 id="table-title"
-                                    style="margin: 0; line-height: 1; display: flex; align-items: center;">Cargando...
+                                    style="margin: 0; line-height: 1;">Cargando...
                                 </h2>
                                 <button id="refresh-table-btn" class="btn btn-secondary"
                                     title="Recargar y actualizar datos"
-                                    style="padding: 4px 8px; display: flex; align-items: center; justify-content: center; border-radius: 6px; margin-top: 2px;">
+                                    style="padding: 4px 8px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0; width: 32px; height: 32px;">
                                     <i class="ph-bold ph-arrows-clockwise"
                                         style="font-size: 1.3rem; line-height: 1;"></i>
                                 </button>
@@ -509,7 +509,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                         <input type="text" id="new-column-name"
                                             placeholder="Ej: Ubicación, Talle, Color..." required>
                                     </div>
-                                    <button type="submit" class="btn btn-primary">Añadir</button>
+                                    <button type="submit" class="btn btn-primary" style="height: 44px; margin: 0; padding: 0 16px; align-self: flex-end;">Añadir</button>
                                 </form>
 
                                 <h4 style="margin-top: 1.5rem;">Mis Columnas</h4>
@@ -765,29 +765,96 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     </div>
 
     <div id="delete-confirm-modal" class="modal-overlay hidden">
-        <div class="modal-content view-container">
+        <div class="modal-content view-container" style="max-width: 520px;">
             <button id="close-delete-modal-btn" class="modal-close-btn">&times;</button>
 
             <div class="modal-header">
-                <h2 style="color: var(--accent-red);">Confirmar Eliminación</h2>
-                <p>Esta acción <strong>no se puede deshacer</strong>. Se borrará permanentemente la base de datos
+                <h2 style="color: var(--accent-red);"><i class="ph ph-warning-octagon"></i> Eliminar Inventario</h2>
+                <p>Esta acción <strong>no se puede deshacer</strong>. Se borrará permanentemente
                     "<strong id="delete-db-name-confirm"></strong>" y todos sus datos.</p>
             </div>
 
             <div class="modal-body">
-                <p style="text-align: left; color: var(--accent-red);">Para confirmar, escribí el nombre exacto de la
-                    base de datos:</p>
-                <input type="text" id="delete-confirm-input" placeholder="Nombre de la Base de Datos"
-                    style="margin-bottom: 1rem;">
-                <div id="delete-error-message" style="color: var(--accent-red); font-weight: 600;"></div>
+
+                <!-- ── Step 1: Nombre del inventario ── -->
+                <div id="delete-step-1">
+                    <p class="delete-step-label"><span class="delete-step-badge">1</span> Escribí el nombre exacto del inventario para continuar:</p>
+                    <input type="text" id="delete-confirm-input" placeholder="Nombre del Inventario" autocomplete="off">
+                    <div id="delete-error-message" style="color: var(--accent-red); font-weight: 600; margin-top: 8px; min-height: 20px;"></div>
+                </div>
+
+                <!-- ── Step 2: Verificación de identidad (oculto hasta que step 1 pase) ── -->
+                <div id="delete-step-2" class="hidden">
+                    <div class="delete-step-divider"></div>
+
+                    <!-- Para usuarios Google: solo OTP -->
+                    <div id="delete-auth-google" class="hidden">
+                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificación de identidad — enviamos un código a tu correo.</p>
+                        <p id="delete-email-hint" class="delete-email-hint"></p>
+                        <div class="delete-otp-row">
+                            <button id="delete-send-otp-btn" class="btn btn-secondary delete-send-otp-btn">
+                                <i class="ph ph-paper-plane-tilt"></i> Enviar código
+                            </button>
+                            <span id="delete-otp-countdown" class="delete-otp-countdown hidden"></span>
+                        </div>
+                        <input type="text" id="delete-otp-input" placeholder="Código de 6 dígitos" maxlength="6"
+                            inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code"
+                            class="hidden" style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
+                        <div id="delete-otp-status" class="delete-otp-status hidden"></div>
+                    </div>
+
+                    <!-- Para usuarios con contraseña: contraseña + OTP -->
+                    <div id="delete-auth-password" class="hidden">
+                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificá tu identidad para continuar.</p>
+
+                        <!-- Sub-step 2a: contraseña -->
+                        <div id="delete-password-section">
+                            <label class="micro-label" style="margin-bottom: 6px; display: block;">Tu contraseña de acceso:</label>
+                            <div style="position: relative;">
+                                <input type="password" id="delete-password-input" placeholder="Contraseña"
+                                    autocomplete="current-password" style="padding-right: 44px;">
+                                <button type="button" id="toggle-delete-password"
+                                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#888; font-size:1.2rem; padding:0;">
+                                    <i class="ph ph-eye"></i>
+                                </button>
+                            </div>
+                            <div id="delete-password-error" style="color: var(--accent-red); font-weight: 600; margin-top: 6px; min-height: 18px; font-size: 0.9rem;"></div>
+                            <button id="delete-verify-password-btn" class="btn btn-secondary" style="margin-top: 10px; width: 100%;" disabled>
+                                Verificar contraseña
+                            </button>
+                        </div>
+
+                        <!-- Sub-step 2b: OTP (se muestra tras verificar contraseña) -->
+                        <div id="delete-otp-section" class="hidden" style="margin-top: 16px;">
+                            <div class="delete-step-divider" style="margin-bottom: 16px;"></div>
+                            <p class="delete-step-label"><span class="delete-step-badge">3</span> Código de verificación al correo:</p>
+                            <p id="delete-email-hint-pass" class="delete-email-hint"></p>
+                            <div class="delete-otp-row">
+                                <button id="delete-send-otp-btn-pass" class="btn btn-secondary delete-send-otp-btn">
+                                    <i class="ph ph-paper-plane-tilt"></i> Enviar código
+                                </button>
+                                <span id="delete-otp-countdown-pass" class="delete-otp-countdown hidden"></span>
+                            </div>
+                            <input type="text" id="delete-otp-input-pass" placeholder="Código de 6 dígitos" maxlength="6"
+                                inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code"
+                                class="hidden" style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
+                            <div id="delete-otp-status-pass" class="delete-otp-status hidden"></div>
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
 
             <div class="modal-footer">
                 <button id="cancel-delete-btn" class="btn btn-secondary">Cancelar</button>
-                <button id="confirm-delete-btn" class="btn btn-primary" disabled>Eliminar Permanentemente</button>
+                <button id="confirm-delete-btn" class="btn btn-danger" disabled>
+                    <i class="ph ph-trash"></i> Eliminar Permanentemente
+                </button>
             </div>
         </div>
     </div>
+
 
     <div id="toast-container"></div>
 

@@ -58,6 +58,7 @@ try {
 
         $colName = $mapping['name'] ?? null;
         $colPrice = $mapping['sale_price'] ?? null; // Precio de VENTA
+        $colCost = $mapping['receipt_price'] ?? null; // Precio de COSTO (compra)
         $colStock = $mapping['stock'] ?? null;
         $colCode = $mapping['code'] ?? null; // Si tienes código de barras mapeado
 
@@ -75,6 +76,7 @@ try {
             while ($row = $stmtProd->fetch(PDO::FETCH_ASSOC)) {
                 $finalName = ($colName && !empty($row[$colName])) ? $row[$colName] : "Producto #" . ($row['id']??'?');
                 $finalPrice = ($colPrice && isset($row[$colPrice])) ? (float)$row[$colPrice] : 0;
+                $finalCost = ($colCost && isset($row[$colCost])) ? (float)$row[$colCost] : null;
                 $finalStock = ($colStock && isset($row[$colStock])) ? (float)$row[$colStock] : 0; // float por si es kg
                 $finalCode = ($colCode && isset($row[$colCode])) ? $row[$colCode] : null;
 
@@ -86,6 +88,7 @@ try {
                     'id' => $row['id'],
                     'name' => $finalName,
                     'price' => $finalPrice,
+                    'cost_price' => $finalCost,
                     'stock' => $finalStock,
                     'currency' => $currency,
                     'code' => $finalCode,

@@ -27,6 +27,7 @@ try {
         'amount_tendered'   => (float)($input['amount_tendered'] ?? 0),
         'change_returned'   => (float)($input['change_returned'] ?? 0),
         'commission_amount' => (float)($input['commission_amount'] ?? 0),
+        'discount_amount'   => (float)($input['discount_amount'] ?? 0),
 
         'exchange_rate_snapshot' => (float)($input['exchange_rate_snapshot'] ?? 1),
 

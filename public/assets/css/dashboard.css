@@ -24,7 +24,11 @@
     overflow-y: auto;
     /* Scroll si el menú es muy largo */
     position: sticky;
+    /* Ocultar scrollbar visualmente */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
 }
+.dashboard-sidebar::-webkit-scrollbar { display: none; }
 
 .main-menu {
     width: 250px;
@@ -40,7 +44,11 @@
     /* Asume 62px de header */
     left: 3px;
     align-self: flex-start;
+    /* Ocultar scrollbar visualmente */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
+.main-menu::-webkit-scrollbar { display: none; }
 
 
 .btn-icon {
@@ -321,6 +329,11 @@
 .table-header h2 {
     font-size: 1.5rem;
     margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 80px;
 }
 
 #search-input {
