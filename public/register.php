@@ -120,8 +120,8 @@
 
             <div id="message"></div>
 
-            <footer class="auth-footer">
-                <p>¿Ya tienes una cuenta? <a href="login">Inicia sesión aquí</a></p>
+            <footer class="auth-footer" style="margin-top: 1.5rem; text-align: center;">
+                <p>¿Ya tienes una cuenta? <a href="login" style="color: var(--accent-color); font-weight: bold; text-decoration: none;">Inicia sesión aquí</a></p>
             </footer>
         </div>
         <div class="google-btn-container" style="margin-top: 20px; text-align: center;">
@@ -129,6 +129,11 @@
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" alt="Google">
                 Continuar con Google
             </a>
+            <div class="legal-links" style="display: flex; gap: 15px; justify-content: center; font-size: 0.8rem; opacity: 0.5; margin-top: 15px;">
+                <a href="privacy-policy" style="color: var(--color-black); text-decoration: none;">Privacidad</a>
+                <span style="color: var(--color-black);">|</span>
+                <a href="terms-of-service" style="color: var(--color-black); text-decoration: none;">Términos</a>
+            </div>
         </div>
     </div>
 </div>

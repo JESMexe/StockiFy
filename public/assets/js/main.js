@@ -29,29 +29,42 @@ document.addEventListener('DOMContentLoaded', function () {
         const navDots = document.querySelectorAll('.nav-dot');
         const svgWrapper = document.querySelector('.background-animation-wrapper');
 
+        const sectionRatios = {};
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    navDots.forEach(dot => {
-                        dot.classList.remove('active');
-                        if (dot.getAttribute('data-id') === entry.target.id) {
-                            dot.classList.add('active');
-                        }
-                    });
+                sectionRatios[entry.target.id] = entry.isIntersecting ? entry.intersectionRatio : 0;
+            });
 
-                    if (svgWrapper) {
+            // Encontrar la sección más visible en este momento
+            let mostVisibleId = null;
+            let maxRatio = 0;
+            for (const id in sectionRatios) {
+                if (sectionRatios[id] > maxRatio) {
+                    maxRatio = sectionRatios[id];
+                    mostVisibleId = id;
+                }
+            }
+
+            if (mostVisibleId) {
+                // Actualizar puntos de navegación
+                navDots.forEach(dot => {
+                    dot.classList.toggle('active', dot.getAttribute('data-id') === mostVisibleId);
+                });
+
+                // Actualizar fondo SVG con retraso
+                if (svgWrapper) {
+                    if (svgWrapper._moveTimeout) clearTimeout(svgWrapper._moveTimeout);
+                    svgWrapper._moveTimeout = setTimeout(() => {
                         svgWrapper.classList.remove('pos-right', 'pos-left');
-
-                        const id = entry.target.id;
-                        if (id === 'section-hero' || id === 'section-pillars') {
+                        if (mostVisibleId === 'section-hero' || mostVisibleId === 'section-pillars') {
                             svgWrapper.classList.add('pos-right');
                         } else {
                             svgWrapper.classList.add('pos-left');
                         }
-                    }
+                    }, 400);
                 }
-            });
-        }, { threshold: 0.3 }); // Threshold bajo para respuesta rápida
+            }
+        }, { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1.0] });
 
         sections.forEach(s => observer.observe(s));
 

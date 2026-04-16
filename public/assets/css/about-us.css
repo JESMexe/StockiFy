@@ -1,0 +1,233 @@
+/* public/assets/css/about-us.css */
+
+:root {
+    --notion-padding: 100px 2rem;
+    --brutalist-shadow: 10px 10px 0px #1b1b1b;
+    --brutalist-shadow-gray: 10px 10px 0px var(--color-gray);
+    --brutalist-border: 2px solid #1b1b1b;
+    --color-notion-text: #1b1b1b;
+}
+
+body {
+    background-color: var(--color-white);
+    color: var(--color-notion-text);
+    font-family: 'Satoshi', sans-serif;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+/* Header Adjustments */
+header {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-bottom: var(--brutalist-border) !important;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.05);
+}
+
+/* Hero Section - Notion Style */
+.about-hero {
+    padding: 160px 2rem 80px;
+    text-align: left;
+}
+
+.about-hero h1 {
+    font-size: 4.5rem;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 2rem;
+    letter-spacing: -2px;
+}
+
+.about-hero h1 span {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-decoration-thickness: 0.15em;
+    text-underline-offset: 0.2em;
+}
+
+.hero-intro {
+    font-size: 1.5rem;
+    color: #444;
+    max-width: 650px;
+    border-left: 5px solid var(--accent-color);
+    padding-left: 2rem;
+}
+
+/* Blocks - Hard/Rustic Style */
+.content-block {
+    margin-bottom: 6rem;
+    padding: 3rem;
+    background: var(--color-white);
+    border: var(--brutalist-border);
+    box-shadow: var(--brutalist-shadow-gray);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.content-block:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 14px 14px 0px var(--accent-color);
+}
+
+.content-block h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+}
+
+.content-block p {
+    font-size: 1.15rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Feature Grid */
+.group-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.feature-item {
+    padding: 2rem;
+    border: var(--brutalist-border);
+    transition: all 0.2s ease;
+    background: #fafafa;
+}
+
+.feature-item:hover {
+    background: var(--color-white);
+    border-color: var(--accent-color);
+    box-shadow: 6px 6px 0px var(--accent-color);
+    transform: translate(-3px, -3px);
+}
+
+.feature-item i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--accent-color);
+}
+
+.feature-item h3 {
+    font-size: 1.4rem;
+    margin-bottom: 0.8rem;
+    font-weight: 700;
+}
+
+/* Zoom/Media Sections */
+.zoom-container {
+    padding: 0 0 6rem 0;
+}
+
+.zoom-row {
+    display: flex;
+    gap: 4rem;
+    align-items: flex-start;
+    margin-bottom: 8rem;
+}
+
+.zoom-row:nth-child(even) {
+    flex-direction: row-reverse;
+}
+
+.zoom-text {
+    flex: 1;
+}
+
+.zoom-text h3 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin-bottom: 1.5rem;
+    border-bottom: 4px solid var(--accent-color);
+    display: inline-block;
+}
+
+/* Media Placeholder - Tactical/Workplace look */
+.media-placeholder {
+    flex: 1.2;
+    aspect-ratio: 16 / 9;
+    background: #f0f0f0;
+    border: var(--brutalist-border);
+    box-shadow: 8px 8px 0px #1b1b1b;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.media-placeholder::before {
+    content: 'WORK IN PROGRESS';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #999;
+}
+
+.media-placeholder i {
+    font-size: 4rem;
+    color: #ccc;
+    transition: color 0.3s;
+}
+
+.zoom-row:hover .media-placeholder {
+    box-shadow: 8px 8px 0px var(--accent-color);
+}
+
+.zoom-row:hover .media-placeholder i {
+    color: var(--accent-color);
+}
+
+/* CTA - High Contrast */
+.about-cta {
+    background: #1b1b1b;
+    color: white;
+    padding: 100px 2rem;
+    text-align: center;
+    margin: 4rem 2rem;
+    border: var(--brutalist-border);
+    box-shadow: 15px 15px 0px var(--accent-color);
+}
+
+.about-cta h2 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    letter-spacing: -1px;
+}
+
+.btn-notion {
+    background: var(--color-white);
+    color: #1b1b1b;
+    padding: 1.2rem 3rem;
+    font-size: 1.2rem;
+    font-weight: 900;
+    text-decoration: none;
+    border: var(--brutalist-border);
+    display: inline-block;
+    box-shadow: 6px 6px 0px var(--accent-color);
+    transition: all 0.1s ease;
+}
+
+.btn-notion:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px var(--accent-color);
+}
+
+.btn-notion:active {
+    transform: translate(6px, 6px);
+    box-shadow: 0px 0px 0px transparent;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .about-hero h1 { font-size: 3rem; }
+    .group-grid { grid-template-columns: 1fr; }
+    .zoom-row { flex-direction: column !important; gap: 2rem; }
+    .media-placeholder { width: 100%; }
+    .content-block { padding: 2rem; }
+}

@@ -10,11 +10,7 @@ body {
     font-family: 'Satoshi-Variable', sans-serif;
 }
 
-/* Fondo de puntos */
-.bg-pattern {
-    background-image: radial-gradient(rgba(0, 0, 0, 0.15) 1.5px, transparent 1.5px);
-    background-size: 24px 24px;
-}
+
 
 .about-title {
     margin-top: 0;

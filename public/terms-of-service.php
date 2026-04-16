@@ -1,0 +1,151 @@
+<?php
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../src/helpers/auth_helper.php';
+$currentUser = getCurrentUser();
+?>
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Condiciones del Servicio | StockiFy</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <script src="assets/js/theme.js"></script>
+    <style>
+        .legal-content {
+            max-width: 800px;
+            margin: 4rem auto;
+            padding: 2.5rem;
+            background: var(--color-white);
+            border: var(--border-strong);
+            box-shadow: 10px 10px 0px var(--color-gray);
+            transition: all 0.3s ease;
+        }
+
+        .legal-content:hover {
+            box-shadow: 12px 12px 0px var(--accent-color);
+            transform: translate(-2px, -2px);
+        }
+
+        .legal-content h1 {
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            color: var(--accent-color);
+        }
+
+        .legal-content h2 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        .legal-content p {
+            margin-bottom: 1rem;
+            color: #444;
+        }
+
+        .legal-content ul {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+        }
+
+        .legal-content li {
+            margin-bottom: 0.5rem;
+            color: #444;
+        }
+
+        /* Footer Styles match index.php */
+        .footer {
+            background-color: var(--color-black);
+            color: white;
+            padding: 4rem 2rem 2rem;
+            width: 100%;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-brand img {
+            width: 300px;
+            height: auto;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+
+<body class="bg-pattern">
+    <header>
+        <a href="index" id="header-logo">
+            <img src="assets/img/LogoE.png" alt="StockiFy Logo">
+        </a>
+        <nav id="header-nav">
+            <a href="index" class="btn btn-secondary">Volver al Inicio</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="legal-content">
+            <h1>Condiciones del Servicio</h1>
+            <p>Última actualización: 16 de abril de 2026</p>
+
+            <h2>1. Aceptación de los Términos</h2>
+            <p>Al acceder y utilizar StockiFy, aceptas quedar sujeto a estos Términos y Condiciones. Si no estás de
+                acuerdo con alguna parte de los mismos, no podrás utilizar el servicio.</p>
+
+            <h2>2. Uso del Servicio</h2>
+            <p>StockiFy es una herramienta para la gestión de inventario y ventas. El usuario es responsable de:</p>
+            <ul>
+                <li>Mantener la confidencialidad de su contraseña.</li>
+                <li>La veracidad y legalidad de los datos ingresados en el sistema.</li>
+                <li>No utilizar la plataforma para fines ilícitos o fraudulentos.</li>
+            </ul>
+
+            <h2>3. Suscripciones y Pagos</h2>
+            <p>StockiFy ofrece planes bajo modelo de suscripción (Básico, Profesional, Vitalicio). Los precios y
+                funciones se detallan en la página principal. Los pagos no son reembolsables salvo indicación expresa
+                por parte de JESMdev.</p>
+
+            <h2>4. Limitación de Responsabilidad</h2>
+            <p>El servicio se proporciona "tal cual" y "según disponibilidad". No garantizamos que el servicio sea
+                ininterrumpido o libre de errores. JESMdev no se hace responsable por pérdidas económicas derivadas del
+                mal uso de la herramienta o fallos técnicos externos.</p>
+
+            <h2>5. Propiedad Intelectual</h2>
+            <p>El nombre StockiFy, el logotipo y el código fuente original son propiedad exclusiva de JESMdev (Joaquín
+                Sosa). Queda prohibida su reproducción total o parcial sin consentimiento.</p>
+
+            <h2>6. Modificaciones</h2>
+            <p>Nos reservamos el derecho de modificar estos términos en cualquier momento. El uso continuado del
+                servicio tras dichas modificaciones constituye la aceptación de los nuevos términos.</p>
+        </div>
+    </main>
+
+    <footer class="footer" style="background-color: var(--accent-color); margin-top: 4rem;">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <img src="assets/img/LogoE3.png" alt="StockiFy Logo">
+            </div>
+            <div class="footer-bottom"
+                style="text-align: left; margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <p style="margin-bottom: 5px; font-size: 0.9rem; color: rgba(255,255,255,0.7);">&copy; 2026 StockiFy.
+                    Todos los derechos reservados.</p>
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div class="footer-links" style="display: flex; gap: 20px;">
+                        <a href="privacy-policy" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Política de Privacidad</a>
+                        <a href="terms-of-service" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Condiciones del Servicio</a>
+                        <a href="about-us" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">¿Quiénes Somos?</a>
+                    </div>
+                    <p class="footer-dev" style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7);">Created by
+                        <span style="color: var(--color-white); font-weight: bold">JESMdev</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

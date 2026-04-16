@@ -20,11 +20,13 @@ $showDashboard = $currentUser ? '' : 'hidden';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockiFy | Software de Gestión de Inventario y Ventas</title>
-    <meta name="description" content="Aumenta tus ganancias con StockiFy. Software inteligente y moderno para control de inventario, registro de ventas, alertas de stock mínimo e informes de negocio.">
+    <meta name="description"
+        content="Aumenta tus ganancias con StockiFy. Software inteligente y moderno para control de inventario, registro de ventas, alertas de stock mínimo e informes de negocio.">
     <meta name="robots" content="index, follow">
     <meta name="author" content="JESMdev">
     <meta property="og:title" content="StockiFy | Tu solución de inventario">
-    <meta property="og:description" content="Automatiza tu stock y descubre fugas de liquidez y ganancia con herramientas precisas.">
+    <meta property="og:description"
+        content="Automatiza tu stock y descubre fugas de liquidez y ganancia con herramientas precisas.">
     <meta property="og:image" content="https://stockify.com.ar/assets/img/1.png">
     <meta property="og:url" content="https://stockify.com.ar/">
     <meta property="og:type" content="website">
@@ -205,7 +207,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
         </svg>
     </div>
 
-    <main class="scroll-container" id="main-scroller">
+    <main class="scroll-container" id="main-scroller" style="padding: 0 !important;">
 
         <section class="section bg-pattern" id="section-hero">
             <div class="flex-row all-center" id="welcome-container">
@@ -285,7 +287,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
                                     style="color: var(--accent-color); font-weight: 600">StockiFy</span>
                                 actualiza automáticamente tu inventario.
                             </p>
-                        </div>
+                         </div>
 
                         <div class="content-panel" id="content-3">
                             <h3>Todo tu negocio centralizado</h3>
@@ -537,29 +539,44 @@ $showDashboard = $currentUser ? '' : 'hidden';
                             target="_blank" class="btn-pricing">Inversión Única</a>
                     </div>
                 </div>
-                
+
                 <div class="swiper-pagination pricing-pagination" id="pricing-pagination" style="display: none;"></div>
             </div>
 
         </section>
 
-        <section class="section bg-pattern" style="min-height: auto !important; padding: 0;">
 
-            <footer class="footer footer-snap" style="width: 100%; z-index: 2;">
-                <div class="footer-container">
-                    <div class="footer-brand">
+
+
+        <section class="section bg-pattern" id="section-footer"
+            style="min-height: auto; padding: 0; scroll-snap-align: end;">
+            <footer class="footer"
+                style="background-color: var(--accent-color); color: white; padding: 4rem 2rem 2rem; width: 100%;">
+                <div class="footer-container" style="max-width: 1200px; margin: 0 auto;">
+                    <div class="footer-brand" style="margin-bottom: 2rem;">
                         <img src="assets/img/LogoE3.png" style="width: 300px; height: auto;" alt="StockiFy Logo">
                     </div>
-                    <div class="footer-bottom">
-                        <p>&copy; <span id="year"></span> StockiFy. Todos los derechos reservados.</p>
-                        <p class="footer-dev">Created by <span
-                                style="color: var(--color-white); font-weight: bold">JESMdev</span></p>
+                    <div class="footer-bottom"
+                        style="text-align: left; margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <p style="margin-bottom: 8px; font-size: 0.9rem; color: rgba(255,255,255,0.7);">&copy; <span id="year"></span> StockiFy. Todos los derechos reservados.</p>
+                                <div class="footer-links" style="display: flex; gap: 20px;">
+                                    <a href="privacy-policy" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Política de Privacidad</a>
+                                    <a href="terms-of-service" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Condiciones del Servicio</a>
+                                    <a href="about-us" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">¿Quiénes Somos?</a>
+                                </div>
+                            </div>
+                            <p class="footer-dev" style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7);">Created by <span style="color: var(--color-white); font-weight: bold">JESMdev</span></p>
+                        </div>
                     </div>
                 </div>
             </footer>
         </section>
-
     </main>
+
+
+
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="assets/js/main.js"></script>
