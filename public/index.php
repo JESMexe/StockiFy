@@ -11,6 +11,8 @@ if ($currentUser) {
 
 $showWelcome = !$currentUser ? '' : 'hidden';
 $showDashboard = $currentUser ? '' : 'hidden';
+
+$showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0);
 ?>
 
 <!DOCTYPE html>
@@ -36,6 +38,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/index.css">
     <link rel="stylesheet" href="assets/css/about-section.css">
+    <link rel="stylesheet" href="assets/css/promo-bar.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 
     <link rel="stylesheet" type="text/css"
@@ -46,6 +49,7 @@ $showDashboard = $currentUser ? '' : 'hidden';
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css" />
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="assets/js/promo-bar.js" defer></script>
 </head>
 
 <body id="page-index">
@@ -67,20 +71,6 @@ $showDashboard = $currentUser ? '' : 'hidden';
         <div class="nav-dot" data-id="section-pricing" title="Planes y Precios"
             onclick="document.getElementById('section-pricing').scrollIntoView({behavior: 'smooth'})"></div>
     </div>
-
-    <header>
-        <a href="index" id="header-logo">
-            <img src="assets/img/LogoE.png" alt="Logotipo Oficial de StockiFy">
-        </a>
-        <nav id="header-nav" style="display: flex; gap: 10px;">
-            <?php if ($currentUser): ?>
-                <a href="select-db" class="btn btn-primary" style="margin:0;">Ir al Panel</a>
-                <a href="logout" class="btn btn-secondary" style="margin:0;">Cerrar Sesión</a>
-            <?php else: ?>
-                <a href="login" class="btn btn-secondary" style="margin:0;">Iniciar Sesión</a>
-            <?php endif; ?>
-        </nav>
-    </header>
 
     <div class="background-animation-wrapper">
         <svg class="background-shape2 box-22" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768"
@@ -206,6 +196,37 @@ $showDashboard = $currentUser ? '' : 'hidden';
             </g>
         </svg>
     </div>
+
+    <header>
+        <a href="index" id="header-logo">
+            <img src="assets/img/LogoE.png" alt="Logotipo Oficial de StockiFy">
+        </a>
+        <nav id="header-nav" style="display: flex; gap: 10px;">
+            <a href="about-us" class="btn btn-secondary" style="margin:0;">¿Quiénes Somos?</a>
+            <?php if ($currentUser): ?>
+                <a href="select-db" class="btn btn-primary" style="margin:0;">Ir al Panel</a>
+                <a href="logout" class="btn btn-secondary" style="margin:0;">Cerrar Sesión</a>
+            <?php else: ?>
+                <a href="login" class="btn btn-secondary" style="margin:0;">Iniciar Sesión</a>
+            <?php endif; ?>
+        </nav>
+    </header>
+
+    <?php if ($showPromoBar): ?>
+        <div class="promo-secondary-bar">
+            <div class="promo-bg-carousel">
+                <div class="carousel-track">
+                    <!-- JS rellena esto -->
+                </div>
+            </div>
+            <div class="promo-main-content">
+                <div class="promo-text-center">Potenciá tu negocio al máximo nivel: Probá el Acceso Total de <strong>StockiFy</strong> <span class="text-accent">GRATIS</span> por 30 días.</div>
+                <div class="promo-button-wrapper">
+                    <a href="register" class="btn-promo">Probar Ahora</a>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <main class="scroll-container" id="main-scroller" style="padding: 0 !important;">
 

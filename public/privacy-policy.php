@@ -11,7 +11,9 @@ $currentUser = getCurrentUser();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Política de Privacidad | StockiFy</title>
     <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/promo-bar.css">
     <script src="assets/js/theme.js"></script>
+    <script src="assets/js/promo-bar.js" defer></script>
     <style>
         .legal-content {
             max-width: 800px;
@@ -86,15 +88,38 @@ $currentUser = getCurrentUser();
     </style>
 </head>
 
-<body class="bg-pattern">
+<body class="bg-pattern" id="page-privacy">
     <header>
         <a href="index" id="header-logo">
             <img src="assets/img/LogoE.png" alt="StockiFy Logo">
         </a>
-        <nav id="header-nav">
-            <a href="index" class="btn btn-secondary">Volver al Inicio</a>
+        <nav id="header-nav" style="display: flex; gap: 10px;">
+            <?php if ($currentUser): ?>
+                <a href="select-db" class="btn btn-primary" style="margin:0;">Ir al Panel</a>
+            <?php endif; ?>
+            <a href="index" class="btn btn-secondary" style="margin:0;">Volver al Inicio</a>
         </nav>
     </header>
+    <?php
+    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0);
+    if ($showPromoBar):
+    ?>
+        <div class="promo-secondary-bar">
+            <div class="promo-bg-carousel">
+                <div class="carousel-track">
+                    <!-- JS rellena esto -->
+                </div>
+            </div>
+            <div class="promo-main-content">
+                <div class="promo-text-center">Potenciá tu negocio al máximo nivel: Probá el Acceso Total de
+                    <strong>StockiFy</strong> <span class="text-accent">GRATIS</span> por 30 días.
+                </div>
+                <div class="promo-button-wrapper">
+                    <a href="register" class="btn-promo">Probar Ahora</a>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <main>
         <div class="legal-content">

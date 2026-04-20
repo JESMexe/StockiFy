@@ -58,6 +58,7 @@
 html {
     width: 100%;
     height: 100%;
+    overflow-x: hidden;
 }
 
 body {
@@ -100,9 +101,15 @@ header {
     padding: 1rem 2rem;
     border-bottom: var(--border-strong);
     background-color: var(--color-white);
-    position: relative;
-    z-index: 10;
+    position: relative; /* Se sobrescribe en index.css a fixed */
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
 }
+
+header.nav-hidden {
+    transform: translateY(-100%);
+}
+
 
 #header-logo img {
     height: 40px;
@@ -125,8 +132,7 @@ header {
     }
 
     #header-nav>.btn {
-        font-size: 2px;
-        !important
+        font-size: 13px !important;
     }
 }
 
