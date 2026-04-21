@@ -21,9 +21,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lógica para cerrar la barra
     const closeBtn = document.getElementById('closePromo');
     const promoBar = document.querySelector('.promo-secondary-bar');
-    if (closeBtn && promoBar) {
-        closeBtn.addEventListener('click', () => {
+    
+    function closePromoBar() {
+        promoBar.style.transition = 'opacity 0.3s ease';
+        promoBar.style.opacity = '0';
+        setTimeout(() => {
             promoBar.style.display = 'none';
-        });
+        }, 300);
+    }
+
+    if (closeBtn && promoBar) {
+        closeBtn.addEventListener('click', closePromoBar);
+    }
+
+    if (promoBar) {
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        promoBar.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        promoBar.addEventListener('touchend', e => {
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            
+            // Si el deslizamiento es > 50px en X o hacia ARRIBA en Y
+            if (Math.abs(touchEndX - touchStartX) > 50 || (touchStartY - touchEndY) > 40) {
+                if (window.innerWidth <= 768) {
+                    closePromoBar();
+                }
+            }
+        }, { passive: true });
     }
 });

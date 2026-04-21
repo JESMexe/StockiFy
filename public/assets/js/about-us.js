@@ -5,8 +5,68 @@ document.addEventListener('DOMContentLoaded', () => {
     initFeatureSelector();
     initImageGallery();
     initFAQ();
-    initPricingCarousel();
     initMarqueeTooltip();
+
+    let pricingSwiperInstance = null;
+
+    function handlePricingCarousel() {
+        const container = document.getElementById('pricing-carousel-container');
+        const wrapper = document.getElementById('pricing-wrapper');
+        const pagination = document.getElementById('pricing-pagination');
+
+        if (!container || !wrapper) return;
+
+        if (window.innerWidth <= 1024) {
+            container.classList.add('swiper', 'pricingSwiper');
+            container.style.overflow = 'hidden'; // Requerido por swiper en móvil
+            wrapper.classList.add('swiper-wrapper');
+
+            const cards = wrapper.querySelectorAll('.pricing-card-v2');
+            cards.forEach(card => card.classList.add('swiper-slide'));
+
+            if (pagination) pagination.style.display = 'block';
+
+            if (!pricingSwiperInstance && typeof Swiper !== 'undefined') {
+                pricingSwiperInstance = new Swiper('.pricingSwiper', {
+                    effect: "slide",
+                    slidesPerView: "auto",
+                    centeredSlides: true,
+                    spaceBetween: 20,
+                    initialSlide: 1, // Inicia directo en "Profesional"
+                    pagination: {
+                        el: ".pricing-pagination",
+                        clickable: true,
+                    },
+                });
+
+                setTimeout(() => {
+                    if (pricingSwiperInstance) pricingSwiperInstance.slideTo(1, 0);
+                }, 50);
+            }
+        } else {
+            if (pricingSwiperInstance) {
+                pricingSwiperInstance.destroy(true, true);
+                pricingSwiperInstance = null;
+            }
+
+            container.classList.remove('swiper', 'pricingSwiper');
+            container.style.overflow = 'visible'; // Restaurar overflow
+            wrapper.classList.remove('swiper-wrapper');
+            wrapper.style.transform = ''; // Remover restos de JS
+
+            const cards = wrapper.querySelectorAll('.pricing-card-v2');
+            cards.forEach(card => {
+                card.classList.remove('swiper-slide');
+                card.style.width = '';
+                card.style.margin = '';
+            });
+
+            if (pagination) pagination.style.display = 'none';
+        }
+    }
+
+    handlePricingCarousel();
+    window.addEventListener('resize', handlePricingCarousel);
 });
 
 /**
@@ -72,21 +132,50 @@ function initFeatureSelector() {
     const featureData = {
         gestion: {
             title: 'Gestión Inteligente',
-            desc: 'Olvidate de las hojas de papel o las planillas confusas. Con nuestras tablas dinámicas, manejás tu stock como si fuera un documento estructurado, pero con la potencia de una base de datos profesional. Tenés todo a mano y siempre actualizado según tus necesidades.'
+            desc: 'Olvidate de las hojas de papel o las planillas confusas. Con nuestras tablas dinámicas, manejás tu stock como si fuera un documento estructurado, pero con la potencia de una base de datos profesional. Tenés todo a mano y siempre actualizado según tus necesidades.',
+            icon: ''
         },
         movimiento: {
             title: 'Seguridad Bancaria',
-            desc: 'Protegemos tu información con los más altos estándares de la industria. Cada movimiento, cada venta y cada dato sensible viaja encriptado y bajo protocolos de seguridad de grado bancario, dándote la tranquilidad de que tu negocio está en buenas manos.'
+            desc: 'Protegemos tu información con los más altos estándares de la industria. Cada movimiento, cada venta y cada dato sensible viaja encriptado y bajo protocolos de seguridad de grado bancario, dándote la tranquilidad de que tu negocio está en buenas manos.',
+            icon: ''
         },
         vinculos: {
             title: 'Conectividad Meta',
-            desc: 'Integración fluida con el ecosistema de Meta. Enviá comprobantes por WhatsApp, gestioná contactos y sincronizá tus ventas de forma nativa. StockiFy habla el idioma de las plataformas que tus clientes ya usan.'
+            desc: 'Integración fluida con el ecosistema de Meta. Enviá comprobantes por WhatsApp, gestioná contactos y sincronizá tus ventas de forma nativa. StockiFy habla el idioma de las plataformas que tus clientes ya usan.',
+            icon: ''
         },
         mirar: {
             title: 'Escalabilidad Cloudflare',
-            desc: 'Nuestra arquitectura se apoya en Cloudflare para garantizar una velocidad de respuesta superior y una disponibilidad del 99.9%. Tu negocio no escala si tu sistema se detiene; con StockiFy, el crecimiento no tiene límites técnicos.'
+            desc: 'Nuestra arquitectura se apoya en Cloudflare para garantizar una velocidad de respuesta superior y una disponibilidad del 99.9%. Tu negocio no escala si tu sistema se detiene; con StockiFy, el crecimiento no tiene límites técnicos.',
+            icon: ''
         }
     };
+
+    let typingInterval = null;
+
+    function applyChange(data) {
+        if (!data || !displayTitle || !displayDesc) return;
+
+        const contentArea = document.querySelector('.selector-content-inner');
+        contentArea.style.opacity = '0';
+        if (typingInterval) clearInterval(typingInterval);
+
+        setTimeout(() => {
+            displayTitle.textContent = data.title;
+            displayDesc.textContent = '';
+            contentArea.style.opacity = '1';
+
+            let i = 0;
+            typingInterval = setInterval(() => {
+                displayDesc.textContent += data.desc.charAt(i);
+                i++;
+                if (i >= data.desc.length) {
+                    clearInterval(typingInterval);
+                }
+            }, 6); // Fast typing
+        }, 200);
+    }
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -94,19 +183,8 @@ function initFeatureSelector() {
             tab.classList.add('active');
 
             const key = tab.dataset.feature;
-            const data = featureData[key];
+            applyChange(featureData[key]);
 
-            if (data && displayTitle && displayDesc) {
-                const contentArea = document.querySelector('.selector-content-inner');
-                contentArea.style.opacity = '0';
-
-                setTimeout(() => {
-                    displayTitle.textContent = data.title;
-                    displayDesc.textContent = data.desc;
-                    contentArea.style.opacity = '1';
-                }, 200);
-            }
-            
             // Sync with custom mobile dropdown
             const selectedText = document.getElementById('custom-dropdown-selected');
             const listItems = document.querySelectorAll('#custom-dropdown-list li');
@@ -144,10 +222,10 @@ function initFeatureSelector() {
             li.addEventListener('click', () => {
                 const key = li.dataset.value;
                 const data = featureData[key];
-                
+
                 // Update selected text
                 selectedText.textContent = li.textContent;
-                
+
                 // Update active class
                 listItems.forEach(i => i.classList.remove('active'));
                 li.classList.add('active');
@@ -156,17 +234,8 @@ function initFeatureSelector() {
                 customHeader.classList.remove('open');
                 customList.classList.remove('open');
 
-                if (data && displayTitle && displayDesc) {
-                    const contentArea = document.querySelector('.selector-content-inner');
-                    contentArea.style.opacity = '0';
+                applyChange(data);
 
-                    setTimeout(() => {
-                        displayTitle.textContent = data.title;
-                        displayDesc.textContent = data.desc;
-                        contentArea.style.opacity = '1';
-                    }, 200);
-                }
-                
                 // Sync with tabs
                 tabs.forEach(t => t.classList.remove('active'));
                 let matchingTab = document.querySelector(`.feature-tab[data-feature="${key}"]`);
@@ -333,7 +402,7 @@ function initMarqueeTooltip() {
 
     marquee.addEventListener('mousemove', (e) => {
         if (window.innerWidth <= 768) return; // En móvil se maneja por CSS
-        
+
         targetX = e.clientX;
         targetY = e.clientY;
 
@@ -365,36 +434,3 @@ function initMarqueeTooltip() {
     });
 }
 
-/**
- * Inicialización del Carrusel de Precios (Swiper) para Mobile
- */
-function initPricingCarousel() {
-    const carouselContainer = document.getElementById('pricing-carousel-container');
-    if (!carouselContainer) return;
-
-    // Solo inicializamos Swiper si estamos en mobile/tablet
-    if (window.innerWidth <= 1024) {
-        const wrapper = document.getElementById('pricing-wrapper');
-        const pagination = document.getElementById('pricing-pagination');
-
-        if (wrapper) {
-            carouselContainer.classList.add('swiper', 'pricingSwiper');
-            wrapper.classList.add('swiper-wrapper');
-            wrapper.classList.remove('pricing-wrapper'); // Quitamos grid de escritorio
-
-            document.querySelectorAll('.pricing-card-v2').forEach(card => {
-                card.classList.add('swiper-slide');
-            });
-
-            new Swiper('.pricingSwiper', {
-                slidesPerView: 'auto',
-                centeredSlides: true,
-                spaceBetween: 30,
-                pagination: {
-                    el: '.pricing-pagination',
-                    clickable: true,
-                },
-            });
-        }
-    }
-}

@@ -21,6 +21,9 @@ $currentUser = getCurrentUser();
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
     <!-- Dynamic Theme -->
     <script src="assets/js/theme.js"></script>
     <script src="assets/js/about-us.js"></script>
@@ -57,6 +60,7 @@ $currentUser = getCurrentUser();
                     <a href="register" class="btn-promo">Probar Ahora</a>
                 </div>
             </div>
+            <button class="btn-close-promo" id="closePromo">Cerrar</button>
         </div>
     <?php endif; ?>
 
@@ -131,16 +135,35 @@ $currentUser = getCurrentUser();
 
                     <div class="selector-highlights">
                         <div class="highlight-item">
-                            <h4 style="color: #1b1b1b; font-weight: 900;">Control de Flujos</h4>
+                            <h4 style="color: #1b1b1b; font-weight: 900;"><i class="ph-bold ph-arrows-left-right"
+                                    style="color: var(--accent-color); margin-right: 5px;"></i> Control de Flujos</h4>
                             <p>Sincronización total entre depósitos y puntos de venta sin latencia.</p>
                         </div>
                         <div class="highlight-item">
-                            <h4 style="color: #1b1b1b; font-weight: 900;">Integración Nativa</h4>
+                            <h4 style="color: #1b1b1b; font-weight: 900;"><i class="ph-bold ph-plug"
+                                    style="color: var(--accent-color); margin-right: 5px;"></i> Integración Nativa</h4>
                             <p>Conectividad certificada con el ecosistema de Meta y flujos de Google.</p>
                         </div>
                         <div class="highlight-item">
-                            <h4 style="color: #1b1b1b; font-weight: 900;">Aval Global</h4>
+                            <h4 style="color: #1b1b1b; font-weight: 900;"><i class="ph-bold ph-globe"
+                                    style="color: var(--accent-color); margin-right: 5px;"></i> Aval Global</h4>
                             <p>Protección perimetral mediante el sistema de élite de Cloudflare.</p>
+                        </div>
+                        <div class="highlight-item">
+                            <h4 style="color: #1b1b1b; font-weight: 900;"><i class="ph-bold ph-lightning"
+                                    style="color: var(--accent-color); margin-right: 5px;"></i> Setup en Minutos</h4>
+                            <p>Olvidate de lo técnico. En menos de 5 min ya tenés tu stock online.</p>
+                        </div>
+                        <div class="highlight-item">
+                            <h4 style="color: #1b1b1b; font-weight: 900;"><i class="ph-bold ph-device-mobile"
+                                    style="color: var(--accent-color); margin-right: 5px;"></i> Sin apps, cero fricción
+                            </h4>
+                            <p>Vos y tu equipo acceden directo desde un link. Sin descargas.</p>
+                        </div>
+                        <div class="highlight-item">
+                            <h4 style="color: #1b1b1b; font-weight: 900;"><i class="ph-bold ph-lifebuoy"
+                                    style="color: var(--accent-color); margin-right: 5px;"></i> Acompañamiento Real</h4>
+                            <p>Asesoría humana por WhatsApp. Sin bots ni formularios eternos.</p>
                         </div>
                     </div>
                 </div>
@@ -365,46 +388,92 @@ $currentUser = getCurrentUser();
                 <div class="faq-grid">
                     <div class="faq-item">
                         <div class="faq-question">
-                            <span>¿Cómo se sincroniza el precio con el dólar?</span>
+                            <span>¿Por qué elegir StockiFy? ¿Qué los diferencia?</span>
                             <i class="ph ph-caret-down"></i>
                         </div>
                         <div class="faq-answer">
-                            StockiFy permite vincular tus productos al dólar oficial o MEP. El sistema actualiza los
-                            precios de venta automáticamente según la paridad que definas en la configuración global,
-                            protegiendo tu rentabilidad sin esfuerzo manual.
+                            StockiFy no es una simple planilla, es una arquitectura robusta diseñada para negocios que
+                            buscan escalar en serio. Nos distinguimos por ofrecer una interfaz ágil, sin adornos
+                            innecesarios, que arroja la rentabilidad real de tu negocio en tiempo récord y con resguardo
+                            de alta seguridad.
                         </div>
                     </div>
                     <div class="faq-item">
                         <div class="faq-question">
-                            <span>¿Es seguro tener mis datos en la nube?</span>
+                            <span>¿Es difícil implementar StockiFy en mi negocio?</span>
                             <i class="ph ph-caret-down"></i>
                         </div>
                         <div class="faq-answer">
-                            Utilizamos infraestructura de grado bancario protegida por Cloudflare Armor. Tus datos
-                            viajan encriptados y realizamos copias de seguridad automáticas cada hora para garantizar
-                            que tu información esté siempre disponible y segura.
+                            Para nada. La plataforma está diseñada bajo una lógica súper intuitiva. No requiere de
+                            instalaciones rebuscadas ni de días de capacitaciones eternas; te entregamos el acceso y el
+                            mismo día ya estás operando y armando tu base de datos.
                         </div>
                     </div>
                     <div class="faq-item">
                         <div class="faq-question">
-                            <span>¿Qué soporte técnico ofrecen?</span>
+                            <span>¿Es difícil migrar mis datos actuales desde un Excel?</span>
                             <i class="ph ph-caret-down"></i>
                         </div>
                         <div class="faq-answer">
-                            Contamos con soporte técnico oficial vía WhatsApp para todos nuestros planes. El plan
-                            Empresarial incluye soporte prioritario 24/7 y contacto directo con el equipo de desarrollo
-                            para ajustes específicos.
+                            Es un proceso directo y sin fricciones. Contamos con un módulo de importación de datos en
+                            bloque que te permite inyectar todo tu inventario al sistema rápidamente. Pasás a
+                            digitalizar tu negocio sin tener que cargar cada producto a mano.
                         </div>
                     </div>
                     <div class="faq-item">
                         <div class="faq-question">
-                            <span>¿Hay un límite de carga de productos?</span>
+                            <span>¿Mis clientes o yo tenemos que descargar una app?</span>
                             <i class="ph ph-caret-down"></i>
                         </div>
                         <div class="faq-answer">
-                            En el Plan Básico tienes una capacidad optimizada para emprendedores, mientras que en los
-                            planes Profesional y Empresarial la carga es ilimitada. El sistema soporta miles de SKUs sin
-                            pérdida de performance.
+                            No hace falta bajar absolutamente nada. StockiFy funciona 100% en la nube, operando
+                            directamente desde tu navegador de preferencia. Podés iniciar sesión desde cualquier
+                            dispositivo y en cualquier lugar, únicamente con tus credenciales.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <span>¿Qué pasa si adquiero el servicio y no me gusta?</span>
+                            <i class="ph ph-caret-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            Tenemos total seguridad sobre la superioridad de nuestra herramienta, por ello te
+                            habilitamos a probar el Acceso Total de la plataforma completamente GRATIS por 30 días. Si
+                            confirmás que no se adapta a la dinámica de tu emprendimiento, no abonás nada.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <span>¿Puedo usar el sistema desde mi celular?</span>
+                            <i class="ph ph-caret-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            Absolutamente. El diseño de nuestra interfaz se ajusta perfectamente a las pantallas
+                            móviles, transformando tu teléfono en una verdadera "estación de control" para supervisar
+                            inventario, cerrar ventas y leer métricas con total comodidad.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <span>¿Qué pasa si me quedo sin internet en el local?</span>
+                            <i class="ph ph-caret-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            Al operar en servidores de primer nivel para resguardar la seguridad e integridad de tus
+                            datos en tiempo real (vital para que vos y tus empleados operen al mismo tiempo), la
+                            conexión constante es precisa. Pero es tan veloz y liviano, que ante una caída del local,
+                            podés usar los datos móviles de tu celular y el trabajo no frena.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <span>¿Se puede vincular el precio al valor del dólar?</span>
+                            <i class="ph ph-caret-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            Totalmente. Permite tasar productos en moneda extranjera y el sistema hará la cuenta de
+                            manera automática basándose en la cotización oficial o MEP que vos le asignes a la caja en
+                            todo momento, protegiendo así el margen de ganancia real.
                         </div>
                     </div>
                 </div>

@@ -35,10 +35,10 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
 
     <script src="assets/js/theme.js"></script>
     <script src="assets/js/cycling-text.js"></script>
-    <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/index.css">
-    <link rel="stylesheet" href="assets/css/about-section.css">
-    <link rel="stylesheet" href="assets/css/promo-bar.css">
+    <link rel="stylesheet" href="assets/css/main.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="assets/css/index.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="assets/css/about-section.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="assets/css/promo-bar.css?v=<?= time() ?>">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 
     <link rel="stylesheet" type="text/css"
@@ -225,6 +225,7 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
                     <a href="register" class="btn-promo">Probar Ahora</a>
                 </div>
             </div>
+            <button class="btn-close-promo" id="closePromo">Cerrar</button>
         </div>
     <?php endif; ?>
 
