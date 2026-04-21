@@ -1,7 +1,7 @@
 <?php
 // src/config/whatsapp_config.php
 
-if (!isset($_ENV) || empty($_ENV)) {
+if (!isset($_ENV['WHATSAPP_PHONE_NUMBER_ID']) || empty($_ENV['WHATSAPP_PHONE_NUMBER_ID'])) {
     require_once __DIR__ . '/../bootstrap.php';
 }
 

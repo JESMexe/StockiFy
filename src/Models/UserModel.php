@@ -122,7 +122,7 @@ class UserModel
         return (time() - $lastSentTimestamp) >= $cooldownSeconds;
     }
 
-    public function setOtp(int $userId, string $otp, string $actionType = 'password_change', string $expiresAt = null): bool
+    public function setOtp(int $userId, string $otp, string $actionType = 'password_change', ?string $expiresAt = null): bool
     {
         // Si no nos pasan expiration, por defecto es 10 minutos
         if ($expiresAt === null) {

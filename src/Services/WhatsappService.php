@@ -9,6 +9,7 @@ class WhatsappService
 {
     private string $graphApiVersion = 'v20.0'; // Updated to Meta's v20.0
     private string $baseUrl = 'https://graph.facebook.com';
+    public string $lastError = '';
 
     /**
      * Envía una plantilla (Template) de WhatsApp.
@@ -21,6 +22,7 @@ class WhatsappService
     public function sendTemplateMessage(string $toPhoneNumber, string $templateName, array $parameters = []): bool
     {
         if (empty(WHATSAPP_PHONE_NUMBER_ID) || empty(WHATSAPP_ACCESS_TOKEN)) {
+            $this->lastError = "Faltan credenciales empresariales. Verifica el archivo .env, actualmente ID: " . (WHATSAPP_PHONE_NUMBER_ID ?: 'VACIO') . " TOKEN: " . (WHATSAPP_ACCESS_TOKEN ? 'CARGADO' : 'VACIO');
             error_log("WhatsappService: Faltan credenciales en el archivo config/whatsapp_config.php");
             return false;
         }
@@ -54,7 +56,7 @@ class WhatsappService
             'type' => 'template',
             'template' => [
                 'name' => $templateName,
-                'language' => ['code' => 'es'],
+                'language' => ['code' => 'es_AR'],
             ]
         ];
 
@@ -81,6 +83,7 @@ class WhatsappService
             curl_close($ch);
 
             if ($error) {
+                $this->lastError = "CURL Error: " . $error;
                 error_log("WhatsappService CURL Error: " . $error);
                 return false;
             }
@@ -89,10 +92,12 @@ class WhatsappService
                 return true;
             }
 
+            $this->lastError = "HTTP {$httpCode}: " . $response;
             error_log("WhatsappService Respuesta fallida HTTP {$httpCode}: " . $response);
             return false;
 
         } catch (\Throwable $e) {
+            $this->lastError = "Exception: " . $e->getMessage();
             error_log("WhatsappService error de ejecución: " . $e->getMessage());
             return false;
         }
@@ -132,5 +137,26 @@ class WhatsappService
             $inventoryName
         ];
         return $this->sendTemplateMessage($toPhoneNumber, 'reporte_cierre_caja', $params);
+    }
+
+    /**
+     * Envía reporte masivo de reposición vía WhatsApp 
+     */
+    public function sendRestockReport(string $toPhoneNumber, string $userName, string $inventoryName, array $productsList): bool
+    {
+        $productsString = "";
+        foreach ($productsList as $product) {
+            $name = $product['name'] ?? 'Producto';
+            $faltante = $product['faltante'] ?? 0;
+            $productsString .= "• {$name}: faltan {$faltante}\n";
+        }
+        $productsString = trim($productsString);
+
+        $params = [
+            $userName,
+            $inventoryName,
+            $productsString
+        ];
+        return $this->sendTemplateMessage($toPhoneNumber, 'reporte_reposicion', $params);
     }
 }

@@ -210,6 +210,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                             </div>
 
                             <div class="table-controls">
+                                <button id="send-report-btn" class="btn hidden"
+                                    title="Enviar reporte de reposición (Stock Crítico) al correo o WhatsApp">
+                                    <i class="ph ph-paper-plane-right" style="font-size: 1.4rem; font-weight: bold;"></i>
+                                </button>
+
                                 <button id="critical-filter-btn" class="btn hidden"
                                     title="Mostrar solo productos con stock bajo o pérdidas">
                                     <i class="ph ph-warning-circle" style="font-size: 1.4rem; font-weight: bold;"></i>

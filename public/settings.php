@@ -73,17 +73,34 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                 <input class="config-input" type="text" id="full_name" name="full_name"
                                     value="<?php echo htmlspecialchars($currentUser['full_name'] ?? ''); ?>">
                             </div>
-                            <div class="rustic-block">
+                            <div class="rustic-block" style="display: none;">
                                 <label class="option-label" for="dni">DNI / Identificación</label>
                                 <input class="config-input" type="text" id="dni" name="dni"
                                     value="<?php echo htmlspecialchars($currentUser['dni'] ?? ''); ?>"
                                     placeholder="(Colocar sin puntos)">
                             </div>
-                            <div class="rustic-block">
-                                <label class="option-label" for="cell">Teléfono / Celular</label>
-                                <input class="config-input" type="text" id="cell" name="cell"
-                                    value="<?php echo htmlspecialchars($currentUser['cell'] ?? ''); ?>"
-                                    placeholder="(Todo junto)">
+                            <div class="rustic-block" style="grid-column: 1 / -1;">
+                                <label class="option-label">Teléfono / Celular</label>
+                                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: stretch;">
+                                    <select class="config-input" id="cell_country"
+                                        style="width: auto; text-align: center; cursor: pointer; box-sizing: border-box; margin: 0; padding: 0 1rem; height: 55px; border-radius: 6px;">
+                                        <option value="54" selected>+54 (AR)</option>
+                                    </select>
+                                    <select class="config-input" id="cell_prefix"
+                                        style="width: auto; text-align: center; cursor: pointer; box-sizing: border-box; margin: 0; padding: 0 1rem; height: 55px; border-radius: 6px;">
+                                        <option value="9" selected>9 (Móvil)</option>
+                                    </select>
+                                    <input class="config-input" type="text" id="cell_number"
+                                        placeholder="(ej: 11 6768-4020)"
+                                        style="flex: 1; box-sizing: border-box; margin: 0; padding: 0 1rem; height: 55px;">
+                                </div>
+                                <span style="font-size: 0.8rem; color: #64748b; line-height: 1.4; display: block;">
+                                    StockiFy tomará el registro del dato del teléfono para enviarle las notificaciones o
+                                    alertas del sistema, en caso de no quererlas, ignorar este campo dejándolo vacío; en
+                                    caso de sí querer, procure ingresar los datos correctamente.
+                                </span>
+                                <input type="hidden" id="cell" name="cell"
+                                    value="<?php echo htmlspecialchars($currentUser['cell'] ?? ''); ?>">
                             </div>
                         </div>
 
@@ -120,6 +137,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         <p style="color: #64748b; margin-bottom: 2rem;">¿Tenés algún problema? Estamos para ayudarte.
                         </p>
                         <a href="mailto:soporte@stockify.com.ar" class="btn btn-primary">Contactar Soporte</a>
+                        <p style="color: #64748b90; margin-top: 2rem; font-size: 0.8rem;">Si deseas eliminar tu cuenta y
+                            todos tus datos
+                            por
+                            completo, por favor, escríbenos.
+                        </p>
                     </div>
                 </div>
 

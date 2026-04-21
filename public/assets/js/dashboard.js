@@ -87,6 +87,9 @@ function checkCriticalStatus() {
             btn.style.backgroundColor = '#fff0f0';
             btn.style.color = 'var(--accent-red)';
             filterTable();
+            
+            const sendRepBtn = document.getElementById('send-report-btn');
+            if (sendRepBtn) sendRepBtn.classList.add('hidden');
         }
     }
 }
@@ -1991,6 +1994,8 @@ async function init() {
     }
 
     const criticalBtn = document.getElementById('critical-filter-btn');
+    const sendRepBtn = document.getElementById('send-report-btn');
+
     if (criticalBtn) {
         criticalBtn.addEventListener('click', () => {
             isCriticalFilterActive = !isCriticalFilterActive; // Toggle
@@ -1999,13 +2004,49 @@ async function init() {
                 criticalBtn.style.backgroundColor = 'var(--accent-red)';
                 criticalBtn.style.color = 'var(--color-black)';
                 criticalBtn.style.borderColor = 'var(--color-black)';
+                if (sendRepBtn) sendRepBtn.classList.remove('hidden');
             } else {
                 criticalBtn.style.backgroundColor = 'var(--accent-red-20)';
                 criticalBtn.style.color = 'var(--accent-red)';
                 criticalBtn.style.borderColor = 'var(--accent-red)';
+                if (sendRepBtn) sendRepBtn.classList.add('hidden');
             }
 
             filterTable();
+        });
+    }
+
+    if (sendRepBtn) {
+        sendRepBtn.addEventListener('click', async () => {
+            if (!activeInventoryId) {
+                pop_ups.warning("No has seleccionado ningún inventario.", "Atención");
+                return;
+            }
+
+            const confirm = await pop_ups.confirm("Enviar Reporte", "Se enviará un reporte con todos los productos de stock bajo a tu Email y WhatsApp (si lo tenés configurado). ¿Continuar?");
+            if (!confirm) return;
+
+            pop_ups.loading("Generando y enviando reporte...");
+            
+            try {
+                const response = await fetch('/api/inventory/send-restock-report.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inventory_id: activeInventoryId })
+                });
+
+                const rb = await response.json();
+                pop_ups.close();
+
+                if (rb.success) {
+                    pop_ups.success(rb.message || "Reporte generado y enviado con éxito.");
+                } else {
+                    pop_ups.error(rb.message || "No se pudo generar el reporte.");
+                }
+            } catch (err) {
+                pop_ups.close();
+                pop_ups.error("Hubo un error de conexión con el servidor.");
+            }
         });
     }
 

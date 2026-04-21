@@ -214,6 +214,33 @@ function initGeneralProfile() {
         cell: document.getElementById('cell')
     };
 
+    const countrySel = document.getElementById('cell_country');
+    const prefixSel = document.getElementById('cell_prefix');
+    const numberInput = document.getElementById('cell_number');
+
+    if (inputs.cell && numberInput) {
+        let currentVal = inputs.cell.value.trim();
+        if (currentVal.startsWith('549')) {
+            numberInput.value = currentVal.substring(3);
+        } else {
+            numberInput.value = currentVal; // Caso legado si guardó mal
+        }
+
+        const syncCell = () => {
+            let num = numberInput.value.replace(/\D/g, ''); // Solo numeros permitidos
+            if (num === '') {
+                inputs.cell.value = '';
+            } else {
+                inputs.cell.value = countrySel.value + prefixSel.value + num;
+            }
+            inputs.cell.dispatchEvent(new Event('input')); // Dispara checkChanges
+        };
+
+        countrySel?.addEventListener('change', syncCell);
+        prefixSel?.addEventListener('change', syncCell);
+        numberInput?.addEventListener('input', syncCell);
+    }
+
     const original = window.userData || {};
 
     const checkChanges = () => {

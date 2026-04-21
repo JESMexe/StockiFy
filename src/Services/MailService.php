@@ -601,4 +601,71 @@ class MailService
     </body>
     </html>';
     }
+
+    public function sendRestockReport(
+        string $toEmail,
+        string $userName,
+        string $inventoryName,
+        array $productsList
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Reportes');
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            $mail->Subject = 'Reporte Masivo de Reposición - ' . $inventoryName;
+            $mail->Body = $this->generateRestockReportEmailHtml($userName, $inventoryName, $productsList);
+            $mail->AltBody = "Hola {$userName}, adjuntamos el reporte de productos con stock critico en tu inventario {$inventoryName} que requieren reposicion inmediata.";
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendRestockReport error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function generateRestockReportEmailHtml(string $userName, string $inventoryName, array $productsList): string
+    {
+        $rowsHtml = '';
+        foreach ($productsList as $product) {
+            $name = htmlspecialchars($product['name'] ?? 'Producto Desconocido');
+            $current = htmlspecialchars((string)($product['current'] ?? 0));
+            $faltante = htmlspecialchars((string)($product['faltante'] ?? 0));
+
+            $rowsHtml .= "
+                <tr>
+                    <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b;'>{$name}</td>
+                    <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b; text-align: center;'>{$current}</td>
+                    <td style='padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444; text-align: center; font-weight: bold;'>{$faltante}</td>
+                </tr>
+            ";
+        }
+
+        $baseHtml = $this->getBaseTemplate();
+
+        $content = "
+            <h2 style='color: #1e293b; margin-top: 0; font-size: 24px;'>Reporte de Reposición Masiva</h2>
+            <p style='color: #475569; font-size: 16px; line-height: 1.6;'>Hola <strong>{$userName}</strong>,</p>
+            <p style='color: #475569; font-size: 16px; line-height: 1.6;'>Has solicitado un reporte de los productos en estado crítico para tu inventario <strong>{$inventoryName}</strong>. A continuación, el listado de cantidades que necesitas solicitar para reponer tu stock mínimo idóneo:</p>
+            
+            <table style='width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left;'>
+                <thead>
+                    <tr style='background-color: #f8fafc;'>
+                        <th style='padding: 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 14px; text-transform: uppercase;'>Producto</th>
+                        <th style='padding: 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 14px; text-transform: uppercase; text-align: center;'>Actual</th>
+                        <th style='padding: 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 14px; text-transform: uppercase; text-align: center;'>Reponer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {$rowsHtml}
+                </tbody>
+            </table>
+            
+            <br>
+            <p style='color: #64748b; font-size: 14px;'>Este resumen fue generado desde tu Dashboard de StockiFy. Podés reenviar este correo directamente al proveedor.</p>
+        ";
+
+        return str_replace('{{content}}', $content, $baseHtml);
+    }
 }
