@@ -10,8 +10,8 @@ $currentUser = getCurrentUser();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Condiciones del Servicio | StockiFy</title>
-    <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/promo-bar.css">
+    <link rel="stylesheet" href="assets/css/main.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="assets/css/promo-bar.css?v=<?= time() ?>">
     <script src="assets/js/theme.js"></script>
     <script src="assets/js/promo-bar.js" defer></script>
     <style>
@@ -108,6 +108,7 @@ $currentUser = getCurrentUser();
                     <a href="register" class="btn-promo">Probar Ahora</a>
                 </div>
             </div>
+            <button class="btn-close-promo" id="closePromo">Cerrar</button>
         </div>
     <?php endif; ?>
 

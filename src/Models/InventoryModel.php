@@ -495,11 +495,11 @@ class InventoryModel
             // 1. Identificar la tabla correcta
             if ($inventoryId) {
                 // Búsqueda precisa por ID de inventario
-                $sqlTable = "SELECT table_name FROM user_tables WHERE inventory_id = :inv_id LIMIT 1";
+                $sqlTable = "SELECT ut.table_name, i.name as inv_name FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE ut.inventory_id = :inv_id LIMIT 1";
                 $params = [':inv_id' => $inventoryId];
             } else {
                 // Búsqueda "a ciegas" por usuario (Legacy)
-                $sqlTable = "SELECT ut.table_name FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1";
+                $sqlTable = "SELECT ut.table_name, i.name as inv_name FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1";
                 $params = [':uid' => $userId];
             }
 
@@ -539,19 +539,25 @@ class InventoryModel
                             'type' => 'low_stock',
                             'product_name' => $prodName,
                             'current_stock' => $newStock,
-                            'min_stock' => $minStock
+                            'min_stock' => $minStock,
+                            'inventory_name' => $row['inv_name'] ?? 'Principal'
                         ];
                     } else {
-                        $stmtUser = $this->db->prepare("SELECT email, full_name FROM users WHERE id = :id");
+                        $stmtUser = $this->db->prepare("SELECT email, full_name, cell FROM users WHERE id = :id");
                         $stmtUser->execute([':id' => $userId]);
                         $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
                         
-                        if ($u && !empty($u['email'])) {
-                            // Importación perezosa (Lazy Load) para no afectar rendimiento si no hay mail
-                            require_once dirname(__DIR__) . '/Services/MailService.php';
-                            $mailSvc = new \App\Services\MailService();
-                            // (Un leve lag de ~500ms es esperable al despachar el mail, tolerable para esta app)
-                            $mailSvc->sendLowStockAlert($u['email'], $u['full_name'] ?? 'Socio', $prodName, $newStock, $minStock);
+                        if ($u && (!empty($u['email']) || !empty($u['cell']))) {
+                            if (!empty($u['email'])) {
+                                require_once dirname(__DIR__) . '/Services/MailService.php';
+                                $mailSvc = new \App\Services\MailService();
+                                $mailSvc->sendLowStockAlert($u['email'], $u['full_name'] ?? 'Socio', $prodName, $newStock, $minStock);
+                            }
+                            if (!empty($u['cell'])) {
+                                require_once dirname(__DIR__) . '/Services/WhatsappService.php';
+                                $waSvc = new \App\Services\WhatsappService();
+                                $waSvc->sendLowStockAlert($u['cell'], $u['full_name'] ?? 'Socio', $prodName, $newStock, $minStock, $row['inv_name'] ?? 'Principal');
+                            }
                         }
                     }
                 }

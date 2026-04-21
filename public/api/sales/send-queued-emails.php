@@ -21,26 +21,39 @@ try {
     }
 
     require_once $root . '/src/Services/MailService.php';
+    require_once $root . '/src/Services/WhatsappService.php';
     $mailSvc = new \App\Services\MailService();
+    $waSvc = new \App\Services\WhatsappService();
     $sentCount = 0;
     
     require_once $root . '/src/core/Database.php';
     $db = \App\core\Database::getInstance();
-    $stmtUser = $db->prepare("SELECT email, full_name FROM users WHERE id = :id");
+    $stmtUser = $db->prepare("SELECT email, full_name, cell FROM users WHERE id = :id");
     $stmtUser->execute([':id' => $user['id']]);
     $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
 
-    if ($u && !empty($u['email'])) {
+    if ($u && (!empty($u['email']) || !empty($u['cell']))) {
         $toEmail = $u['email'];
+        $toCell = $u['cell'];
         $userName = $u['full_name'] ?? 'Socio';
         
         foreach ($alerts as $alert) {
+            $invName = $alert['inventory_name'] ?? 'Principal';
             if ($alert['type'] === 'low_stock') {
-                $mailSvc->sendLowStockAlert($toEmail, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock']);
-                $sentCount++;
+                if (!empty($toEmail)) {
+                    $mailSvc->sendLowStockAlert($toEmail, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock']);
+                    $sentCount++;
+                }
+                if (!empty($toCell)) {
+                    $waSvc->sendLowStockAlert($toCell, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock'], $invName);
+                    $sentCount++;
+                }
             } elseif ($alert['type'] === 'negative_profit') {
-                $mailSvc->sendNegativeProfitAlert($toEmail, $userName, $alert['product_name'], $alert['sale_price'], $alert['cost_price']);
-                $sentCount++;
+                if (!empty($toEmail)) {
+                    $mailSvc->sendNegativeProfitAlert($toEmail, $userName, $alert['product_name'], $alert['sale_price'], $alert['cost_price']);
+                    $sentCount++;
+                }
+                // Negative profit currently does not have a WhatsApp template based on our plan, but if it did, we would dispatch it here.
             }
         }
     }
