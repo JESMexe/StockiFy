@@ -61,7 +61,8 @@ export class ProviderModule {
                 <div class="table-header">
                     <h2>Proveedores</h2>
                     <div class="table-controls" style="display:flex; align-items:center; gap:10px;">
-                        <input type="text" id="prov-search-input" placeholder="Buscar por nombre, CUIT o email..."
+                        <input type="text" style="display:none" aria-hidden="true">
+                        <input type="search" id="prov-search-input" name="p_find" placeholder="Buscar por nombre, CUIT o email..."
                             style="padding:8px 12px; border:2px solid #1b1b1b; border-radius:8px; font-family:'Satoshi',sans-serif; font-weight:500; font-size:0.95rem; outline:none; width:280px; box-shadow:2px 2px 0px rgba(0,0,0,0.1); transition:all 0.2s; align-self:stretch;">
                         <button id="prov-sort-btn" class="btn btn-secondary" title="Ordenar por ID (Mayor/Menor)">
                             <i class="ph ph-sort-ascending" id="sort-icon"></i>

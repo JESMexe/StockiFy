@@ -1,4 +1,4 @@
-﻿/* public/assets/css/employees.css */
+/* public/assets/css/employees.css */
 
 /* =========================================
    LAYOUT BASE (OPTIMIZADO PARA 1920px / 2K)
@@ -281,3 +281,81 @@
         padding: 2px;
     }
 }
+
+/* --- NUEVOS ESTILOS: CATEGORÍAS Y CAMPOS DINÁMICOS --- */
+
+.emp-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-color-quat-opacity);
+    color: var(--accent-color);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 5px auto 12px auto;
+    border: 1px solid var(--accent-color-medium-opacity);
+}
+
+.emp-custom-container {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+}
+
+.emp-custom-field {
+    font-size: 0.8rem;
+    color: #444;
+    padding: 6px 10px;
+    background: #fdfdfd;
+    border-left: 3px solid var(--accent-color);
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.emp-custom-field strong {
+    color: #111;
+    font-weight: 700;
+}
+
+.rustic-select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #1b1b1b;
+    border-radius: 8px;
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    outline: none;
+    background: white;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+
+.rustic-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 4px 4px 0px var(--accent-color-quat-opacity);
+}
+
+#manage-categories-modal .modal-content {
+    border: 2px solid #1b1b1b;
+    box-shadow: 8px 8px 0 #1b1b1b;
+}
+
+#manage-categories-modal .modal-content:hover {
+    box-shadow: 8px 8px 0 var(--accent-color);
+}
+
+.cat-item {
+    transition: background 0.2s;
+}
+
+.cat-item:hover {
+    background: #f9f9f9;
+}

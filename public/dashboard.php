@@ -197,9 +197,9 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                 <div id="view-db" class="dashboard-view">
                     <div class="table-container">
                         <div class="table-header">
-                            <div style="display: flex; align-items: center; gap: 10px; height: 100%; min-width: 0; overflow: hidden;">
-                                <h2 id="table-title"
-                                    style="margin: 0; line-height: 1;">Cargando...
+                            <div
+                                style="display: flex; align-items: center; gap: 10px; height: 100%; min-width: 0; overflow: hidden;">
+                                <h2 id="table-title" style="margin: 0; line-height: 1;">Cargando...
                                 </h2>
                                 <button id="refresh-table-btn" class="btn btn-secondary"
                                     title="Recargar y actualizar datos"
@@ -212,7 +212,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                             <div class="table-controls">
                                 <button id="send-report-btn" class="btn hidden"
                                     title="Enviar reporte de reposición (Stock Crítico) al correo o WhatsApp">
-                                    <i class="ph ph-paper-plane-right" style="font-size: 1.4rem; font-weight: bold;"></i>
+                                    <i class="ph ph-paper-plane-right"
+                                        style="font-size: 1.4rem; font-weight: bold;"></i>
                                 </button>
 
                                 <button id="critical-filter-btn" class="btn hidden"
@@ -222,7 +223,10 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
                                 <div class="search-wrapper">
 
-                                    <input type="text" id="search-input" placeholder="Buscar en la tabla...">
+                                    <!-- Honey-pot para engañar al autocompletado de Opera/Chrome -->
+                                    <input type="text" style="display:none" aria-hidden="true">
+                                    <input type="password" style="display:none" aria-hidden="true">
+                                    <input type="search" id="search-input" name="q_internal" placeholder="Buscar en la tabla..." spellcheck="false">
 
                                     <button id="search-column-btn" class="btn btn-secondary">
                                         <i class="ph ph-funnel"></i>
@@ -245,7 +249,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
 
                                 <button id="open-export-modal-btn" class="btn btn-secondary"
-                                    style="display: flex; align-items: center; gap: 8px;" title="Exportar a Excel" onclick="window.openExportModal()">
+                                    style="display: flex; align-items: center; gap: 8px;" title="Exportar a Excel"
+                                    onclick="window.openExportModal()">
                                     <i class="ph ph-export"></i> Exportar
                                 </button>
 
@@ -514,7 +519,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                         <input type="text" id="new-column-name"
                                             placeholder="Ej: Ubicación, Talle, Color..." required>
                                     </div>
-                                    <button type="submit" class="btn btn-primary" style="height: 44px; margin: 0; padding: 0 16px; align-self: flex-end;">Añadir</button>
+                                    <button type="submit" class="btn btn-primary"
+                                        style="height: 44px; margin: 0; padding: 0 16px; align-self: flex-end;">Añadir</button>
                                 </form>
 
                                 <h4 style="margin-top: 1.5rem;">Mis Columnas</h4>
@@ -530,9 +536,9 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                             </button>
                             <div class="accordion-content">
                                 <p style="color: var(--accent-red); margin-bottom: 1rem;">
-                                    Esta acción borrará permanentemente la base de datos y sus registros.
+                                    Esta acción borrará permanentemente el inventario y sus registros.
                                 </p>
-                                <button id="delete-db-btn" class="btn btn-danger">Eliminar Base de Datos</button>
+                                <button id="delete-db-btn" class="btn btn-danger">Eliminar Inventario</button>
                             </div>
                         </div>
 
@@ -669,7 +675,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         <div class="icon"><i class="ph-fill ph-arrow-up-right"></i></div>
                         <div class="info">
                             <span>Egresos (Compras)</span>
-                                                    <h4 id="balance-expense">$0.00</h4>
+                            <h4 id="balance-expense">$0.00</h4>
                         </div>
                     </div>
                 </div>
@@ -685,39 +691,55 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                 <button class="modal-close-btn" onclick="window.closeExportModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: 25px; font-size: 0.95rem; color: var(--color-gray); line-height: 1.5;">Seleccioná qué hojas querés generar en tu reporte final:</p>
-                
+                <p style="margin-bottom: 25px; font-size: 0.95rem; color: var(--color-gray); line-height: 1.5;">
+                    Seleccioná qué hojas querés generar en tu reporte final:</p>
+
                 <div style="display: flex; flex-direction: column; gap: 18px;">
-                    <label style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
-                        <input type="checkbox" id="export-chk-inventory" checked style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
+                    <label
+                        style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
+                        <input type="checkbox" id="export-chk-inventory" checked
+                            style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
                         <div style="display: flex; flex-direction: column; gap: 4px;">
                             <strong style="color: var(--color-black); font-size: 1rem;">Inventario Actual</strong>
-                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Exporta el estado completo de stock, precios y categorías.</span>
+                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Exporta el
+                                estado completo de stock, precios y categorías.</span>
                         </div>
                     </label>
 
-                    <label style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
-                        <input type="checkbox" id="export-chk-sales" checked style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
+                    <label
+                        style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
+                        <input type="checkbox" id="export-chk-sales" checked
+                            style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
                         <div style="display: flex; flex-direction: column; gap: 4px;">
                             <strong style="color: var(--color-black); font-size: 1rem;">Historial de Ventas</strong>
-                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Crea una hoja ideal para proyecciones de Flujo de Caja.</span>
+                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Crea una hoja
+                                ideal para proyecciones de Flujo de Caja.</span>
                         </div>
                     </label>
 
-                    <label style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
-                        <input type="checkbox" id="export-chk-analytics" checked style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
+                    <label
+                        style="display: flex; align-items: flex-start; gap: 15px; cursor: pointer; padding: 18px; background: #fafafa; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s;">
+                        <input type="checkbox" id="export-chk-analytics" checked
+                            style="width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-color);">
                         <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <strong style="color: var(--color-black); font-size: 1rem;">Métricas (Top Rendimiento)</strong>
-                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Listados estáticos con mejores clientes y productos más vendidos.</span>
+                            <strong style="color: var(--color-black); font-size: 1rem;">Métricas (Top
+                                Rendimiento)</strong>
+                            <span style="font-size: 0.85rem; color: var(--color-gray); line-height: 1.4;">Listados
+                                estáticos con mejores clientes y productos más vendidos.</span>
                         </div>
                     </label>
                 </div>
-                
-                <div id="export-status" style="margin-top: 20px; color: var(--accent-color); font-weight: 500; font-size: 0.95rem; min-height: 20px;"></div>
+
+                <div id="export-status"
+                    style="margin-top: 20px; color: var(--accent-color); font-weight: 500; font-size: 0.95rem; min-height: 20px;">
+                </div>
             </div>
-            <div class="modal-footer" style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #eee; padding-top: 20px;">
-                <button class="btn btn-secondary" onclick="window.closeExportModal()" style="margin: 0; padding: 10px 20px;">Cancelar</button>
-                <button class="btn btn-primary" id="btn-run-export" onclick="window.runExport()" style="margin: 0; padding: 10px 24px;">Generar Excel</button>
+            <div class="modal-footer"
+                style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #eee; padding-top: 20px;">
+                <button class="btn btn-secondary" onclick="window.closeExportModal()"
+                    style="margin: 0; padding: 10px 20px;">Cancelar</button>
+                <button class="btn btn-primary" id="btn-run-export" onclick="window.runExport()"
+                    style="margin: 0; padding: 10px 24px;">Generar Excel</button>
             </div>
         </div>
     </div>
@@ -783,9 +805,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
                 <!-- ── Step 1: Nombre del inventario ── -->
                 <div id="delete-step-1">
-                    <p class="delete-step-label"><span class="delete-step-badge">1</span> Escribí el nombre exacto del inventario para continuar:</p>
+                    <p class="delete-step-label"><span class="delete-step-badge">1</span> Escribí el nombre exacto del
+                        inventario para continuar:</p>
                     <input type="text" id="delete-confirm-input" placeholder="Nombre del Inventario" autocomplete="off">
-                    <div id="delete-error-message" style="color: var(--accent-red); font-weight: 600; margin-top: 8px; min-height: 20px;"></div>
+                    <div id="delete-error-message"
+                        style="color: var(--accent-red); font-weight: 600; margin-top: 8px; min-height: 20px;"></div>
                 </div>
 
                 <!-- ── Step 2: Verificación de identidad (oculto hasta que step 1 pase) ── -->
@@ -794,7 +818,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
                     <!-- Para usuarios Google: solo OTP -->
                     <div id="delete-auth-google" class="hidden">
-                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificación de identidad — enviamos un código a tu correo.</p>
+                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificación de identidad
+                            — enviamos un código a tu correo.</p>
                         <p id="delete-email-hint" class="delete-email-hint"></p>
                         <div class="delete-otp-row">
                             <button id="delete-send-otp-btn" class="btn btn-secondary delete-send-otp-btn">
@@ -803,18 +828,20 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                             <span id="delete-otp-countdown" class="delete-otp-countdown hidden"></span>
                         </div>
                         <input type="text" id="delete-otp-input" placeholder="Código de 6 dígitos" maxlength="6"
-                            inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code"
-                            class="hidden" style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
+                            inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code" class="hidden"
+                            style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
                         <div id="delete-otp-status" class="delete-otp-status hidden"></div>
                     </div>
 
                     <!-- Para usuarios con contraseña: contraseña + OTP -->
                     <div id="delete-auth-password" class="hidden">
-                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificá tu identidad para continuar.</p>
+                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificá tu identidad para
+                            continuar.</p>
 
                         <!-- Sub-step 2a: contraseña -->
                         <div id="delete-password-section">
-                            <label class="micro-label" style="margin-bottom: 6px; display: block;">Tu contraseña de acceso:</label>
+                            <label class="micro-label" style="margin-bottom: 6px; display: block;">Tu contraseña de
+                                acceso:</label>
                             <div style="position: relative;">
                                 <input type="password" id="delete-password-input" placeholder="Contraseña"
                                     autocomplete="current-password" style="padding-right: 44px;">
@@ -823,8 +850,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                     <i class="ph ph-eye"></i>
                                 </button>
                             </div>
-                            <div id="delete-password-error" style="color: var(--accent-red); font-weight: 600; margin-top: 6px; min-height: 18px; font-size: 0.9rem;"></div>
-                            <button id="delete-verify-password-btn" class="btn btn-secondary" style="margin-top: 10px; width: 100%;" disabled>
+                            <div id="delete-password-error"
+                                style="color: var(--accent-red); font-weight: 600; margin-top: 6px; min-height: 18px; font-size: 0.9rem;">
+                            </div>
+                            <button id="delete-verify-password-btn" class="btn btn-secondary"
+                                style="margin-top: 10px; width: 100%;" disabled>
                                 Verificar contraseña
                             </button>
                         </div>
@@ -832,7 +862,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         <!-- Sub-step 2b: OTP (se muestra tras verificar contraseña) -->
                         <div id="delete-otp-section" class="hidden" style="margin-top: 16px;">
                             <div class="delete-step-divider" style="margin-bottom: 16px;"></div>
-                            <p class="delete-step-label"><span class="delete-step-badge">3</span> Código de verificación al correo:</p>
+                            <p class="delete-step-label"><span class="delete-step-badge">3</span> Código de verificación
+                                al correo:</p>
                             <p id="delete-email-hint-pass" class="delete-email-hint"></p>
                             <div class="delete-otp-row">
                                 <button id="delete-send-otp-btn-pass" class="btn btn-secondary delete-send-otp-btn">
@@ -840,8 +871,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                 </button>
                                 <span id="delete-otp-countdown-pass" class="delete-otp-countdown hidden"></span>
                             </div>
-                            <input type="text" id="delete-otp-input-pass" placeholder="Código de 6 dígitos" maxlength="6"
-                                inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code"
+                            <input type="text" id="delete-otp-input-pass" placeholder="Código de 6 dígitos"
+                                maxlength="6" inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code"
                                 class="hidden" style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
                             <div id="delete-otp-status-pass" class="delete-otp-status hidden"></div>
                         </div>
@@ -910,7 +941,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
                 <div class="flex-row" style="gap: 10px;">
                     <div class="search-wrapper" style="height: 44px;">
-                        <input type="text" id="v2-product-search" placeholder="Buscar producto para agregar...">
+                        <input type="text" style="display:none" aria-hidden="true">
+                        <input type="search" id="v2-product-search" name="p_search" placeholder="Buscar producto para agregar..." spellcheck="false">
                         <div id="v2-search-results" class="search-dropdown hidden"
                             style="max-height: 300px; overflow-y: auto;"></div>
                     </div>

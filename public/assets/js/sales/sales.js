@@ -117,7 +117,8 @@ export class SalesModule {
                             <div class="purchase-col" id="step-products" style="flex: 1.2;">
                                 <h4>1. Productos</h4>
                                 <div style="display:flex; gap:8px; margin-bottom:15px; align-items: center;">
-                                    <input type="text" id="sale-search-product" class="rustic-input" placeholder="Buscar o Escanear..." autocomplete="off" style="flex:1; width: 100%;">
+                                    <input type="text" style="display:none" aria-hidden="true">
+                                    <input type="search" id="sale-search-product" name="s_prod" class="rustic-input" placeholder="Buscar o Escanear..." spellcheck="false" style="flex:1; width: 100%;">
                                     <button id="btn-toggle-manual" class="btn btn-secondary" title="Agregar ítem manual" style="color: var(--accent-color); white-space: nowrap;">
                                         <i class="ph-bold ph-hand-pointing"></i> Manual
                                     </button>

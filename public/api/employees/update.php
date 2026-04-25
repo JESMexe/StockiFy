@@ -27,7 +27,9 @@ $input = json_decode(file_get_contents('php://input'), true);
         $input['dni'] ?? null,
         $input['phone'] ?? null,
         $input['email'] ?? null,
-        $inventoryId
+        $inventoryId,
+        $input['category_id'] ?? null,
+        $input['custom_data'] ?? null
     );
 
     echo json_encode(['success' => $success]);

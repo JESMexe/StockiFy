@@ -1,0 +1,788 @@
+<?php
+
+declare(strict_types=1)
+;
+
+namespace App\Services;
+
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
+
+require_once __DIR__ . '/../config/mail_config.php';
+
+class MailService
+{
+    private function getMailer(): PHPMailer
+    {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host = SMTP_HOST;
+        $mail->SMTPAuth = true;
+        $mail->Username = SMTP_USER;
+        $mail->Password = SMTP_PASS;
+        $mail->SMTPSecure = SMTP_SECURE;
+        $mail->Port = SMTP_PORT;
+        $mail->CharSet = 'UTF-8';
+
+        // Evitar el error de certificado de Ferozo (*.ferozo.com vs mail.stockify.com.ar)
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
+
+        return $mail;
+    }
+
+    public function sendSecurityOTP(
+        string $toEmail,
+        string $otpCode,
+        string $actionType,
+        string $userName
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, MAIL_NAME_SECURITY);
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            switch ($actionType) {
+                case 'password_change':
+                    $mail->Subject = 'ALERTA DE SEGURIDAD: Solicitud de cambio de contraseña';
+                    $mail->Body = $this->generateSecurityCodeEmailHtml($otpCode, $userName);
+                    $mail->AltBody = "Hola {$userName}, tu código de verificación para cambiar la contraseña es: {$otpCode}. Este código es temporal. Si no solicitaste este cambio, ignorá este correo.";
+                    break;
+
+                case 'delete_inventory':
+                    $mail->Subject = '⚠️ ALERTA CRÍTICA: Solicitud de eliminación de inventario';
+                    $mail->Body = $this->generateDeleteInventoryOtpEmailHtml($otpCode, $userName);
+                    $mail->AltBody = "Hola {$userName}, tu código de verificación para ELIMINAR PERMANENTEMENTE un inventario es: {$otpCode}. Expira en 10 minutos. Si no iniciaste esta acción, cambiá tu contraseña inmediatamente.";
+                    break;
+
+                default:
+                    throw new \InvalidArgumentException('Tipo de acción OTP no soportado.');
+            }
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendSecurityOTP error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sendLowStockAlert(
+        string $toEmail,
+        string $userName,
+        string $productName,
+        float $currentStock,
+        float $minStock
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Alertas');
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            $mail->Subject = 'ALERTA: Stock critico de ' . $productName;
+            $mail->Body = $this->generateLowStockEmailHtml($userName, $productName, $currentStock, $minStock);
+            $mail->AltBody = "Hola {$userName}, el producto '{$productName}' ha alcanzado un stock critico de {$currentStock} (Min: {$minStock}).";
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendLowStockAlert error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sendNegativeProfitAlert(
+        string $toEmail,
+        string $userName,
+        string $productName,
+        float $salePrice,
+        float $costPrice
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Alertas');
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            $mail->Subject = 'PELIGRO: Ganancia Negativa en ' . $productName;
+            $mail->Body = $this->generateNegativeProfitEmailHtml($userName, $productName, $salePrice, $costPrice);
+            $mail->AltBody = "Hola {$userName}, detectamos una venta de '{$productName}' a $ {$salePrice}, pero tu costo de compra es $ {$costPrice}. Estas perdiendo dinero.";
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendNegativeProfitAlert error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sendDailyBalance(
+        string $toEmail,
+        string $userName,
+        string $date,
+        float $totalSales,
+        float $totalPurchases,
+        float $balance
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Reportes');
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            $mail->Subject = '📄 Tu Cierre de Caja Diario (' . $date . ')';
+            $mail->Body = $this->generateDailyBalanceEmailHtml($userName, $date, $totalSales, $totalPurchases, $balance);
+            $mail->AltBody = "Hola {$userName}, tu balance del {$date}: Ingresos $ {$totalSales} | Egresos $ {$totalPurchases} | Balance Final: $ {$balance}.";
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendDailyBalance error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function generateDeleteInventoryOtpEmailHtml(string $code, string $userName = 'Usuario'): string
+    {
+        return '
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Alerta Crítica de Seguridad | StockiFy</title>
+    </head>
+    <body style="margin:0; padding:0; background-color:#BF616A22; font-family:Arial, Helvetica, sans-serif; color:#1a1a1a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; margin:0; padding:32px 0;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:3px solid #BF616A; border-radius:14px; overflow:hidden;">
+                        
+                        <tr>
+                            <td style="padding:28px 32px; border-bottom:3px solid #BF616A; background:#BF616A11;">
+                                <div style="font-size:28px; font-weight:bold; color:#1a1a1a;">StockiFy</div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:36px 32px 16px 32px;">
+                                <p style="margin:0 0 10px 0; font-size:14px; color:#BF616A; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">
+                                    ⚠️ Alerta Crítica de Seguridad
+                                </p>
+                                <h1 style="margin:0 0 18px 0; font-size:28px; line-height:1.2; color:#1a1a1a;">
+                                    Solicitud de Eliminación de Inventario
+                                </h1>
+                                <p style="margin:0; font-size:16px; line-height:1.7; color:#475569;">
+                                    Hola <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>, alguien solicitó eliminar <strong>permanentemente</strong> un inventario en tu cuenta de StockiFy. Usá el siguiente código para confirmar esta acción.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:10px 32px 8px 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#BF616A22; border:2px dashed #BF616A; border-radius:12px;">
+                                    <tr>
+                                        <td align="center" style="padding:28px 16px;">
+                                            <p style="margin:0 0 12px 0; font-size:13px; color:#BF616A; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">
+                                                Código de Confirmación — Válido por 10 minutos
+                                            </p>
+                                            <p style="margin:0; font-size:42px; line-height:1; font-weight:bold; letter-spacing:12px; color:#BF616A;">
+                                                ' . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . '
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:18px 32px 0 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#BF616A33; border-left:5px solid #BF616A; border-radius:8px;">
+                                    <tr>
+                                        <td style="padding:16px 18px; font-size:14px; line-height:1.6; color:#7d2a2a; font-weight:bold;">
+                                            🔴 Si no sos vos quien realizó esta solicitud, NO compartas este código. Esta acción es irreversible. Cambiá tu contraseña inmediatamente y contactá soporte.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:20px 32px 0 32px;">
+                                <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">
+                                    Este código expira automáticamente a los 10 minutos de haber sido generado. No lo compartas con nadie.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:28px 32px 32px 32px;">
+                                <p style="margin:0; font-size:14px; line-height:1.6; color:#64748b;">
+                                    ¿Necesitás ayuda? Escribinos a
+                                    <a href="mailto:soporte@stockify.com.ar" style="color:#BF616A; text-decoration:none; font-weight:bold;">
+                                        soporte@stockify.com.ar
+                                    </a>
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>';
+    }
+
+    private function generateSecurityCodeEmailHtml(string $code, string $userName = 'Usuario'): string
+    {
+        return '
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Código de seguridad | StockiFy</title>
+    </head>
+    <body style="margin:0; padding:0; background-color:#A3BE8C22; font-family:Arial, Helvetica, sans-serif; color:#1a1a1a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; margin:0; padding:32px 0;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:2px solid #1a1a1a; border-radius:14px; overflow:hidden;">
+                        
+                        <tr>
+                            <td style="padding:28px 32px; border-bottom:1px solid #e5e7eb;">
+                                <div style="font-size:28px; font-weight:bold; color:#1a1a1a;">StockiFy</div>
+                                <!--<img src="...AunNoEstaOnlineEsto/LogoE2.png" alt="StockiFy" width="150" style="display:block; border:0;">-->
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:36px 32px 16px 32px;">
+                                <p style="margin:0 0 10px 0; font-size:14px; color:#A3BE8C; font-weight:bold; text-transform:uppercase; letter-spacing:1px; font-family: Satoshi, sans-serif;;">
+                                    Seguridad StockiFy
+                                </p>
+
+                                <h1 style="margin:0 0 18px 0; font-size:30px; line-height:1.2; color:#1a1a1a;">
+                                    Solicitud de cambio de contraseña
+                                </h1>
+
+                                <p style="margin:0; font-size:16px; line-height:1.7; color:#475569;">
+                                    Hola <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>, recibimos una solicitud para cambiar la contraseña de tu cuenta.
+                                    Ingresá este código en la aplicación para continuar con el proceso.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:10px 32px 8px 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#A3BE8C33; border:2px dashed #A3BE8C; border-radius:12px;">
+                                    <tr>
+                                        <td align="center" style="padding:28px 16px;">
+                                            <p style="margin:0 0 12px 0; font-size:13px; color:#A3BE8C; font-weight:bold; text-transform:uppercase; letter-spacing:1px; font-family: Satoshi, sans-serif;;">
+                                                Código de verificación
+                                            </p>
+                                            <p style="margin:0; font-size:40px; line-height:1; font-weight:bold; letter-spacing:10px; color:#A3BE8C;">
+                                                ' . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . '
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:20px 32px 0 32px;">
+                                <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">
+                                    Este código es temporal y fue generado para proteger tu cuenta. No lo compartas con nadie.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:18px 32px 0 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#EBCB8B33; border-left:5px solid #EBCB8B; border-radius:8px;">
+                                    <tr>
+                                        <td style="padding:16px 18px; font-size:14px; line-height:1.6; color:#EBCB8B;">
+                                            Si no solicitaste este cambio, ignorá este correo. Para mayor seguridad, te recomendamos revisar el acceso a tu cuenta.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:28px 32px 10px 32px;">
+                                <p style="margin:0; font-size:14px; line-height:1.6; color:#64748b;">
+                                    Este mensaje fue enviado automáticamente por el sistema de seguridad de StockiFy.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:0 32px 32px 32px;">
+                                <p style="margin:0; font-size:14px; line-height:1.6; color:#64748b;">
+                                    ¿Necesitás ayuda? Escribinos a
+                                    <a href="mailto:soporte@stockify.com.ar" style="color:#A3BE8C; text-decoration:none; font-weight:bold;">
+                                        soporte@stockify.com.ar
+                                    </a>
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>';
+    }
+
+    private function generateLowStockEmailHtml(string $userName, string $productName, float $currentStock, float $minStock): string
+    {
+        return '
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Alerta de Stock | StockiFy</title>
+    </head>
+    <body style="margin:0; padding:0; background-color:#BF616A22; font-family:Arial, Helvetica, sans-serif; color:#1a1a1a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; margin:0; padding:32px 0;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:2px solid #1a1a1a; border-radius:14px; overflow:hidden;">
+                        
+                        <tr>
+                            <td style="padding:28px 32px; border-bottom:1px solid #e5e7eb;">
+                                <div style="font-size:28px; font-weight:bold; color:#1a1a1a;">StockiFy</div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:36px 32px 16px 32px;">
+                                <p style="margin:0 0 10px 0; font-size:14px; color:#BF616A; font-weight:bold; text-transform:uppercase; letter-spacing:1px; font-family: Satoshi, sans-serif;">
+                                    Reporte de Inventario
+                                </p>
+                                <h1 style="margin:0 0 18px 0; font-size:30px; line-height:1.2; color:#1a1a1a;">
+                                    Alerta de Stock Crítico
+                                </h1>
+                                <p style="margin:0; font-size:16px; line-height:1.7; color:#475569;">
+                                    Hola <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>, tu sistema informático ha detectado automáticamente que un producto de tu inventario alcanzó la línea roja.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:10px 32px 8px 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#BF616A33; border:2px dashed #BF616A; border-radius:12px;">
+                                    <tr>
+                                        <td align="center" style="padding:28px 16px;">
+                                            <p style="margin:0 0 12px 0; font-size:18px; color:#1a1a1a; font-weight:bold; letter-spacing:0px;">
+                                                ' . htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') . '
+                                            </p>
+                                            <div style="display:flex; justify-content:center; gap:20px;">
+                                                <div>
+                                                    <p style="margin:0; font-size:12px; color:#BF616A; font-weight:bold; text-transform:uppercase;">Stock Actual</p>
+                                                    <p style="margin:0; font-size:30px; font-weight:bold; color:#BF616A;">' . $currentStock . '</p>
+                                                </div>
+                                                <div style="border-left: 2px solid #BF616A; margin: 0 15px;"></div>
+                                                <div>
+                                                    <p style="margin:0; font-size:12px; color:#64748b; font-weight:bold; text-transform:uppercase;">Mínimo Ideal</p>
+                                                    <p style="margin:0; font-size:30px; font-weight:bold; color:#64748b;">' . $minStock . '</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:20px 32px 0 32px;">
+                                <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">
+                                    Es momento de contactar a tus proveedores. Recordá que mantener el stock saludable es clave para no perder ventas.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:28px 32px 32px 32px;">
+                                <p style="margin:0; font-size:14px; line-height:1.6; color:#64748b;">
+                                    Notificación automatizada por tu Asistente Empresarial StockiFy SaaS.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>';
+    }
+
+    private function generateNegativeProfitEmailHtml(string $userName, string $productName, float $salePrice, float $costPrice): string
+    {
+        $loss = $costPrice - $salePrice;
+        return '
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ganancia Negativa | StockiFy</title>
+    </head>
+    <body style="margin:0; padding:0; background-color:#D0877022; font-family:Arial, Helvetica, sans-serif; color:#1a1a1a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; margin:0; padding:32px 0;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:2px solid #1a1a1a; border-radius:14px; overflow:hidden;">
+                        
+                        <tr>
+                            <td style="padding:28px 32px; border-bottom:1px solid #e5e7eb;">
+                                <div style="font-size:28px; font-weight:bold; color:#1a1a1a;">StockiFy</div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:36px 32px 16px 32px;">
+                                <p style="margin:0 0 10px 0; font-size:14px; color:#D08770; font-weight:bold; text-transform:uppercase; letter-spacing:1px; font-family: Satoshi, sans-serif;">
+                                    Reporte de Rentabilidad
+                                </p>
+                                <h1 style="margin:0 0 18px 0; font-size:30px; line-height:1.2; color:#1a1a1a;">
+                                    Alerta de Márgen Negativo
+                                </h1>
+                                <p style="margin:0; font-size:16px; line-height:1.7; color:#475569;">
+                                    Hola <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>, acabamos de procesar una venta donde el precio final cobrado es <strong>inferior</strong> al costo de mercadería registrado.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:10px 32px 8px 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#D0877033; border:2px dashed #D08770; border-radius:12px;">
+                                    <tr>
+                                        <td align="center" style="padding:28px 16px;">
+                                            <p style="margin:0 0 12px 0; font-size:18px; color:#1a1a1a; font-weight:bold; letter-spacing:0px;">
+                                                ' . htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') . '
+                                            </p>
+                                            <div style="display:flex; justify-content:center; gap:20px;">
+                                                <div>
+                                                    <p style="margin:0; font-size:12px; color:#D08770; font-weight:bold; text-transform:uppercase;">Precio de Venta</p>
+                                                    <p style="margin:0; font-size:24px; font-weight:bold; color:#D08770;">$ ' . number_format($salePrice, 2, ',', '.') . '</p>
+                                                </div>
+                                                <div style="border-left: 2px solid #D08770; margin: 0 15px;"></div>
+                                                <div>
+                                                    <p style="margin:0; font-size:12px; color:#64748b; font-weight:bold; text-transform:uppercase;">Costo de Compra</p>
+                                                    <p style="margin:0; font-size:24px; font-weight:bold; color:#64748b;">$ ' . number_format($costPrice, 2, ',', '.') . '</p>
+                                                </div>
+                                            </div>
+                                            <div style="margin-top: 15px; font-size: 14px; color: #D08770; font-weight: bold;">
+                                                Pérdida neta estimada: $ ' . number_format($loss, 2, ',', '.') . ' por unidad.
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:20px 32px 0 32px;">
+                                <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">
+                                    Verifica si esto fue un error de tipeo en mostrador, un descuento manual excesivo, o si necesitas actualizar tus precios de góndola ante la inflación.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:28px 32px 32px 32px;">
+                                <p style="margin:0; font-size:14px; line-height:1.6; color:#64748b;">
+                                    Notificación automatizada por tu Asistente Empresarial StockiFy SaaS.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>';
+    }
+
+    private function generateDailyBalanceEmailHtml(string $userName, string $date, float $totalSales, float $totalPurchases, float $balance): string
+    {
+        $balanceColor = $balance >= 0 ? '#A3BE8C' : '#BF616A'; // Verde si hay profit, Rojo si es pérdida
+        return '
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cierre de Caja | StockiFy</title>
+    </head>
+    <body style="margin:0; padding:0; background-color:#5E81AC22; font-family:Arial, Helvetica, sans-serif; color:#1a1a1a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; margin:0; padding:32px 0;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#ffffff; border:2px solid #1a1a1a; border-radius:14px; overflow:hidden;">
+                        
+                        <tr>
+                            <td style="padding:28px 32px; border-bottom:1px solid #e5e7eb;">
+                                <div style="font-size:28px; font-weight:bold; color:#1a1a1a;">StockiFy</div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:36px 32px 16px 32px;">
+                                <p style="margin:0 0 10px 0; font-size:14px; color:#5E81AC; font-weight:bold; text-transform:uppercase; letter-spacing:1px; font-family: Satoshi, sans-serif;">
+                                    Resumen Automático
+                                </p>
+                                <h1 style="margin:0 0 18px 0; font-size:30px; line-height:1.2; color:#1a1a1a;">
+                                    Cierre de Caja del ' . htmlspecialchars($date, ENT_QUOTES, 'UTF-8') . '
+                                </h1>
+                                <p style="margin:0; font-size:16px; line-height:1.7; color:#475569;">
+                                    Hola <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>, el día cerró y aquí tienes el balance general de tus movimientos de caja registrados hoy.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:10px 32px 8px 32px;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#5E81AC33; border:2px dashed #5E81AC; border-radius:12px;">
+                                    <tr>
+                                        <td align="center" style="padding:28px 16px;">
+                                            <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 25px;">
+                                                <div style="flex: 1; min-width: 120px;">
+                                                    <p style="margin:0; font-size:12px; color:#475569; font-weight:bold; text-transform:uppercase;">Ingresos (Ventas)</p>
+                                                    <p style="margin:0; font-size:20px; font-weight:bold; color:#475569;">$ ' . number_format($totalSales, 2, ',', '.') . '</p>
+                                                </div>
+                                                <div style="flex: 1; min-width: 120px;">
+                                                    <p style="margin:0; font-size:12px; color:#475569; font-weight:bold; text-transform:uppercase;">Egresos (Compras)</p>
+                                                    <p style="margin:0; font-size:20px; font-weight:bold; color:#475569;">$ ' . number_format($totalPurchases, 2, ',', '.') . '</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div style="background: #ffffff; border: 2px solid ' . $balanceColor . '; border-radius: 8px; padding: 15px; display: inline-block;">
+                                                <p style="margin:0; font-size:14px; color:' . $balanceColor . '; font-weight:bold; text-transform:uppercase;">Balance Neto</p>
+                                                <p style="margin:0; font-size:34px; font-weight:900; color:' . $balanceColor . ';">$ ' . number_format($balance, 2, ',', '.') . '</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:20px 32px 0 32px;">
+                                <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">
+                                    ¡Excelente trabajo! Tener claro tu balance diario ayuda a prever gastos y calcular la ganancia real de tu negocio a fin de mes.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:28px 32px 32px 32px;">
+                                <p style="margin:0; font-size:14px; line-height:1.6; color:#64748b;">
+                                    Notificación automatizada por tu Asistente Empresarial StockiFy SaaS.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>';
+    }
+
+    public function sendRestockReport(
+        string $toEmail,
+        string $userName,
+        string $inventoryName,
+        array $productsList
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Reportes');
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            $mail->Subject = 'Reporte Masivo de Reposición - ' . $inventoryName;
+            $mail->Body = $this->generateRestockReportEmailHtml($userName, $inventoryName, $productsList);
+            $mail->AltBody = "Hola {$userName}, adjuntamos el reporte de productos con stock crítico en tu inventario {$inventoryName} que requieren reposición inmediata.";
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendRestockReport error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function generateRestockReportEmailHtml(string $userName, string $inventoryName, array $productsList): string
+    {
+        $rowsHtml = '';
+        foreach ($productsList as $product) {
+            $name = htmlspecialchars($product['name'] ?? 'Producto Desconocido', ENT_QUOTES, 'UTF-8');
+            $current = htmlspecialchars((string) ($product['current'] ?? 0), ENT_QUOTES, 'UTF-8');
+            $faltante = htmlspecialchars((string) ($product['faltante'] ?? 0), ENT_QUOTES, 'UTF-8');
+
+            $rowsHtml .= "
+                <tr>
+                    <td style='padding:12px 16px; border-bottom:1px solid #f0e4ef; color:#2d1a2d;
+                               font-family: Outfit, Arial, sans-serif; font-size:15px;'>{$name}</td>
+                    <td style='padding:12px 16px; border-bottom:1px solid #f0e4ef; color:#7a6478;
+                               text-align:center; font-family: Outfit, Arial, sans-serif;'>{$current}</td>
+                    <td style='padding:12px 16px; border-bottom:1px solid #f0e4ef; color:#BF616A;
+                               text-align:center; font-weight:700;
+                               font-family: Outfit, Arial, sans-serif;'>{$faltante}</td>
+                </tr>
+            ";
+        }
+
+        $count = count($productsList);
+
+        $content = "
+            <h2 style='color:#B48EAD; margin-top:0; margin-bottom:6px; font-size:26px;
+                       font-family: Outfit, Arial, sans-serif; font-weight:700; letter-spacing:-0.3px;'>
+                Reporte de Reposición
+            </h2>
+            <p style='color:#9c7295; font-size:13px; margin-top:0; margin-bottom:24px;
+                      font-family: Outfit, Arial, sans-serif; letter-spacing:0.3px; text-transform:uppercase;'>
+                {$count} producto(s) en estado crítico
+            </p>
+
+            <p style='color:#4a3a4a; font-size:16px; line-height:1.7; margin-top:0;
+                      font-family: Outfit, Arial, sans-serif;'>
+                Hola <strong style='color:#2d1a2d;'>{$userName}</strong>,
+            </p>
+            <p style='color:#6b5468; font-size:15px; line-height:1.7; margin-top:0;
+                      font-family: Outfit, Arial, sans-serif;'>
+                Solicitaste un reporte de productos con stock crítico para tu inventario
+                <strong style='color:#B48EAD;'>{$inventoryName}</strong>.
+                A continuación, las cantidades que necesitás reponer:
+            </p>
+
+            <table style='width:100%; border-collapse:collapse; margin-top:20px; text-align:left;
+                          border-radius:10px; overflow:hidden;'>
+                <thead>
+                    <tr style='background-color:#f5eef5;'>
+                        <th style='padding:12px 16px; border-bottom:2px solid #e8d4e8; color:#B48EAD;
+                                   font-family: Outfit, Arial, sans-serif; font-size:12px;
+                                   text-transform:uppercase; letter-spacing:.8px; font-weight:600;'>Producto</th>
+                        <th style='padding:12px 16px; border-bottom:2px solid #e8d4e8; color:#B48EAD;
+                                   font-family: Outfit, Arial, sans-serif; font-size:12px;
+                                   text-transform:uppercase; letter-spacing:.8px; font-weight:600;
+                                   text-align:center;'>Stock actual</th>
+                        <th style='padding:12px 16px; border-bottom:2px solid #e8d4e8; color:#BF616A;
+                                   font-family: Outfit, Arial, sans-serif; font-size:12px;
+                                   text-transform:uppercase; letter-spacing:.8px; font-weight:600;
+                                   text-align:center;'>&#9888; A reponer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {$rowsHtml}
+                </tbody>
+            </table>
+
+            <br>
+            <p style='color:#9c8498; font-size:13px; line-height:1.7;
+                      font-family: Outfit, Arial, sans-serif; font-style:italic;'>
+                Podés reenviar este correo directamente a tu proveedor para gestionar el pedido.
+            </p>
+        ";
+
+        return str_replace('{{content}}', $content, $this->getBaseTemplate());
+    }
+
+
+    private function getBaseTemplate(): string
+    {
+        // Logo accesible por URL pública para clientes de correo externos
+        $logoUrl = 'https://stockify.com.ar/assets/img/LogoE3.png';
+
+        return '<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockiFy</title>
+    <link href="https://fonts.bunny.net/css?family=outfit:300,400,500,600,700" rel="stylesheet">
+</head>
+<body style="margin:0; padding:0; background-color:#f5f0f5; font-family: Outfit, Arial, Helvetica, sans-serif; color:#1a1a1a;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+           style="background-color:#f5f0f5; margin:0; padding:36px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+                       style="max-width:660px; background:#ffffff; border:2px solid #B48EAD; border-radius:16px; overflow:hidden; box-shadow: 0 4px 24px rgba(180,142,173,0.10);">
+
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="padding:22px 32px; background:#B48EAD; border-bottom:2px solid #9c7295;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td>
+                                        <img src="' . $logoUrl . '" alt="StockiFy" width="44" height="44"
+                                             style="display:inline-block; vertical-align:middle; border-radius:8px; background:#fff;">
+                                        <span style="display:inline-block; vertical-align:middle; margin-left:12px;
+                                                     font-family: Outfit, Arial, sans-serif; font-size:22px;
+                                                     font-weight:700; color:#ffffff; letter-spacing:-0.3px;">
+                                            StockiFy
+                                        </span>
+                                    </td>
+                                    <td align="right">
+                                        <span style="font-family: Outfit, Arial, sans-serif; font-size:12px;
+                                                     color:#f0e8ef; letter-spacing:0.5px; text-transform:uppercase;">
+                                            Notificación automática
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- CONTENT -->
+                    <tr>
+                        <td style="padding:36px 36px 28px 36px; font-family: Outfit, Arial, sans-serif;">
+                            {{content}}
+                        </td>
+                    </tr>
+
+                    <!-- DIVIDER -->
+                    <tr>
+                        <td style="padding:0 36px;">
+                            <div style="border-top:1px solid #f0e0ef;"></div>
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="padding:18px 36px 24px 36px; background:#faf7fa;">
+                            <p style="margin:0; font-family: Outfit, Arial, sans-serif; font-size:12px;
+                                      color:#b09ab0; line-height:1.6;">
+                                Este mensaje fue generado automáticamente por
+                                <strong style="color:#B48EAD;">StockiFy SaaS</strong>. No respondas este correo. &mdash;
+                                <a href="mailto:soporte@stockify.com.ar"
+                                   style="color:#B48EAD; text-decoration:none; font-weight:600;">soporte@stockify.com.ar</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>';
+    }
+
+}

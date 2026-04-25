@@ -40,9 +40,11 @@ try {
     
     // Test 1: Alerta de stock crítico
     $testStock = $waSvc->sendLowStockAlert($targetPhone, $userName, 'Producto de Prueba', 3, 10, 'Inventario Demo');
+    $err1 = $testStock ? null : $waSvc->lastError;
     
     // Test 2: Balance diario
     $testBalance = $waSvc->sendDailyBalance($targetPhone, $userName, date('d/m/Y'), 50000.50, 15000.00, 35000.50, 'Inventario Demo');
+    $err2 = $testBalance ? null : $waSvc->lastError;
 
     echo json_encode([
         'success' => true,
@@ -50,6 +52,10 @@ try {
         'results' => [
             'alerta_stock_critico' => $testStock,
             'reporte_cierre_caja' => $testBalance
+        ],
+        'errors' => [
+            'alerta_stock_critico' => $err1,
+            'reporte_cierre_caja' => $err2
         ]
     ]);
 

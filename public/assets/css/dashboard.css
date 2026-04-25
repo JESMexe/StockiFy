@@ -25,10 +25,15 @@
     /* Scroll si el menú es muy largo */
     position: sticky;
     /* Ocultar scrollbar visualmente */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
 }
-.dashboard-sidebar::-webkit-scrollbar { display: none; }
+
+.dashboard-sidebar::-webkit-scrollbar {
+    display: none;
+}
 
 .main-menu {
     width: 250px;
@@ -48,7 +53,10 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
-.main-menu::-webkit-scrollbar { display: none; }
+
+.main-menu::-webkit-scrollbar {
+    display: none;
+}
 
 
 .btn-icon {
@@ -291,7 +299,8 @@
 /* Contenido Principal */
 .dashboard-main {
     flex-grow: 1;
-    min-width: 0; /* CLAVE para que la tabla no expanda el ancho del viewport */
+    min-width: 0;
+    /* CLAVE para que la tabla no expanda el ancho del viewport */
     padding: 2rem;
     background-color: #f9f9f9;
     min-height: calc(100vh - 62px);
@@ -306,7 +315,8 @@
 /* Contenedor de la Tabla */
 .table-container {
     width: 100%;
-    max-width: 100%; /* Garantiza que la caja nunca supere el ancho disponible */
+    max-width: 100%;
+    /* Garantiza que la caja nunca supere el ancho disponible */
     height: 100%;
     background-color: var(--color-white);
     border: var(--border-strong);
@@ -381,7 +391,8 @@
 .empty-image {
     /* Ancho relativo al contenedor (la tabla) */
     width: 100%;
-    max-width: min(500px, 80vw); /* Límite inteligente al viewport para pantallas chicas */
+    max-width: min(500px, 80vw);
+    /* Límite inteligente al viewport para pantallas chicas */
     height: auto;
     opacity: 0.9;
     transition: width 0.3s ease;
@@ -1051,16 +1062,15 @@ table {
 
 
 .btn-danger:hover:not(:disabled) {
-    box-shadow: 4px 4px 0px var(--accent-red-20);
-    transform: translate(-2px, -2px);
-    background-color: #bf616a46;
+    box-shadow: 4px 4px 0px var(--color-black);
+    transform: translate(-3px, -3px);
+    background-color: var(--accent-red-50);
     border-color: var(--accent-red);
     color: var(--accent-red);
 }
 
 .btn-danger:active:not(:disabled) {
-    background-color: #9b2c2c;
-    box-shadow: 1px 1px 0px var(--accent-red-50);
+    box-shadow: none;
     transform: translate(3px, 3px);
 }
 

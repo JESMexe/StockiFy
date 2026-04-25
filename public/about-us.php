@@ -57,7 +57,7 @@ $currentUser = getCurrentUser();
                     <strong>StockiFy</strong> <span class="text-accent">GRATIS</span> por 30 días.
                 </div>
                 <div class="promo-button-wrapper">
-                    <a href="register" class="btn-promo">Probar Ahora</a>
+                    <a href="https://wa.me/5491163642040?text=Hola!%20Quiero%20obtener%20la%20prueba%20gratuita%20de%2030%20días%20de%20StockiFy." target="_blank" class="btn-promo">Probar Ahora</a>
                 </div>
             </div>
             <button class="btn-close-promo" id="closePromo">Cerrar</button>

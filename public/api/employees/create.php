@@ -26,9 +26,11 @@ $input = json_decode(file_get_contents('php://input'), true);
     $dni = $input['dni'] ?? null;
     $phone = $input['phone'] ?? null;
     $email = $input['email'] ?? null;
+    $categoryId = $input['category_id'] ?? null;
+    $customData = $input['custom_data'] ?? null;
 
     $model = new EmployeeModel();
-    $id = $model->createEmployee($user['id'], $input['name'], $dni, $phone, $email, $inventoryId);
+    $id = $model->createEmployee($user['id'], $input['name'], $dni, $phone, $email, $inventoryId, $categoryId, $customData);
 
     if ($id) echo json_encode(['success'=>true, 'id'=>$id]);
     else echo json_encode(['success'=>false, 'message'=>'Error al crear']);

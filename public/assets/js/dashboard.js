@@ -87,7 +87,7 @@ function checkCriticalStatus() {
             btn.style.backgroundColor = '#fff0f0';
             btn.style.color = 'var(--accent-red)';
             filterTable();
-            
+
             const sendRepBtn = document.getElementById('send-report-btn');
             if (sendRepBtn) sendRepBtn.classList.add('hidden');
         }
@@ -181,13 +181,16 @@ async function renderTable(columns, data) {
                 if (prefs.features) activeFeatures = prefs.features;
 
                 window.currentUserPreferences = window.currentUserPreferences || {};
-                if (prefs.hidden_columns) window.currentUserPreferences.hidden_columns = prefs.hidden_columns;
-                else if (prefs.visible_columns) {
-                    // Solo ocultar columnas que existían al momento de guardar las preferencias
-                    // Las columnas nuevas (no presentes en visible_columns ni en column_order) se muestran por defecto
-                    const knownCols = prefs.column_order || prefs.visible_columns;
-                    window.currentUserPreferences.hidden_columns = currentTableColumns.filter(c => knownCols.includes(c) && !prefs.visible_columns.includes(c));
+
+                // REGLA: solo ocultamos lo que el usuario explícitamente marcó como oculto.
+                // hidden_columns es la fuente de verdad. visible_columns es formato legacy (ignorado).
+                if (Array.isArray(prefs.hidden_columns)) {
+                    window.currentUserPreferences.hidden_columns = prefs.hidden_columns;
+                } else {
+                    // Sin preferencias previas → ninguna columna oculta por el usuario
+                    window.currentUserPreferences.hidden_columns = [];
                 }
+
                 if (prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
                 if (prefs.column_colors) window.currentUserPreferences.column_colors = prefs.column_colors;
             }
@@ -235,14 +238,16 @@ async function renderTable(columns, data) {
         displayColumns = [...normalColumns, ...orderedSpecialColumns];
     }
 
+    // Columnas de sistema siempre ocultas (no configurables por el usuario)
+    const SYSTEM_HIDDEN = ['created_at', 'updated_at', 'user_id', 'inventory_id'];
+    displayColumns = displayColumns.filter(col => !SYSTEM_HIDDEN.includes(col.toLowerCase()));
+
+    // Aplicar SOLO las columnas que el usuario explícitamente ocultó
     if (window.currentUserPreferences && Array.isArray(window.currentUserPreferences.hidden_columns)) {
-        const hiddenSet = window.currentUserPreferences.hidden_columns;
-        if (hiddenSet.length > 0) {
-            displayColumns = displayColumns.filter(col => !hiddenSet.includes(col));
+        const hiddenSet = new Set(window.currentUserPreferences.hidden_columns);
+        if (hiddenSet.size > 0) {
+            displayColumns = displayColumns.filter(col => !hiddenSet.has(col));
         }
-    } else {
-        const systemHiddenDefault = ['created_at', 'user_id', 'inventory_id', 'updated_at'];
-        displayColumns = displayColumns.filter(col => !systemHiddenDefault.includes(col.toLowerCase()));
     }
 
     activeDisplayColumns = displayColumns;
@@ -272,7 +277,7 @@ async function renderTable(columns, data) {
             if (currentSort.state === 1) sortIcon = ' <i class="ph-fill ph-caret-up" style="font-size: 1.3em; color: var(--accent-color);"></i>';
             if (currentSort.state === 2) sortIcon = ' <i class="ph-fill ph-caret-down" style="; font-size: 1.3em; color: var(--accent-color);"></i>';
         }
-        
+
         let thStyle = 'border-radius: 0; cursor: pointer; user-select: none;';
         if (columnColors[col]) {
             thStyle += ` background-color: var(--${columnColors[col]}-20);`;
@@ -1251,7 +1256,7 @@ async function _verifyDeletePassword() {
     const passInput = document.getElementById('delete-password-input');
     const passError = document.getElementById('delete-password-error');
     const verifyBtn = document.getElementById('delete-verify-password-btn');
-    const password  = passInput?.value || '';
+    const password = passInput?.value || '';
 
     if (!password) return;
 
@@ -2026,8 +2031,8 @@ async function init() {
             const confirm = await pop_ups.confirm("Enviar Reporte", "Se enviará un reporte con todos los productos de stock bajo a tu Email y WhatsApp (si lo tenés configurado). ¿Continuar?");
             if (!confirm) return;
 
-            pop_ups.loading("Generando y enviando reporte...");
-            
+            pop_ups.info("Generando y enviando reporte...");
+
             try {
                 const response = await fetch('/api/inventory/send-restock-report.php', {
                     method: 'POST',
@@ -2035,17 +2040,20 @@ async function init() {
                     body: JSON.stringify({ inventory_id: activeInventoryId })
                 });
 
+                if (!response.ok && response.status !== 200) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
                 const rb = await response.json();
-                pop_ups.close();
 
                 if (rb.success) {
-                    pop_ups.success(rb.message || "Reporte generado y enviado con éxito.");
+                    pop_ups.success(rb.message || "Reporte generado y enviado con éxito.", "¡Enviado!");
                 } else {
-                    pop_ups.error(rb.message || "No se pudo generar el reporte.");
+                    pop_ups.error(rb.message || "No se pudo generar el reporte.", "Error al enviar");
                 }
             } catch (err) {
-                pop_ups.close();
-                pop_ups.error("Hubo un error de conexión con el servidor.");
+                console.error("Error send-restock-report:", err);
+                pop_ups.error("Hubo un error de conexión con el servidor.", "Error");
             }
         });
     }
@@ -4718,8 +4726,15 @@ export async function loadTableData() {
 
                 if (prefs.visible_columns || prefs.hidden_columns || prefs.column_order || prefs.column_colors) {
                     window.currentUserPreferences = window.currentUserPreferences || {};
-                    if (prefs.hidden_columns) window.currentUserPreferences.hidden_columns = prefs.hidden_columns;
-                    else if (prefs.visible_columns) window.currentUserPreferences.hidden_columns = currentTableColumns.filter(c => !prefs.visible_columns.includes(c));
+
+                    // REGLA: solo ocultamos lo que el usuario explícitamente marcó como oculto.
+                    // Si no hay hidden_columns guardadas, ninguna columna está oculta por el usuario.
+                    if (Array.isArray(prefs.hidden_columns)) {
+                        window.currentUserPreferences.hidden_columns = prefs.hidden_columns;
+                    } else {
+                        window.currentUserPreferences.hidden_columns = [];
+                    }
+
                     if (prefs.column_order) window.currentUserPreferences.column_order = prefs.column_order;
                     if (prefs.column_colors) window.currentUserPreferences.column_colors = prefs.column_colors;
                 }
@@ -4739,7 +4754,7 @@ export async function loadTableData() {
             }
 
             console.log("[loadTableData] Renderizando tabla con mapeo activo:", columnMapping);
-            
+
             if (typeof filterTable === 'function') {
                 filterTable();
             } else {
@@ -4936,7 +4951,7 @@ window.openColumnManager = function () {
     if (window.currentUserPreferences && window.currentUserPreferences.hidden_columns) {
         hiddenCols = window.currentUserPreferences.hidden_columns;
     }
-    
+
     let columnColors = {};
     if (window.currentUserPreferences && window.currentUserPreferences.column_colors) {
         columnColors = window.currentUserPreferences.column_colors;
@@ -5017,7 +5032,7 @@ window.saveColumnPreferences = async function () {
         if (checkbox && !checkbox.checked) {
             hiddenCols.push(colName);
         }
-        
+
         if (colorSelect && colorSelect.value !== '') {
             colColors[colName] = colorSelect.value;
         }

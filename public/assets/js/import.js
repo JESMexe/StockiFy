@@ -120,7 +120,7 @@ async function handleFileSelect(file) {
             detectedDelimiter = response.delimiter || ',';
             console.log("Delimitador detectado:", detectedDelimiter);
 
-            generateMappingTable(response.headers, response.ui_headers || response.headers);
+            generateMappingTable(response.headers, response.ui_headers || response.headers, response.ui_headers || response.headers);
             showStep(2);
             if (importStatus) importStatus.textContent = '';
         } else {
@@ -133,7 +133,11 @@ async function handleFileSelect(file) {
     }
 }
 
-function generateMappingTable(csvHeaders, uiHeaders) {
+// csvHeaders = sanitized names (used for auto-match logic)
+// uiHeaders  = original CSV header text (used as option VALUES so prepare-csv.php can do exact lookup)
+// rawHeaders = same as uiHeaders (original text from CSV)
+function generateMappingTable(csvHeaders, uiHeaders, rawHeaders) {
+    rawHeaders = rawHeaders || uiHeaders;
     if (!mappingForm) return;
     mappingForm.innerHTML = '';
 
@@ -188,7 +192,8 @@ function generateMappingTable(csvHeaders, uiHeaders) {
 
         csvHeaders.forEach((headerVal, index) => {
             const option = document.createElement('option');
-            option.value = headerVal;
+            // VALUE = original CSV header text so prepare-csv.php can do an exact lookup
+            option.value = rawHeaders[index];
             option.textContent = uiHeaders[index];
 
             const cleanSys = sysCol.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -200,7 +205,7 @@ function generateMappingTable(csvHeaders, uiHeaders) {
                 option.selected = true;
                 select.style.borderColor = 'var(--primary-color, #4CAF50)';
                 select.style.backgroundColor = '#f0fff4';
-                usedCsvHeaders.add(headerVal);
+                usedCsvHeaders.add(rawHeaders[index]); // track by original header
                 mapped = true;
             }
             select.appendChild(option);
@@ -229,7 +234,8 @@ function generateMappingTable(csvHeaders, uiHeaders) {
         const actuallyUsed = new Set();
         currentSelects.forEach(sel => { if (sel.value) actuallyUsed.add(sel.value); });
 
-        const unmappedCsvHeaders = csvHeaders.filter(h => !actuallyUsed.has(h) && h.trim() !== '');
+        // Compare against rawHeaders (original text) since that's what we use as option values
+        const unmappedCsvHeaders = rawHeaders.filter((h, i) => !actuallyUsed.has(h) && h.trim() !== '');
 
         if (unmappedCsvHeaders.length > 0) {
             const extraSection = document.createElement('div');
@@ -266,6 +272,7 @@ function generateMappingTable(csvHeaders, uiHeaders) {
                 const check = document.createElement('input');
                 check.type = 'checkbox';
                 check.className = 'dynamic-column-checkbox';
+                // Store the original CSV header text as value
                 check.value = col;
 
                 check.addEventListener('change', () => {
@@ -312,6 +319,8 @@ async function handlePrepareImport() {
             validatePrepareBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Preparando DB...';
         }
         for (const cb of dynamicCheckboxes) {
+            // cb.value = original CSV header text (e.g. "Código de Barras")
+            const originalCsvHeader = cb.value;
             try {
                 const addReq = await fetch('/api/table/manage-column.php', {
                     method: 'POST',
@@ -319,18 +328,21 @@ async function handlePrepareImport() {
                     body: JSON.stringify({
                         action: 'add_column',
                         inventoryId: typeof activeInventoryId !== 'undefined' ? activeInventoryId : window.activeInventoryId,
-                        columnName: cb.value
+                        columnName: originalCsvHeader  // server will sanitize it
                     })
                 });
                 const addRes = await addReq.json();
                 if (addRes.success) {
-                    mappingData[cb.value] = cb.value;
+                    // Key = column name as created in DB (server sanitizes), value = original CSV header
+                    // We use the original CSV header as both key and value; prepare-csv.php
+                    // will resolve the DB column name via normKey and the CSV index via exact match
+                    mappingData[originalCsvHeader] = originalCsvHeader;
                     hasMapping = true;
                 } else {
-                    console.error("Error backend al añadir columna: " + cb.value, addRes.message);
+                    console.error("Error backend al añadir columna: " + originalCsvHeader, addRes.message);
                 }
             } catch (e) {
-                console.error("No se pudo crear red: " + cb.value, e);
+                console.error("No se pudo crear red: " + originalCsvHeader, e);
             }
         }
     }
