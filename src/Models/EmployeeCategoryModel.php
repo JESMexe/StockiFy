@@ -7,14 +7,17 @@ use App\core\Database;
 use PDO;
 use Exception;
 
-class EmployeeCategoryModel {
+class EmployeeCategoryModel
+{
     private PDO $db;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->db = Database::getInstance();
     }
 
-    public function createCategory($userId, $inventoryId, $name, $fields) {
+    public function createCategory($userId, $inventoryId, $name, $fields)
+    {
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO employee_categories (user_id, inventory_id, name, fields, created_at)
@@ -32,7 +35,8 @@ class EmployeeCategoryModel {
         }
     }
 
-    public function updateCategory($id, $userId, $inventoryId, $name, $fields) {
+    public function updateCategory($id, $userId, $inventoryId, $name, $fields)
+    {
         try {
             $stmt = $this->db->prepare("
                 UPDATE employee_categories
@@ -51,7 +55,8 @@ class EmployeeCategoryModel {
         }
     }
 
-    public function deleteCategory($id, $userId, $inventoryId) {
+    public function deleteCategory($id, $userId, $inventoryId)
+    {
         try {
             $stmt = $this->db->prepare("DELETE FROM employee_categories WHERE id = :id AND user_id = :user AND inventory_id = :inv");
             return $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inventoryId]);
@@ -60,12 +65,13 @@ class EmployeeCategoryModel {
         }
     }
 
-    public function getAll($userId, $inventoryId) {
+    public function getAll($userId, $inventoryId)
+    {
         try {
             $stmt = $this->db->prepare("SELECT * FROM employee_categories WHERE user_id = :user AND inventory_id = :inv ORDER BY name ASC");
             $stmt->execute([':user' => $userId, ':inv' => $inventoryId]);
             $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             foreach ($categories as &$cat) {
                 $cat['fields'] = json_decode($cat['fields'], true) ?: [];
             }
@@ -75,7 +81,8 @@ class EmployeeCategoryModel {
         }
     }
 
-    public function getById($id, $userId, $inventoryId) {
+    public function getById($id, $userId, $inventoryId)
+    {
         try {
             $stmt = $this->db->prepare("SELECT * FROM employee_categories WHERE id = :id AND user_id = :user AND inventory_id = :inv");
             $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inventoryId]);

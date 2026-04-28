@@ -750,43 +750,60 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                 class="modal-close-btn">&times;</button>
 
             <div class="modal-header">
-                <h2>Importar Datos desde CSV</h2>
-                <p>Selecciona o arrastra tu archivo CSV.</p>
+                <h2>Importar Datos</h2>
+                <div class="import-tabs">
+                    <button class="import-tab active" data-tab="csv">Archivo CSV</button>
+                    <button class="import-tab" data-tab="tiendanube">TiendaNube</button>
+                </div>
             </div>
 
             <div class="modal-body">
-                <div id="import-step-1">
-                    <div id="import-drop-zone" class="drop-zone">
-                        <p>Arrastra tu archivo CSV acá o hacé clic para seleccionar</p>
-                        <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
-                    </div>
-                    <div id="import-status" style="margin-top: 1rem;"></div>
-                </div>
-
-                <div class="import-overwrite-section">
-                    <label class="import-overwrite-box" for="import-overwrite-toggle">
-                        <input type="checkbox" id="import-overwrite-toggle" />
-                        <div class="import-overwrite-text">
-                            <div class="import-overwrite-title">
-                                <strong>Sobre-escribir datos actuales</strong>
-                                <span class="import-overwrite-badge">Borra y reemplaza</span>
-                            </div>
-                            <p>Si está activado, se elimina lo existente y queda solo lo importado del CSV.</p>
+                <div id="import-section-csv">
+                    <p>Selecciona o arrastra tu archivo CSV.</p>
+                    <div id="import-step-1">
+                        <div id="import-drop-zone" class="drop-zone">
+                            <p>Arrastra tu archivo CSV acá o hacé clic para seleccionar</p>
+                            <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
                         </div>
-                    </label>
+                        <div id="import-status" style="margin-top: 1rem;"></div>
+                    </div>
+
+                    <div class="import-overwrite-section">
+                        <label class="import-overwrite-box" for="import-overwrite-toggle">
+                            <input type="checkbox" id="import-overwrite-toggle" />
+                            <div class="import-overwrite-text">
+                                <div class="import-overwrite-title">
+                                    <strong>Sobre-escribir datos actuales</strong>
+                                    <span class="import-overwrite-badge">Borra y reemplaza</span>
+                                </div>
+                                <p>Si está activado, se elimina lo existente y queda solo lo importado del CSV.</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div id="import-step-2" class="hidden">
+                        <h3>Mapeá las Columnas</h3>
+                        <p>Asigná las columnas de tu archivo a las de StockiFy.</p>
+                        <form id="mapping-form" class="import-mapping-form"
+                            style="max-height: 40vh; overflow-y: auto; padding-right: 10px;"></form>
+                    </div>
                 </div>
 
-                <div id="import-step-2" class="hidden">
-                    <h3>Mapeá las Columnas</h3>
-                    <p>Asigná las columnas de tu archivo a las de StockiFy.</p>
-                    <form id="mapping-form" class="import-mapping-form"
-                        style="max-height: 40vh; overflow-y: auto; padding-right: 10px;"></form>
+                <div id="import-section-tiendanube" class="hidden">
+                    <div id="tn-connection-status" class="tn-status-container" style="padding: 20px; text-align: center;">
+                        <p><i class="ph ph-spinner ph-spin"></i> Verificando conexión con TiendaNube...</p>
+                    </div>
+                    
+                    <div id="tn-config-step" class="hidden">
+                        <p style="margin-bottom: 15px;">Mapeá las columnas de tu inventario con los datos de tu tienda.</p>
+                        <div id="tn-mapping-form" class="import-mapping-form" style="max-height: 40vh; overflow-y: auto; padding-right: 10px;"></div>
+                    </div>
                 </div>
-            </div>
 
             <div class="modal-footer">
                 <button id="import-cancel-btn" class="btn btn-secondary">Cancelar</button>
                 <button id="validate-prepare-btn" class="btn btn-primary hidden">Validar y Preparar Datos</button>
+                <button id="tn-import-btn" class="btn btn-primary hidden">Sincronizar con TiendaNube</button>
             </div>
         </div>
     </div>

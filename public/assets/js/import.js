@@ -4,6 +4,7 @@ import { pop_ups } from "./notifications/pop-up.js";
 
 let modalElement, closeModalBtn, importCancelBtn, dropZone, fileInput, importStatus;
 let step1, step2, mappingForm, validatePrepareBtn;
+let csvSection, tnSection, tnStatusContainer, tnConfigStep, tnMappingForm, tnImportBtn;
 let uploadedFile = null;
 let currentStockifyColumns = [];
 let detectedDelimiter = ','; // Variable para guardar el delimitador detectado
@@ -26,6 +27,14 @@ export function openImportModal() {
     validatePrepareBtn = document.getElementById('validate-prepare-btn');
     mappingForm = document.getElementById('mapping-form');
 
+    csvSection = document.getElementById('import-section-csv');
+    tnSection = document.getElementById('import-section-tiendanube');
+    tnStatusContainer = document.getElementById('tn-connection-status');
+    tnConfigStep = document.getElementById('tn-config-step');
+    tnMappingForm = document.getElementById('tn-mapping-form');
+    tnImportBtn = document.getElementById('tn-import-btn');
+
+    switchTab('csv');
     showStep(1);
     if (importStatus) importStatus.textContent = '';
     uploadedFile = null;
@@ -51,9 +60,29 @@ function showStep(stepNumber) {
     if (mappingForm) mappingForm.classList.toggle('hidden', stepNumber !== 2);
 }
 
+function switchTab(tab) {
+    const tabs = document.querySelectorAll('.import-tab');
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+
+    csvSection.classList.toggle('hidden', tab !== 'csv');
+    tnSection.classList.toggle('hidden', tab !== 'tiendanube');
+
+    if (tab === 'csv') {
+        showStep(uploadedFile ? 2 : 1);
+        tnImportBtn.classList.add('hidden');
+    } else {
+        checkTNStatus();
+        validatePrepareBtn.classList.add('hidden');
+    }
+}
+
 function setupEventListeners() {
     closeModalBtn = document.getElementById('close-modal-btn');
     importCancelBtn = document.getElementById('import-cancel-btn');
+
+    document.querySelectorAll('.import-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+    });
 
     if (closeModalBtn) {
         const newBtn = closeModalBtn.cloneNode(true);
@@ -74,6 +103,13 @@ function setupEventListeners() {
         validatePrepareBtn.parentNode.replaceChild(newValidate, validatePrepareBtn);
         validatePrepareBtn = newValidate;
         validatePrepareBtn.addEventListener('click', handlePrepareImport);
+    }
+
+    if (tnImportBtn) {
+        const newTN = tnImportBtn.cloneNode(true);
+        tnImportBtn.parentNode.replaceChild(newTN, tnImportBtn);
+        tnImportBtn = newTN;
+        tnImportBtn.addEventListener('click', handleTiendaNubeImport);
     }
 
     if (dropZone) {
@@ -390,6 +426,186 @@ async function handlePrepareImport() {
             validatePrepareBtn.disabled = false;
             validatePrepareBtn.textContent = 'Confirmar e Importar';
         }
+    }
+}
+
+async function checkTNStatus() {
+    tnStatusContainer.innerHTML = '<p><i class="ph ph-spinner ph-spin"></i> Verificando conexión...</p>';
+    tnConfigStep.classList.add('hidden');
+    tnImportBtn.classList.add('hidden');
+
+    try {
+        const res = await fetch(`/api/import/tiendanube-get-status.php?inventory_id=${window.activeInventoryId}`);
+        const data = await res.json();
+
+        if (data.success && data.connected) {
+            tnStatusContainer.innerHTML = `
+                <div class="tn-connected-box" style="background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #4CAF50; display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                    <i class="ph-fill ph-check-circle" style="color: #4CAF50; font-size: 1.5rem;"></i>
+                    <div style="text-align: left;">
+                        <strong style="display: block;">Tienda Conectada</strong>
+                        <span style="font-size: 0.85rem; color: #666;">ID de Tienda: ${data.store_id}</span>
+                    </div>
+                    <button id="tn-disconnect-btn" class="btn btn-secondary btn-sm" style="margin-left: auto;">Desconectar</button>
+                </div>
+            `;
+            
+            document.getElementById('tn-disconnect-btn').onclick = handleTNDisconnect;
+            initTNMapping();
+        } else {
+            tnStatusContainer.innerHTML = `
+                <div class="tn-connect-box" style="padding: 30px; text-align: center; border: 2px dashed #ccc; border-radius: 12px;">
+                    <i class="ph ph-storefront" style="font-size: 3rem; color: #008ad2; margin-bottom: 15px;"></i>
+                    <p style="margin-bottom: 20px; color: #666;">Conectá tu tienda para sincronizar productos, stock y precios automáticamente.</p>
+                    <a href="/api/import/tiendanube-connect.php?inventory_id=${window.activeInventoryId}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-plugs-connected"></i> Conectar TiendaNube
+                    </a>
+                </div>
+            `;
+        }
+    } catch (e) {
+        tnStatusContainer.innerHTML = `<p class="error-text">Error al verificar estado: ${e.message}</p>`;
+    }
+}
+
+async function initTNMapping() {
+    tnConfigStep.classList.remove('hidden');
+    tnImportBtn.classList.remove('hidden');
+    tnMappingForm.innerHTML = '<p><i class="ph ph-spinner ph-spin"></i> Cargando campos...</p>';
+
+    try {
+        const res = await fetch('/api/import/tiendanube-get-fields.php');
+        const data = await res.json();
+
+        if (data.success) {
+            generateTNMappingTable(data.fields);
+        }
+    } catch (e) {
+        tnMappingForm.innerHTML = `<p class="error-text">Error al cargar campos: ${e.message}</p>`;
+    }
+}
+
+function generateTNMappingTable(tnFields) {
+    tnMappingForm.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'mapping-grid';
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+    grid.style.gap = '15px';
+
+    currentStockifyColumns.forEach(sysCol => {
+        if (['id', 'created_at', 'updated_at'].includes(sysCol.toLowerCase())) return;
+
+        const card = document.createElement('div');
+        card.className = 'mapping-card input-group';
+        card.style.background = '#f8f9fa';
+        card.style.padding = '10px';
+        card.style.borderRadius = '8px';
+        card.style.border = '1px solid #eee';
+
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.style.display = 'block';
+        label.style.marginBottom = '5px';
+        label.style.fontWeight = '600';
+        label.textContent = formatColumnName(sysCol);
+
+        const select = document.createElement('select');
+        select.name = `tn_map[${sysCol}]`;
+        select.className = 'form-select tn-mapping-select';
+        select.style.width = '100%';
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Ignorar esta columna --';
+        select.appendChild(defaultOption);
+
+        tnFields.forEach(field => {
+            const opt = document.createElement('option');
+            opt.value = field.id;
+            opt.textContent = field.label;
+            
+            // Auto-mapping logic
+            const cleanSys = sysCol.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (field.id === cleanSys || 
+                (field.id === 'name' && (cleanSys === 'nombre' || cleanSys === 'producto')) ||
+                (field.id === 'sku' && (cleanSys === 'codigo' || cleanSys === 'sku')) ||
+                (field.id === 'stock' && cleanSys === 'stock') ||
+                (field.id === 'price' && cleanSys.includes('precio'))) {
+                opt.selected = true;
+                select.style.borderColor = '#4CAF50';
+                select.style.backgroundColor = '#f0fff4';
+            }
+
+            select.appendChild(opt);
+        });
+
+        card.appendChild(label);
+        card.appendChild(select);
+        grid.appendChild(card);
+    });
+
+    tnMappingForm.appendChild(grid);
+}
+
+async function handleTiendaNubeImport() {
+    const mapping = {};
+    tnMappingForm.querySelectorAll('select').forEach(sel => {
+        if (sel.value) {
+            const sysCol = sel.name.match(/\[(.*?)\]/)[1];
+            mapping[sysCol] = sel.value;
+        }
+    });
+
+    if (Object.keys(mapping).length === 0) {
+        pop_ups.warning("Debes mapear al menos una columna.");
+        return;
+    }
+
+    tnImportBtn.disabled = true;
+    tnImportBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Sincronizando...';
+
+    try {
+        const res = await fetch('/api/import/tiendanube-execute.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                inventory_id: window.activeInventoryId,
+                mapping: mapping
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            pop_ups.success(data.message, "Sincronización Exitosa");
+            closeImportModal();
+            if (window.loadTableData) window.loadTableData();
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (e) {
+        pop_ups.error(e.message, "Error en TiendaNube");
+    } finally {
+        tnImportBtn.disabled = false;
+        tnImportBtn.textContent = 'Sincronizar con TiendaNube';
+    }
+}
+
+async function handleTNDisconnect() {
+    if (!await pop_ups.confirm("¿Desconectar TiendaNube?", "Esto no borrará tus datos, pero ya no podrás sincronizar automáticamente.")) return;
+
+    try {
+        const res = await fetch('/api/import/tiendanube-disconnect.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inventory_id: window.activeInventoryId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            checkTNStatus();
+        }
+    } catch (e) {
+        pop_ups.error("Error al desconectar.");
     }
 }
 

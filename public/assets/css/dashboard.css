@@ -799,6 +799,53 @@ table {
     background-color: #ddd;
 }
 
+/* --- IMPORT MODAL TABS --- */
+.import-tabs {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.import-tab {
+    padding: 8px 16px;
+    border: 2px solid #1b1b1b;
+    background: #f0f0f0;
+    cursor: pointer;
+    font-weight: 700;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.import-tab.active {
+    background: var(--accent-color);
+    color: white;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+}
+
+.import-tab:hover:not(.active) {
+    background: #e0e0e0;
+}
+
+.tn-status-container {
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tn-connected-box {
+    animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.import-mapping-form {
+    margin-top: 20px;
+}
+
 .stock-btn.minus {
     color: var(--accent-red);
 }
