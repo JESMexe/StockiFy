@@ -295,7 +295,7 @@ export class EmployeeModule {
         const select = document.getElementById('emp-category');
         if (!select) return;
         const currentVal = select.value;
-        select.innerHTML = '<option value="">Sin Categoría</option>' + 
+        select.innerHTML = '<option value="">Sin Categoría</option>' +
             this.availableCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         select.value = currentVal;
     }
@@ -396,7 +396,7 @@ export class EmployeeModule {
         document.getElementById('emp-phone').value = emp.phone || '';
         document.getElementById('emp-email').value = emp.email || '';
         document.getElementById('emp-category').value = emp.category_id || '';
-        
+
         this.renderDynamicFields(emp.category_id, emp.custom_data || {});
 
         const modal = document.getElementById('create-employee-modal');
@@ -477,7 +477,7 @@ export class EmployeeModule {
 
     async loadEmployees() {
         const container = document.getElementById('emp-list-body');
-        if(!container) return;
+        if (!container) return;
         container.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Cargando...</p>';
 
         const searchInput = document.getElementById('emp-search-input');
@@ -520,22 +520,8 @@ export class EmployeeModule {
             const dniHtml = e.dni ? `<div title="DNI"><i class="ph ph-identification-card"></i> ${e.dni}</div>` : '';
             const catHtml = e.category_name ? `<div class="emp-tag"><i class="ph ph-tag"></i> ${e.category_name}</div>` : `<div class="emp-tag" style="visibility:hidden; pointer-events:none;"><i class="ph ph-tag"></i>-</div>`;
 
-            // Renderizar campos dinámicos en el card
-            let customFieldsHtml = '';
-            let hasFields = false;
-            if (e.custom_data && typeof e.custom_data === 'object') {
-                const entries = Object.entries(e.custom_data);
-                entries.forEach(([label, val]) => {
-                    if (val) {
-                        customFieldsHtml += `<div class="emp-custom-field"><strong>${label}:</strong> ${val}</div>`;
-                        hasFields = true;
-                    }
-                });
-            }
-            
-            if (!hasFields) {
-                customFieldsHtml = `<div class="emp-custom-field" style="border:none; background:transparent; color:#888; text-align:center; padding-top:10px; box-shadow:none;">Ver perfil y ventas</div>`;
-            }
+            // Renderizar el acceso al perfil completo en todas las tarjetas
+            let customFieldsHtml = `<div class="emp-custom-field" style="text-align:center; color:#888; padding-top:15px;">Ver perfil y ventas</div>`;
 
             return `
             <div class="emp-card">
@@ -571,7 +557,7 @@ export class EmployeeModule {
         document.getElementById('det-emp-avatar').textContent = emp.full_name.charAt(0).toUpperCase();
         document.getElementById('det-emp-name').textContent = emp.full_name;
         document.getElementById('det-emp-cat').innerHTML = emp.category_name ? `<i class="ph ph-tag"></i> ${emp.category_name}` : `<i class="ph ph-user"></i> Sin categoría`;
-        
+
         let contactHtml = '';
         if (emp.email) contactHtml += `<i class="ph ph-envelope"></i> ${emp.email} `;
         if (emp.phone) contactHtml += `| <i class="ph ph-phone"></i> ${emp.phone}`;
@@ -583,7 +569,7 @@ export class EmployeeModule {
         if (emp.dni) {
             customGrid.insertAdjacentHTML('beforeend', `<div class="emp-detail-custom-item"><strong>DNI / Identificación</strong>${emp.dni}</div>`);
         }
-        
+
         if (emp.custom_data && typeof emp.custom_data === 'object') {
             Object.entries(emp.custom_data).forEach(([label, val]) => {
                 if (val) {
@@ -606,7 +592,7 @@ export class EmployeeModule {
         try {
             const { getEmployeeSales } = await import('../api.js');
             const data = await getEmployeeSales(empId);
-            
+
             if (!data.success || !data.sales || data.sales.length === 0) {
                 list.innerHTML = '<p style="padding-top: 20px; color: #888; text-align: center;">No hay ventas registradas para este empleado.</p>';
                 return;
@@ -615,11 +601,16 @@ export class EmployeeModule {
             list.innerHTML = data.sales.map(sale => {
                 const total = parseFloat(sale.total).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
                 const date = new Date(sale.created_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+                const comm = parseFloat(sale.commission) > 0 
+                    ? `<div style="font-size: 0.85rem; color: var(--accent-green); margin-top: 4px;"><i class="ph ph-coins"></i> Comisión ganada: ${parseFloat(sale.commission).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>` 
+                    : '';
+                
                 return `
-                    <div class="emp-sale-item">
+                    <div class="emp-sale-item" style="cursor: pointer;" onclick="if(window.salesModuleInstance) window.salesModuleInstance.showDetails('${sale.id}'); else alert('El módulo de ventas aún no está cargado. Recargue la página e ingrese primero a Ventas.');" title="Ver Ticket de Venta">
                         <div>
-                            <strong><i class="ph ph-receipt"></i> Venta #${sale.id}</strong><br>
+                            <strong><i class="ph ph-receipt"></i> Registro de Venta</strong><br>
                             <small style="color: #666;">${date} - Cliente: ${sale.customer_name}</small>
+                            ${comm}
                         </div>
                         <div style="font-weight: bold; color: var(--accent-color);">
                             ${total}

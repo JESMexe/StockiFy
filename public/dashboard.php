@@ -25,7 +25,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     <link rel="stylesheet" href="assets/css/main.css?v=1.2">
     <link rel="stylesheet" href="assets/css/dashboard.css?v=1.3">
     <link rel="stylesheet" href="assets/css/notifications.css?v=1.0">
-    <link rel="stylesheet" href="assets/css/employees.css?v=1.0">
+    <link rel="stylesheet" href="assets/css/employees.css?v=1.3">
     <link rel="stylesheet" href="assets/css/purchases.css?v=1.2">
     <link rel="stylesheet" href="assets/css/payments.css?v=1.2">
 
@@ -119,7 +119,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                 Datos</button></li>
                         <li><button class="menu-btn" data-target-view="config-db"><i class="ph ph-gear"></i> Configurar
                                 Tabla</button></li>
-                        <li><a href="select-db" class="menu-link"><i class="ph ph-database"></i> Cambiar Inventarios</a>
+                        <li><a href="select-db" class="menu-link"><i class="ph ph-database"></i> Cambiar Inventario</a>
                         </li>
 
                         <?php
@@ -148,9 +148,9 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                     <h3>Transacciones</h3>
                     <ul>
                         <li><button class="menu-btn" data-target-view="sales"><i class="ph ph-money"></i>
-                                Ventas</button></li>
+                                Registrar Ingreso</button></li>
                         <li><button class="menu-btn" data-target-view="receipts"><i class="ph ph-stack"></i>
-                                Compras</button></li>
+                                Registrar Egreso</button></li>
 
                         <?php if ($currentUser['subscription_active'] >= 2): ?>
                             <li><button class="menu-btn" data-target-view="customers"><i class="ph ph-user-focus"></i>

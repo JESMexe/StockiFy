@@ -262,6 +262,7 @@ class SalesModel {
                     s.id,
                     s.sale_date as created_at,
                     s.total_amount as total,
+                    s.commission_amount as commission,
                     COALESCE(c.full_name, 'Cliente General') as customer_name,
                     (
                         SELECT GROUP_CONCAT(pm.name SEPARATOR '|||') 

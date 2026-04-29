@@ -69,7 +69,7 @@ export class SalesModule {
         return `
             <div class="sales-layout">
                 <div class="table-header">
-                    <h2>Gestión de Ventas</h2>
+                    <h2>Gestión de Ventas e Ingresos</h2>
                     <div class="table-controls">
                         <button id="sales-renumber-btn" class="btn btn-secondary hidden" title="Renumerar IDs"><i class="ph ph-list-numbers"></i></button>
                         <button id="sales-sort-btn" class="btn btn-secondary" title="Ordenar por Fecha/ID"><i class="ph ph-sort-ascending" id="sales-sort-icon"></i></button>
