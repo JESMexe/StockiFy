@@ -1,4 +1,4 @@
-﻿/**
+/**
  */
 import { pop_ups } from "../notifications/pop-up.js";
 import * as api from "../api.js";
@@ -211,7 +211,7 @@ window.loadBalanceData = async function(period) {
     if(activeBtn) activeBtn.classList.add('active');
     totalEl.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
     try {
-        const url = `/api/analytics/get-cash-balance.php?period=${encodeURIComponent(period)}&_ts=${Date.now()}`;
+        const url = `/api/statistics/get-cash-balance.php?period=${encodeURIComponent(period)}&_ts=${Date.now()}`;
         const response = await fetch(url, { cache: 'no-store' });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);

@@ -19,7 +19,7 @@ const fmtDate = (dateString) => {
     const safeDate = dateString.replace(/-/g, '/');
     const d = new Date(safeDate);
     if (isNaN(d.getTime())) return dateString;
-    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 export class SalesModule {
@@ -37,7 +37,7 @@ export class SalesModule {
 
     init() {
         if (this.isInitialized) {
-            if(document.getElementById(this.containerId)) this.loadHistory(this.currentSortOrder);
+            if (document.getElementById(this.containerId)) this.loadHistory(this.currentSortOrder);
             return;
         }
 
@@ -60,7 +60,7 @@ export class SalesModule {
 
         this.attachEvents();
 
-        if(container) this.loadHistory(this.currentSortOrder);
+        if (container) this.loadHistory(this.currentSortOrder);
 
         this.isInitialized = true;
     }
@@ -262,12 +262,12 @@ export class SalesModule {
         if (!bar || window.innerWidth > 768) return;
 
         if (view === 'checkout') {
-            if(stepProd) stepProd.style.display = 'none';
-            if(stepCheck) stepCheck.style.display = 'contents';
+            if (stepProd) stepProd.style.display = 'none';
+            if (stepCheck) stepCheck.style.display = 'contents';
 
-            if(btnBackHeader) btnBackHeader.style.display = 'flex';
+            if (btnBackHeader) btnBackHeader.style.display = 'flex';
 
-            if(btnCheckout) {
+            if (btnCheckout) {
                 btnCheckout.innerHTML = '<i class="ph-bold ph-plus"></i> Seguir Agregando';
                 btnCheckout.className = 'btn btn-secondary';
                 btnCheckout.onclick = (e) => {
@@ -277,12 +277,12 @@ export class SalesModule {
             }
 
         } else {
-            if(stepProd) stepProd.style.display = 'flex';
-            if(stepCheck) stepCheck.style.display = 'none';
+            if (stepProd) stepProd.style.display = 'flex';
+            if (stepCheck) stepCheck.style.display = 'none';
 
-            if(btnBackHeader) btnBackHeader.style.display = 'none';
+            if (btnBackHeader) btnBackHeader.style.display = 'none';
 
-            if(btnCheckout) {
+            if (btnCheckout) {
                 btnCheckout.innerHTML = 'Ir a Pagar <i class="ph-bold ph-arrow-right"></i>';
                 btnCheckout.className = 'btn btn-primary';
                 btnCheckout.onclick = (e) => {
@@ -297,24 +297,24 @@ export class SalesModule {
 
     attachEvents() {
         const sortBtn = document.getElementById('sales-sort-btn');
-        if(sortBtn) sortBtn.addEventListener('click', () => {
+        if (sortBtn) sortBtn.addEventListener('click', () => {
             this.currentSortOrder = (this.currentSortOrder === 'DESC') ? 'ASC' : 'DESC';
             const icon = document.getElementById('sales-sort-icon');
-            if(icon) {
-                if(this.currentSortOrder === 'ASC') icon.classList.replace('ph-sort-ascending', 'ph-sort-descending');
+            if (icon) {
+                if (this.currentSortOrder === 'ASC') icon.classList.replace('ph-sort-ascending', 'ph-sort-descending');
                 else icon.classList.replace('ph-sort-descending', 'ph-sort-ascending');
             }
             this.loadHistory(this.currentSortOrder);
         });
 
         document.getElementById('sales-renumber-btn')?.addEventListener('click', async () => {
-            if(await pop_ups.confirm("¿Renumerar Historial?", "Se asignarán nuevos IDs...")) {
+            if (await pop_ups.confirm("¿Renumerar Historial?", "Se asignarán nuevos IDs...")) {
                 try {
                     const res = await fetch('/api/sales/reset-ids');
                     const data = await res.json();
-                    if(data.success) { pop_ups.info("Historial reorganizado."); await this.loadHistory(this.currentSortOrder); }
+                    if (data.success) { pop_ups.info("Historial reorganizado."); await this.loadHistory(this.currentSortOrder); }
                     else { pop_ups.error("Error: " + (data.message || "No se pudo renumerar")); }
-                } catch(e) { console.error(e); pop_ups.error("Error de conexión"); }
+                } catch (e) { console.error(e); pop_ups.error("Error de conexión"); }
             }
         });
 
@@ -323,9 +323,9 @@ export class SalesModule {
         document.getElementById('close-detail-modal')?.addEventListener('click', () => this.closeModal('detail-sale-modal'));
 
         const searchInput = document.getElementById('sale-search-product');
-        if(searchInput) {
+        if (searchInput) {
             searchInput.addEventListener('input', (e) => this.filterProducts(e.target.value));
-            searchInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') { e.preventDefault(); this.handleScan(e.target.value); }});
+            searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.handleScan(e.target.value); } });
         }
 
         document.getElementById('btn-toggle-manual')?.addEventListener('click', () => {
@@ -335,7 +335,7 @@ export class SalesModule {
         document.getElementById('btn-add-manual')?.addEventListener('click', () => this.addManualItem());
 
         document.getElementById('btn-add-payment')?.addEventListener('click', () => this.addPayment());
-        document.getElementById('pay-input-amount')?.addEventListener('keypress', (e) => { if(e.key==='Enter') this.addPayment(); });
+        document.getElementById('pay-input-amount')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.addPayment(); });
 
         document.querySelectorAll('.currency-tab').forEach(tab => {
             tab.addEventListener('click', (e) => this.switchPaymentTab(e.target.dataset.curr));
@@ -348,7 +348,7 @@ export class SalesModule {
         document.getElementById('confirm-sale-btn')?.addEventListener('click', () => this.submitSale());
 
         const btnBackHeader = document.getElementById('mobile-back-to-products');
-        if(btnBackHeader) {
+        if (btnBackHeader) {
             btnBackHeader.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.setMobileView('products');
@@ -358,7 +358,7 @@ export class SalesModule {
 
     closeModal(id) {
         const el = document.getElementById(id);
-        if(el) {
+        if (el) {
             el.classList.add('hidden');
             el.style.display = 'none';
         }
@@ -397,9 +397,9 @@ export class SalesModule {
         this.showingCartInUSD = false;
 
         document.getElementById('sale-notes').value = '';
-        const discInput = document.getElementById('sale-discount-value'); if(discInput) discInput.value = '';
-        const discType = document.getElementById('sale-discount-type'); if(discType) discType.value = 'fixed';
-        const discDisplay = document.getElementById('discount-applied-display'); if(discDisplay) discDisplay.textContent = '';
+        const discInput = document.getElementById('sale-discount-value'); if (discInput) discInput.value = '';
+        const discType = document.getElementById('sale-discount-type'); if (discType) discType.value = 'fixed';
+        const discDisplay = document.getElementById('discount-applied-display'); if (discDisplay) discDisplay.textContent = '';
         this.switchPaymentTab('ARS');
         this.renderProducts(this.resources.products);
         this.fillSelect('sale-customer', this.resources.customers, 'id', 'full_name', 'Cliente General');
@@ -412,7 +412,7 @@ export class SalesModule {
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
 
-        if(window.innerWidth > 768) {
+        if (window.innerWidth > 768) {
             setTimeout(() => document.getElementById('sale-search-product').focus(), 100);
         }
     }
@@ -420,7 +420,7 @@ export class SalesModule {
     switchPaymentTab(currency) {
         this.activePaymentTab = currency;
         document.querySelectorAll('.currency-tab').forEach(t => {
-            if(t.dataset.curr === currency) {
+            if (t.dataset.curr === currency) {
                 t.style.borderBottom = '3px solid var(--accent-color)'; t.style.color = '#333'; t.style.fontWeight = 'bold';
             } else {
                 t.style.borderBottom = 'none'; t.style.color = '#999'; t.style.fontWeight = 'normal';
@@ -530,7 +530,7 @@ export class SalesModule {
     toggleCartCurrency() {
         this.showingCartInUSD = !this.showingCartInUSD;
         const btn = document.getElementById('toggle-cart-currency-btn');
-        if(this.showingCartInUSD) { btn.innerHTML = '<i class="ph ph-currency-circle-dollar"></i> Ver en ARS'; btn.classList.replace('btn-secondary', 'btn-primary'); }
+        if (this.showingCartInUSD) { btn.innerHTML = '<i class="ph ph-currency-circle-dollar"></i> Ver en ARS'; btn.classList.replace('btn-secondary', 'btn-primary'); }
         else { btn.innerHTML = '<i class="ph ph-currency-circle-dollar"></i> Ver en USD'; btn.classList.replace('btn-primary', 'btn-secondary'); }
         this.updateCartSubtotalDisplay();
     }
@@ -594,7 +594,7 @@ export class SalesModule {
 
         const mobTotal = document.getElementById('mob-bar-total');
         const mobCount = document.getElementById('mob-bar-count');
-        if(mobTotal && mobCount) {
+        if (mobTotal && mobCount) {
             mobTotal.textContent = fmtMoney(this.currentSale.total_final);
             const count = this.currentSale.items.reduce((s, i) => s + i.cantidad, 0);
             mobCount.textContent = `${count} Ítems`;
@@ -606,7 +606,7 @@ export class SalesModule {
 
     updateCartUI() {
         const c = document.getElementById('sale-cart-items');
-        if(this.currentSale.items.length === 0) { c.innerHTML = '<div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>'; }
+        if (this.currentSale.items.length === 0) { c.innerHTML = '<div style="text-align:center; color:#999; margin-top:50px;">Carrito vacío</div>'; }
         else {
             c.innerHTML = this.currentSale.items.map((item, idx) => {
                 const wasEdited = item.precio_original && Math.abs(item.precio - item.precio_original) > 0.01;
@@ -645,15 +645,15 @@ export class SalesModule {
                     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } if (e.key === 'Escape') { this.recalcSale(); } });
                 });
             });
-            c.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => { 
-                const item = this.currentSale.items[b.dataset.idx]; 
+            c.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => {
+                const item = this.currentSale.items[b.dataset.idx];
                 if (item.cantidad >= item.max_stock) {
                     pop_ups.warning("Atención: Operando en stock negativo.");
                 }
-                item.cantidad++; 
-                this.recalcSale(); 
+                item.cantidad++;
+                this.recalcSale();
             }));
-            c.querySelectorAll('.sub').forEach(b => b.addEventListener('click', () => { const item = this.currentSale.items[b.dataset.idx]; item.cantidad--; if(item.cantidad < 1) this.currentSale.items.splice(b.dataset.idx, 1); this.recalcSale(); }));
+            c.querySelectorAll('.sub').forEach(b => b.addEventListener('click', () => { const item = this.currentSale.items[b.dataset.idx]; item.cantidad--; if (item.cantidad < 1) this.currentSale.items.splice(b.dataset.idx, 1); this.recalcSale(); }));
             c.querySelectorAll('.del').forEach(b => b.addEventListener('click', () => { this.currentSale.items.splice(b.dataset.idx, 1); this.recalcSale(); }));
         }
         this.updateCartSubtotalDisplay();
@@ -663,25 +663,25 @@ export class SalesModule {
         const pct = parseFloat(document.getElementById('sale-commission-pct').value) || 0;
         const commVal = this.currentSale.subtotal_items * (pct / 100);
         const disp = document.getElementById('commission-display');
-        if(disp) disp.textContent = `Comisión: ${fmtMoney(commVal)}`;
+        if (disp) disp.textContent = `Comisión: ${fmtMoney(commVal)}`;
     }
 
     async fetchResources() {
         try {
-            const [prefRes, data, empRes] = await Promise.all([ getCurrentInventoryPreferences(), getSaleResources(), getEmployeeList() ]);
+            const [prefRes, data, empRes] = await Promise.all([getCurrentInventoryPreferences(), getSaleResources(), getEmployeeList()]);
             this.resources.config = prefRes.mapping || {};
-            if(data.success) {
+            if (data.success) {
                 this.resources.products = data.products || [];
                 this.resources.customers = data.customers || [];
                 this.resources.paymentMethods = data.payment_methods || [];
             }
-            if(empRes.success) this.resources.employees = empRes.employees || [];
-        } catch(e) { console.error(e); }
+            if (empRes.success) this.resources.employees = empRes.employees || [];
+        } catch (e) { console.error(e); }
     }
 
     fillSelect(id, list, valKey, textKey, placeholder) {
         const s = document.getElementById(id); s.innerHTML = placeholder ? `<option value="">${placeholder}</option>` : '';
-        list.forEach(i => { const op = document.createElement('option'); op.value = i[valKey]; let txt = i[textKey]; if(id === 'pay-method-select' && parseFloat(i.surcharge) !== 0) txt += parseFloat(i.surcharge) > 0 ? ` (+${parseFloat(i.surcharge)}%)` : ` (${parseFloat(i.surcharge)}%)`; op.textContent = txt; s.appendChild(op); });
+        list.forEach(i => { const op = document.createElement('option'); op.value = i[valKey]; let txt = i[textKey]; if (id === 'pay-method-select' && parseFloat(i.surcharge) !== 0) txt += parseFloat(i.surcharge) > 0 ? ` (+${parseFloat(i.surcharge)}%)` : ` (${parseFloat(i.surcharge)}%)`; op.textContent = txt; s.appendChild(op); });
     }
 
     async submitSale() {
@@ -698,13 +698,13 @@ export class SalesModule {
             items: this.currentSale.items.map(i => ({ id: i.id || null, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio, subtotal: i.precio * i.cantidad })),
             payments: this.currentSale.payments
         };
-        try { 
-            const res = await createSale(payload); 
-            if (res.success) { 
-                this.closeModal('create-sale-modal'); 
-                await this.loadHistory(this.currentSortOrder); 
-                pop_ups.success("Venta Exitosa"); 
-                
+        try {
+            const res = await createSale(payload);
+            if (res.success) {
+                this.closeModal('create-sale-modal');
+                await this.loadHistory(this.currentSortOrder);
+                pop_ups.success("Venta Exitosa");
+
                 if (res.alerts && res.alerts.length > 0) {
                     res.alerts.forEach(a => {
                         if (a.type === 'low_stock') {
@@ -713,8 +713,8 @@ export class SalesModule {
                             pop_ups.error(`¡Alerta de Rentabilidad en ${a.product_name}! Venta a $${a.sale_price}, Costo $${a.cost_price}`, 'Rentabilidad Crítica');
                         }
                     });
-                    
-                    btn.textContent = 'Enviando Correos...'; 
+
+                    btn.textContent = 'Enviando Correos...';
                     pop_ups.info("Espere. Generando reportes y enviándolos al mail...");
                     try {
                         const emailRes = await fetch('/api/sales/send-queued-emails', {
@@ -732,22 +732,22 @@ export class SalesModule {
                         console.error("Error al enviar correos diferidos:", err);
                     }
                 }
-            } else { 
-                pop_ups.error(res.message); 
-            } 
-        } catch(e) { 
-            console.error(e); 
-            pop_ups.error("Error de conexión"); 
+            } else {
+                pop_ups.error(res.message);
+            }
+        } catch (e) {
+            console.error(e);
+            pop_ups.error("Error de conexión");
         }
         btn.disabled = false; btn.textContent = 'Confirmar Venta';
     }
 
-    async loadHistory(order='desc') {
+    async loadHistory(order = 'desc') {
         const b = document.getElementById('sales-list-body');
         b.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Cargando...</td></tr>';
         try {
             const data = await getSalesHistory(order);
-            if(!data.success || !data.sales || data.sales.length === 0) { b.innerHTML='<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No hay ventas registradas</td></tr>'; return; }
+            if (!data.success || !data.sales || data.sales.length === 0) { b.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No hay ventas registradas</td></tr>'; return; }
             b.innerHTML = data.sales.map((s, idx) => {
                 const total = data.sales.length;
                 const displayNum = order.toLowerCase() === 'desc' ? total - idx : idx + 1;
@@ -763,7 +763,7 @@ export class SalesModule {
                 }
                 return `<tr style="border-bottom:1px solid #eee;"><td style="padding:10px 15px;">${fmtDate(dateStr)}<div style="font-size:0.75rem; color:#999;">#${displayNum}</div></td><td style="padding:10px 15px;"><div style="font-weight:600; color:#444;"><i class="ph ph-user-focus" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${s.customer_name}</div></td><td style="padding:10px 15px;">${sellerHtml}</td><td style="padding:10px 15px; text-align:right;"><div style="font-weight:800; color:var(--sale-green); font-size:1.1rem; line-height:1.2;">${fmtMoney(total_amount)}</div>${payBadge}</td><td style="padding:10px 15px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" title="Ver Ticket" onclick="window.salesModuleInstance.showDetails('${s.id}')"><i class="ph ph-receipt"></i></button><button class="action-btn edit" title="Editar" onclick="window.salesModuleInstance.editSale('${s.id}')"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" title="Eliminar" onclick="window.salesModuleInstance.deleteSale('${s.id}')"><i class="ph ph-trash"></i></button></div></td></tr>`;
             }).join('');
-        } catch(e) { console.error(e); b.innerHTML='<tr><td colspan="5" style="text-align:center; color:red;">Error de visualización</td></tr>'; }
+        } catch (e) { console.error(e); b.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error de visualización</td></tr>'; }
     }
 
     async addManualItem() {
@@ -775,13 +775,13 @@ export class SalesModule {
     }
 
     filterProducts(t) {
-        const term = t.toLowerCase().trim(); if(!term) { this.renderProducts(this.resources.products); return; }
+        const term = t.toLowerCase().trim(); if (!term) { this.renderProducts(this.resources.products); return; }
         const filtered = this.resources.products.filter(p => (p.name && p.name.toLowerCase().includes(term)) || Object.values(p).some(val => val && String(val).toLowerCase().includes(term)));
         this.renderProducts(filtered);
     }
 
     handleScan(t) {
-        const term = t.toLowerCase().trim(); if(!term) return;
+        const term = t.toLowerCase().trim(); if (!term) return;
         let match = this.resources.products.find(p => Object.values(p).some(val => val && String(val).toLowerCase() === term));
         if (!match) {
             const visualMatches = this.resources.products.filter(p => (p.name && p.name.toLowerCase().includes(term)) || Object.values(p).some(val => val && String(val).toLowerCase().includes(term)));
@@ -798,7 +798,7 @@ export class SalesModule {
 
     async showDetails(id) {
         try {
-            const res = await getSaleDetails(id); if(!res.success) throw new Error(res.message || "Error al cargar detalles");
+            const res = await getSaleDetails(id); if (!res.success) throw new Error(res.message || "Error al cargar detalles");
             const s = res.sale;
             const bodyContainer = document.getElementById('detail-modal-content');
             let html = `<div style="text-align:center; margin-bottom:20px; border-bottom:2px dashed var(--ticket-color); padding-bottom:15px;"><div style="font-size:1.3rem; font-weight:900; letter-spacing:1px;">TICKET DE VENTA</div><div style="font-size:0.9rem; margin-top:5px;">${fmtDate(s.created_at)}</div></div>`;
@@ -823,8 +823,8 @@ export class SalesModule {
             const paymentsTable = document.createElement('table'); paymentsTable.innerHTML = '<tbody id="detail-payments-list"></tbody>';
             bodyContainer.appendChild(paymentsTable);
             document.getElementById('detail-payments-list').innerHTML = s.payments.map(p => `<tr class="ticket-row" style="border:none;"><td style="text-align:left; font-weight:600;">${p.payment_method_name}</td><td style="text-align:right; font-weight:800;">${fmtMoney(p.amount)}</td></tr>`).join('');
-            if(s.notes) bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-notes"><strong>NOTAS:</strong><br>${s.notes}</div>`);
-            
+            if (s.notes) bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-notes"><strong>NOTAS:</strong><br>${s.notes}</div>`);
+
             // EMAIL BOTON
             let emailBtnHTML = '';
             if (s.customer_email) {
@@ -833,7 +833,7 @@ export class SalesModule {
                 emailBtnHTML = `<div style="position: relative; display: inline-block; width: 100%; margin-top: 20px;" title="El cliente no posee email registrado"><button id="send-ticket-email-btn" class="btn btn-secondary" style="width: 100%; opacity: 0.5; cursor: not-allowed;" disabled><i class="ph-bold ph-envelope-simple"></i> Enviar ticket vía mail al cliente</button></div>`;
             }
             bodyContainer.insertAdjacentHTML('beforeend', emailBtnHTML);
-            
+
             const modal = document.getElementById('detail-sale-modal'); modal.classList.remove('hidden'); modal.style.display = 'flex';
 
             const btnSendMail = document.getElementById('send-ticket-email-btn');
@@ -841,13 +841,13 @@ export class SalesModule {
                 btnSendMail.onclick = async () => {
                     btnSendMail.disabled = true;
                     btnSendMail.innerHTML = '<i class="ph-bold ph-spinner spinner-icon"></i> Enviando...';
-                    
+
                     const htmlTicket = this.generateTicketEmailHTML(s);
                     try {
                         const emailRes = await fetch('/api/sales/send-email.php', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
+                            body: JSON.stringify({
                                 emailInfo: {
                                     to: s.customer_email,
                                     subject: 'Ticket de Venta - Stockify',
@@ -860,7 +860,6 @@ export class SalesModule {
                         const data = await emailRes.json();
                         if (data.success) {
                             pop_ups.success(`Ticket enviado exitosamente a ${s.customer_email}`);
-                            // Llamar para crear notificación simulada en la base de datos
                             fetch('/api/notifications/create', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -871,7 +870,7 @@ export class SalesModule {
                                     inventory_id: s.inventory_id || null // El obj venta trae inventory_id. Fallback null
                                 })
                             }).catch(e => console.error("Error al crear notif:", e));
-                            
+
                             btnSendMail.innerHTML = '<i class="ph-bold ph-check"></i> Enviado correctamente';
                         } else {
                             pop_ups.error("Error al enviar email: " + (data.error || "Desconocido"));
@@ -885,7 +884,7 @@ export class SalesModule {
                     }
                 };
             }
-        } catch(e) { pop_ups.error("Error: " + e.message); }
+        } catch (e) { pop_ups.error("Error: " + e.message); }
     }
 
     generateTicketEmailHTML(s) {
@@ -994,10 +993,10 @@ export class SalesModule {
     }
 
     async editSale(id) {
-        if(!await pop_ups.confirm("¿Editar Venta?", "Esto ELIMINARÁ la venta actual, devolverá el stock y cargará los productos en el carrito.")) return;
+        if (!await pop_ups.confirm("¿Editar Venta?", "Esto ELIMINARÁ la venta actual, devolverá el stock y cargará los productos en el carrito.")) return;
         try {
-            const res = await getSaleDetails(id); if(!res.success) throw new Error("Error leyendo venta"); const oldSale = res.sale;
-            await fetch('/api/sales/delete', {method:'POST', body:JSON.stringify({id})});
+            const res = await getSaleDetails(id); if (!res.success) throw new Error("Error leyendo venta"); const oldSale = res.sale;
+            await fetch('/api/sales/delete', { method: 'POST', body: JSON.stringify({ id }) });
             await this.openCreateModal();
             document.getElementById('sale-customer').value = oldSale.customer_id || '';
             document.getElementById('sale-seller').value = oldSale.seller_id || '';
@@ -1005,12 +1004,12 @@ export class SalesModule {
             this.currentSale.items = oldSale.items.map(i => ({ id: i.product_id, nombre: i.product_name, cantidad: parseFloat(i.quantity), precio: parseFloat(i.price), max_stock: 9999 }));
             this.updateCartUI(); this.recalcSale();
             pop_ups.info("Venta cargada para edición");
-        } catch(e) { pop_ups.error("Error: " + e.message); }
+        } catch (e) { pop_ups.error("Error: " + e.message); }
     }
 
     async deleteSale(id) {
-        if(!await pop_ups.confirm("Eliminar Venta", "Se devolverá el stock y anulará el registro. ¿Seguro?")) return;
-        try { await fetch('/api/sales/delete', {method:'POST', body:JSON.stringify({id})}); this.loadHistory(); pop_ups.info("Venta eliminada"); } catch(e){ pop_ups.error("Error al eliminar"); }
+        if (!await pop_ups.confirm("Eliminar Venta", "Se devolverá el stock y anulará el registro. ¿Seguro?")) return;
+        try { await fetch('/api/sales/delete', { method: 'POST', body: JSON.stringify({ id }) }); this.loadHistory(); pop_ups.info("Venta eliminada"); } catch (e) { pop_ups.error("Error al eliminar"); }
     }
 }
 

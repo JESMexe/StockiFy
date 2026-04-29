@@ -305,6 +305,47 @@
     flex-direction: column;
     gap: 6px;
     text-align: left;
+    position: relative;
+    height: 60px; /* Altura fija para alinear tarjetas */
+    overflow: hidden;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-radius: 6px;
+}
+
+.emp-custom-field {
+    transition: opacity 0.2s;
+}
+
+.emp-custom-container:hover .emp-custom-field {
+    opacity: 0.3;
+}
+
+.emp-hover-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+    color: var(--accent-color);
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid var(--accent-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.emp-custom-container:hover .emp-hover-overlay {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
 }
 
 .emp-custom-field {
@@ -358,4 +399,107 @@
 
 .cat-item:hover {
     background: #f9f9f9;
+}
+
+/* Modal de Detalle Personal */
+#employee-detail-modal .modal-content {
+    background-color: #ffffff !important;
+    box-shadow: 8px 8px 0 var(--color-black);
+    border: 2px solid #1b1b1b;
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+
+#employee-detail-modal .modal-content:hover {
+    box-shadow: 8px 8px 0 var(--accent-color);
+}
+
+.emp-detail-header {
+    background: var(--accent-color-quat-opacity);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 2px solid var(--accent-color);
+}
+
+.emp-detail-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: white;
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    border: 3px solid var(--accent-color);
+}
+
+.emp-detail-info h2 {
+    margin: 0;
+    color: #111;
+}
+
+.emp-detail-info p {
+    margin: 5px 0 0 0;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.emp-detail-body {
+    padding: 20px;
+}
+
+.emp-detail-custom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.emp-detail-custom-item {
+    background: #f1f3f5;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 4px solid var(--accent-color);
+    font-size: 0.95rem;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
+}
+
+.emp-detail-custom-item strong {
+    display: block;
+    color: #777;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+}
+
+.emp-sales-history {
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+    margin-top: 10px;
+}
+
+.emp-sales-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.emp-sale-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    border: 1px solid #eaeaea;
 }

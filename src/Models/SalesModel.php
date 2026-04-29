@@ -253,6 +253,54 @@ class SalesModel {
         }
     }
 
+    public function getSalesByEmployee($userId, $inventoryId, $employeeId, $order = 'DESC'): array
+    {
+        $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+        try {
+            $sql = "
+                SELECT 
+                    s.id,
+                    s.sale_date as created_at,
+                    s.total_amount as total,
+                    COALESCE(c.full_name, 'Cliente General') as customer_name,
+                    (
+                        SELECT GROUP_CONCAT(pm.name SEPARATOR '|||') 
+                        FROM sale_payments sp 
+                        LEFT JOIN payment_methods pm ON sp.payment_method_id = pm.id 
+                        WHERE sp.sale_id = s.id
+                    ) as payment_names_str
+                FROM sales s
+                LEFT JOIN customers c ON s.customer_id = c.id
+                WHERE s.user_id = :user AND s.seller_id = :employee
+                " . ($inventoryId ? "AND s.inventory_id = :inv" : "") . "
+                ORDER BY s.sale_date $order
+                LIMIT 100
+            ";
+
+            $stmt = $this->db->prepare($sql);
+            $params = [':user' => $userId, ':employee' => $employeeId];
+            if ($inventoryId) {
+                $params[':inv'] = $inventoryId;
+            }
+            $stmt->execute($params);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($results as &$row) {
+                if (!empty($row['payment_names_str'])) {
+                    $row['payments'] = explode('|||', $row['payment_names_str']);
+                } else {
+                    $row['payments'] = [];
+                }
+                unset($row['payment_names_str']);
+            }
+
+            return $results;
+        } catch (Exception $e) {
+            error_log("Error getSalesByEmployee: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getDetails($saleId, $userId, $inventoryId = null): ?array {
         try {
             // 1. Cabecera (Traemos datos de la tabla nueva 'sales')

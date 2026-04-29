@@ -7,7 +7,7 @@ import { purchaseModuleInstance } from './purchases/purchases.js';
 import { customerModuleInstance } from './customers/customers.js';
 import { providerModuleInstance } from './providers/providers.js';
 import { employeeModuleInstance } from './employees/employees.js';
-import { analyticsModuleInstance } from './analytics/analytics.js';
+import { analyticsModuleInstance } from './statistics/statistics.js';
 import { paymentsModuleInstance } from './payment/payment.js';
 import { openImportModal } from './import.js';
 import { ui_helper } from "./ui-helper.js";
@@ -1335,7 +1335,7 @@ async function handleConfirmDelete() {
     try {
         const result = await api.deleteDatabase();
         if (result.success) {
-            pop_ups.info(result.message, 'Base de Datos Eliminada.');
+            pop_ups.info(result.message, 'Inventario Eliminado.');
             window.location.href = '/select-db';
         } else {
             throw new Error(result.message);

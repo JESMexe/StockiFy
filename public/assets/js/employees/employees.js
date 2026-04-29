@@ -127,6 +127,35 @@ export class EmployeeModule {
                         </div>
                     </div>
                 </div>
+
+                <!-- Modal de Detalle Personal -->
+                <div id="employee-detail-modal" class="modal-overlay hidden" style="align-items:center; justify-content:center; display:none; z-index:1200;">
+                    <div class="modal-content" style="width: 700px; max-width: 95%;">
+                        <div class="emp-detail-header">
+                            <div class="emp-detail-avatar" id="det-emp-avatar">U</div>
+                            <div class="emp-detail-info">
+                                <h2 id="det-emp-name">Nombre Empleado</h2>
+                                <p id="det-emp-cat"><i class="ph ph-tag"></i> Categoría</p>
+                                <p id="det-emp-contact"><i class="ph ph-envelope"></i> email | <i class="ph ph-phone"></i> tel</p>
+                            </div>
+                            <button class="modal-close-btn" id="close-emp-detail-modal" style="margin-left: auto; align-self: flex-start;">&times;</button>
+                        </div>
+                        <div class="emp-detail-body">
+                            <h4 style="margin-top: 0; margin-bottom: 15px;">Detalles Adicionales</h4>
+                            <div class="emp-detail-custom-grid" id="det-emp-custom-grid">
+                                <!-- Campos dinámicos aquí -->
+                            </div>
+                            
+                            <div class="emp-sales-history">
+                                <h4 style="margin-bottom: 15px;"><i class="ph-bold ph-receipt"></i> Historial de Ventas</h4>
+                                <div class="emp-sales-list" id="det-emp-sales-list">
+                                    <p style="color: #888; text-align: center;">Cargando ventas...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         `;
     }
@@ -163,14 +192,21 @@ export class EmployeeModule {
         document.getElementById('emp-list-body')?.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.btn-edit-emp');
             const deleteBtn = e.target.closest('.btn-delete-emp');
+            const customContainer = e.target.closest('.emp-custom-container');
 
             if (editBtn) {
                 const empData = JSON.parse(editBtn.dataset.employee);
                 this.openEditModal(empData);
+                return;
             }
             if (deleteBtn) {
                 const empId = deleteBtn.dataset.id;
                 this.deleteEmployee(empId);
+                return;
+            }
+            if (customContainer) {
+                const empId = customContainer.dataset.id;
+                this.openDetailModal(empId);
             }
         });
 
@@ -197,6 +233,12 @@ export class EmployeeModule {
 
         document.getElementById('cancel-cat-edit')?.addEventListener('click', () => {
             this.resetCategoryEditor();
+        });
+
+        document.getElementById('close-emp-detail-modal')?.addEventListener('click', () => {
+            const modal = document.getElementById('employee-detail-modal');
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
         });
     }
 
@@ -476,17 +518,23 @@ export class EmployeeModule {
             const phoneHtml = e.phone ? `<div title="Teléfono"><i class="ph ph-phone"></i> ${e.phone}</div>` : '';
             const emailHtml = e.email ? `<div title="Email"><i class="ph ph-envelope"></i> ${e.email}</div>` : '';
             const dniHtml = e.dni ? `<div title="DNI"><i class="ph ph-identification-card"></i> ${e.dni}</div>` : '';
-            const catHtml = e.category_name ? `<div class="emp-tag"><i class="ph ph-tag"></i> ${e.category_name}</div>` : '';
+            const catHtml = e.category_name ? `<div class="emp-tag"><i class="ph ph-tag"></i> ${e.category_name}</div>` : `<div class="emp-tag" style="visibility:hidden; pointer-events:none;"><i class="ph ph-tag"></i>-</div>`;
 
-            // Renderizar campos dinámicos en el card (limitado a los primeros 2 para no romper el diseño)
+            // Renderizar campos dinámicos en el card
             let customFieldsHtml = '';
+            let hasFields = false;
             if (e.custom_data && typeof e.custom_data === 'object') {
                 const entries = Object.entries(e.custom_data);
-                entries.slice(0, 3).forEach(([label, val]) => {
+                entries.forEach(([label, val]) => {
                     if (val) {
                         customFieldsHtml += `<div class="emp-custom-field"><strong>${label}:</strong> ${val}</div>`;
+                        hasFields = true;
                     }
                 });
+            }
+            
+            if (!hasFields) {
+                customFieldsHtml = `<div class="emp-custom-field" style="border:none; background:transparent; color:#888; text-align:center; padding-top:10px; box-shadow:none;">Ver perfil y ventas</div>`;
             }
 
             return `
@@ -505,14 +553,85 @@ export class EmployeeModule {
                     ${phoneHtml}
                     ${emailHtml}
                 </div>
-                <div class="emp-custom-container">
+                <div class="emp-custom-container" data-id="${e.id}" title="Ver todos los detalles">
                     ${customFieldsHtml}
+                    <div class="emp-hover-overlay"><i class="ph-bold ph-eye"></i></div>
                 </div>
                 <div class="emp-footer">
                      Registrado: ${new Date(e.created_at).toLocaleDateString()}
                 </div>
             </div>
         `}).join('');
+    }
+
+    openDetailModal(empId) {
+        const emp = this.allEmployees.find(e => e.id == empId);
+        if (!emp) return;
+
+        document.getElementById('det-emp-avatar').textContent = emp.full_name.charAt(0).toUpperCase();
+        document.getElementById('det-emp-name').textContent = emp.full_name;
+        document.getElementById('det-emp-cat').innerHTML = emp.category_name ? `<i class="ph ph-tag"></i> ${emp.category_name}` : `<i class="ph ph-user"></i> Sin categoría`;
+        
+        let contactHtml = '';
+        if (emp.email) contactHtml += `<i class="ph ph-envelope"></i> ${emp.email} `;
+        if (emp.phone) contactHtml += `| <i class="ph ph-phone"></i> ${emp.phone}`;
+        if (!emp.email && !emp.phone) contactHtml = 'Sin datos de contacto';
+        document.getElementById('det-emp-contact').innerHTML = contactHtml;
+
+        const customGrid = document.getElementById('det-emp-custom-grid');
+        customGrid.innerHTML = '';
+        if (emp.dni) {
+            customGrid.insertAdjacentHTML('beforeend', `<div class="emp-detail-custom-item"><strong>DNI / Identificación</strong>${emp.dni}</div>`);
+        }
+        
+        if (emp.custom_data && typeof emp.custom_data === 'object') {
+            Object.entries(emp.custom_data).forEach(([label, val]) => {
+                if (val) {
+                    customGrid.insertAdjacentHTML('beforeend', `<div class="emp-detail-custom-item"><strong>${label}</strong>${val}</div>`);
+                }
+            });
+        }
+
+        const modal = document.getElementById('employee-detail-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+
+        this.loadEmployeeSales(emp.id);
+    }
+
+    async loadEmployeeSales(empId) {
+        const list = document.getElementById('det-emp-sales-list');
+        list.innerHTML = '<p style="color: #888; text-align: center;">Cargando ventas...</p>';
+
+        try {
+            const { getEmployeeSales } = await import('../api.js');
+            const data = await getEmployeeSales(empId);
+            
+            if (!data.success || !data.sales || data.sales.length === 0) {
+                list.innerHTML = '<p style="padding-top: 20px; color: #888; text-align: center;">No hay ventas registradas para este empleado.</p>';
+                return;
+            }
+
+            list.innerHTML = data.sales.map(sale => {
+                const total = parseFloat(sale.total).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+                const date = new Date(sale.created_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+                return `
+                    <div class="emp-sale-item">
+                        <div>
+                            <strong><i class="ph ph-receipt"></i> Venta #${sale.id}</strong><br>
+                            <small style="color: #666;">${date} - Cliente: ${sale.customer_name}</small>
+                        </div>
+                        <div style="font-weight: bold; color: var(--accent-color);">
+                            ${total}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (e) {
+            console.error("Error cargando ventas:", e);
+            list.innerHTML = '<p style="color: red; text-align: center;">Error al cargar ventas.</p>';
+        }
     }
 
     filterEmployees(term) {

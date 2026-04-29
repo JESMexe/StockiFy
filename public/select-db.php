@@ -39,13 +39,13 @@
 
     <main>
         <div id="selection-view" class="view-container">
-            <h2>Selecciona una Base de Datos</h2>
-            <p>Elige con qué base de datos quieres trabajar.</p>
+            <h2>Selecciona un Inventario</h2>
+            <p>Elegí con qué Inventario queres trabajar.</p>
             <div id="db-list">
                 <li>Cargando...</li>
             </div>
             <hr>
-            <a href="create-db" class="btn btn-secondary">O crear una nueva</a>
+            <a href="create-db" class="btn btn-secondary">O crear uno nuevo</a>
         </div>
     </main>
 

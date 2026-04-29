@@ -156,7 +156,7 @@ export async function manageTableColumn(action, data) {
 }
 
 export async function getAnalyticsDashboard() {
-    const response = await fetch('/api/analytics/get-dashboard.php');
+    const response = await fetch('/api/statistics/get-dashboard.php');
     return handleResponse(response);
 }
 
@@ -616,4 +616,13 @@ async function promptManualRateFallback() {
         pop_ups.error("Se canceló la operación porque no se definió un tipo de cambio.", "Cancelado");
         throw new Error("No se definió tipo de cambio.");
     }
+}
+
+export async function getEmployeeSales(employeeId) {
+    const response = await fetch('/api/employees/get-sales.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_id: employeeId })
+    });
+    return handleResponse(response);
 }

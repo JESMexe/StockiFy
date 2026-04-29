@@ -93,7 +93,7 @@ window.runExport = async () => {
         if (chkAnalytics.checked) {
             statusDiv.textContent = 'Calculando Mega-Analíticas...';
             // Cache buster for Analytics bypassing api.js cache if needed
-            const response = await fetch(`/api/analytics/get-dashboard.php?_t=${Date.now()}`);
+            const response = await fetch(`/api/statistics/get-dashboard.php?_t=${Date.now()}`);
             const dashboardRes = await response.json();
             
             if (dashboardRes && dashboardRes.success) {
