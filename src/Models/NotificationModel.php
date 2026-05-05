@@ -50,4 +50,14 @@ class NotificationModel
             ':inventory_id' => $inventoryId
         ]);
     }
+
+    /**
+     * Elimina todas las notificaciones de un usuario para el inventario activo.
+     */
+    public function deleteAllByUser(int $userId): bool
+    {
+        $inventoryId = $_SESSION['active_inventory_id'] ?? 0;
+        $stmt = $this->db->prepare("DELETE FROM notifications WHERE user_id = ? AND inventory_id = ?");
+        return $stmt->execute([$userId, $inventoryId]);
+    }
 }

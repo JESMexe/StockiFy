@@ -7,7 +7,7 @@ import {
     getCurrentInventoryPreferences,
     getSaleDetails
 } from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js?v=2.0';
+import { pop_ups } from '../notifications/pop-up.js?v=3.0';
 
 const fmtMoney = (amount, currency = 'ARS') => {
     if (amount === undefined || amount === null || isNaN(amount)) return '$ 0,00';

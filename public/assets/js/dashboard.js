@@ -1,7 +1,7 @@
 
 import * as api from './api.js';
 import * as setup from './setupMiCuentaDropdown.js';
-import { notificationConfig, pop_ups } from './notifications/pop-up.js?v=2.0';
+import { notificationConfig, pop_ups } from './notifications/pop-up.js?v=3.0';
 import { salesModuleInstance } from './sales/sales.js';
 import { purchaseModuleInstance } from './purchases/purchases.js';
 import { customerModuleInstance } from './customers/customers.js';
@@ -296,7 +296,7 @@ async function renderTable(columns, data) {
 
     if (!data || data.length === 0) {
         const totalCols = columns.length + (activeFeatures.gain ? 1 : 0) + 1; // +1 for actions
-        const searchInput = document.getElementById('search-input');
+        const searchInput = document.getElementById('main-table-search');
         const isSearching = searchInput && searchInput.value.trim().length > 0;
         if (isSearching) {
             tableBody.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center; padding:40px; color:#999; font-size:1rem;">No se encontraron resultados para la búsqueda.</td></tr>`;
@@ -714,7 +714,7 @@ function createInputForCell(columnName, value) {
 }
 
 function filterTable() {
-    const searchInput = document.getElementById('search-input');
+    const searchInput = document.getElementById('main-table-search');
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
     const filteredData = allData.filter(row => {
@@ -775,7 +775,11 @@ function setupMenuNavigation() {
         button.addEventListener('click', () => {
             const targetView = button.dataset.targetView;
 
-            if (targetView === 'notifications') {
+            if (targetView === 'sales' && window.SalesModule) {
+                window.SalesModule.init();
+            } else if (targetView === 'history-log' && window.HistoryModule) {
+                window.HistoryModule.init();
+            } else if (targetView === 'notifications') {
                 loadNotifications();
             }
 
@@ -1508,7 +1512,15 @@ async function loadNotifications() {
         }
 
         const groups = {};
-        data.notifications.forEach(n => {
+        // Filtramos para que NO aparezcan errores técnicos en esta vista
+        const filteredNotifications = data.notifications.filter(n => n.type !== 'error');
+
+        if (filteredNotifications.length === 0) {
+            listContainer.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">No tenés notificaciones recientes en este inventario.</p>';
+            return;
+        }
+
+        filteredNotifications.forEach(n => {
             const dateLabel = getRelativeDateGroup(n.created_at);
             if (!groups[dateLabel]) groups[dateLabel] = [];
             groups[dateLabel].push(n);
@@ -1525,15 +1537,19 @@ async function loadNotifications() {
 
                 if (config) {
                     icon = config.icon;
-                    color = config.color;
+                    // Mapeo a religión de colores de StockiFy
+                    if (n.type === 'success') color = 'var(--accent-green)';
+                    else if (n.type === 'warning') color = 'var(--accent-yellow)';
+                    else if (n.type === 'info') color = 'var(--accent-blue)';
+                    else color = config.color;
                 } else {
                     icon = 'ph-note';
-                    color = n.type;
+                    color = 'var(--accent-color)';
                 }
 
                 html += `
                 <div class="toast-notification show" 
-                     style="--toast-color: ${color}; position: relative; margin-bottom: 1rem; max-width: 100%; border-left: 4px solid ${color};"
+                     style="--toast-color: ${color}; position: relative; margin-bottom: 1rem; max-width: 100%; border-left: 4px solid ${color}; box-shadow: none; animation: none;"
                      data-notification-id="${n.id}">
                     
                     <i class="toast-icon ph ${icon}" style="color: ${color}; font-size: 1.5rem;"></i>
@@ -2058,7 +2074,10 @@ async function init() {
         });
     }
 
-    document.getElementById('search-input')?.addEventListener('input', filterTable);
+    const mainSearch = document.getElementById('main-table-search');
+    if (mainSearch) {
+        mainSearch.addEventListener('input', filterTable);
+    }
     document.getElementById('add-row-btn')?.addEventListener('click', handleAddRowClick);
 
     searchColumnBtn?.addEventListener('click', () => {
@@ -4809,7 +4828,7 @@ export async function loadTableData() {
 }
 
 function setupEventListeners() {
-    const searchInput = document.getElementById('search-input');
+    const searchInput = document.getElementById('main-table-search');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             window.currentSearchTerm = e.target.value;

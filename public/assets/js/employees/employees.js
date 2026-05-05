@@ -1,7 +1,7 @@
 /**
  */
 import { getEmployeeList } from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js?v=2.0';
+import { pop_ups } from '../notifications/pop-up.js?v=3.0';
 import { getWhatsAppLink } from '../universal-functions.js';
 
 export class EmployeeModule {

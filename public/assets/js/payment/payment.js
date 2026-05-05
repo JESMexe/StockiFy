@@ -1,5 +1,5 @@
 import { getAllPaymentMethods, createPaymentMethod, deletePaymentMethod, updatePaymentMethod } from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js';
+import { pop_ups } from '../notifications/pop-up.js?v=3.0';
 
 export class PaymentsModule {
     constructor() {

@@ -1,6 +1,6 @@
 
 import * as api from './api.js';
-import { pop_ups } from "./notifications/pop-up.js";
+import { pop_ups } from "./notifications/pop-up.js?v=3.0";
 
 let modalElement, closeModalBtn, importCancelBtn, dropZone, fileInput, importStatus;
 let step1, step2, mappingForm, validatePrepareBtn;

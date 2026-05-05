@@ -1,7 +1,7 @@
 /**
  */
 import { getProviderList, getProviderDetails } from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js?v=2.0';
+import { pop_ups } from '../notifications/pop-up.js?v=3.0';
 import { getWhatsAppLink } from '../universal-functions.js';
 
 export class ProviderModule {
@@ -360,7 +360,7 @@ export class ProviderModule {
             });
             const res = await response.json();
             if (res.success) {
-                pop_ups.success("Proveedor eliminado");
+                pop_ups.info("Proveedor eliminado");
                 this.loadProviders(this.currentSortOrder);
             } else {
                 pop_ups.error(res.message || "No se pudo eliminar");

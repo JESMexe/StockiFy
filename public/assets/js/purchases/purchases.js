@@ -1,4 +1,4 @@
-import { pop_ups } from '../notifications/pop-up.js?v=2.0';
+import { pop_ups } from '../notifications/pop-up.js?v=3.0';
 import * as api from "../api.js";
 
 const fmtMoney = (amount, currency = 'ARS') => {

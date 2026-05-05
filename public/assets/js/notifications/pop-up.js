@@ -1,3 +1,8 @@
+/**
+ * StockiFy Pop-up System v3.0
+ * Sistema global de notificaciones y diálogos.
+ */
+
 export const notificationConfig = {
     success: { icon: 'ph-check-circle', color: 'var(--accent-green)' },
     error: { icon: 'ph-warning-circle', color: 'var(--accent-red)' },
@@ -27,6 +32,7 @@ function _showToast(type, title, message, duration = 5000) {
         <div class="toast-timer" style="animation-duration: ${duration}ms"></div>
     `;
 
+    // Restauramos el guardado en DB que tenías originalmente
     fetch('/api/notifications/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -42,7 +48,6 @@ function _showToast(type, title, message, duration = 5000) {
             if (!data.success) console.error('Error al guardar la notificación en la DB.');
         })
         .catch(err => console.error('Error de red guardando notificación:', err));
-
 
     container.appendChild(toast);
 
@@ -65,109 +70,98 @@ function _close(toast) {
 
 function _showPrompt(title, message, placeholder = '', initialValue = '') {
     return new Promise((resolve, reject) => {
-        const modal = document.getElementById('custom-prompt-modal');
+        const modal = document.getElementById('stockify-global-modal');
         const titleEl = document.getElementById('prompt-title');
         const messageEl = document.getElementById('prompt-message');
         const inputEl = document.getElementById('prompt-input');
         const form = document.getElementById('prompt-form');
+        const cancelBtn = document.getElementById('prompt-cancel-btn');
 
-        if(!modal || !titleEl || !messageEl || !inputEl || !form) {
-            console.error("Faltan elementos del DOM para el prompt personalizado.");
-            return reject(new Error('Componente de UI no encontrado.'));
-        }
+        if (!modal) return reject(new Error('Modal no encontrado'));
 
         titleEl.textContent = title;
         messageEl.textContent = message;
         inputEl.placeholder = placeholder;
         inputEl.value = initialValue;
+        inputEl.style.display = 'block';
+        inputEl.required = true;
 
         modal.classList.remove('hidden');
+        modal.style.display = 'flex';
         inputEl.focus();
 
-        const newForm = form.cloneNode(true);
-        form.parentNode.replaceChild(newForm, form);
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            form.onsubmit = null;
+            cancelBtn.onclick = null;
+        };
 
-        const newCancelBtn = newForm.querySelector('#prompt-cancel-btn');
-
-        newForm.addEventListener('submit', (e) => {
+        form.onsubmit = (e) => {
             e.preventDefault();
-            modal.classList.add('hidden');
-            resolve(newForm.querySelector('#prompt-input').value.trim());
-        });
+            const val = inputEl.value.trim();
+            cleanup();
+            resolve(val);
+        };
 
-        newCancelBtn.addEventListener('click', () => {
-            modal.classList.add('hidden');
-            reject(new Error('Acción cancelada por el usuario.'));
-        });
+        cancelBtn.onclick = () => {
+            cleanup();
+            resolve(null);
+        };
     });
 }
 
 function _showConfirm(title, message) {
-    return new Promise((resolve, reject) => {
-        const modal = document.getElementById('custom-prompt-modal');
+    return new Promise((resolve) => {
+        const modal = document.getElementById('stockify-global-modal');
         const titleEl = document.getElementById('prompt-title');
         const messageEl = document.getElementById('prompt-message');
         const inputEl = document.getElementById('prompt-input');
         const form = document.getElementById('prompt-form');
+        const cancelBtn = document.getElementById('prompt-cancel-btn');
 
-        if (!modal || !titleEl || !messageEl || !inputEl || !form) {
-            return reject(new Error('UI no encontrada.'));
-        }
+        if (!modal) return resolve(false);
+
+        form.onsubmit = null;
+        cancelBtn.onclick = null;
 
         titleEl.textContent = title;
-        titleEl.style.paddingBottom = '5px';
         messageEl.textContent = message;
-        messageEl.style.paddingTop = '15px';
-
         inputEl.style.display = 'none';
-        inputEl.value = 'CONFIRMADO';
+        inputEl.required = false;
 
         modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '9999';
 
-        const newForm = form.cloneNode(true);
-        form.parentNode.replaceChild(newForm, form);
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            form.onsubmit = null;
+            cancelBtn.onclick = null;
+        };
 
-        const hiddenInput = newForm.querySelector('#prompt-input');
-
-        const newCancelBtn = newForm.querySelector('#prompt-cancel-btn');
-
-        newForm.addEventListener('submit', (e) => {
+        form.onsubmit = (e) => {
             e.preventDefault();
-            modal.classList.add('hidden');
-            inputEl.style.display = 'block';
+            cleanup();
             resolve(true);
-        });
+        };
 
-        newCancelBtn.addEventListener('click', () => {
-            modal.classList.add('hidden');
-            inputEl.style.display = 'block';
+        cancelBtn.onclick = (e) => {
+            e.preventDefault();
+            cleanup();
             resolve(false);
-        });
+        };
     });
 }
 
-
 export const pop_ups = {
-    success: (message, title = 'Éxito') => {
-        _showToast('success', title, message);
-    },
-    error: (message, title = 'Error') => {
-        _showToast('error', title, message);
-    },
-    warning: (message, title = 'Advertencia') => {
-        _showToast('warning', title, message);
-    },
-    info: (message, title = 'Información') => {
-        _showToast('info', title, message);
-    },
-    system: (message, title = 'Sistema') => {
-        _showToast('system', title, message);
-    },
-    dev: (message, title = 'Desarrolladores') => {
-        _showToast('system', title, message);
-    },
-
+    success: (message, title = 'Éxito') => _showToast('success', title, message),
+    error: (message, title = 'Error') => _showToast('error', title, message),
+    warning: (message, title = 'Advertencia') => _showToast('warning', title, message),
+    info: (message, title = 'Información') => _showToast('info', title, message),
+    system: (message, title = 'Sistema') => _showToast('system', title, message),
+    dev: (message, title = 'Desarrolladores') => _showToast('system', title, message),
     prompt: _showPrompt,
     confirm: _showConfirm
 };
-

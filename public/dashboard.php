@@ -187,6 +187,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                 Analíticas</button></li>
                         <li><button class="menu-btn" data-target-view="notifications"><i class="ph ph-bell"></i>
                                 Notificaciones</button></li>
+                        <li><button class="menu-btn" data-target-view="history-log"><i class="ph ph-clock-counter-clockwise"></i>
+                                Historial</button></li>
                         <li><button class="menu-btn" data-target-view="payments"><i class="ph ph-wallet"></i> Métodos de
                                 Pago</button></li>
                     </ul>
@@ -224,16 +226,14 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                 <div class="search-wrapper">
 
                                     <!-- Honey-pot mejorado para engañar al autocompletado de Opera/Chrome -->
-                                    <input type="text" name="fakeusernameremembered"
-                                        style="opacity: 0; position: absolute; z-index: -1; width: 1px; height: 1px;"
-                                        aria-hidden="true" tabindex="-1">
-                                    <input type="password" name="fakepasswordremembered"
-                                        style="opacity: 0; position: absolute; z-index: -1; width: 1px; height: 1px;"
-                                        aria-hidden="true" tabindex="-1">
-                                    <input type="search" id="search-input" name="q_internal_search"
-                                        placeholder="Buscar en la tabla..." spellcheck="false" autocomplete="off"
-                                        autocorrect="off" autocapitalize="none" data-lpignore="true"
-                                        data-1p-ignore="true">
+
+                                    <input type="search" id="main-table-search" name="q_stk_main" 
+                                        placeholder="Buscar en la tabla..." 
+                                        spellcheck="false" 
+                                        autocomplete="off"
+                                        readonly 
+                                        onfocus="this.removeAttribute('readonly');"
+                                        style="border: none; outline: none; background: transparent; width: 100%; height: 100%; padding: 10px 15px;">
 
                                     <button id="search-column-btn" class="btn btn-secondary">
                                         <i class="ph ph-funnel"></i>
@@ -285,6 +285,10 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                             </table>
                         </div>
                     </div>
+                </div>
+
+                <div id="history-log" class="dashboard-view hidden">
+                    <!-- El contenido se cargará dinámicamente vía HistoryModule.js -->
                 </div>
 
                 <div id="config-db" class="dashboard-view hidden">
@@ -818,6 +822,10 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
             </div>
         </div>
 
+                </div>
+            </div>
+        </div>
+
         <div id="delete-confirm-modal" class="modal-overlay hidden">
             <div class="modal-content view-container" style="max-width: 520px;">
                 <button id="close-delete-modal-btn" class="modal-close-btn">&times;</button>
@@ -927,8 +935,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 
         <div id="toast-container"></div>
 
-        <div id="custom-prompt-modal" class="modal-overlay hidden">
-            <div class="modal-content view-container" style="max-width: 450px;">
+        <div id="stockify-global-modal" class="modal-overlay hidden">
+            <div class="modal-content" style="max-width: 500px;">
                 <div class="modal-header">
                     <h2 id="prompt-title">Título del Prompt</h2>
                     <p id="prompt-message" style="text-align: left;">Mensaje de ayuda.</p>
@@ -1013,13 +1021,13 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
             </div>
         </div>
 
-        <div id="sale-details-modal" class="modal-overlay hidden" style="z-index: 2000;">
-            <div class="modal-content view-container" style="width: 500px; max-width: 90vw;">
-                <div class="modal-header">
-                    <h2>Detalle de Transacción</h2>
-                    <button class="modal-close-btn" id="close-details-modal">&times;</button>
+        <div id="detail-sale-modal" class="modal-overlay hidden" style="z-index: 2000;">
+            <div class="modal-content" style="width: 400px; max-width: 90vw; background: #fff; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                <div class="modal-header" style="padding: 15px; border-bottom: 1px solid #eee;">
+                    <h3 style="margin:0;">Ticket de Venta</h3>
+                    <button class="modal-close-btn" id="close-detail-modal">&times;</button>
                 </div>
-                <div class="modal-body" id="sale-details-content">
+                <div id="detail-modal-content" style="padding: 20px; overflow-y: auto; max-height: 80vh; background: #fff;">
                 </div>
             </div>
         </div>
@@ -1106,10 +1114,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
         <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
         <script type="module" src="assets/js/dashboard.js?v=1.4"></script>
         <script type="module" src="assets/js/sales/sales.js?v=1.2"></script>
+        <script type="module" src="assets/js/history/history.js?v=1.0"></script>
         <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>
 
         <script type="module">
-            import { pop_ups } from './assets/js/notifications/pop-up.js?v=2.0';
+            import { pop_ups } from './assets/js/notifications/pop-up.js?v=3.0';
             window.showLockedFeatureToast = (featureName) => {
                 pop_ups.system(`Funcionabilidad no incluída en su versión de pago Básico: ${featureName}`, 'Acceso Restringido');
             };

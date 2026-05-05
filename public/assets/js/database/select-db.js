@@ -1,6 +1,6 @@
-﻿// public/assets/js/database/select-db.js
+// public/assets/js/database/select-db.js
 import * as api from '../api.js';
-import {pop_ups} from "../notifications/pop-up.js";
+import {pop_ups} from "../notifications/pop-up.js?v=3.0";
 
 async function handleSelectDatabase(event) {
     const target = event.target.closest('button.db-list-item');

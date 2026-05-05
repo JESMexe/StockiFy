@@ -1,7 +1,7 @@
 /**
  */
 import * as api from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js?v=2.0';
+import { pop_ups } from '../notifications/pop-up.js?v=3.0';
 import { getWhatsAppLink } from '../universal-functions.js';
 
 export class CustomerModule {
@@ -390,7 +390,7 @@ export class CustomerModule {
             });
             const res = await response.json();
             if (res.success) {
-                pop_ups.success("Cliente eliminado");
+                pop_ups.info("Cliente eliminado");
                 this.loadCustomers(this.currentSortOrder);
             } else {
                 pop_ups.error(res.message || "No se pudo eliminar");
