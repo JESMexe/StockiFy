@@ -2,6 +2,7 @@
  */
 import { getProviderList, getProviderDetails } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
+import { getWhatsAppLink } from '../universal-functions.js';
 
 export class ProviderModule {
     constructor() {
@@ -258,6 +259,10 @@ export class ProviderModule {
             const total = providers.length;
             const displayNum = this.currentSortOrder === 'DESC' ? total - idx : idx + 1;
             const pJson = JSON.stringify(p).replace(/"/g, '&quot;');
+            const waLink = getWhatsAppLink(p.phone);
+            const waButton = waLink
+                ? `<a href="${waLink}" target="_blank" class="action-btn" title="Enviar WhatsApp" style="color: #25D366; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
+                : `<button class="action-btn" title="Número de WhatsApp no válido" disabled style="color: #ccc; cursor: not-allowed;"><i class="ph ph-whatsapp-logo"></i></button>`;
             return `
             <tr style="border-bottom:1px solid #eee;">
                 <td style="padding:12px;">
@@ -271,6 +276,7 @@ export class ProviderModule {
                 <td style="padding:12px; color:#555;">${p.address || '-'}</td>
                 <td style="padding:12px; text-align:center;">
                     <div class="btn-icon-group">
+                        ${waButton}
                         <button class="action-btn view" data-id="${p.id}" title="Ver Detalles"><i class="ph ph-eye"></i></button>
                         <button class="action-btn edit" data-provider="${pJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
                         <button class="action-btn delete" data-id="${p.id}" title="Eliminar"><i class="ph ph-trash"></i></button>
@@ -364,7 +370,13 @@ export class ProviderModule {
                         <small style="color:#888;">Ficha de Proveedor</small>
                     </div>
                     <div class="detail-grid">
-                        <div class="detail-item"><span class="detail-label">Teléfono</span><span class="detail-value">${p.phone || '-'}</span></div>
+                        <div class="detail-item">
+                            <span class="detail-label">Teléfono</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span class="detail-value">${p.phone || '-'}</span>
+                                ${getWhatsAppLink(p.phone) ? `<a href="${getWhatsAppLink(p.phone)}" target="_blank" title="Enviar WhatsApp" style="color: #25D366; font-size: 1.2rem;"><i class="ph ph-whatsapp-logo"></i></a>` : `<i class="ph ph-whatsapp-logo" title="Número no válido" style="color: #ccc; font-size: 1.2rem; cursor: not-allowed;"></i>`}
+                            </div>
+                        </div>
                         <div class="detail-item"><span class="detail-label">Email</span><span class="detail-value">${p.email || '-'}</span></div>
                         <div class="detail-item"><span class="detail-label">CUIT / Tax ID</span><span class="detail-value">${p.tax_id || '-'}</span></div>
                         <div class="detail-item"><span class="detail-label">Registro</span><span class="detail-value">${new Date(p.created_at).toLocaleDateString()}</span></div>

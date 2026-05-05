@@ -2,6 +2,7 @@
  */
 import * as api from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
+import { getWhatsAppLink } from '../universal-functions.js';
 
 export class CustomerModule {
     constructor() {
@@ -284,6 +285,10 @@ export class CustomerModule {
             const total = customers.length;
             const displayNum = this.currentSortOrder === 'DESC' ? total - idx : idx + 1;
             const cJson = JSON.stringify(c).replace(/"/g, '&quot;');
+            const waLink = getWhatsAppLink(c.phone);
+            const waButton = waLink
+                ? `<a href="${waLink}" target="_blank" class="action-btn" title="Enviar WhatsApp" style="color: #25D366; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
+                : `<button class="action-btn" title="Número de WhatsApp no válido" disabled style="color: #ccc; cursor: not-allowed;"><i class="ph ph-whatsapp-logo"></i></button>`;
             return `
             <tr style="border-bottom:1px solid #eee;">
                 <td style="padding:12px;">
@@ -298,6 +303,7 @@ export class CustomerModule {
                 <td style="padding:12px;">${c.address || '<span style="color:#ccc;">-</span>'}</td>
                 <td style="padding:12px; text-align:center;">
                      <div class="btn-icon-group">
+                        ${waButton}
                         <button class="action-btn view" data-id="${c.id}" title="Ver Detalles"><i class="ph ph-eye"></i></button>
                         <button class="action-btn edit" data-customer="${cJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
                         <button class="action-btn delete" data-id="${c.id}" title="Eliminar"><i class="ph ph-trash"></i></button>
@@ -399,7 +405,10 @@ export class CustomerModule {
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Whatsapp</span>
-                            <span class="detail-value">${cust.phone || '-'}</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span class="detail-value">${cust.phone || '-'}</span>
+                                ${getWhatsAppLink(cust.phone) ? `<a href="${getWhatsAppLink(cust.phone)}" target="_blank" title="Enviar WhatsApp" style="color: #25D366; font-size: 1.2rem;"><i class="ph ph-whatsapp-logo"></i></a>` : `<i class="ph ph-whatsapp-logo" title="Número no válido" style="color: #ccc; font-size: 1.2rem; cursor: not-allowed;"></i>`}
+                            </div>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Email</span>

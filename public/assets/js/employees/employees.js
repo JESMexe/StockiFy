@@ -2,6 +2,7 @@
  */
 import { getEmployeeList } from '../api.js';
 import { pop_ups } from '../notifications/pop-up.js';
+import { getWhatsAppLink } from '../universal-functions.js';
 
 export class EmployeeModule {
     constructor() {
@@ -138,7 +139,10 @@ export class EmployeeModule {
                                 <p id="det-emp-cat"><i class="ph ph-tag"></i> Categoría</p>
                                 <p id="det-emp-contact"><i class="ph ph-envelope"></i> email | <i class="ph ph-phone"></i> tel</p>
                             </div>
-                            <button class="modal-close-btn" id="close-emp-detail-modal" style="margin-left: auto; align-self: flex-start;">&times;</button>
+                            <div style="margin-left: auto; display: flex; align-items: flex-start; gap: 15px;">
+                                <div id="det-emp-wa-container" style="display: flex; align-items: center; justify-content: center; margin-top: 5px;"></div>
+                                <button class="modal-close-btn" id="close-emp-detail-modal">&times;</button>
+                            </div>
                         </div>
                         <div class="emp-detail-body">
                             <h4 style="margin-top: 0; margin-bottom: 15px;">Detalles Adicionales</h4>
@@ -520,12 +524,18 @@ export class EmployeeModule {
             const dniHtml = e.dni ? `<div title="DNI"><i class="ph ph-identification-card"></i> ${e.dni}</div>` : '';
             const catHtml = e.category_name ? `<div class="emp-tag"><i class="ph ph-tag"></i> ${e.category_name}</div>` : `<div class="emp-tag" style="visibility:hidden; pointer-events:none;"><i class="ph ph-tag"></i>-</div>`;
 
+            const waLink = getWhatsAppLink(e.phone);
+            const waButton = waLink
+                ? `<a href="${waLink}" target="_blank" class="btn-icon" title="Enviar WhatsApp" style="color: #25D366; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
+                : `<button class="btn-icon" title="Número de WhatsApp no válido" disabled style="color: #ccc; cursor: not-allowed;"><i class="ph ph-whatsapp-logo"></i></button>`;
+
             // Renderizar el acceso al perfil completo en todas las tarjetas
             let customFieldsHtml = `<div class="emp-custom-field" style="text-align:center; color:#888; padding-top:15px;">Ver perfil y ventas</div>`;
 
             return `
             <div class="emp-card">
                 <div class="emp-card-actions">
+                    ${waButton}
                     <button class="btn-icon btn-edit-emp" data-employee="${empJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>
                     <button class="btn-icon btn-delete-emp" data-id="${e.id}" title="Eliminar"><i class="ph ph-trash" style="color:var(--accent-red)"></i></button>
                 </div>
@@ -563,6 +573,12 @@ export class EmployeeModule {
         if (emp.phone) contactHtml += `| <i class="ph ph-phone"></i> ${emp.phone}`;
         if (!emp.email && !emp.phone) contactHtml = 'Sin datos de contacto';
         document.getElementById('det-emp-contact').innerHTML = contactHtml;
+
+        const waLink = getWhatsAppLink(emp.phone);
+        const waContainer = document.getElementById('det-emp-wa-container');
+        waContainer.innerHTML = waLink
+            ? `<a href="${waLink}" target="_blank" title="Enviar WhatsApp" style="color: #25D366; font-size: 1.5rem; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
+            : `<i class="ph ph-whatsapp-logo" title="Número no válido" style="color: #ccc; font-size: 1.5rem; cursor: not-allowed;"></i>`;
 
         const customGrid = document.getElementById('det-emp-custom-grid');
         customGrid.innerHTML = '';

@@ -30,7 +30,9 @@ export class SalesModule {
         this.resources = { products: [], customers: [], paymentMethods: [], employees: [], config: null };
         this.currentSortOrder = 'DESC';
 
-        this.activePaymentTab = 'ARS';
+        this.activePaymentTabSingle = 'ARS';
+        this.activePaymentTabMulti = 'ARS';
+        this.paymentMode = 'none'; // 'none', 'single', 'multi'
         this.rates = { USD: 1, USDT: 1 };
         this.showingCartInUSD = false;
     }
@@ -190,32 +192,76 @@ export class SalesModule {
                                             <div id="commission-display" style="text-align:right; font-size:0.75rem; color:#666; margin-top:5px; font-weight:600;">Comisión: $0,00</div>
                                         </div>
                                         <div class="form-section" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;">
-                                            <label class="form-section-title" style="padding-bottom: 0; bottom: 0; margin-bottom: 0">Calculadora </label>
-                                            <h6 style="top: 0; margin-bottom: 10px; color: #888888; font-size: 12px ">(Vuelto y control informativo)</h6>
-                                            <div class="currency-tabs" style="display:flex; gap:5px; margin-bottom:10px; border-bottom: 2px solid #eee;">
-                                                <button class="currency-tab active" data-curr="ARS" style="padding: 5px 15px; border:none; background:none; font-weight:bold; cursor:pointer; border-bottom: 3px solid var(--accent-color);">ARS</button>
-                                                <button class="currency-tab" data-curr="USD" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USD</button>
-                                                <button class="currency-tab" data-curr="USDT" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USDT</button>
+                                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                                <label class="form-section-title" style="padding-bottom: 0; bottom: 0; margin-bottom: 0">Información de Pago</label>
                                             </div>
-                                            <div id="rate-display-info" style="font-size:0.8rem; color:var(--accent-color); margin-bottom:5px; display:none;">
-                                                Cotización aplicada: $1200.00
-                                            </div>
-                                            <div class="payment-row">
-                                                <div style="flex:1; position:relative;">
-                                                    <span id="pay-currency-symbol" style="position:absolute; left:8px; top:8px; color:#666; pointer-events:none;">$</span>
-                                                    <input type="number" id="pay-input-amount" class="rustic-input" placeholder="Monto" style="width:100%; padding-left:45px;">
+                                            <div style="display:flex; align-items:center; gap:5px; margin-bottom:15px;">
+                                                <h6 style="top: 0; margin: 0; color: #888888; font-size: 12px ">(Calculadora y control informativo)</h6>
+                                                <style>
+                                                    .custom-tooltip-container:hover .custom-tooltip-text {
+                                                        opacity: 1 !important;
+                                                        visibility: visible !important;
+                                                    }
+                                                </style>
+                                                <div class="custom-tooltip-container" style="position:relative; display:inline-block; cursor:help;">
+                                                    <i class="ph-fill ph-question" style="color:var(--accent-color); font-size:1.1rem;"></i>
+                                                    <div class="custom-tooltip-text" style="position:absolute; bottom:130%; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:8px 12px; border-radius:6px; font-size:0.8rem; width:220px; text-align:center; opacity:0; visibility:hidden; transition:all 0.2s; z-index:9999; box-shadow:0 4px 6px rgba(0,0,0,0.1); pointer-events:none;">
+                                                        Podés optar por registrar la venta con un único método de pago (automático), o dividir la venta en más de un método.
+                                                    </div>
                                                 </div>
-                                                <select id="pay-method-select" class="rustic-select" style="flex:1.2;"></select>
-                                                <button id="btn-add-payment"><i class="ph ph-plus" style="font-weight:bold;"></i></button>
                                             </div>
-                                            <div id="payments-list" style="margin-top:10px;"><p style="color:#999; text-align:center; font-size:0.8rem;">Sin pagos registrados</p></div>
+                                            
+                                            <div id="payment-mode-selection" style="display:flex; flex-direction:column; gap:8px;">
+                                                <button id="btn-mode-single" class="btn btn-secondary w-full" style="justify-content:center; border:2px solid #eee;">Registrar venta con un método de pago</button>
+                                                <button id="btn-mode-multi" class="btn btn-secondary w-full" style="justify-content:center; border:2px solid #eee;">Registrar venta con más de un método de pago</button>
+                                            </div>
+
+                                            <div id="payment-single-mode" style="display:none; flex-direction:column; gap:10px;">
+                                                <button id="btn-back-single" class="btn btn-sm btn-secondary" style="align-self:flex-start; border:1px solid #1b1b1b; background:none; padding:5px 0; color:#666; margin-bottom:5px;"><i class="ph-bold ph-arrow-left"></i> Cambiar modo</button>
+                                                <div class="currency-tabs" style="display:flex; gap:5px; margin-bottom:10px; border-bottom: 2px solid #eee;" id="single-currency-tabs">
+                                                    <button class="currency-tab single-curr-tab active" data-curr="ARS" style="padding: 5px 15px; border:none; background:none; font-weight:bold; cursor:pointer; border-bottom: 3px solid var(--accent-color);">ARS</button>
+                                                    <button class="currency-tab single-curr-tab" data-curr="USD" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USD</button>
+                                                    <button class="currency-tab single-curr-tab" data-curr="USDT" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USDT</button>
+                                                </div>
+                                                <div id="rate-display-info-single" style="font-size:0.8rem; color:var(--accent-color); margin-bottom:5px; display:none;">Cotización aplicada: $1200.00</div>
+                                                <select id="single-pay-method-select" class="rustic-select" style="width:100%;"></select>
+                                                <div id="single-pay-method-surcharge-info" style="font-size:0.8rem; font-weight:bold; margin-top:2px;"></div>
+                                                
+                                                <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;">
+                                                    <label style="font-size:0.8rem; color:#666; margin-bottom:5px; display:block;">Calculadora de vuelto (Opcional)</label>
+                                                    <div style="position:relative;">
+                                                        <span id="single-vuelto-symbol" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#666;">$</span>
+                                                        <input type="number" id="single-calc-input" class="rustic-input" placeholder="Ingresar dinero entregado por el cliente..." style="width:100%; padding-left:45px;">
+                                                    </div>
+                                                    <div id="single-calc-result" style="margin-top:8px; font-weight:bold; font-size:1.1rem; color:var(--accent-color);"></div>
+                                                </div>
+                                            </div>
+
+                                            <div id="payment-multi-mode" style="display:none; flex-direction:column; gap:10px;">
+                                                <button id="btn-back-multi" class="btn btn-sm btn-secondary" style="align-self:flex-start; border:none; background:none; padding:5px 0; color:#666; margin-bottom:5px;"><i class="ph-bold ph-arrow-left"></i> Cambiar modo</button>
+                                                <div class="currency-tabs" style="display:flex; gap:5px; margin-bottom:10px; border-bottom: 2px solid #eee;" id="multi-currency-tabs">
+                                                    <button class="currency-tab multi-curr-tab active" data-curr="ARS" style="padding: 5px 15px; border:none; background:none; font-weight:bold; cursor:pointer; border-bottom: 3px solid var(--accent-color);">ARS</button>
+                                                    <button class="currency-tab multi-curr-tab" data-curr="USD" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USD</button>
+                                                    <button class="currency-tab multi-curr-tab" data-curr="USDT" style="padding: 5px 15px; border:none; background:none; color:#999; cursor:pointer;">USDT</button>
+                                                </div>
+                                                <div id="rate-display-info-multi" style="font-size:0.8rem; color:var(--accent-color); margin-bottom:5px; display:none;">Cotización aplicada: $1200.00</div>
+                                                <div class="payment-row">
+                                                    <div style="flex:1; position:relative;">
+                                                        <span id="pay-currency-symbol" style="position:absolute; left:8px; top:8px; color:#666; pointer-events:none;">$</span>
+                                                        <input type="number" id="pay-input-amount" class="rustic-input" placeholder="Monto parcial..." style="width:100%; padding-left:45px;">
+                                                    </div>
+                                                    <select id="pay-method-select" class="rustic-select" style="flex:1.2;"></select>
+                                                    <button id="btn-add-payment"><i class="ph ph-plus" style="font-weight:bold;"></i></button>
+                                                </div>
+                                                <div id="payments-list" style="margin-top:10px;"><p style="color:#999; text-align:center; font-size:0.8rem;">Sin pagos registrados</p></div>
+                                            </div>
                                         </div>
                                     </div> 
                                     
                                     <div class="totals-box">
-                                        <div class="flex-row total-line"><span>Total valor Productos:</span> <span id="checkout-subtotal">$0,00</span></div>
-                                        <div class="flex-row total-line" id="checkout-discount-row" style="color:var(--accent-color); display:none;"><span>Descuento:</span> <span id="checkout-discount">-$0,00</span></div>
-                                        <div class="flex-row total-line" style="color:var(--color-gray);"><span>Recargos/Desc.:</span> <span id="checkout-surcharges">$0,00</span></div>
+                                        <div class="flex-row total-line"><span>Total valor Original:</span> <span id="checkout-subtotal">$0,00</span></div>
+                                        <div class="flex-row total-line" id="checkout-discount-row" style="color:var(--accent-color); display:none;"><span>Descuento Manual:</span> <span id="checkout-discount">-$0,00</span></div>
+                                        <div class="flex-row total-line" style="color:var(--color-gray);"><span>Recargos/Desc. Medios de Pago:</span> <span id="checkout-surcharges">$0,00</span></div>
                                         <div class="flex-row total-line total-final"><span>Total a pagar:</span> <span id="checkout-total-final">$0,00</span></div>
                                         <div class="flex-row total-line" style="font-weight:bold;" id="change-row"><span>Falta para completar:</span> <span id="checkout-diff">$0,00</span></div>
                                     </div>
@@ -334,12 +380,23 @@ export class SalesModule {
         });
         document.getElementById('btn-add-manual')?.addEventListener('click', () => this.addManualItem());
 
+        document.getElementById('btn-mode-single')?.addEventListener('click', () => this.setPaymentMode('single'));
+        document.getElementById('btn-mode-multi')?.addEventListener('click', () => this.setPaymentMode('multi'));
+        document.getElementById('btn-back-single')?.addEventListener('click', () => this.setPaymentMode('none'));
+        document.getElementById('btn-back-multi')?.addEventListener('click', () => this.setPaymentMode('none'));
+
         document.getElementById('btn-add-payment')?.addEventListener('click', () => this.addPayment());
         document.getElementById('pay-input-amount')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.addPayment(); });
 
-        document.querySelectorAll('.currency-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => this.switchPaymentTab(e.target.dataset.curr));
+        document.querySelectorAll('.single-curr-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.switchPaymentTab(e.target.dataset.curr, 'single'));
         });
+        document.querySelectorAll('.multi-curr-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.switchPaymentTab(e.target.dataset.curr, 'multi'));
+        });
+
+        document.getElementById('single-pay-method-select')?.addEventListener('change', () => this.recalcSale());
+        document.getElementById('single-calc-input')?.addEventListener('input', () => this.calcSingleVuelto());
 
         document.getElementById('toggle-cart-currency-btn')?.addEventListener('click', () => this.toggleCartCurrency());
         document.getElementById('sale-commission-pct')?.addEventListener('input', () => this.calculateCommission());
@@ -362,6 +419,26 @@ export class SalesModule {
             el.classList.add('hidden');
             el.style.display = 'none';
         }
+    }
+
+    setPaymentMode(mode) {
+        this.paymentMode = mode;
+        const modeSel = document.getElementById('payment-mode-selection');
+        const modeSing = document.getElementById('payment-single-mode');
+        const modeMult = document.getElementById('payment-multi-mode');
+        if (mode === 'none') {
+            modeSel.style.display = 'flex'; modeSing.style.display = 'none'; modeMult.style.display = 'none';
+            this.currentSale.payments = [];
+            document.getElementById('single-calc-input').value = '';
+            document.getElementById('single-calc-result').textContent = '';
+        } else if (mode === 'single') {
+            modeSel.style.display = 'none'; modeSing.style.display = 'flex'; modeMult.style.display = 'none';
+            this.currentSale.payments = [];
+        } else if (mode === 'multi') {
+            modeSel.style.display = 'none'; modeSing.style.display = 'none'; modeMult.style.display = 'flex';
+            this.currentSale.payments = [];
+        }
+        this.recalcSale();
     }
 
     async openCreateModal() {
@@ -393,14 +470,17 @@ export class SalesModule {
         }
 
         this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total_final: 0, exchange_rate: this.rates.USD };
-        this.activePaymentTab = 'ARS';
+        this.activePaymentTabSingle = 'ARS';
+        this.activePaymentTabMulti = 'ARS';
         this.showingCartInUSD = false;
+        this.setPaymentMode('none');
 
         document.getElementById('sale-notes').value = '';
         const discInput = document.getElementById('sale-discount-value'); if (discInput) discInput.value = '';
         const discType = document.getElementById('sale-discount-type'); if (discType) discType.value = 'fixed';
         const discDisplay = document.getElementById('discount-applied-display'); if (discDisplay) discDisplay.textContent = '';
-        this.switchPaymentTab('ARS');
+        this.switchPaymentTab('ARS', 'single');
+        this.switchPaymentTab('ARS', 'multi');
         this.renderProducts(this.resources.products);
         this.fillSelect('sale-customer', this.resources.customers, 'id', 'full_name', 'Cliente General');
         this.fillSelect('sale-seller', this.resources.employees, 'id', 'full_name', 'Sin Vendedor');
@@ -417,29 +497,51 @@ export class SalesModule {
         }
     }
 
-    switchPaymentTab(currency) {
-        this.activePaymentTab = currency;
-        document.querySelectorAll('.currency-tab').forEach(t => {
+    switchPaymentTab(currency, mode = 'multi') {
+        const isSingle = mode === 'single';
+        const activeTabStr = isSingle ? 'activePaymentTabSingle' : 'activePaymentTabMulti';
+        this[activeTabStr] = currency;
+
+        const tabsContainerId = isSingle ? 'single-currency-tabs' : 'multi-currency-tabs';
+        document.querySelectorAll(`#${tabsContainerId} .currency-tab`).forEach(t => {
             if (t.dataset.curr === currency) {
                 t.style.borderBottom = '3px solid var(--accent-color)'; t.style.color = '#333'; t.style.fontWeight = 'bold';
             } else {
                 t.style.borderBottom = 'none'; t.style.color = '#999'; t.style.fontWeight = 'normal';
             }
         });
-        const rateInfo = document.getElementById('rate-display-info');
-        const symbol = document.getElementById('pay-currency-symbol');
+
+        const rateInfoId = isSingle ? 'rate-display-info-single' : 'rate-display-info-multi';
+        const rateInfo = document.getElementById(rateInfoId);
+
+        if (!isSingle) {
+            const symbol = document.getElementById('pay-currency-symbol');
+            if (currency === 'ARS') symbol.textContent = '$';
+            else symbol.textContent = currency === 'USD' ? 'U$S' : '₮';
+        } else {
+            const symbol = document.getElementById('single-vuelto-symbol');
+            if (currency === 'ARS') symbol.textContent = '$';
+            else symbol.textContent = currency === 'USD' ? 'U$S' : '₮';
+        }
+
         if (currency === 'ARS') {
-            rateInfo.style.display = 'none'; symbol.textContent = '$';
+            rateInfo.style.display = 'none';
         } else {
             rateInfo.style.display = 'block';
             const rate = this.rates[currency];
             rateInfo.textContent = `Cotización aplicada: $${rate.toFixed(2)}`;
-            symbol.textContent = currency === 'USD' ? 'U$S' : '₮';
         }
+
         const filteredMethods = this.resources.paymentMethods.filter(pm => {
             const pmCurr = pm.currency || 'ARS'; return pmCurr === currency;
         });
-        this.fillSelect('pay-method-select', filteredMethods, 'id', 'name', null);
+        const selectId = isSingle ? 'single-pay-method-select' : 'pay-method-select';
+        this.fillSelect(selectId, filteredMethods, 'id', 'name', null);
+
+        if (isSingle) {
+            this.recalcSale();
+            this.calcSingleVuelto();
+        }
     }
 
     renderProducts(list) {
@@ -498,11 +600,22 @@ export class SalesModule {
         const methodId = methodSelect.value;
         if (isNaN(amountInputVal) || amountInputVal <= 0) return pop_ups.warning("Ingresá un monto válido");
         if (!methodId) return pop_ups.warning("Elegí un método de pago");
+
         const methodObj = this.resources.paymentMethods.find(m => m.id == methodId);
         const surchargePct = parseFloat(methodObj.surcharge) || 0;
-        let amountInArs = amountInputVal; let originalAmount = amountInputVal; let appliedRate = 1; let currencyId = this.activePaymentTab;
-        if (this.activePaymentTab !== 'ARS') { appliedRate = this.rates[this.activePaymentTab]; amountInArs = amountInputVal * appliedRate; }
+
+        let amountInArs = amountInputVal;
+        let originalAmount = amountInputVal;
+        let appliedRate = 1;
+        let currencyId = this.activePaymentTabMulti;
+
+        if (currencyId !== 'ARS') {
+            appliedRate = this.rates[currencyId];
+            amountInArs = amountInputVal * appliedRate;
+        }
+
         const surchargeVal = amountInArs * (surchargePct / 100);
+
         this.currentSale.payments.push({
             method_id: methodId, name: methodObj.name, amount: amountInArs, surcharge_percent: surchargePct, surcharge_val: surchargeVal, currency_id: currencyId, original_amount: originalAmount, exchange_rate: appliedRate
         });
@@ -546,8 +659,6 @@ export class SalesModule {
     recalcSale() {
         const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
         const rawSubtotal = this.currentSale.items.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
-        const rawSurcharges = this.currentSale.payments.reduce((sum, p) => sum + p.surcharge_val, 0);
-        const rawPaid = this.currentSale.payments.reduce((sum, p) => sum + p.amount + p.surcharge_val, 0);
 
         // Descuento manual
         const discValInput = document.getElementById('sale-discount-value');
@@ -579,6 +690,59 @@ export class SalesModule {
         }
 
         this.currentSale.subtotal_items = rawSubtotal;
+
+        if (this.paymentMode === 'single') {
+            this.currentSale.payments = [];
+            const methodSelect = document.getElementById('single-pay-method-select');
+            const methodId = methodSelect?.value;
+            if (methodId && this.currentSale.items.length > 0) {
+                const methodObj = this.resources.paymentMethods.find(m => m.id == methodId);
+                const surchargePct = parseFloat(methodObj.surcharge) || 0;
+
+                let baseToCoverARS = rawSubtotal - discountAmount;
+                let appliedRate = 1;
+                let currencyId = this.activePaymentTabSingle;
+                let originalAmount = baseToCoverARS;
+
+                if (currencyId !== 'ARS') {
+                    appliedRate = this.rates[currencyId];
+                    originalAmount = baseToCoverARS / appliedRate;
+                }
+
+                const surchargeVal = baseToCoverARS * (surchargePct / 100);
+
+                this.currentSale.payments.push({
+                    method_id: methodId,
+                    name: methodObj.name,
+                    amount: baseToCoverARS,
+                    surcharge_percent: surchargePct,
+                    surcharge_val: surchargeVal,
+                    currency_id: currencyId,
+                    original_amount: originalAmount,
+                    exchange_rate: appliedRate
+                });
+
+                const infoDiv = document.getElementById('single-pay-method-surcharge-info');
+                if (infoDiv) {
+                    if (surchargePct > 0) {
+                        infoDiv.textContent = `${surchargePct}% de Recargo`;
+                        infoDiv.style.color = 'var(--accent-red)';
+                    } else if (surchargePct < 0) {
+                        infoDiv.textContent = `${Math.abs(surchargePct)}% de Descuento`;
+                        infoDiv.style.color = 'var(--accent-green)';
+                    } else {
+                        infoDiv.textContent = '';
+                    }
+                }
+            } else {
+                const infoDiv = document.getElementById('single-pay-method-surcharge-info');
+                if (infoDiv) infoDiv.textContent = '';
+            }
+            this.calcSingleVuelto();
+        }
+
+        const rawSurcharges = this.currentSale.payments.reduce((sum, p) => sum + p.surcharge_val, 0);
+        const rawPaid = this.currentSale.payments.reduce((sum, p) => sum + p.amount, 0);
         this.currentSale.total_surcharges = rawSurcharges;
         this.currentSale.total_final = round(rawSubtotal - discountAmount + rawSurcharges);
         const totalPaid = round(rawPaid);
@@ -589,8 +753,14 @@ export class SalesModule {
         this.updateCartSubtotalDisplay();
         const diffEl = document.getElementById('checkout-diff');
         const rowDiff = document.getElementById('change-row');
-        if (diff >= -0.01) { rowDiff.style.color = 'var(--accent-color)'; rowDiff.querySelector('span:first-child').textContent = "Vuelto a dar:"; diffEl.textContent = fmtMoney(Math.abs(diff)); }
-        else { rowDiff.style.color = 'var(--accent-red)'; rowDiff.querySelector('span:first-child').textContent = "Falta por completar:"; diffEl.textContent = fmtMoney(Math.abs(diff)); }
+
+        if (this.paymentMode === 'single') {
+            rowDiff.style.display = 'none';
+        } else {
+            rowDiff.style.display = 'flex';
+            if (diff >= -0.01) { rowDiff.style.color = 'var(--accent-color)'; rowDiff.querySelector('span:first-child').textContent = "Vuelto a dar:"; diffEl.textContent = fmtMoney(Math.abs(diff)); }
+            else { rowDiff.style.color = 'var(--accent-red)'; rowDiff.querySelector('span:first-child').textContent = "Falta para completar:"; diffEl.textContent = fmtMoney(Math.abs(diff)); }
+        }
 
         const mobTotal = document.getElementById('mob-bar-total');
         const mobCount = document.getElementById('mob-bar-count');
@@ -600,8 +770,40 @@ export class SalesModule {
             mobCount.textContent = `${count} Ítems`;
         }
 
-        document.getElementById('confirm-sale-btn').disabled = (this.currentSale.items.length === 0);
-        this.updateCartUI(); this.updatePaymentUI(); this.calculateCommission();
+        document.getElementById('confirm-sale-btn').disabled = (this.currentSale.items.length === 0 || (this.paymentMode === 'none') || (this.paymentMode === 'single' && this.currentSale.payments.length === 0));
+
+        this.updateCartUI();
+        if (this.paymentMode === 'multi') this.updatePaymentUI();
+        this.calculateCommission();
+    }
+
+    calcSingleVuelto() {
+        const input = document.getElementById('single-calc-input');
+        const result = document.getElementById('single-calc-result');
+        if (!input || !result) return;
+
+        const givenAmount = parseFloat(input.value);
+        if (isNaN(givenAmount) || givenAmount <= 0) {
+            result.textContent = '';
+            return;
+        }
+
+        let totalToPayInCurrency = this.currentSale.total_final;
+        if (this.activePaymentTabSingle !== 'ARS') {
+            totalToPayInCurrency = this.currentSale.total_final / this.rates[this.activePaymentTabSingle];
+        }
+
+        const diff = givenAmount - totalToPayInCurrency;
+
+        if (diff < 0) {
+            result.style.color = 'var(--accent-red)';
+            if (this.activePaymentTabSingle === 'ARS') result.textContent = `Falta: ${fmtMoney(Math.abs(diff))}`;
+            else result.textContent = `Falta: U$S ${Math.abs(diff).toFixed(2)}`;
+        } else {
+            result.style.color = 'var(--accent-color)';
+            if (this.activePaymentTabSingle === 'ARS') result.textContent = `Vuelto: ${fmtMoney(Math.abs(diff))}`;
+            else result.textContent = `Vuelto: U$S ${Math.abs(diff).toFixed(2)}`;
+        }
     }
 
     updateCartUI() {
