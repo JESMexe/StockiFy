@@ -1,4 +1,4 @@
-import { pop_ups } from '../notifications/pop-up.js';
+import { pop_ups } from '../notifications/pop-up.js?v=2.0';
 import * as api from "../api.js";
 
 const fmtMoney = (amount, currency = 'ARS') => {
@@ -81,7 +81,7 @@ export class PurchaseModule {
                         <td style="padding:12px;">${dateHtml}</td>
                         <td style="padding:12px;"><div style="display:flex; align-items:center; gap:10px;"><div style="font-size:1.2rem; opacity:0.7;">${icon}</div><div style="line-height:1.2;"><div style="font-weight:600; color:#333;">${title}</div><div style="font-size:0.75rem; color:#888;">${subtitle}</div></div></div></td>
                         <td style="padding:12px; text-align:right;">${totalHtml}</td>
-                        <td style="padding:12px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" onclick="window.purchasesModule.showDetails('${p.id}')" title="Ver Detalle"><i class="ph ph-receipt"></i></button><button class="action-btn edit" onclick="window.purchasesModule.editPurchase('${p.id}')" title="Editar"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" onclick="window.purchasesModule.deletePurchase('${p.id}')" title="Eliminar"><i class="ph ph-trash"></i></button></div></td>
+                        <td style="padding:12px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" data-id="${p.id}" title="Ver Detalle"><i class="ph ph-receipt"></i></button><button class="action-btn edit" data-id="${p.id}" title="Editar"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" data-id="${p.id}" title="Eliminar"><i class="ph ph-trash"></i></button></div></td>
                     </tr>`;
             }).join('');
         } catch (error) { tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding: 15px;">Error al cargar historial</td></tr>'; }
@@ -229,6 +229,24 @@ export class PurchaseModule {
         if (btnBack) {
             btnBack.addEventListener('click', (e) => {
                 e.preventDefault();
+            });
+        }
+
+        // Event delegation for history table action buttons (robust against re-renders)
+        const purchTbody = document.getElementById('purchases-list-body');
+        if (purchTbody) {
+            purchTbody.addEventListener('click', (e) => {
+                const viewBtn = e.target.closest('.action-btn.view');
+                const editBtn = e.target.closest('.action-btn.edit');
+                const deleteBtn = e.target.closest('.action-btn.delete');
+
+                if (viewBtn && viewBtn.dataset.id) {
+                    this.showDetails(viewBtn.dataset.id);
+                } else if (editBtn && editBtn.dataset.id) {
+                    this.editPurchase(editBtn.dataset.id);
+                } else if (deleteBtn && deleteBtn.dataset.id) {
+                    this.deletePurchase(deleteBtn.dataset.id);
+                }
             });
         }
     }

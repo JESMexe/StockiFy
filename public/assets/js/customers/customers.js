@@ -1,7 +1,7 @@
 /**
  */
 import * as api from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js';
+import { pop_ups } from '../notifications/pop-up.js?v=2.0';
 import { getWhatsAppLink } from '../universal-functions.js';
 
 export class CustomerModule {
@@ -153,11 +153,11 @@ export class CustomerModule {
 
     attachEvents() {
         const sortBtn = document.getElementById('customers-sort-btn');
-        if(sortBtn) {
+        if (sortBtn) {
             sortBtn.addEventListener('click', () => {
                 this.currentSortOrder = (this.currentSortOrder === 'DESC') ? 'ASC' : 'DESC';
                 const icon = document.getElementById('cust-sort-icon');
-                if(this.currentSortOrder === 'ASC') {
+                if (this.currentSortOrder === 'ASC') {
                     icon.classList.replace('ph-sort-ascending', 'ph-sort-descending');
                 } else {
                     icon.classList.replace('ph-sort-descending', 'ph-sort-ascending');
@@ -172,17 +172,17 @@ export class CustomerModule {
             document.getElementById('submit-customer-btn').textContent = "Guardar Cliente";
             document.getElementById('create-customer-form').reset();
             const m = document.getElementById('create-customer-modal');
-            m.classList.remove('hidden'); m.style.display='flex';
+            m.classList.remove('hidden'); m.style.display = 'flex';
         });
 
         document.getElementById('close-customer-modal')?.addEventListener('click', () => {
             const m = document.getElementById('create-customer-modal');
-            m.classList.add('hidden'); m.style.display='none';
+            m.classList.add('hidden'); m.style.display = 'none';
         });
 
         document.getElementById('close-detail-cust-modal')?.addEventListener('click', () => {
             const m = document.getElementById('detail-customer-modal');
-            m.classList.add('hidden'); m.style.display='none';
+            m.classList.add('hidden'); m.style.display = 'none';
         });
 
         document.getElementById('create-customer-form')?.addEventListener('submit', (e) => {
@@ -193,6 +193,29 @@ export class CustomerModule {
         document.getElementById('cust-search-input')?.addEventListener('input', (e) => {
             this.filterCustomers(e.target.value);
         });
+
+        // Event delegation for table row actions (robust against re-renders)
+        const tbody = document.getElementById('customers-list-body');
+        if (tbody) {
+            tbody.addEventListener('click', (e) => {
+                const viewBtn = e.target.closest('.view');
+                const editBtn = e.target.closest('.edit');
+                const deleteBtn = e.target.closest('.delete');
+
+                if (viewBtn) {
+                    this.showDetails(viewBtn.dataset.id);
+                } else if (editBtn) {
+                    try {
+                        const data = JSON.parse(editBtn.dataset.customer);
+                        this.openEditModal(data);
+                    } catch (err) {
+                        console.error('Error parsing customer data:', err);
+                    }
+                } else if (deleteBtn) {
+                    this.deleteCustomer(deleteBtn.dataset.id);
+                }
+            });
+        }
     }
 
     async handleFormSubmit() {
@@ -223,7 +246,7 @@ export class CustomerModule {
 
             if (result.success) {
                 document.getElementById('create-customer-modal').classList.add('hidden');
-                document.getElementById('create-customer-modal').style.display='none';
+                document.getElementById('create-customer-modal').style.display = 'none';
                 await this.loadCustomers(this.currentSortOrder);
                 pop_ups.success(this.editingId ? 'Cliente actualizado' : 'Cliente creado');
             } else {
@@ -240,7 +263,7 @@ export class CustomerModule {
 
     async loadCustomers(order) {
         const tbody = document.getElementById('customers-list-body');
-        if(!tbody) return;
+        if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
 
         // Limpiar búsqueda al recargar
@@ -287,7 +310,7 @@ export class CustomerModule {
             const cJson = JSON.stringify(c).replace(/"/g, '&quot;');
             const waLink = getWhatsAppLink(c.phone);
             const waButton = waLink
-                ? `<a href="${waLink}" target="_blank" class="action-btn" title="Enviar WhatsApp" style="color: #25D366; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
+                ? `<a href="${waLink}" target="_blank" class="action-btn" title="Enviar WhatsApp" style="color: var(--accent-green); text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
                 : `<button class="action-btn" title="Número de WhatsApp no válido" disabled style="color: #ccc; cursor: not-allowed;"><i class="ph ph-whatsapp-logo"></i></button>`;
             return `
             <tr style="border-bottom:1px solid #eee;">
@@ -312,14 +335,7 @@ export class CustomerModule {
             </tr>
         `}).join('');
 
-        tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
-        tbody.querySelectorAll('.edit').forEach(b => {
-            b.addEventListener('click', () => {
-                const data = JSON.parse(b.dataset.customer);
-                this.openEditModal(data);
-            });
-        });
-        tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => this.deleteCustomer(b.dataset.id)));
+        // Note: row action events are handled by delegation in attachEvents()
     }
 
     filterCustomers(term) {
@@ -359,12 +375,12 @@ export class CustomerModule {
 
         const m = document.getElementById('create-customer-modal');
         m.classList.remove('hidden');
-        m.style.display='flex';
+        m.style.display = 'flex';
     }
 
     async deleteCustomer(id) {
         const confirm = await pop_ups.confirm("Eliminar Cliente", "¿Estás seguro? Si tiene ventas registradas, no se podrá borrar.");
-        if(!confirm) return;
+        if (!confirm) return;
 
         try {
             const response = await fetch('/api/customers/delete', {
@@ -373,25 +389,25 @@ export class CustomerModule {
                 body: JSON.stringify({ id: id })
             });
             const res = await response.json();
-            if(res.success) {
+            if (res.success) {
                 pop_ups.success("Cliente eliminado");
                 this.loadCustomers(this.currentSortOrder);
             } else {
                 pop_ups.error(res.message || "No se pudo eliminar");
             }
-        } catch(e) { pop_ups.error("Error de conexión"); }
+        } catch (e) { pop_ups.error("Error de conexión"); }
     }
 
     async showDetails(id) {
         const m = document.getElementById('detail-customer-modal');
         const c = document.getElementById('detail-cust-content');
-        m.classList.remove('hidden'); m.style.display='flex';
+        m.classList.remove('hidden'); m.style.display = 'flex';
         c.innerHTML = 'Cargando...';
 
         try {
             const data = await api.getCustomerDetails(id);
 
-            if(data.success) {
+            if (data.success) {
                 const cust = data.customer;
                 c.innerHTML = `
                     <div style="text-align:center; margin-bottom:1.5rem;">
@@ -407,7 +423,7 @@ export class CustomerModule {
                             <span class="detail-label">Whatsapp</span>
                             <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <span class="detail-value">${cust.phone || '-'}</span>
-                                ${getWhatsAppLink(cust.phone) ? `<a href="${getWhatsAppLink(cust.phone)}" target="_blank" title="Enviar WhatsApp" style="color: #25D366; font-size: 1.2rem;"><i class="ph ph-whatsapp-logo"></i></a>` : `<i class="ph ph-whatsapp-logo" title="Número no válido" style="color: #ccc; font-size: 1.2rem; cursor: not-allowed;"></i>`}
+                                ${getWhatsAppLink(cust.phone) ? `<a href="${getWhatsAppLink(cust.phone)}" target="_blank" title="Enviar WhatsApp" style="color: var(--accent-green); font-size: 1.2rem;"><i class="ph ph-whatsapp-logo"></i></a>` : `<i class="ph ph-whatsapp-logo" title="Número no válido" style="color: #ccc; font-size: 1.2rem; cursor: not-allowed;"></i>`}
                             </div>
                         </div>
                         <div class="detail-item">
@@ -429,7 +445,7 @@ export class CustomerModule {
                     </div>
                 `;
             }
-        } catch(e) { c.innerHTML = 'Error al cargar'; }
+        } catch (e) { c.innerHTML = 'Error al cargar'; }
     }
 }
 

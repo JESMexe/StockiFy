@@ -1,7 +1,7 @@
 
 import * as api from './api.js';
 import * as setup from './setupMiCuentaDropdown.js';
-import { notificationConfig, pop_ups } from './notifications/pop-up.js';
+import { notificationConfig, pop_ups } from './notifications/pop-up.js?v=2.0';
 import { salesModuleInstance } from './sales/sales.js';
 import { purchaseModuleInstance } from './purchases/purchases.js';
 import { customerModuleInstance } from './customers/customers.js';

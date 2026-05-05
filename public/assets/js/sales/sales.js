@@ -7,7 +7,7 @@ import {
     getCurrentInventoryPreferences,
     getSaleDetails
 } from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js';
+import { pop_ups } from '../notifications/pop-up.js?v=2.0';
 
 const fmtMoney = (amount, currency = 'ARS') => {
     if (amount === undefined || amount === null || isNaN(amount)) return '$ 0,00';
@@ -409,6 +409,24 @@ export class SalesModule {
             btnBackHeader.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.setMobileView('products');
+            });
+        }
+
+        // Event delegation for history table action buttons (robust against re-renders)
+        const salesTbody = document.getElementById('sales-list-body');
+        if (salesTbody) {
+            salesTbody.addEventListener('click', (e) => {
+                const viewBtn = e.target.closest('.action-btn.view');
+                const editBtn = e.target.closest('.action-btn.edit');
+                const deleteBtn = e.target.closest('.action-btn.delete');
+
+                if (viewBtn && viewBtn.dataset.id) {
+                    this.showDetails(viewBtn.dataset.id);
+                } else if (editBtn && editBtn.dataset.id) {
+                    this.editSale(editBtn.dataset.id);
+                } else if (deleteBtn && deleteBtn.dataset.id) {
+                    this.deleteSale(deleteBtn.dataset.id);
+                }
             });
         }
     }
@@ -889,6 +907,34 @@ export class SalesModule {
     async submitSale() {
         const btn = document.getElementById('confirm-sale-btn'); btn.disabled = true; btn.textContent = 'Procesando Venta...';
         const pct = parseFloat(document.getElementById('sale-commission-pct').value) || 0;
+
+        let finalPayments = JSON.parse(JSON.stringify(this.currentSale.payments));
+        const rawPaid = finalPayments.reduce((sum, p) => sum + p.amount, 0);
+        const diff = rawPaid - this.currentSale.total_final;
+
+        if (diff > 0.01 && finalPayments.length > 0) {
+            let remainingDiff = diff;
+            for (let i = finalPayments.length - 1; i >= 0; i--) {
+                if (remainingDiff <= 0) break;
+                if (finalPayments[i].amount >= remainingDiff) {
+                    finalPayments[i].amount -= remainingDiff;
+                    finalPayments[i].surcharge_val = finalPayments[i].amount * (finalPayments[i].surcharge_percent / 100);
+                    if (finalPayments[i].exchange_rate) {
+                        finalPayments[i].original_amount = finalPayments[i].amount / finalPayments[i].exchange_rate;
+                    } else {
+                        finalPayments[i].original_amount = finalPayments[i].amount;
+                    }
+                    remainingDiff = 0;
+                } else {
+                    remainingDiff -= finalPayments[i].amount;
+                    finalPayments[i].amount = 0;
+                    finalPayments[i].surcharge_val = 0;
+                    finalPayments[i].original_amount = 0;
+                }
+            }
+            finalPayments = finalPayments.filter(p => p.amount > 0);
+        }
+
         const payload = {
             customer_id: document.getElementById('sale-customer').value || null,
             seller_id: document.getElementById('sale-seller').value || null,
@@ -898,7 +944,7 @@ export class SalesModule {
             notes: document.getElementById('sale-notes').value,
             exchange_rate_snapshot: this.currentSale.exchange_rate,
             items: this.currentSale.items.map(i => ({ id: i.id || null, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio, subtotal: i.precio * i.cantidad })),
-            payments: this.currentSale.payments
+            payments: finalPayments
         };
         try {
             const res = await createSale(payload);
@@ -963,7 +1009,7 @@ export class SalesModule {
                 if (seller && seller !== '-' && seller !== 'No asignado') {
                     sellerHtml = `<div style="line-height:1.2;"><div style="font-weight:600; color:#333;"><i class="ph ph-identification-badge" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${seller}</div>${comm > 0 ? `<div style="font-size:0.75rem; color:var(--sale-green); font-weight:600;">Com: ${fmtMoney(comm)}</div>` : ''}</div>`;
                 }
-                return `<tr style="border-bottom:1px solid #eee;"><td style="padding:10px 15px;">${fmtDate(dateStr)}<div style="font-size:0.75rem; color:#999;">#${displayNum}</div></td><td style="padding:10px 15px;"><div style="font-weight:600; color:#444;"><i class="ph ph-user-focus" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${s.customer_name}</div></td><td style="padding:10px 15px;">${sellerHtml}</td><td style="padding:10px 15px; text-align:right;"><div style="font-weight:800; color:var(--sale-green); font-size:1.1rem; line-height:1.2;">${fmtMoney(total_amount)}</div>${payBadge}</td><td style="padding:10px 15px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" title="Ver Ticket" onclick="window.salesModuleInstance.showDetails('${s.id}')"><i class="ph ph-receipt"></i></button><button class="action-btn edit" title="Editar" onclick="window.salesModuleInstance.editSale('${s.id}')"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" title="Eliminar" onclick="window.salesModuleInstance.deleteSale('${s.id}')"><i class="ph ph-trash"></i></button></div></td></tr>`;
+                return `<tr style="border-bottom:1px solid #eee;"><td style="padding:10px 15px;">${fmtDate(dateStr)}<div style="font-size:0.75rem; color:#999;">#${displayNum}</div></td><td style="padding:10px 15px;"><div style="font-weight:600; color:#444;"><i class="ph ph-user-focus" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${s.customer_name}</div></td><td style="padding:10px 15px;">${sellerHtml}</td><td style="padding:10px 15px; text-align:right;"><div style="font-weight:800; color:var(--sale-green); font-size:1.1rem; line-height:1.2;">${fmtMoney(total_amount)}</div>${payBadge}</td><td style="padding:10px 15px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" data-id="${s.id}" title="Ver Ticket"><i class="ph ph-receipt"></i></button><button class="action-btn edit" data-id="${s.id}" title="Editar"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" data-id="${s.id}" title="Eliminar"><i class="ph ph-trash"></i></button></div></td></tr>`;
             }).join('');
         } catch (e) { console.error(e); b.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error de visualización</td></tr>'; }
     }
@@ -1198,7 +1244,7 @@ export class SalesModule {
         if (!await pop_ups.confirm("¿Editar Venta?", "Esto ELIMINARÁ la venta actual, devolverá el stock y cargará los productos en el carrito.")) return;
         try {
             const res = await getSaleDetails(id); if (!res.success) throw new Error("Error leyendo venta"); const oldSale = res.sale;
-            await fetch('/api/sales/delete', { method: 'POST', body: JSON.stringify({ id }) });
+            await fetch('/api/sales/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
             await this.openCreateModal();
             document.getElementById('sale-customer').value = oldSale.customer_id || '';
             document.getElementById('sale-seller').value = oldSale.seller_id || '';
@@ -1211,7 +1257,22 @@ export class SalesModule {
 
     async deleteSale(id) {
         if (!await pop_ups.confirm("Eliminar Venta", "Se devolverá el stock y anulará el registro. ¿Seguro?")) return;
-        try { await fetch('/api/sales/delete', { method: 'POST', body: JSON.stringify({ id }) }); this.loadHistory(); pop_ups.info("Venta eliminada"); } catch (e) { pop_ups.error("Error al eliminar"); }
+        try {
+            const res = await fetch('/api/sales/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                pop_ups.info("Venta eliminada");
+                this.loadHistory(this.currentSortOrder);
+            } else {
+                pop_ups.error(data.message || "No se pudo eliminar la venta.");
+            }
+        } catch (e) {
+            pop_ups.error("Error de conexión al eliminar.");
+        }
     }
 }
 

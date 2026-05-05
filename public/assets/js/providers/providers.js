@@ -1,7 +1,7 @@
 /**
  */
 import { getProviderList, getProviderDetails } from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js';
+import { pop_ups } from '../notifications/pop-up.js?v=2.0';
 import { getWhatsAppLink } from '../universal-functions.js';
 
 export class ProviderModule {
@@ -139,12 +139,12 @@ export class ProviderModule {
 
     attachEvents() {
         const sortBtn = document.getElementById('prov-sort-btn');
-        if(sortBtn) {
+        if (sortBtn) {
             sortBtn.addEventListener('click', () => {
                 this.currentSortOrder = (this.currentSortOrder === 'DESC') ? 'ASC' : 'DESC';
 
                 const icon = document.getElementById('sort-icon');
-                if(this.currentSortOrder === 'ASC') {
+                if (this.currentSortOrder === 'ASC') {
                     icon.classList.replace('ph-sort-ascending', 'ph-sort-descending');
                 } else {
                     icon.classList.replace('ph-sort-descending', 'ph-sort-ascending');
@@ -161,14 +161,14 @@ export class ProviderModule {
             document.getElementById('create-prov-form').reset();
             const m = document.getElementById('create-provider-modal');
             m.classList.remove('hidden');
-            m.style.display='flex';
+            m.style.display = 'flex';
         });
 
         document.getElementById('close-prov-modal')?.addEventListener('click', () => {
-            const m = document.getElementById('create-provider-modal'); m.classList.add('hidden'); m.style.display='none';
+            const m = document.getElementById('create-provider-modal'); m.classList.add('hidden'); m.style.display = 'none';
         });
         document.getElementById('close-detail-prov-modal')?.addEventListener('click', () => {
-            const m = document.getElementById('detail-provider-modal'); m.classList.add('hidden'); m.style.display='none';
+            const m = document.getElementById('detail-provider-modal'); m.classList.add('hidden'); m.style.display = 'none';
         });
 
         document.getElementById('create-prov-form')?.addEventListener('submit', (e) => {
@@ -179,6 +179,29 @@ export class ProviderModule {
         document.getElementById('prov-search-input')?.addEventListener('input', (e) => {
             this.filterProviders(e.target.value);
         });
+
+        // Event delegation for table row actions (robust against re-renders)
+        const tbody = document.getElementById('prov-list-body');
+        if (tbody) {
+            tbody.addEventListener('click', (e) => {
+                const viewBtn = e.target.closest('.view');
+                const editBtn = e.target.closest('.edit');
+                const deleteBtn = e.target.closest('.delete');
+
+                if (viewBtn) {
+                    this.showDetails(viewBtn.dataset.id);
+                } else if (editBtn) {
+                    try {
+                        const data = JSON.parse(editBtn.dataset.provider);
+                        this.openEditModal(data);
+                    } catch (err) {
+                        console.error('Error parsing provider data:', err);
+                    }
+                } else if (deleteBtn) {
+                    this.deleteProvider(deleteBtn.dataset.id);
+                }
+            });
+        }
     }
 
     async handleFormSubmit() {
@@ -208,7 +231,7 @@ export class ProviderModule {
 
             if (result.success) {
                 document.getElementById('create-provider-modal').classList.add('hidden');
-                document.getElementById('create-provider-modal').style.display='none';
+                document.getElementById('create-provider-modal').style.display = 'none';
                 await this.loadProviders(this.currentSortOrder); // Mantenemos el orden actual
                 pop_ups.success(this.editingId ? 'Proveedor actualizado' : 'Proveedor creado');
             } else {
@@ -220,7 +243,7 @@ export class ProviderModule {
 
     async loadProviders(order) {
         const tbody = document.getElementById('prov-list-body');
-        if(!tbody) return;
+        if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:20px;">Cargando...</td></tr>';
 
         const searchInput = document.getElementById('prov-search-input');
@@ -261,7 +284,7 @@ export class ProviderModule {
             const pJson = JSON.stringify(p).replace(/"/g, '&quot;');
             const waLink = getWhatsAppLink(p.phone);
             const waButton = waLink
-                ? `<a href="${waLink}" target="_blank" class="action-btn" title="Enviar WhatsApp" style="color: #25D366; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
+                ? `<a href="${waLink}" target="_blank" class="action-btn" title="Enviar WhatsApp" style="color: var(--accent-green); text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
                 : `<button class="action-btn" title="Número de WhatsApp no válido" disabled style="color: #ccc; cursor: not-allowed;"><i class="ph ph-whatsapp-logo"></i></button>`;
             return `
             <tr style="border-bottom:1px solid #eee;">
@@ -285,14 +308,7 @@ export class ProviderModule {
             </tr>
         `}).join('');
 
-        tbody.querySelectorAll('.view').forEach(b => b.addEventListener('click', () => this.showDetails(b.dataset.id)));
-        tbody.querySelectorAll('.edit').forEach(b => {
-            b.addEventListener('click', () => {
-                const data = JSON.parse(b.dataset.provider);
-                this.openEditModal(data);
-            });
-        });
-        tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => this.deleteProvider(b.dataset.id)));
+        // Note: row action events are handled by delegation in attachEvents()
     }
 
     filterProviders(term) {
@@ -329,12 +345,12 @@ export class ProviderModule {
 
         const m = document.getElementById('create-provider-modal');
         m.classList.remove('hidden');
-        m.style.display='flex';
+        m.style.display = 'flex';
     }
 
     async deleteProvider(id) {
         const confirm = await pop_ups.confirm("Eliminar Proveedor", "¿Estás seguro? Si tiene historial de compras, no se podrá borrar.");
-        if(!confirm) return;
+        if (!confirm) return;
 
         try {
             const response = await fetch('/api/providers/delete', {
@@ -343,23 +359,23 @@ export class ProviderModule {
                 body: JSON.stringify({ id: id })
             });
             const res = await response.json();
-            if(res.success) {
+            if (res.success) {
                 pop_ups.success("Proveedor eliminado");
                 this.loadProviders(this.currentSortOrder);
             } else {
                 pop_ups.error(res.message || "No se pudo eliminar");
             }
-        } catch(e) { pop_ups.error("Error de conexión"); }
+        } catch (e) { pop_ups.error("Error de conexión"); }
     }
 
     async showDetails(id) {
         const m = document.getElementById('detail-provider-modal');
         const c = document.getElementById('detail-prov-content');
-        m.classList.remove('hidden'); m.style.display='flex';
+        m.classList.remove('hidden'); m.style.display = 'flex';
         c.innerHTML = 'Cargando...';
         try {
             const data = await getProviderDetails(id);
-            if(data.success) {
+            if (data.success) {
                 const p = data.provider;
                 c.innerHTML = `
                     <div style="text-align:center; margin-bottom:1.5rem;">
@@ -374,7 +390,7 @@ export class ProviderModule {
                             <span class="detail-label">Teléfono</span>
                             <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <span class="detail-value">${p.phone || '-'}</span>
-                                ${getWhatsAppLink(p.phone) ? `<a href="${getWhatsAppLink(p.phone)}" target="_blank" title="Enviar WhatsApp" style="color: #25D366; font-size: 1.2rem;"><i class="ph ph-whatsapp-logo"></i></a>` : `<i class="ph ph-whatsapp-logo" title="Número no válido" style="color: #ccc; font-size: 1.2rem; cursor: not-allowed;"></i>`}
+                                ${getWhatsAppLink(p.phone) ? `<a href="${getWhatsAppLink(p.phone)}" target="_blank" title="Enviar WhatsApp" style="color: var(--accent-green); font-size: 1.2rem;"><i class="ph ph-whatsapp-logo"></i></a>` : `<i class="ph ph-whatsapp-logo" title="Número no válido" style="color: #ccc; font-size: 1.2rem; cursor: not-allowed;"></i>`}
                             </div>
                         </div>
                         <div class="detail-item"><span class="detail-label">Email</span><span class="detail-value">${p.email || '-'}</span></div>
@@ -384,7 +400,7 @@ export class ProviderModule {
                     </div>
                 `;
             }
-        } catch(e) { c.innerHTML = 'Error'; }
+        } catch (e) { c.innerHTML = 'Error'; }
     }
 }
 

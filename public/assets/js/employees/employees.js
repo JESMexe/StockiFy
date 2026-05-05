@@ -1,7 +1,7 @@
 /**
  */
 import { getEmployeeList } from '../api.js';
-import { pop_ups } from '../notifications/pop-up.js';
+import { pop_ups } from '../notifications/pop-up.js?v=2.0';
 import { getWhatsAppLink } from '../universal-functions.js';
 
 export class EmployeeModule {
@@ -95,7 +95,6 @@ export class EmployeeModule {
                             </form>
                         </div>
                     </div>
-                </div>
                 </div>
 
                 <!-- Modal de Gestión de Categorías -->
@@ -194,8 +193,8 @@ export class EmployeeModule {
         });
 
         document.getElementById('emp-list-body')?.addEventListener('click', (e) => {
-            const editBtn = e.target.closest('.btn-edit-emp');
-            const deleteBtn = e.target.closest('.btn-delete-emp');
+            const editBtn       = e.target.closest('.btn-edit-emp');
+            const deleteBtn     = e.target.closest('.btn-delete-emp');
             const customContainer = e.target.closest('.emp-custom-container');
 
             if (editBtn) {
@@ -526,7 +525,7 @@ export class EmployeeModule {
 
             const waLink = getWhatsAppLink(e.phone);
             const waButton = waLink
-                ? `<a href="${waLink}" target="_blank" class="btn-icon" title="Enviar WhatsApp" style="color: #25D366; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
+                ? `<a href="${waLink}" target="_blank" class="btn-icon" title="Enviar WhatsApp" style="color: var(--accent-green); text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
                 : `<button class="btn-icon" title="Número de WhatsApp no válido" disabled style="color: #ccc; cursor: not-allowed;"><i class="ph ph-whatsapp-logo"></i></button>`;
 
             // Renderizar el acceso al perfil completo en todas las tarjetas
@@ -577,7 +576,7 @@ export class EmployeeModule {
         const waLink = getWhatsAppLink(emp.phone);
         const waContainer = document.getElementById('det-emp-wa-container');
         waContainer.innerHTML = waLink
-            ? `<a href="${waLink}" target="_blank" title="Enviar WhatsApp" style="color: #25D366; font-size: 1.5rem; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
+            ? `<a href="${waLink}" target="_blank" title="Enviar WhatsApp" style="color: var(--accent-green); font-size: 1.5rem; text-decoration:none;"><i class="ph ph-whatsapp-logo"></i></a>`
             : `<i class="ph ph-whatsapp-logo" title="Número no válido" style="color: #ccc; font-size: 1.5rem; cursor: not-allowed;"></i>`;
 
         const customGrid = document.getElementById('det-emp-custom-grid');
@@ -617,10 +616,10 @@ export class EmployeeModule {
             list.innerHTML = data.sales.map(sale => {
                 const total = parseFloat(sale.total).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
                 const date = new Date(sale.created_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
-                const comm = parseFloat(sale.commission) > 0 
-                    ? `<div style="font-size: 0.85rem; color: var(--accent-green); margin-top: 4px;"><i class="ph ph-coins"></i> Comisión ganada: ${parseFloat(sale.commission).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>` 
+                const comm = parseFloat(sale.commission) > 0
+                    ? `<div style="font-size: 0.85rem; color: var(--accent-green); margin-top: 4px;"><i class="ph ph-coins"></i> Comisión ganada: ${parseFloat(sale.commission).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>`
                     : '';
-                
+
                 return `
                     <div class="emp-sale-item" style="cursor: pointer;" onclick="if(window.salesModuleInstance) window.salesModuleInstance.showDetails('${sale.id}'); else alert('El módulo de ventas aún no está cargado. Recargue la página e ingrese primero a Ventas.');" title="Ver Ticket de Venta">
                         <div>

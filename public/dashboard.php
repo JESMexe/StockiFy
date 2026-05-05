@@ -232,7 +232,8 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                         aria-hidden="true" tabindex="-1">
                                     <input type="search" id="search-input" name="q_internal_search"
                                         placeholder="Buscar en la tabla..." spellcheck="false" autocomplete="off"
-                                        data-lpignore="true" data-1p-ignore="true">
+                                        autocorrect="off" autocapitalize="none" data-lpignore="true"
+                                        data-1p-ignore="true">
 
                                     <button id="search-column-btn" class="btn btn-secondary">
                                         <i class="ph ph-funnel"></i>
@@ -1108,7 +1109,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
         <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>
 
         <script type="module">
-            import { pop_ups } from './assets/js/notifications/pop-up.js';
+            import { pop_ups } from './assets/js/notifications/pop-up.js?v=2.0';
             window.showLockedFeatureToast = (featureName) => {
                 pop_ups.system(`Funcionabilidad no incluída en su versión de pago Básico: ${featureName}`, 'Acceso Restringido');
             };
