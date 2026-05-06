@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../src/helpers/auth_helper.php';
 
+use App\core\Database;
+
 $currentUser = getCurrentUser();
 
 if (!$currentUser) {
@@ -12,6 +14,34 @@ if (!$currentUser) {
 if (!isset($currentUser['subscription_active']) || $currentUser['subscription_active'] == 0) {
     header('Location: index#section-pricing');
     exit; // Immediately kills server execution. Zero bytes sent to browser.
+}
+
+// Get active inventory name
+$activeInventoryName = "Cargando...";
+try {
+    $pdo = Database::getInstance();
+    
+    if (isset($_SESSION['active_inventory_id'])) {
+        $stmt = $pdo->prepare("SELECT name FROM inventories WHERE id = ?");
+        $stmt->execute([$_SESSION['active_inventory_id']]);
+        $inv = $stmt->fetch();
+        if ($inv) {
+            $activeInventoryName = htmlspecialchars($inv['name']);
+        } else {
+            $activeInventoryName = "Inventario Desconocido";
+        }
+    } else {
+        $stmt = $pdo->prepare("SELECT name FROM inventories WHERE user_id = ? LIMIT 1");
+        $stmt->execute([$currentUser['id']]);
+        $inv = $stmt->fetch();
+        if ($inv) {
+            $activeInventoryName = htmlspecialchars($inv['name']);
+        } else {
+            $activeInventoryName = "Sin Inventarios";
+        }
+    }
+} catch (Exception $e) {
+    $activeInventoryName = "Error BD";
 }
 ?>
 <!DOCTYPE html>
@@ -45,6 +75,28 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/analytics.css">
     <link rel="stylesheet" href="assets/css/sales.css">
+    <style>
+        .notif-tab-btn {
+            background: none !important;
+            border: none !important;
+            border-bottom: 3px solid transparent !important;
+            padding: 8px 15px !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            color: #888 !important;
+            transition: all 0.2s !important;
+            font-family: inherit !important;
+        }
+
+        .notif-tab-btn:hover {
+            color: var(--accent-color) !important;
+        }
+
+        .notif-tab-btn.active {
+            color: var(--accent-color) !important;
+            border-bottom-color: var(--accent-color) !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -560,33 +612,25 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                 </div>
 
                 <div id="notifications" class="dashboard-view hidden">
-                    <h2><i class="ph ph-bell"></i> Notificaciones</h2>
-                    <p>Gestioná tus avisos y recordatorios del inventario actual.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b1b1b; padding-bottom: 15px; margin-bottom: 1.5rem; gap: 20px;">
+                        <div style="min-width: 0;">
+                            <h2 style="margin:0; white-space: nowrap;"><i class="ph ph-bell"></i> Centro de Mensajes</h2>
+                            <div class="notif-tabs" style="display: flex; gap: 15px; margin-top: 15px;">
+                                <button class="notif-tab-btn active" data-tab="normal">Notificaciones</button>
+                                <button class="notif-tab-btn" data-tab="errors" style="white-space: nowrap;">Errores Técnicos</button>
+                            </div>
+                        </div>
+                        <button id="clear-notifications-btn" class="btn btn-secondary" style="color: var(--accent-red); border-color: var(--accent-red); padding: 8px 16px; font-size: 0.85rem; flex-shrink: 0; width: auto; margin: 0;" title="Limpiar todas las notificaciones">
+                            <i class="ph ph-trash"></i> Limpiar Todo
+                        </button>
+                    </div>
 
-                    <div class="accordion" style="margin-top: 2rem;">
-                        <div class="accordion-item">
-                            <button class="accordion-header" aria-expanded="false">
-                                <span><i class="ph ph-note"></i> Creador de Notas Rápidas</span>
-                                <i class="ph ph-caret-down"></i>
-                            </button>
-                            <div class="accordion-content">
-                                <form id="create-note-form" style="display: grid; gap: 1rem;">
-                                    <div class="flex-row" style="gap: 1rem;">
-                                        <select id="note-type" class="rustic-select" style="flex: 1;">
-                                            <option value="info">Azul (Nota)</option>
-                                            <option value="success">Verde (Éxito)</option>
-                                            <option value="warning">Amarillo (Aviso)</option>
-                                            <option value="error">Rojo (Urgente)</option>
-                                            <option value="system">Violeta (Sistema)</option>
-                                        </select>
-                                        <input type="text" id="note-title" placeholder="Título de la nota..."
-                                            style="flex: 2;" required>
-                                    </div>
-                                    <textarea id="note-message" placeholder="Escribí tu mensaje aquí..."
-                                        style="min-height: 80px;"></textarea>
-                                    <button type="submit" class="btn btn-primary" style="width: auto;">Guardar
-                                        Nota</button>
-                                </form>
+                    <div id="tech-errors-header" class="hidden" style="background: #fff5f5; border: 2px solid var(--accent-red); padding: 20px; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <i class="ph-bold ph-wrench" style="font-size: 2.2rem; color: var(--accent-red);"></i>
+                            <div>
+                                <strong style="color: var(--accent-red); display: block; font-size: 1.1rem;">Buzón de Errores Técnicos</strong>
+                                <p style="margin: 0; font-size: 0.85rem; color: #666;">Acá se enlistarán los errores para que así puedas notificarle al programador y enviarle el código específico.</p>
                             </div>
                         </div>
                     </div>
@@ -619,6 +663,16 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     </div>
 
     <div class="mobile-app-view hidden">
+        <div class="mobile-inventory-header" style="background: #fff; padding: 25px 20px 20px 20px; margin-bottom: 15px; position: sticky; top: 0; z-index: 100;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <small style="text-transform: uppercase; font-weight: 800; color: #888; font-size: 0.75rem; letter-spacing: 1.5px; margin: 0;">Inventario Activo</small>
+                <button onclick="window.location.href='select-db.php'" style="background: #fff; color: #1b1b1b; border: 2px solid #1b1b1b; border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; font-weight: 900; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    CAMBIAR <i class="ph-bold ph-arrows-left-right"></i>
+                </button>
+            </div>
+            <div id="mobile-current-inv-name" style="font-weight: 900; font-size: 1.8rem; color: #1b1b1b; letter-spacing: -1px; line-height: 1; margin-bottom: 12px; margin-top: 5px;"><?= $activeInventoryName ?></div>
+            <div style="height: 4px; background: var(--accent-color, #1b1b1b); width: 40px; border-radius: 2px;"></div>
+        </div>
 
         <div class="mobile-actions-grid">
 
@@ -644,6 +698,18 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                 <div class="icon-circle"><i class="ph-bold ph-currency-dollar"></i></div>
                 <h3>Cierre de Caja</h3>
                 <p>Balance del día</p>
+            </div>
+
+            <div class="mobile-card action-metrics" onclick="window.openMobileMetrics()">
+                <div class="icon-circle" style="background: var(--accent-blue);"><i class="ph-bold ph-chart-pie-slice"></i></div>
+                <h3>Métricas</h3>
+                <p>Ventas y Gastos</p>
+            </div>
+
+            <div class="mobile-card action-history" onclick="window.openMobileHistory()">
+                <div class="icon-circle" style="background: var(--accent-violet);"><i class="ph-bold ph-clock-counter-clockwise"></i></div>
+                <h3>Historial</h3>
+                <p>Ver Movimientos</p>
             </div>
         </div>
 
@@ -1021,7 +1087,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
             </div>
         </div>
 
-        <div id="detail-sale-modal" class="modal-overlay hidden" style="z-index: 2000;">
+        <div id="detail-sale-modal" class="modal-overlay hidden" style="z-index: 20000;">
             <div class="modal-content" style="width: 400px; max-width: 90vw; background: #fff; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
                 <div class="modal-header" style="padding: 15px; border-bottom: 1px solid #eee;">
                     <h3 style="margin:0;">Ticket de Venta</h3>
@@ -1106,6 +1172,115 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
             </div>
         </div>
 
+        <!-- MODAL MÉTRICAS MÓVIL -->
+        <div id="mobile-metrics-modal" class="mobile-modal-overlay hidden">
+            <div class="mobile-modal-content" style="height: 90vh;">
+                <div class="mobile-modal-header">
+                    <h2><i class="ph ph-chart-pie-slice"></i> Métricas Estratégicas</h2>
+                    <button class="close-icon" onclick="document.getElementById('mobile-metrics-modal').classList.add('hidden')">&times;</button>
+                </div>
+                <div class="mobile-modal-body" style="padding: 20px; overflow-y: auto;">
+                    <div id="metrics-loader" style="text-align: center; padding: 40px;">
+                        <i class="ph ph-spinner ph-spin" style="font-size: 2rem; color: var(--accent-color);"></i>
+                        <p>Analizando datos del periodo...</p>
+                    </div>
+                    <div id="metrics-content" class="hidden">
+                        
+                        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                            <div id="btn-show-sales-detail" style="background: var(--accent-green-20); color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; border: 2px solid var(--accent-green); cursor: pointer; position: relative;">
+                                <small style="opacity: 0.9;">Total Ventas</small>
+                                <div id="mobile-m-sales" style="font-weight: 800; font-size: 1.3rem; margin-top: 5px;">$0.00</div>
+                                <i class="ph-bold ph-caret-right" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-green); font-size: 1.2rem;"></i>
+                            </div>
+                            <div id="btn-show-expenses-detail" style="background: var(--accent-red-20); color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; border: 2px solid var(--accent-red); cursor: pointer; position: relative;">
+                                <small style="opacity: 0.9;">Total Gastos</small>
+                                <div id="mobile-m-expenses" style="font-weight: 800; font-size: 1.3rem; margin-top: 5px;">$0.00</div>
+                                <i class="ph-bold ph-caret-right" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-red); font-size: 1.2rem;"></i>
+                            </div>
+                        </div>
+
+                        <div class="metric-card-mobile" style="background: #fff; color: #1b1b1b; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #1b1b1b; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <small style="color: #888;">Balance Neto (Hoy)</small>
+                                <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+                                    <span id="mobile-m-balance">$0.00</span>
+                                    <span id="mobile-m-balance-arrow"></span>
+                                </h2>
+                            </div>
+                            <div id="mobile-m-balance-icon" style="width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #eee; border: 2px solid transparent;">
+                                <i class="ph ph-scales" id="mobile-m-scales-icon" style="font-size: 1.5rem;"></i>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <div style="flex: 1; background: #f9f9f9; border: 2px solid #ddd; padding: 12px; border-radius: 12px; text-align: center;">
+                                <small style="color: #888;">Ticket Prom.</small>
+                                <div id="mobile-m-avg" style="font-weight: 800; font-size: 1rem; margin-top: 3px;">$0.00</div>
+                            </div>
+                            <div style="flex: 1; background: #f9f9f9; border: 2px solid #ddd; padding: 12px; border-radius: 12px; text-align: center;">
+                                <small style="color: #888;">Operaciones</small>
+                                <div id="mobile-m-count" style="font-weight: 800; font-size: 1rem; margin-top: 3px;">0</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card-mobile" style="background: #fff; color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; margin-bottom: 25px; border: 2px solid #1b1b1b;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <small style="opacity: 0.9; font-weight: bold;">Stock Valorizado (Costo)</small>
+                                    <h2 id="mobile-m-valuation" style="margin: 5px 0 0 0; font-size: 1.6rem;">$0.00</h2>
+                                </div>
+                                <i class="ph ph-package" style="font-size: 2.2rem; color: var(--accent-color);"></i>
+                            </div>
+                        </div>
+
+                        <h3 style="margin-bottom: 12px; border-left: 4px solid var(--accent-color); padding-left: 10px; font-size: 1.1rem;">Top Productos Vendidos</h3>
+                        <div id="mobile-m-top-products" style="margin-bottom: 20px;"></div>
+
+                        <h3 style="margin-bottom: 12px; border-left: 4px solid var(--accent-green); padding-left: 10px; font-size: 1.1rem;">Mejores Clientes</h3>
+                        <div id="mobile-m-top-clients" style="margin-bottom: 20px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL DETALLE DE OPERACIONES MÓVIL (SUB-MODAL) -->
+        <div id="mobile-transaction-list-modal" class="mobile-modal-overlay hidden" style="z-index: 10001;">
+            <div class="mobile-modal-content" style="height: 80vh; border-top: 4px solid var(--accent-color);">
+                <div class="mobile-modal-header">
+                    <h2 id="m-trans-title">Detalle de Operaciones</h2>
+                    <button class="close-icon" onclick="document.getElementById('mobile-transaction-list-modal').classList.add('hidden')">&times;</button>
+                </div>
+                <div class="mobile-modal-body" id="m-trans-body" style="padding: 15px; overflow-y: auto;">
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL HISTORIAL MÓVIL -->
+        <div id="mobile-history-modal" class="mobile-modal-overlay hidden">
+            <div class="mobile-modal-content" style="height: 85vh;">
+                <div class="mobile-modal-header">
+                    <h2><i class="ph ph-clock-counter-clockwise"></i> Historial</h2>
+                    <button class="close-icon" onclick="document.getElementById('mobile-history-modal').classList.add('hidden')">&times;</button>
+                </div>
+                <div class="mobile-modal-body" id="mobile-history-body" style="padding: 15px; overflow-y: auto; height: calc(100% - 60px);">
+                    <div style="text-align: center; padding: 40px; color: #999;"><i class="ph ph-spinner ph-spin"></i> Cargando historial...</div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- MODAL SELECTOR DE INVENTARIO MÓVIL -->
+        <div id="mobile-inventory-selector-modal" class="mobile-modal-overlay hidden">
+            <div class="mobile-modal-content" style="height: 80vh; border-top: 6px solid var(--accent-color);">
+                <div class="mobile-modal-header">
+                    <h2><i class="ph ph-buildings"></i> Mis Negocios</h2>
+                    <button class="close-icon" onclick="document.getElementById('mobile-inventory-selector-modal').classList.add('hidden')">&times;</button>
+                </div>
+                <div class="mobile-modal-body" id="m-inv-list-container" style="padding: 20px; overflow-y: auto; display: grid; gap: 15px;">
+                    <!-- Se llena vía JS -->
+                </div>
+            </div>
+        </div>
 
         <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
         <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>

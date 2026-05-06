@@ -1274,6 +1274,11 @@ export class SalesModule {
             pop_ups.error("Error de conexión al eliminar.");
         }
     }
+
+    async viewSaleDetail(id) {
+        // En este sistema se llama showDetails
+        return this.showDetails(id);
+    }
 }
 
 const salesModuleInstance = new SalesModule();

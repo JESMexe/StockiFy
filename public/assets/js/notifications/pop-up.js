@@ -10,7 +10,6 @@ export const notificationConfig = {
     info: { icon: 'ph-info', color: 'var(--accent-blue)' },
     system: { icon: 'ph-hard-drives', color: 'var(--accent-violet)' },
     dev: { icon: 'ph ph-code', color: 'var(--accent-violet)' },
-    note: { icon: 'ph-note', color: 'var(--color-black)' }
 };
 
 function _showToast(type, title, message, duration = 5000) {

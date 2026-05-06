@@ -22,9 +22,15 @@ try {
     $user = getCurrentUser();
     $user_id = $_SESSION['user_id'];
 
-    $stmt = $pdo->prepare("SELECT id,name FROM inventories WHERE user_id = ? AND sale_price = 1 AND receipt_price = 1");
-    $stmt ->execute([$user_id]);
-    $inventories = $stmt->fetchAll();
+    $activeId = $_SESSION['active_inventory_id'] ?? null;
+    $stmt = $pdo->prepare("SELECT id, name FROM inventories WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $inventories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Marcamos cuál es el activo para el móvil
+    foreach ($inventories as &$inv) {
+        $inv['is_active'] = ($inv['id'] == $activeId);
+    }
 
     $response = ['verifiedInventories' => $inventories, 'success' => true];
 

@@ -3,8 +3,9 @@
 import { pop_ups } from "../notifications/pop-up.js?v=3.0";
 import * as api from "../api.js";
 
-export function initMobileApp() {
+export async function initMobileApp() {
     console.log("📱 StockiFy Mobile Mode Iniciado");
+    updateMobileInventoryName();
 
     const checkerInput = document.getElementById('checker-input');
     if (checkerInput) {
@@ -241,6 +242,209 @@ window.loadBalanceData = async function(period) {
     }
 };
 
+window.openMobileMetrics = async function() {
+    const modal = document.getElementById('mobile-metrics-modal');
+    if(!modal) return;
+    modal.classList.remove('hidden');
+    
+    const loader = document.getElementById('metrics-loader');
+    const content = document.getElementById('metrics-content');
+    loader.classList.remove('hidden');
+    content.classList.add('hidden');
+
+    try {
+        const response = await fetch(`/api/statistics/get-cash-balance-v2.php?period=today&_ts=${Date.now()}`);
+        const result = await response.json();
+
+        if (result.success) {
+            const data = result.data;
+            const fmt = (v) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(v);
+
+            // 1. Datos Principales
+            document.getElementById('mobile-m-sales').textContent = fmt(data.income);
+            document.getElementById('mobile-m-expenses').textContent = fmt(data.expenses);
+            document.getElementById('mobile-m-balance').textContent = fmt(data.balance);
+            document.getElementById('mobile-m-count').textContent = data.operationCount || 0;
+            document.getElementById('mobile-m-valuation').textContent = fmt(data.valuation || 0);
+
+            const avg = data.sales_count > 0 ? data.income / data.sales_count : 0;
+            document.getElementById('mobile-m-avg').textContent = fmt(avg);
+
+            // Estilo balance
+            const balanceIconBox = document.getElementById('mobile-m-balance-icon');
+            const scalesIcon = document.getElementById('mobile-m-scales-icon');
+            const balanceArrow = document.getElementById('mobile-m-balance-arrow');
+            
+            if (balanceIconBox && scalesIcon && balanceArrow) {
+                if (data.balance > 0) {
+                    balanceIconBox.style.background = 'var(--accent-green-20)';
+                    balanceIconBox.style.borderColor = 'var(--accent-green)';
+                    scalesIcon.style.color = 'var(--accent-green)';
+                    balanceArrow.innerHTML = '<i class="ph ph-arrow-up-right" style="color: var(--accent-green); font-size: 1.2rem;"></i>';
+                } else if (data.balance < 0) {
+                    balanceIconBox.style.background = 'var(--accent-red-20)';
+                    balanceIconBox.style.borderColor = 'var(--accent-red)';
+                    scalesIcon.style.color = 'var(--accent-red)';
+                    balanceArrow.innerHTML = '<i class="ph ph-arrow-down-right" style="color: var(--accent-red); font-size: 1.2rem;"></i>';
+                } else {
+                    balanceIconBox.style.background = 'var(--accent-yellow-20)';
+                    balanceIconBox.style.borderColor = 'var(--accent-yellow)';
+                    scalesIcon.style.color = 'var(--accent-yellow)';
+                    balanceArrow.innerHTML = '<i class="ph ph-arrows-horizontal" style="color: var(--accent-yellow); font-size: 1.2rem;"></i>';
+                }
+            }
+
+            // 2. Click para detalles
+            const btnSales = document.getElementById('btn-show-sales-detail');
+            const btnExp = document.getElementById('btn-show-expenses-detail');
+            if (btnSales) btnSales.onclick = () => window.showMobileTransactionList('Ventas de Hoy', data.recent_sales, 'sale');
+            if (btnExp) btnExp.onclick = () => window.showMobileTransactionList('Gastos de Hoy', data.recent_purchases, 'purchase');
+
+            // 3. Rankings
+            const renderRanking = (id, list, key, labelKey) => {
+                const container = document.getElementById(id);
+                if (!container) return;
+                if (!list || list.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.85rem; color:#888; font-style:italic;">¡Aún no hay movimientos registrados para este ranking hoy!</p>';
+                    return;
+                }
+                if (list.length < 2) {
+                    container.innerHTML += '<p style="font-size:0.75rem; color:#aaa; margin-top:5px;">(Solo hay un registro destacado por ahora)</p>';
+                }
+                const max = Math.max(...list.map(i => parseFloat(i[key])));
+                container.innerHTML = list.map(item => {
+                    const val = parseFloat(item[key]);
+                    const pct = max > 0 ? (val / max) * 100 : 0;
+                    return `
+                        <div style="margin-bottom:10px;">
+                            <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px;">
+                                <span style="font-weight:700;">${item[labelKey] || 'N/A'}</span>
+                                <span style="font-weight:900; color:var(--accent-color);">${key === 'total' ? fmt(val) : val + ' un.'}</span>
+                            </div>
+                            <div style="height:6px; background:#eee; border-radius:3px; overflow:hidden;">
+                                <div style="height:100%; background:var(--accent-color); width:${pct}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            renderRanking('mobile-m-top-products', data.top_products, 'qty', 'name');
+            renderRanking('mobile-m-top-clients', data.top_clients, 'total', 'name');
+
+            loader.classList.add('hidden');
+            content.classList.remove('hidden');
+        } else {
+            throw new Error(result.message || "Error desconocido en el servidor");
+        }
+    } catch (e) {
+        console.error("[METRICS ERROR]", e);
+        loader.classList.add('hidden');
+        modal.classList.add('hidden'); // Cerramos para que no quede el modal vacío
+        pop_ups.error("Error al cargar métricas: " + e.message);
+    }
+};
+
+window.showMobileTransactionList = function(title, list, type) {
+    const modal = document.getElementById('mobile-transaction-list-modal');
+    const body = document.getElementById('m-trans-body');
+    document.getElementById('m-trans-title').textContent = title;
+    
+    modal.style.setProperty('--accent-color', type === 'sale' ? 'var(--accent-green)' : 'var(--accent-red)');
+    modal.classList.remove('hidden');
+
+    if(!list || list.length === 0) {
+        body.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">No hay registros para mostrar.</div>';
+        return;
+    }
+
+    const fmt = (v) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(v);
+
+    body.innerHTML = list.map((item, index) => {
+        const date = new Date(item.sale_date.replace(/-/g, '/'));
+        const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        const orgId = list.length - index;
+        
+        return `
+            <div style="background:#fff; border:2px solid #1b1b1b; border-radius:12px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-weight:900; font-size:1rem;">Operación #${orgId}</div>
+                    <div style="font-size:0.8rem; color:#666;">${time}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:900; color:var(--accent-color); font-size:1.1rem;">${fmt(item.total_amount)}</div>
+                    <button class="btn-brutal-mini" onclick="window.viewTransactionDetail(${item.id}, '${type}')" style="margin-top:5px; padding:4px 8px; font-size:0.7rem;">
+                        VER TICKET
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+window.viewTransactionDetail = function(id, type) {
+    if (type === 'sale') {
+        const module = window.salesModuleInstance;
+        if (module && typeof module.viewSaleDetail === 'function') {
+            module.viewSaleDetail(id);
+        } else {
+            pop_ups.error("El módulo de ventas no está listo.");
+        }
+    } else {
+        pop_ups.info("Detalle de compra próximamente.");
+    }
+};
+
+window.openMobileHistory = async function() {
+    const modal = document.getElementById('mobile-history-modal');
+    const body = document.getElementById('mobile-history-body');
+    if(!modal) return;
+    modal.classList.remove('hidden');
+    body.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><i class="ph ph-spinner ph-spin" style="font-size:2rem;"></i><br>Cargando movimientos...</div>';
+
+    try {
+        const response = await fetch('/api/history/get.php');
+        const res = await response.json();
+
+        if (res.success) {
+            const logs = res.notifications.filter(n => n.type !== 'error').slice(0, 20);
+            if(logs.length === 0) {
+                body.innerHTML = '<p style="text-align:center; padding:40px; color:#999;">No hay movimientos registrados.</p>';
+                return;
+            }
+
+            body.innerHTML = logs.map(item => {
+                const date = new Date(item.created_at.replace(/-/g, '/'));
+                const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const day = date.toLocaleDateString();
+                
+                let icon = 'ph-info';
+                let color = 'var(--accent-blue)';
+                if (item.type === 'success') { icon = 'ph-check-circle'; color = 'var(--accent-green)'; }
+                if (item.type === 'warning') { icon = 'ph-warning'; color = 'var(--accent-yellow)'; }
+
+                return `
+                    <div style="background:#fff; border:2px solid #1b1b1b; border-radius:15px; padding:15px; margin-bottom:12px; display:flex; gap:12px; align-items:start;">
+                        <div style="background:${color}; color:#fff; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i class="ph ${icon}" style="font-size:1.4rem;"></i>
+                        </div>
+                        <div style="flex-grow:1;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <span style="font-size:0.75rem; font-weight:800; color:#888;">${day} - ${time}</span>
+                            </div>
+                            <div style="font-weight:800; font-size:1rem; color:#1b1b1b; line-height:1.2;">${item.title}</div>
+                            <div style="font-size:0.85rem; color:#666; margin-top:4px;">${item.message}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (e) {
+        console.error(e);
+        body.innerHTML = '<p style="text-align:center; padding:20px; color:red;">Error al cargar datos.</p>';
+    }
+};
+
 async function ensureCheckerDataLoaded() {
     const needsMapping =
         !window.columnMapping ||
@@ -275,3 +479,84 @@ async function ensureCheckerDataLoaded() {
 
     return true;
 }
+
+async function updateMobileInventoryName() {
+    const nameEl = document.getElementById('mobile-current-inv-name');
+    try {
+        const response = await fetch('/api/database/get-verified-tables.php', { method: 'POST' });
+        const result = await response.json();
+        
+        console.log("📱 [MOBILE SESSION CHECK]", result);
+
+        if (result.success) {
+            const inventories = result.verifiedInventories || result.inventories || result.data || [];
+            const active = inventories.find(inv => inv.is_active) || inventories[0];
+
+            if (active && nameEl) {
+                nameEl.textContent = active.name;
+                window.currentInventoryId = active.id;
+            }
+        }
+    } catch (e) { 
+        console.error("Error al obtener nombre de inventario:", e);
+    }
+}
+
+window.openMobileInventorySelector = async function() {
+    const modal = document.getElementById('mobile-inventory-selector-modal');
+    const container = document.getElementById('m-inv-list-container');
+    if (!modal || !container) return;
+    
+    modal.classList.remove('hidden');
+    container.innerHTML = '<div style="text-align:center; padding:20px;"><i class="ph ph-spinner ph-spin"></i> Cargando tus negocios...</div>';
+
+    try {
+        const response = await fetch('/api/database/get-verified-tables.php', { method: 'POST' });
+        const result = await response.json();
+
+        if (result.success) {
+            const inventories = result.verifiedInventories || result.inventories || result.data || [];
+            container.innerHTML = inventories.map(inv => `
+                <div onclick="window.switchMobileInventory(${inv.id}, '${inv.name}')" 
+                     style="padding:18px; background:${inv.id == window.currentInventoryId ? '#f0faff' : '#fff'}; border:2px solid ${inv.id == window.currentInventoryId ? 'var(--accent-color)' : '#1b1b1b'}; border-radius:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:900; font-size:1.05rem;">${inv.name}</div>
+                        <small style="color:#888;">ID: #${inv.id}</small>
+                    </div>
+                    ${inv.id == window.currentInventoryId ? '<i class="ph-bold ph-check-circle" style="color:var(--accent-color); font-size:1.5rem;"></i>' : '<i class="ph ph-caret-right" style="color:#ccc;"></i>'}
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        container.innerHTML = '<p style="color:red; text-align:center;">Error al cargar inventarios.</p>';
+    }
+};
+
+window.switchMobileInventory = async function(id, name) {
+    if (id == window.currentInventoryId) {
+        document.getElementById('mobile-inventory-selector-modal').classList.add('hidden');
+        return;
+    }
+
+    try {
+        // En tu sistema, el cambio de inventario se hace vía /api/database/select.php
+        const response = await fetch('/api/database/select.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inventoryId: id })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            window.currentInventoryId = id;
+            const nameEl = document.getElementById('mobile-current-inv-name');
+            if (nameEl) nameEl.textContent = name;
+            document.getElementById('mobile-inventory-selector-modal').classList.add('hidden');
+            location.reload(); 
+        } else {
+            pop_ups.error("No se pudo cambiar de inventario");
+        }
+    } catch (e) {
+        console.error(e);
+    }
+};

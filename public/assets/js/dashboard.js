@@ -1499,28 +1499,60 @@ async function loadNotifications() {
     const listContainer = document.getElementById('notifications-list');
     if (!listContainer) return;
 
-    listContainer.innerHTML = '<p>Cargando historial...</p>';
+    // Inicializar eventos de pestañas si no se ha hecho
+    if (!window.notifTabsSetup) {
+        const tabs = document.querySelectorAll('.notif-tab-btn');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                window.currentNotifTab = tab.dataset.tab;
+                loadNotifications();
+            });
+        });
+
+        document.getElementById('clear-notifications-btn')?.addEventListener('click', async () => {
+            const confirmed = await pop_ups.confirm("Vaciar Centro de Mensajes", "¿Seguro que querés borrar todas las notificaciones y errores? Esta acción no se puede deshacer.");
+            if (confirmed) {
+                try {
+                    const response = await fetch('/api/notifications/delete_all.php', { method: 'POST' });
+                    const res = await response.json();
+                    if (res.success) {
+                        if (typeof pop_ups !== 'undefined') pop_ups.info("Centro de mensajes vaciado");
+                        loadNotifications();
+                    }
+                } catch (e) { console.error(e); }
+            }
+        });
+        window.notifTabsSetup = true;
+        window.currentNotifTab = 'normal';
+    }
+
+    listContainer.innerHTML = '<p>Cargando mensajes...</p>';
+    const header = document.getElementById('tech-errors-header');
+    if (header) header.classList.toggle('hidden', window.currentNotifTab !== 'errors');
 
     try {
         const response = await fetch(`/api/notifications/get.php?t=${new Date().getTime()}`);
         const data = await response.json();
 
         if (!data.success) throw new Error(data.message);
-        if (data.notifications.length === 0) {
-            listContainer.innerHTML = '<p>No tenés notificaciones en este inventario.</p>';
+
+        // Filtrar según pestaña
+        let filtered = [];
+        if (window.currentNotifTab === 'errors') {
+            filtered = data.notifications.filter(n => n.type === 'error');
+        } else {
+            filtered = data.notifications.filter(n => n.type !== 'error');
+        }
+
+        if (filtered.length === 0) {
+            listContainer.innerHTML = `<p style="text-align:center; padding:40px; color:#999;">No hay ${window.currentNotifTab === 'errors' ? 'errores registrados' : 'notificaciones'}.</p>`;
             return;
         }
 
         const groups = {};
-        // Filtramos para que NO aparezcan errores técnicos en esta vista
-        const filteredNotifications = data.notifications.filter(n => n.type !== 'error');
-
-        if (filteredNotifications.length === 0) {
-            listContainer.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">No tenés notificaciones recientes en este inventario.</p>';
-            return;
-        }
-
-        filteredNotifications.forEach(n => {
+        filtered.forEach(n => {
             const dateLabel = getRelativeDateGroup(n.created_at);
             if (!groups[dateLabel]) groups[dateLabel] = [];
             groups[dateLabel].push(n);
@@ -1531,45 +1563,104 @@ async function loadNotifications() {
         for (const [label, items] of Object.entries(groups)) {
             html += `<h3 class="notification-date-header">${label}</h3>`;
             items.forEach(n => {
-                const config = notificationConfig[n.type];
+                let icon = 'ph-note';
+                let color = 'var(--accent-color)';
 
-                let icon, color;
-
-                if (config) {
-                    icon = config.icon;
-                    // Mapeo a religión de colores de StockiFy
-                    if (n.type === 'success') color = 'var(--accent-green)';
-                    else if (n.type === 'warning') color = 'var(--accent-yellow)';
-                    else if (n.type === 'info') color = 'var(--accent-blue)';
-                    else color = config.color;
-                } else {
-                    icon = 'ph-note';
-                    color = 'var(--accent-color)';
+                if (n.type === 'success') {
+                    icon = 'ph-check-circle';
+                    color = 'var(--accent-green)';
+                } else if (n.type === 'warning') {
+                    icon = 'ph-warning';
+                    color = 'var(--accent-yellow)';
+                } else if (n.type === 'error') {
+                    icon = 'ph-bug';
+                    color = 'var(--accent-red)';
+                } else if (n.type === 'info') {
+                    icon = 'ph-info';
+                    color = 'var(--accent-blue)';
+                } else if (n.type === 'system') {
+                    icon = 'ph-gear';
+                    color = '#8b5cf6';
                 }
 
                 html += `
-                <div class="toast-notification show" 
-                     style="--toast-color: ${color}; position: relative; margin-bottom: 1rem; max-width: 100%; border-left: 4px solid ${color}; box-shadow: none; animation: none;"
+                <div class="toast-notification show cleaner-style" 
+                     style="--toast-color: ${color}; position: relative; margin-bottom: 1rem; max-width: 100%; box-shadow: none; animation: none; display: flex; align-items: flex-start; gap: 15px; padding: 15px; background: #fff; border: 1px solid #eee; border-left: 4px solid ${color}; border-radius: 8px;"
                      data-notification-id="${n.id}">
                     
-                    <i class="toast-icon ph ${icon}" style="color: ${color}; font-size: 1.5rem;"></i>
+                    <i class="toast-icon ph ${icon}" style="color: ${color}; font-size: 1.5rem; margin-top: 2px;"></i>
                     
-                    <div class="toast-content">
-                        <strong class="toast-title" style="color: ${color}">${n.title}</strong>
-                        <p class="toast-message">${n.message || ''}</p>
-                        <small style="color: var(--color-gray); font-size: 0.8rem; margin-top: 5px; display: block;">
-                            ${new Date(n.created_at).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                    <div class="toast-content" style="flex:1;">
+                        <strong class="toast-title" style="color: ${color}; display: block; margin-bottom: 4px; font-weight: 700;">${n.title}</strong>
+                        <p class="toast-message" style="margin: 0; font-size: 0.95rem; color: #444; line-height: 1.4;">${n.message || ''}</p>
+                        <small style="color: var(--color-gray); font-size: 0.8rem; margin-top: 8px; display: block;">
+                            ${new Date(n.created_at.replace(/-/g, '/')).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                         </small>
                     </div>
                     
-                    <button class="toast-close-btn" title="Eliminar"><i class="ph ph-x"></i></button>
-                </div>
-                `;
+                    <button class="static-delete" data-id="${n.id}" title="Eliminar" style="background: none; border: none; color: #ccc; cursor: pointer; padding: 5px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;">
+                        <i class="ph ph-x" style="font-size: 1.2rem;"></i>
+                    </button>
+                </div>`;
             });
         }
         listContainer.innerHTML = html;
+
+        // Hacer que la cruceta funcione SIEMPRE
+        const deleteButtons = listContainer.querySelectorAll('.static-delete');
+        deleteButtons.forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                const id = btn.getAttribute('data-id');
+                const toast = btn.closest('.toast-notification');
+                
+                try {
+                    const response = await fetch('/api/notifications/delete.php', { 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: id })
+                    });
+                    const res = await response.json();
+                    if (res.success) {
+                        toast.style.opacity = '0';
+                        toast.style.transform = 'translateY(-10px)';
+                        setTimeout(() => {
+                            toast.remove();
+                            // Si el grupo quedó vacío, recargar para limpiar el header de fecha
+                            if (listContainer.querySelectorAll('.toast-notification').length === 0) loadNotifications();
+                        }, 300);
+                    }
+                } catch (err) { console.error("Error al borrar:", err); }
+            };
+        });
+
+        // Estilos limpios y hover de color
+        if (!document.getElementById('notif-styles-clean')) {
+            const style = document.createElement('style');
+            style.id = 'notif-styles-clean';
+            style.innerHTML = `
+                .static-delete:hover { color: var(--accent-red) !important; background: none !important; }
+                .notif-tab-btn {
+                    background: none !important; 
+                    border: none !important; 
+                    border-bottom: 3px solid transparent !important;
+                    padding: 8px 15px !important; 
+                    font-weight: 700 !important; 
+                    cursor: pointer !important; 
+                    color: #888 !important; 
+                    transition: all 0.2s !important;
+                    font-family: inherit !important;
+                }
+                .notif-tab-btn:hover { color: var(--accent-color) !important; }
+                .notif-tab-btn.active { 
+                    color: var(--accent-color) !important; 
+                    border-bottom-color: var(--accent-color) !important; 
+                }
+            `;
+            document.head.appendChild(style);
+        }
     } catch (error) {
-        listContainer.innerHTML = `<p style="color: var(--accent-red);">Error: ${error.message}</p>`;
+        listContainer.innerHTML = `<p style="color: var(--accent-red)">Error: ${error.message}</p>`;
     }
 }
 

@@ -23,14 +23,23 @@ class NotificationModel
     }
 
     /**
-     * Obtiene todas las notificaciones de un usuario.
+     * Obtiene notificaciones ACTIVAS para el buzón.
      */
     public function getByUser($userId): array
     {
         $inventoryId = $_SESSION['active_inventory_id'] ?? 0;
-
-        $stmt = $this->db->prepare("SELECT * FROM notifications WHERE user_id = ? AND inventory_id = ? ORDER BY created_at DESC");
+        $stmt = $this->db->prepare("SELECT * FROM notifications WHERE user_id = ? AND inventory_id = ? AND is_deleted = 0 ORDER BY created_at DESC");
         $stmt->execute([$userId, $inventoryId]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtiene TODAS las notificaciones (incluidas las "borradas") para el Historial Legal.
+     */
+    public function getAllForHistory($inventoryId): array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM notifications WHERE inventory_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$inventoryId]);
         return $stmt->fetchAll();
     }
 
@@ -41,7 +50,7 @@ class NotificationModel
     public function deleteById(int $notificationId, int $userId): bool
     {
         $stmt = $this->db->prepare(
-            "DELETE FROM notifications WHERE id = :id AND user_id = :user_id AND inventory_id = :inventory_id"
+            "UPDATE notifications SET is_deleted = 1 WHERE id = :id AND user_id = :user_id AND inventory_id = :inventory_id"
         );
         $inventoryId = $_SESSION['active_inventory_id'] ?? 0;
         return $stmt->execute([
@@ -57,7 +66,7 @@ class NotificationModel
     public function deleteAllByUser(int $userId): bool
     {
         $inventoryId = $_SESSION['active_inventory_id'] ?? 0;
-        $stmt = $this->db->prepare("DELETE FROM notifications WHERE user_id = ? AND inventory_id = ?");
+        $stmt = $this->db->prepare("UPDATE notifications SET is_deleted = 1 WHERE user_id = ? AND inventory_id = ?");
         return $stmt->execute([$userId, $inventoryId]);
     }
 }
