@@ -234,17 +234,17 @@ class PurchaseModel {
             // para que PHP no pierda la conexión entre líneas.
 
             $sql = "
-                UPDATE receipts
+                UPDATE purchases
                 CROSS JOIN (SELECT @cnt := 0) AS dummy
-                SET receipts.id = (@cnt := @cnt + 1)
-                ORDER BY receipt_date ASC
+                SET purchases.id = (@cnt := @cnt + 1)
+                ORDER BY created_at ASC
             ";
 
             // Ejecutamos la actualización masiva
             $this->db->exec($sql);
 
             // Reseteamos el autoincrement para que la próxima compra sea la siguiente
-            $this->db->exec("ALTER TABLE receipts AUTO_INCREMENT = 1");
+            $this->db->exec("ALTER TABLE purchases AUTO_INCREMENT = 1");
 
             return true;
 

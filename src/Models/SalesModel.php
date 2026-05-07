@@ -174,7 +174,7 @@ class SalesModel {
     public function deleteSale($id, $userId): bool {
         try {
             $this->db->beginTransaction();
-            $stmtGetItems = $this->db->prepare("SELECT item_id, quantity FROM sale_items WHERE sale_id = :id");
+            $stmtGetItems = $this->db->prepare("SELECT product_id as item_id, quantity FROM sale_details WHERE sale_id = :id");
             $stmtGetItems->execute([':id' => $id]);
             $items = $stmtGetItems->fetchAll(PDO::FETCH_ASSOC);
 

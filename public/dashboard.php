@@ -20,7 +20,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
 $activeInventoryName = "Cargando...";
 try {
     $pdo = Database::getInstance();
-    
+
     if (isset($_SESSION['active_inventory_id'])) {
         $stmt = $pdo->prepare("SELECT name FROM inventories WHERE id = ?");
         $stmt->execute([$_SESSION['active_inventory_id']]);
@@ -239,7 +239,8 @@ try {
                                 Analíticas</button></li>
                         <li><button class="menu-btn" data-target-view="notifications"><i class="ph ph-bell"></i>
                                 Notificaciones</button></li>
-                        <li><button class="menu-btn" data-target-view="history-log"><i class="ph ph-clock-counter-clockwise"></i>
+                        <li><button class="menu-btn" data-target-view="history-log"><i
+                                    class="ph ph-clock-counter-clockwise"></i>
                                 Historial</button></li>
                         <li><button class="menu-btn" data-target-view="payments"><i class="ph ph-wallet"></i> Métodos de
                                 Pago</button></li>
@@ -279,12 +280,9 @@ try {
 
                                     <!-- Honey-pot mejorado para engañar al autocompletado de Opera/Chrome -->
 
-                                    <input type="search" id="main-table-search" name="q_stk_main" 
-                                        placeholder="Buscar en la tabla..." 
-                                        spellcheck="false" 
-                                        autocomplete="off"
-                                        readonly 
-                                        onfocus="this.removeAttribute('readonly');"
+                                    <input type="search" id="main-table-search" name="q_stk_main"
+                                        placeholder="Buscar en la tabla..." spellcheck="false" autocomplete="off"
+                                        readonly onfocus="this.removeAttribute('readonly');"
                                         style="border: none; outline: none; background: transparent; width: 100%; height: 100%; padding: 10px 15px;">
 
                                     <button id="search-column-btn" class="btn btn-secondary">
@@ -612,25 +610,33 @@ try {
                 </div>
 
                 <div id="notifications" class="dashboard-view hidden">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b1b1b; padding-bottom: 15px; margin-bottom: 1.5rem; gap: 20px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b1b1b; padding-bottom: 15px; margin-bottom: 1.5rem; gap: 20px;">
                         <div style="min-width: 0;">
-                            <h2 style="margin:0; white-space: nowrap;"><i class="ph ph-bell"></i> Centro de Mensajes</h2>
+                            <h2 style="margin:0; white-space: nowrap;"><i class="ph ph-bell"></i> Centro de Mensajes
+                            </h2>
                             <div class="notif-tabs" style="display: flex; gap: 15px; margin-top: 15px;">
                                 <button class="notif-tab-btn active" data-tab="normal">Notificaciones</button>
-                                <button class="notif-tab-btn" data-tab="errors" style="white-space: nowrap;">Errores Técnicos</button>
+                                <button class="notif-tab-btn" data-tab="errors" style="white-space: nowrap;">Errores
+                                    Técnicos</button>
                             </div>
                         </div>
-                        <button id="clear-notifications-btn" class="btn btn-secondary" style="color: var(--accent-red); border-color: var(--accent-red); padding: 8px 16px; font-size: 0.85rem; flex-shrink: 0; width: auto; margin: 0;" title="Limpiar todas las notificaciones">
+                        <button id="clear-notifications-btn" class="btn btn-secondary"
+                            style="color: var(--accent-red); border-color: var(--accent-red); padding: 8px 16px; font-size: 0.85rem; flex-shrink: 0; width: auto; margin: 0;"
+                            title="Limpiar todas las notificaciones">
                             <i class="ph ph-trash"></i> Limpiar Todo
                         </button>
                     </div>
 
-                    <div id="tech-errors-header" class="hidden" style="background: #fff5f5; border: 2px solid var(--accent-red); padding: 20px; border-radius: 12px; margin-bottom: 1.5rem;">
+                    <div id="tech-errors-header" class="hidden"
+                        style="background: #fff5f5; border: 2px solid var(--accent-red); padding: 20px; border-radius: 12px; margin-bottom: 1.5rem;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <i class="ph-bold ph-wrench" style="font-size: 2.2rem; color: var(--accent-red);"></i>
                             <div>
-                                <strong style="color: var(--accent-red); display: block; font-size: 1.1rem;">Buzón de Errores Técnicos</strong>
-                                <p style="margin: 0; font-size: 0.85rem; color: #666;">Acá se enlistarán los errores para que así puedas notificarle al programador y enviarle el código específico.</p>
+                                <strong style="color: var(--accent-red); display: block; font-size: 1.1rem;">Buzón de
+                                    Errores Técnicos</strong>
+                                <p style="margin: 0; font-size: 0.85rem; color: #666;">Acá se enlistarán los errores
+                                    para que así puedas notificarle al programador y enviarle el código específico.</p>
                             </div>
                         </div>
                     </div>
@@ -663,15 +669,40 @@ try {
     </div>
 
     <div class="mobile-app-view hidden">
-        <div class="mobile-inventory-header" style="background: #fff; padding: 25px 20px 20px 20px; margin-bottom: 15px; position: sticky; top: 0; z-index: 100;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <small style="text-transform: uppercase; font-weight: 800; color: #888; font-size: 0.75rem; letter-spacing: 1.5px; margin: 0;">Inventario Activo</small>
-                <button onclick="window.location.href='select-db.php'" style="background: #fff; color: #1b1b1b; border: 2px solid #1b1b1b; border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; font-weight: 900; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <div class="mobile-inventory-header"
+            style="background: #fff; padding: 25px 20px 20px 20px; margin-bottom: 15px; position: sticky; top: 0; z-index: 100;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <small
+                    style="text-transform: uppercase; font-weight: 800; color: #888; font-size: 0.75rem; letter-spacing: 1.5px; margin: 0; line-height: 1; margin-top: 6px;">Inventario
+                    Activo</small>
+                <button onclick="window.location.href='select-db.php'"
+                    style="background: #fff; color: #1b1b1b; border: 2px solid #1b1b1b; border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; font-weight: 900; display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
                     CAMBIAR <i class="ph-bold ph-arrows-left-right"></i>
                 </button>
             </div>
-            <div id="mobile-current-inv-name" style="font-weight: 900; font-size: 1.8rem; color: #1b1b1b; letter-spacing: -1px; line-height: 1; margin-bottom: 12px; margin-top: 5px;"><?= $activeInventoryName ?></div>
+            <div id="mobile-current-inv-name"
+                style="font-weight: 900; font-size: 1.8rem; color: #1b1b1b; letter-spacing: -1px; line-height: 1; margin-bottom: 12px; margin-top: 5px;">
+
+                <?= $activeInventoryName ?>
+            </div>
             <div style="height: 4px; background: var(--accent-color, #1b1b1b); width: 40px; border-radius: 2px;"></div>
+        </div>
+
+        <div id="mobile-dollar-box"
+            style="background: #f9f9f9; border: 2px solid #1b1b1b; border-radius: 12px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="ph-fill ph-currency-dollar" style="font-size: 1.8rem; color: var(--accent-color);"></i>
+                <div style="display: flex; flex-direction: column;">
+                    <strong style="font-size: 1.1rem; color: #1b1b1b; line-height: 1;">Dólar: $<span
+                            id="mobile-dollar-price">---</span></strong>
+                    <span id="mobile-dollar-source"
+                        style="font-size: 0.75rem; color: #888; text-transform: uppercase; font-weight: bold; margin-top: 3px;">Cargando...</span>
+                </div>
+            </div>
+            <div
+                style="background: var(--accent-color-quat-opacity); border: 2px solid var(--accent-color); color: var(--accent-color); padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 0.8rem;">
+                Cambio Actual
+            </div>
         </div>
 
         <div class="mobile-actions-grid">
@@ -701,15 +732,34 @@ try {
             </div>
 
             <div class="mobile-card action-metrics" onclick="window.openMobileMetrics()">
-                <div class="icon-circle" style="background: var(--accent-blue);"><i class="ph-bold ph-chart-pie-slice"></i></div>
+                <div class="icon-circle"><i class="ph-bold ph-chart-pie-slice"></i></div>
                 <h3>Métricas</h3>
                 <p>Ventas y Gastos</p>
             </div>
 
             <div class="mobile-card action-history" onclick="window.openMobileHistory()">
-                <div class="icon-circle" style="background: var(--accent-violet);"><i class="ph-bold ph-clock-counter-clockwise"></i></div>
+                <div class="icon-circle"><i class="ph-bold ph-clock-counter-clockwise"></i></div>
                 <h3>Historial</h3>
                 <p>Ver Movimientos</p>
+            </div>
+
+            <div class="mobile-card action-providers" onclick="window.openMobileEntityList('providers')">
+                <div class="icon-circle"><i class="ph-bold ph-truck"></i>
+                </div>
+                <h3>Proveedores</h3>
+                <p>Ver listado</p>
+            </div>
+
+            <div class="mobile-card action-customers" onclick="window.openMobileEntityList('customers')">
+                <div class="icon-circle"><i class="ph-bold ph-users"></i></div>
+                <h3>Clientes</h3>
+                <p>Ver listado</p>
+            </div>
+
+            <div class="mobile-card action-employees" onclick="window.openMobileEntityList('employees')">
+                <div class="icon-circle"><i class="ph-bold ph-identification-card"></i></div>
+                <h3>Trabajadores</h3>
+                <p>Ver equipo</p>
             </div>
         </div>
 
@@ -888,427 +938,467 @@ try {
             </div>
         </div>
 
-                </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="delete-confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content view-container" style="max-width: 520px;">
+            <button id="close-delete-modal-btn" class="modal-close-btn">&times;</button>
+
+            <div class="modal-header">
+                <h2 style="color: var(--accent-red);"><i class="ph ph-warning-octagon"></i> Eliminar Inventario</h2>
+                <p>Esta acción <strong>no se puede deshacer</strong>. Se borrará permanentemente
+                    "<strong id="delete-db-name-confirm"></strong>" y todos sus datos.</p>
             </div>
-        </div>
 
-        <div id="delete-confirm-modal" class="modal-overlay hidden">
-            <div class="modal-content view-container" style="max-width: 520px;">
-                <button id="close-delete-modal-btn" class="modal-close-btn">&times;</button>
+            <div class="modal-body">
 
-                <div class="modal-header">
-                    <h2 style="color: var(--accent-red);"><i class="ph ph-warning-octagon"></i> Eliminar Inventario</h2>
-                    <p>Esta acción <strong>no se puede deshacer</strong>. Se borrará permanentemente
-                        "<strong id="delete-db-name-confirm"></strong>" y todos sus datos.</p>
+                <!-- ── Step 1: Nombre del inventario ── -->
+                <div id="delete-step-1">
+                    <p class="delete-step-label"><span class="delete-step-badge">1</span> Escribí el nombre exacto
+                        del
+                        inventario para continuar:</p>
+                    <input type="text" id="delete-confirm-input" placeholder="Nombre del Inventario" autocomplete="off">
+                    <div id="delete-error-message"
+                        style="color: var(--accent-red); font-weight: 600; margin-top: 8px; min-height: 20px;">
+                    </div>
                 </div>
 
-                <div class="modal-body">
+                <!-- ── Step 2: Verificación de identidad (oculto hasta que step 1 pase) ── -->
+                <div id="delete-step-2" class="hidden">
+                    <div class="delete-step-divider"></div>
 
-                    <!-- ── Step 1: Nombre del inventario ── -->
-                    <div id="delete-step-1">
-                        <p class="delete-step-label"><span class="delete-step-badge">1</span> Escribí el nombre exacto
-                            del
-                            inventario para continuar:</p>
-                        <input type="text" id="delete-confirm-input" placeholder="Nombre del Inventario"
-                            autocomplete="off">
-                        <div id="delete-error-message"
-                            style="color: var(--accent-red); font-weight: 600; margin-top: 8px; min-height: 20px;">
+                    <!-- Para usuarios Google: solo OTP -->
+                    <div id="delete-auth-google" class="hidden">
+                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificación de
+                            identidad
+                            — enviamos un código a tu correo.</p>
+                        <p id="delete-email-hint" class="delete-email-hint"></p>
+                        <div class="delete-otp-row">
+                            <button id="delete-send-otp-btn" class="btn btn-secondary delete-send-otp-btn">
+                                <i class="ph ph-paper-plane-tilt"></i> Enviar código
+                            </button>
+                            <span id="delete-otp-countdown" class="delete-otp-countdown hidden"></span>
                         </div>
+                        <input type="text" id="delete-otp-input" placeholder="Código de 6 dígitos" maxlength="6"
+                            inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code" class="hidden"
+                            style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
+                        <div id="delete-otp-status" class="delete-otp-status hidden"></div>
                     </div>
 
-                    <!-- ── Step 2: Verificación de identidad (oculto hasta que step 1 pase) ── -->
-                    <div id="delete-step-2" class="hidden">
-                        <div class="delete-step-divider"></div>
+                    <!-- Para usuarios con contraseña: contraseña + OTP -->
+                    <div id="delete-auth-password" class="hidden">
+                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificá tu identidad
+                            para
+                            continuar.</p>
 
-                        <!-- Para usuarios Google: solo OTP -->
-                        <div id="delete-auth-google" class="hidden">
-                            <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificación de
-                                identidad
-                                — enviamos un código a tu correo.</p>
-                            <p id="delete-email-hint" class="delete-email-hint"></p>
+                        <!-- Sub-step 2a: contraseña -->
+                        <div id="delete-password-section">
+                            <label class="micro-label" style="margin-bottom: 6px; display: block;">Tu contraseña de
+                                acceso:</label>
+                            <div style="position: relative;">
+                                <input type="password" id="delete-password-input" placeholder="Contraseña"
+                                    autocomplete="current-password" style="padding-right: 44px;">
+                                <button type="button" id="toggle-delete-password"
+                                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#888; font-size:1.2rem; padding:0;">
+                                    <i class="ph ph-eye"></i>
+                                </button>
+                            </div>
+                            <div id="delete-password-error"
+                                style="color: var(--accent-red); font-weight: 600; margin-top: 6px; min-height: 18px; font-size: 0.9rem;">
+                            </div>
+                            <button id="delete-verify-password-btn" class="btn btn-secondary"
+                                style="margin-top: 10px; width: 100%;" disabled>
+                                Verificar contraseña
+                            </button>
+                        </div>
+
+                        <!-- Sub-step 2b: OTP (se muestra tras verificar contraseña) -->
+                        <div id="delete-otp-section" class="hidden" style="margin-top: 16px;">
+                            <div class="delete-step-divider" style="margin-bottom: 16px;"></div>
+                            <p class="delete-step-label"><span class="delete-step-badge">3</span> Código de
+                                verificación
+                                al correo:</p>
+                            <p id="delete-email-hint-pass" class="delete-email-hint"></p>
                             <div class="delete-otp-row">
-                                <button id="delete-send-otp-btn" class="btn btn-secondary delete-send-otp-btn">
+                                <button id="delete-send-otp-btn-pass" class="btn btn-secondary delete-send-otp-btn">
                                     <i class="ph ph-paper-plane-tilt"></i> Enviar código
                                 </button>
-                                <span id="delete-otp-countdown" class="delete-otp-countdown hidden"></span>
+                                <span id="delete-otp-countdown-pass" class="delete-otp-countdown hidden"></span>
                             </div>
-                            <input type="text" id="delete-otp-input" placeholder="Código de 6 dígitos" maxlength="6"
-                                inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code" class="hidden"
-                                style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
-                            <div id="delete-otp-status" class="delete-otp-status hidden"></div>
-                        </div>
-
-                        <!-- Para usuarios con contraseña: contraseña + OTP -->
-                        <div id="delete-auth-password" class="hidden">
-                            <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificá tu identidad
-                                para
-                                continuar.</p>
-
-                            <!-- Sub-step 2a: contraseña -->
-                            <div id="delete-password-section">
-                                <label class="micro-label" style="margin-bottom: 6px; display: block;">Tu contraseña de
-                                    acceso:</label>
-                                <div style="position: relative;">
-                                    <input type="password" id="delete-password-input" placeholder="Contraseña"
-                                        autocomplete="current-password" style="padding-right: 44px;">
-                                    <button type="button" id="toggle-delete-password"
-                                        style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#888; font-size:1.2rem; padding:0;">
-                                        <i class="ph ph-eye"></i>
-                                    </button>
-                                </div>
-                                <div id="delete-password-error"
-                                    style="color: var(--accent-red); font-weight: 600; margin-top: 6px; min-height: 18px; font-size: 0.9rem;">
-                                </div>
-                                <button id="delete-verify-password-btn" class="btn btn-secondary"
-                                    style="margin-top: 10px; width: 100%;" disabled>
-                                    Verificar contraseña
-                                </button>
-                            </div>
-
-                            <!-- Sub-step 2b: OTP (se muestra tras verificar contraseña) -->
-                            <div id="delete-otp-section" class="hidden" style="margin-top: 16px;">
-                                <div class="delete-step-divider" style="margin-bottom: 16px;"></div>
-                                <p class="delete-step-label"><span class="delete-step-badge">3</span> Código de
-                                    verificación
-                                    al correo:</p>
-                                <p id="delete-email-hint-pass" class="delete-email-hint"></p>
-                                <div class="delete-otp-row">
-                                    <button id="delete-send-otp-btn-pass" class="btn btn-secondary delete-send-otp-btn">
-                                        <i class="ph ph-paper-plane-tilt"></i> Enviar código
-                                    </button>
-                                    <span id="delete-otp-countdown-pass" class="delete-otp-countdown hidden"></span>
-                                </div>
-                                <input type="text" id="delete-otp-input-pass" placeholder="Código de 6 dígitos"
-                                    maxlength="6" inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code"
-                                    class="hidden" style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
-                                <div id="delete-otp-status-pass" class="delete-otp-status hidden"></div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button id="cancel-delete-btn" class="btn btn-secondary">Cancelar</button>
-                    <button id="confirm-delete-btn" class="btn btn-danger" disabled>
-                        <i class="ph ph-trash"></i> Eliminar Permanentemente
-                    </button>
-                </div>
-            </div>
-        </div>
-
-
-        <div id="toast-container"></div>
-
-        <div id="stockify-global-modal" class="modal-overlay hidden">
-            <div class="modal-content" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h2 id="prompt-title">Título del Prompt</h2>
-                    <p id="prompt-message" style="text-align: left;">Mensaje de ayuda.</p>
-                </div>
-                <form id="prompt-form">
-                    <div class="modal-body">
-                        <input type="text" id="prompt-input" placeholder="Escribí acá..." required>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" id="prompt-cancel-btn" class="btn btn-secondary">Cancelar</button>
-                        <button type="submit" id="prompt-confirm-btn" class="btn btn-primary">Confirmar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div id="sale-modal-v2" class="modal-overlay hidden">
-            <div class="modal-content view-container" style="width: 900px; max-width: 95vw;">
-                <button class="modal-close-btn" id="close-sale-v2">&times;</button>
-
-                <div class="modal-header">
-                    <h2><i class="ph ph-shopping-cart"></i> Nueva Venta</h2>
-                    <p>Selecciona productos y asigna un cliente.</p>
-                </div>
-
-                <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.5rem;">
-
-                    <div class="rustic-block" style="padding: 1rem;">
-                        <div class="flex-row align-center justify-between">
-                            <div class="flex-row align-center" style="gap: 10px;">
-                                <i class="ph ph-user" style="font-size: 1.5rem;"></i>
-                                <div class="flex-column">
-                                    <span class="micro-label">Cliente</span>
-                                    <h3 id="v2-client-name" style="margin:0;">Consumidor Final</h3>
-                                    <input type="hidden" id="v2-client-id">
-                                </div>
-                            </div>
-                            <select id="v2-client-select" class="rustic-select" style="width: auto; min-width: 200px;">
-                                <option value="">Consumidor Final</option>
-                            </select>
+                            <input type="text" id="delete-otp-input-pass" placeholder="Código de 6 dígitos"
+                                maxlength="6" inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code"
+                                class="hidden" style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
+                            <div id="delete-otp-status-pass" class="delete-otp-status hidden"></div>
                         </div>
                     </div>
 
-                    <div class="flex-row" style="gap: 10px;">
-                        <div class="search-wrapper" style="height: 44px;">
-                            <input type="text" style="display:none" aria-hidden="true">
-                            <input type="search" id="v2-product-search" name="p_search"
-                                placeholder="Buscar producto para agregar..." spellcheck="false">
-                            <div id="v2-search-results" class="search-dropdown hidden"
-                                style="max-height: 300px; overflow-y: auto;"></div>
-                        </div>
-                    </div>
-
-                    <div class="table-wrapper" style="height: 300px; min-height: 300px;">
-                        <table id="v2-cart-table">
-                            <thead>
-                                <tr>
-                                    <th>Producto</th>
-                                    <th style="width: 100px; text-align: center;">Cant.</th>
-                                    <th style="width: 120px; text-align: right;">Precio Unit.</th>
-                                    <th style="width: 120px; text-align: right;">Subtotal</th>
-                                    <th style="width: 60px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="v2-cart-body">
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="flex-row justify-between align-center"
-                        style="background: #f4f4f4; padding: 1rem; border-radius: 8px; border: 2px solid #1b1b1b;">
-                        <h3 style="margin:0;">Total a Cobrar:</h3>
-                        <h1 style="margin:0; font-size: 2.5rem;" id="v2-cart-total">$0.00</h1>
-                    </div>
-
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" id="cancel-sale-v2">Cancelar</button>
-                    <button class="btn btn-primary" id="confirm-sale-v2" disabled>Confirmar Venta</button>
-                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="cancel-delete-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="confirm-delete-btn" class="btn btn-danger" disabled>
+                    <i class="ph ph-trash"></i> Eliminar Permanentemente
+                </button>
             </div>
         </div>
+    </div>
 
-        <div id="detail-sale-modal" class="modal-overlay hidden" style="z-index: 20000;">
-            <div class="modal-content" style="width: 400px; max-width: 90vw; background: #fff; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
-                <div class="modal-header" style="padding: 15px; border-bottom: 1px solid #eee;">
-                    <h3 style="margin:0;">Ticket de Venta</h3>
-                    <button class="modal-close-btn" id="close-detail-modal">&times;</button>
-                </div>
-                <div id="detail-modal-content" style="padding: 20px; overflow-y: auto; max-height: 80vh; background: #fff;">
-                </div>
+
+    <div id="toast-container"></div>
+
+    <div id="stockify-global-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 id="prompt-title">Título del Prompt</h2>
+                <p id="prompt-message" style="text-align: left;">Mensaje de ayuda.</p>
             </div>
-        </div>
-
-        <div id="restore-actions-tab" class="restore-tab" onclick="window.toggleActionsColumn()"
-            title="Mostrar Acciones">
-            <i class="ph ph-caret-left"></i> Acciones
-        </div>
-
-        <div id="column-manager-modal" class="modal-overlay hidden" style="z-index: 2000;">
-            <div class="modal-content" style="max-width: 800px;">
-                <div class="modal-header">
-                    <h2>Gestionar Columnas</h2>
-                    <button class="modal-close-btn" onclick="window.closeColumnManager()">&times;</button>
-                </div>
-
+            <form id="prompt-form">
                 <div class="modal-body">
-                    <div id="column-manager-list" class="column-manager-list"></div>
+                    <input type="text" id="prompt-input" placeholder="Escribí acá..." required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="prompt-cancel-btn" class="btn btn-secondary">Cancelar</button>
+                    <button type="submit" id="prompt-confirm-btn" class="btn btn-primary">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="sale-modal-v2" class="modal-overlay hidden">
+        <div class="modal-content view-container" style="width: 900px; max-width: 95vw;">
+            <button class="modal-close-btn" id="close-sale-v2">&times;</button>
+
+            <div class="modal-header">
+                <h2><i class="ph ph-shopping-cart"></i> Nueva Venta</h2>
+                <p>Selecciona productos y asigna un cliente.</p>
+            </div>
+
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+                <div class="rustic-block" style="padding: 1rem;">
+                    <div class="flex-row align-center justify-between">
+                        <div class="flex-row align-center" style="gap: 10px;">
+                            <i class="ph ph-user" style="font-size: 1.5rem;"></i>
+                            <div class="flex-column">
+                                <span class="micro-label">Cliente</span>
+                                <h3 id="v2-client-name" style="margin:0;">Consumidor Final</h3>
+                                <input type="hidden" id="v2-client-id">
+                            </div>
+                        </div>
+                        <select id="v2-client-select" class="rustic-select" style="width: auto; min-width: 200px;">
+                            <option value="">Consumidor Final</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="window.closeColumnManager()">Cancelar</button>
-                    <button class="btn btn-primary" onclick="window.saveColumnPreferences()">
-                        Guardar
+                <div class="flex-row" style="gap: 10px;">
+                    <div class="search-wrapper" style="height: 44px;">
+                        <input type="text" style="display:none" aria-hidden="true">
+                        <input type="search" id="v2-product-search" name="p_search"
+                            placeholder="Buscar producto para agregar..." spellcheck="false">
+                        <div id="v2-search-results" class="search-dropdown hidden"
+                            style="max-height: 300px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper" style="height: 300px; min-height: 300px;">
+                    <table id="v2-cart-table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th style="width: 100px; text-align: center;">Cant.</th>
+                                <th style="width: 120px; text-align: right;">Precio Unit.</th>
+                                <th style="width: 120px; text-align: right;">Subtotal</th>
+                                <th style="width: 60px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="v2-cart-body">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex-row justify-between align-center"
+                    style="background: #f4f4f4; padding: 1rem; border-radius: 8px; border: 2px solid #1b1b1b;">
+                    <h3 style="margin:0;">Total a Cobrar:</h3>
+                    <h1 style="margin:0; font-size: 2.5rem;" id="v2-cart-total">$0.00</h1>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-sale-v2">Cancelar</button>
+                <button class="btn btn-primary" id="confirm-sale-v2" disabled>Confirmar Venta</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="detail-sale-modal" class="modal-overlay hidden"
+        style="z-index: 20000; padding: 20px; align-items: center; justify-content: center;"
+        onclick="if(event.target === this) { this.classList.add('hidden'); this.style.display='none'; }">
+        <div class="modal-content"
+            style="width: 400px; max-width: 100%; background: #fff; padding: 0; overflow: hidden; display: flex; flex-direction: column; border-radius: 16px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <div class="modal-header"
+                style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin:0; font-size: 1.2rem;">Ticket de Venta</h3>
+                <button class="modal-close-btn"
+                    onclick="document.getElementById('detail-sale-modal').classList.add('hidden'); document.getElementById('detail-sale-modal').style.display='none';">&times;</button>
+            </div>
+            <div id="detail-modal-content"
+                style="padding: 20px; overflow-y: auto; max-height: calc(100vh - 120px); background: #fff;">
+            </div>
+        </div>
+    </div>
+
+    <div id="restore-actions-tab" class="restore-tab" onclick="window.toggleActionsColumn()" title="Mostrar Acciones">
+        <i class="ph ph-caret-left"></i> Acciones
+    </div>
+
+    <div id="column-manager-modal" class="modal-overlay hidden" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2>Gestionar Columnas</h2>
+                <button class="modal-close-btn" onclick="window.closeColumnManager()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div id="column-manager-list" class="column-manager-list"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeColumnManager()">Cancelar</button>
+                <button class="btn btn-primary" onclick="window.saveColumnPreferences()">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-price-checker-modal" class="mobile-modal-overlay hidden">
+        <div class="mobile-modal-content" style="height: 60vh;">
+            <div class="mobile-modal-header">
+                <h2>Consultar Precio</h2>
+                <button class="close-icon" onclick="window.closePriceChecker()">&times;</button>
+            </div>
+
+            <div id="checker-body" class="checker-body" style="padding: 0 20px; border-bottom: 2px solid #1b1b1b;">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <input type="text" id="checker-input" placeholder="Buscar producto o escanear..."
+                        style="width: 100%; padding: 15px; border: 2px solid #1b1b1b; border-radius: 12px; font-size: 1.1rem;">
+                    <button onclick="window.performPriceCheck()"
+                        style="background: var(--color-white); color: var(--color-black); border: 3px solid #1b1b1b; border-radius: 12px; width: 60px; font-size: 1.5rem;">
+                        <i class="ph-bold ph-magnifying-glass"></i>
                     </button>
                 </div>
-            </div>
-        </div>
 
-        <div id="mobile-price-checker-modal" class="mobile-modal-overlay hidden">
-            <div class="mobile-modal-content" style="height: 60vh;">
-                <div class="mobile-modal-header">
-                    <h2>Consultar Precio</h2>
-                    <button class="close-icon" onclick="window.closePriceChecker()">&times;</button>
+                <div id="checker-list-container" style="max-height: 330px; overflow-y: auto; display: none;"></div>
+
+                <div id="checker-result" class="hidden"
+                    style="text-align: center; border: 2px dashed #ccc; padding: 20px; border-radius: 12px;">
+                    <h3 id="res-name" style="margin: 0 0 10px 0; font-size: 1.2rem; color: #666;">Nombre del
+                        Producto
+                    </h3>
+                    <small>Precio de Venta</small>
+                    <h1 id="res-price"
+                        style="margin: 10px 0; margin-top: 0; font-size: 2.5rem; color: var(--accent-green);">$0.00
+                    </h1>
+
+                    <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
+                        <div style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
+                            <small>Stock</small>
+                            <div id="res-stock" style="font-weight: bold; font-size: 1.2rem;">0</div>
+                        </div>
+                        <div style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
+                            <small>Precio de Compra</small>
+                            <div id="res-cost" style="font-weight: bold; font-size: 1.2rem;">$0.00</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="checker-body" class="checker-body" style="padding: 0 20px; border-bottom: 2px solid #1b1b1b;">
+                <div id="checker-error" class="hidden"
+                    style="text-align: center; color: var(--accent-red); margin-top: 20px; font-weight: bold;">
+                    Producto no encontrado.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MÉTRICAS MÓVIL -->
+    <div id="mobile-metrics-modal" class="mobile-modal-overlay hidden">
+        <div class="mobile-modal-content" style="height: 90vh;">
+            <div class="mobile-modal-header">
+                <h2><i class="ph ph-chart-pie-slice"></i> Métricas Estratégicas</h2>
+                <button class="close-icon"
+                    onclick="document.getElementById('mobile-metrics-modal').classList.add('hidden')">&times;</button>
+            </div>
+            <div class="mobile-modal-body" style="padding: 20px; overflow-y: auto;">
+                <div id="metrics-loader" style="text-align: center; padding: 40px;">
+                    <i class="ph ph-spinner ph-spin" style="font-size: 2rem; color: var(--accent-color);"></i>
+                    <p>Analizando datos del periodo...</p>
+                </div>
+                <div id="metrics-content" class="hidden">
+
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                        <div id="btn-show-sales-detail"
+                            style="background: var(--accent-green-20); color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; border: 2px solid var(--accent-green); cursor: pointer; position: relative;">
+                            <small style="opacity: 0.9;">Total Ventas</small>
+                            <div id="mobile-m-sales" style="font-weight: 800; font-size: 1.3rem; margin-top: 5px;">$0.00
+                            </div>
+                            <i class="ph-bold ph-caret-right"
+                                style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-green); font-size: 1.2rem;"></i>
+                        </div>
+                        <div id="btn-show-expenses-detail"
+                            style="background: var(--accent-red-20); color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; border: 2px solid var(--accent-red); cursor: pointer; position: relative;">
+                            <small style="opacity: 0.9;">Total Gastos</small>
+                            <div id="mobile-m-expenses" style="font-weight: 800; font-size: 1.3rem; margin-top: 5px;">
+                                $0.00</div>
+                            <i class="ph-bold ph-caret-right"
+                                style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-red); font-size: 1.2rem;"></i>
+                        </div>
+                    </div>
+
+                    <div class="metric-card-mobile"
+                        style="background: #fff; color: #1b1b1b; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #1b1b1b; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <small style="color: #888;">Balance Neto (Hoy)</small>
+                            <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+                                <span id="mobile-m-balance">$0.00</span>
+                                <span id="mobile-m-balance-arrow"></span>
+                            </h2>
+                        </div>
+                        <div id="mobile-m-balance-icon"
+                            style="width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #eee; border: 2px solid transparent;">
+                            <i class="ph ph-scales" id="mobile-m-scales-icon" style="font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+
                     <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <input type="text" id="checker-input" placeholder="Buscar producto o escanear..."
-                            style="width: 100%; padding: 15px; border: 2px solid #1b1b1b; border-radius: 12px; font-size: 1.1rem;">
-                        <button onclick="window.performPriceCheck()"
-                            style="background: var(--color-white); color: var(--color-black); border: 3px solid #1b1b1b; border-radius: 12px; width: 60px; font-size: 1.5rem;">
-                            <i class="ph-bold ph-magnifying-glass"></i>
-                        </button>
-                    </div>
-
-                    <div id="checker-list-container" style="max-height: 330px; overflow-y: auto; display: none;"></div>
-
-                    <div id="checker-result" class="hidden"
-                        style="text-align: center; border: 2px dashed #ccc; padding: 20px; border-radius: 12px;">
-                        <h3 id="res-name" style="margin: 0 0 10px 0; font-size: 1.2rem; color: #666;">Nombre del
-                            Producto
-                        </h3>
-                        <small>Precio de Venta</small>
-                        <h1 id="res-price"
-                            style="margin: 10px 0; margin-top: 0; font-size: 2.5rem; color: var(--accent-green);">$0.00
-                        </h1>
-
-                        <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
-                            <div style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
-                                <small>Stock</small>
-                                <div id="res-stock" style="font-weight: bold; font-size: 1.2rem;">0</div>
+                        <div
+                            style="flex: 1; background: #f9f9f9; border: 2px solid #ddd; padding: 12px; border-radius: 12px; text-align: center;">
+                            <small style="color: #888;">Ticket Prom.</small>
+                            <div id="mobile-m-avg" style="font-weight: 800; font-size: 1rem; margin-top: 3px;">$0.00
                             </div>
-                            <div style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
-                                <small>Precio de Compra</small>
-                                <div id="res-cost" style="font-weight: bold; font-size: 1.2rem;">$0.00</div>
-                            </div>
+                        </div>
+                        <div
+                            style="flex: 1; background: #f9f9f9; border: 2px solid #ddd; padding: 12px; border-radius: 12px; text-align: center;">
+                            <small style="color: #888;">Operaciones</small>
+                            <div id="mobile-m-count" style="font-weight: 800; font-size: 1rem; margin-top: 3px;">0</div>
                         </div>
                     </div>
 
-                    <div id="checker-error" class="hidden"
-                        style="text-align: center; color: var(--accent-red); margin-top: 20px; font-weight: bold;">
-                        Producto no encontrado.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL MÉTRICAS MÓVIL -->
-        <div id="mobile-metrics-modal" class="mobile-modal-overlay hidden">
-            <div class="mobile-modal-content" style="height: 90vh;">
-                <div class="mobile-modal-header">
-                    <h2><i class="ph ph-chart-pie-slice"></i> Métricas Estratégicas</h2>
-                    <button class="close-icon" onclick="document.getElementById('mobile-metrics-modal').classList.add('hidden')">&times;</button>
-                </div>
-                <div class="mobile-modal-body" style="padding: 20px; overflow-y: auto;">
-                    <div id="metrics-loader" style="text-align: center; padding: 40px;">
-                        <i class="ph ph-spinner ph-spin" style="font-size: 2rem; color: var(--accent-color);"></i>
-                        <p>Analizando datos del periodo...</p>
-                    </div>
-                    <div id="metrics-content" class="hidden">
-                        
-                        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
-                            <div id="btn-show-sales-detail" style="background: var(--accent-green-20); color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; border: 2px solid var(--accent-green); cursor: pointer; position: relative;">
-                                <small style="opacity: 0.9;">Total Ventas</small>
-                                <div id="mobile-m-sales" style="font-weight: 800; font-size: 1.3rem; margin-top: 5px;">$0.00</div>
-                                <i class="ph-bold ph-caret-right" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-green); font-size: 1.2rem;"></i>
-                            </div>
-                            <div id="btn-show-expenses-detail" style="background: var(--accent-red-20); color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; border: 2px solid var(--accent-red); cursor: pointer; position: relative;">
-                                <small style="opacity: 0.9;">Total Gastos</small>
-                                <div id="mobile-m-expenses" style="font-weight: 800; font-size: 1.3rem; margin-top: 5px;">$0.00</div>
-                                <i class="ph-bold ph-caret-right" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-red); font-size: 1.2rem;"></i>
-                            </div>
-                        </div>
-
-                        <div class="metric-card-mobile" style="background: #fff; color: #1b1b1b; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #1b1b1b; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="metric-card-mobile"
+                        style="background: #fff; color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; margin-bottom: 25px; border: 2px solid #1b1b1b;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <small style="color: #888;">Balance Neto (Hoy)</small>
-                                <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
-                                    <span id="mobile-m-balance">$0.00</span>
-                                    <span id="mobile-m-balance-arrow"></span>
-                                </h2>
+                                <small style="opacity: 0.9; font-weight: bold;">Stock Valorizado (Costo)</small>
+                                <h2 id="mobile-m-valuation" style="margin: 5px 0 0 0; font-size: 1.6rem;">$0.00</h2>
                             </div>
-                            <div id="mobile-m-balance-icon" style="width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #eee; border: 2px solid transparent;">
-                                <i class="ph ph-scales" id="mobile-m-scales-icon" style="font-size: 1.5rem;"></i>
-                            </div>
+                            <i class="ph ph-package" style="font-size: 2.2rem; color: var(--accent-color);"></i>
                         </div>
-
-                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                            <div style="flex: 1; background: #f9f9f9; border: 2px solid #ddd; padding: 12px; border-radius: 12px; text-align: center;">
-                                <small style="color: #888;">Ticket Prom.</small>
-                                <div id="mobile-m-avg" style="font-weight: 800; font-size: 1rem; margin-top: 3px;">$0.00</div>
-                            </div>
-                            <div style="flex: 1; background: #f9f9f9; border: 2px solid #ddd; padding: 12px; border-radius: 12px; text-align: center;">
-                                <small style="color: #888;">Operaciones</small>
-                                <div id="mobile-m-count" style="font-weight: 800; font-size: 1rem; margin-top: 3px;">0</div>
-                            </div>
-                        </div>
-
-                        <div class="metric-card-mobile" style="background: #fff; color: var(--color-black, #1b1b1b); padding: 15px; border-radius: 15px; margin-bottom: 25px; border: 2px solid #1b1b1b;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <small style="opacity: 0.9; font-weight: bold;">Stock Valorizado (Costo)</small>
-                                    <h2 id="mobile-m-valuation" style="margin: 5px 0 0 0; font-size: 1.6rem;">$0.00</h2>
-                                </div>
-                                <i class="ph ph-package" style="font-size: 2.2rem; color: var(--accent-color);"></i>
-                            </div>
-                        </div>
-
-                        <h3 style="margin-bottom: 12px; border-left: 4px solid var(--accent-color); padding-left: 10px; font-size: 1.1rem;">Top Productos Vendidos</h3>
-                        <div id="mobile-m-top-products" style="margin-bottom: 20px;"></div>
-
-                        <h3 style="margin-bottom: 12px; border-left: 4px solid var(--accent-green); padding-left: 10px; font-size: 1.1rem;">Mejores Clientes</h3>
-                        <div id="mobile-m-top-clients" style="margin-bottom: 20px;"></div>
                     </div>
+
+                    <h3
+                        style="margin-bottom: 12px; border-left: 4px solid var(--accent-color); padding-left: 10px; font-size: 1.1rem;">
+                        Top Productos Vendidos</h3>
+                    <div id="mobile-m-top-products" style="margin-bottom: 20px;"></div>
+
+                    <h3
+                        style="margin-bottom: 12px; border-left: 4px solid var(--accent-green); padding-left: 10px; font-size: 1.1rem;">
+                        Mejores Clientes</h3>
+                    <div id="mobile-m-top-clients" style="margin-bottom: 20px;"></div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- MODAL DETALLE DE OPERACIONES MÓVIL (SUB-MODAL) -->
-        <div id="mobile-transaction-list-modal" class="mobile-modal-overlay hidden" style="z-index: 10001;">
-            <div class="mobile-modal-content" style="height: 80vh; border-top: 4px solid var(--accent-color);">
-                <div class="mobile-modal-header">
-                    <h2 id="m-trans-title">Detalle de Operaciones</h2>
-                    <button class="close-icon" onclick="document.getElementById('mobile-transaction-list-modal').classList.add('hidden')">&times;</button>
-                </div>
-                <div class="mobile-modal-body" id="m-trans-body" style="padding: 15px; overflow-y: auto;">
-                </div>
+    <!-- MODAL LISTADO DE ENTIDADES MÓVIL (Clientes, Proveedores, Trabajadores) -->
+    <div id="mobile-entity-list-modal" class="mobile-modal-overlay hidden" style="z-index: 10001;">
+        <div class="mobile-modal-content" style="height: 80vh; border-top: 4px solid var(--accent-color);">
+            <div class="mobile-modal-header">
+                <h2 id="m-entity-title">Entidades</h2>
+                <button class="close-icon"
+                    onclick="document.getElementById('mobile-entity-list-modal').classList.add('hidden')">&times;</button>
+            </div>
+            <div class="mobile-modal-body" id="m-entity-body" style="padding: 15px; overflow-y: auto;">
             </div>
         </div>
+    </div>
 
-        <!-- MODAL HISTORIAL MÓVIL -->
-        <div id="mobile-history-modal" class="mobile-modal-overlay hidden">
-            <div class="mobile-modal-content" style="height: 85vh;">
-                <div class="mobile-modal-header">
-                    <h2><i class="ph ph-clock-counter-clockwise"></i> Historial</h2>
-                    <button class="close-icon" onclick="document.getElementById('mobile-history-modal').classList.add('hidden')">&times;</button>
-                </div>
-                <div class="mobile-modal-body" id="mobile-history-body" style="padding: 15px; overflow-y: auto; height: calc(100% - 60px);">
-                    <div style="text-align: center; padding: 40px; color: #999;"><i class="ph ph-spinner ph-spin"></i> Cargando historial...</div>
-                </div>
+    <!-- MODAL DETALLE DE OPERACIONES MÓVIL (SUB-MODAL) -->
+    <div id="mobile-transaction-list-modal" class="mobile-modal-overlay hidden" style="z-index: 10001;">
+        <div class="mobile-modal-content" style="height: 80vh; border-top: 4px solid var(--accent-color);">
+            <div class="mobile-modal-header">
+                <h2 id="m-trans-title">Detalle de Operaciones</h2>
+                <button class="close-icon"
+                    onclick="document.getElementById('mobile-transaction-list-modal').classList.add('hidden')">&times;</button>
+            </div>
+            <div class="mobile-modal-body" id="m-trans-body" style="padding: 15px; overflow-y: auto;">
             </div>
         </div>
+    </div>
 
-
-        <!-- MODAL SELECTOR DE INVENTARIO MÓVIL -->
-        <div id="mobile-inventory-selector-modal" class="mobile-modal-overlay hidden">
-            <div class="mobile-modal-content" style="height: 80vh; border-top: 6px solid var(--accent-color);">
-                <div class="mobile-modal-header">
-                    <h2><i class="ph ph-buildings"></i> Mis Negocios</h2>
-                    <button class="close-icon" onclick="document.getElementById('mobile-inventory-selector-modal').classList.add('hidden')">&times;</button>
-                </div>
-                <div class="mobile-modal-body" id="m-inv-list-container" style="padding: 20px; overflow-y: auto; display: grid; gap: 15px;">
-                    <!-- Se llena vía JS -->
-                </div>
+    <!-- MODAL HISTORIAL MÓVIL -->
+    <div id="mobile-history-modal" class="mobile-modal-overlay hidden">
+        <div class="mobile-modal-content" style="height: 85vh;">
+            <div class="mobile-modal-header">
+                <h2><i class="ph ph-clock-counter-clockwise"></i> Historial</h2>
+                <button class="close-icon"
+                    onclick="document.getElementById('mobile-history-modal').classList.add('hidden')">&times;</button>
+            </div>
+            <div class="mobile-modal-body" id="mobile-history-body"
+                style="padding: 15px; overflow-y: auto; height: calc(100% - 60px);">
+                <div style="text-align: center; padding: 40px; color: #999;"><i class="ph ph-spinner ph-spin"></i>
+                    Cargando historial...</div>
             </div>
         </div>
+    </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-        <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
-        <script type="module" src="assets/js/import.js?v=1.2"></script>
-        <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
-        <script type="module" src="assets/js/dashboard.js?v=1.4"></script>
-        <script type="module" src="assets/js/sales/sales.js?v=1.2"></script>
-        <script type="module" src="assets/js/history/history.js?v=1.0"></script>
-        <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>
+    <!-- MODAL SELECTOR DE INVENTARIO MÓVIL -->
+    <div id="mobile-inventory-selector-modal" class="mobile-modal-overlay hidden">
+        <div class="mobile-modal-content" style="height: 80vh; border-top: 6px solid var(--accent-color);">
+            <div class="mobile-modal-header">
+                <h2><i class="ph ph-buildings"></i> Mis Negocios</h2>
+                <button class="close-icon"
+                    onclick="document.getElementById('mobile-inventory-selector-modal').classList.add('hidden')">&times;</button>
+            </div>
+            <div class="mobile-modal-body" id="m-inv-list-container"
+                style="padding: 20px; overflow-y: auto; display: grid; gap: 15px;">
+                <!-- Se llena vía JS -->
+            </div>
+        </div>
+    </div>
 
-        <script type="module">
-            import { pop_ups } from './assets/js/notifications/pop-up.js?v=3.0';
-            window.showLockedFeatureToast = (featureName) => {
-                pop_ups.system(`Funcionabilidad no incluída en su versión de pago Básico: ${featureName}`, 'Acceso Restringido');
-            };
-        </script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
-        <script type="module">
-            import { initMobileApp } from './assets/js/mobile/mobile-app.js';
-            document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(() => {
-                    initMobileApp();
-                }, 100);
-            });
-        </script>
+    <script type="module" src="assets/js/import.js?v=1.2"></script>
+    <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
+    <script type="module" src="assets/js/dashboard.js?v=1.4"></script>
+    <script type="module" src="assets/js/sales/sales.js?v=1.2"></script>
+    <script type="module" src="assets/js/history/history.js?v=1.0"></script>
+    <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>
 
-        <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script type="module">
+        import { pop_ups } from './assets/js/notifications/pop-up.js?v=3.0';
+        window.showLockedFeatureToast = (featureName) => {
+            pop_ups.system(`Funcionabilidad no incluída en su versión de pago Básico: ${featureName}`, 'Acceso Restringido');
+        };
+    </script>
+
+    <script type="module">
+        import { initMobileApp } from './assets/js/mobile/mobile-app.js?v=1.7';
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                initMobileApp();
+            }, 100);
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </body>
 
 </html>

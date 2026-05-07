@@ -43,13 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- Smart Sticky Header para Móviles ---
     const lastScrollTops = new WeakMap();
     if (!lastScrollTops.has(window)) lastScrollTops.set(window, 0);
 
     const header = document.querySelector('header');
 
-    // Detectar si el usuario está en móvil
     const isMobile = () => window.innerWidth <= 768;
 
     const handleScroll = (scroller) => {
@@ -57,30 +55,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const promoBar = document.querySelector('.promo-secondary-bar');
         let scrollTop = scroller === window ? window.pageYOffset : scroller.scrollTop;
-        
+
         if (!lastScrollTops.has(scroller)) lastScrollTops.set(scroller, 0);
         let lastScrollTop = lastScrollTops.get(scroller);
 
-        // Agregamos un umbral (sensibilidad) mayor, para evitar rebote de elastic scroll
         const delta = scrollTop - lastScrollTop;
         if (Math.abs(delta) < 40) return;
 
         if (delta > 0 && scrollTop > 100) {
-            // Scroll Down - Ocultar
             header.classList.add('nav-hidden');
             if (promoBar) promoBar.classList.add('nav-hidden');
         } else if (delta < 0) {
-            // Scroll Up - Mostrar
             header.classList.remove('nav-hidden');
             if (promoBar) promoBar.classList.remove('nav-hidden');
         }
         lastScrollTops.set(scroller, scrollTop <= 0 ? 0 : scrollTop);
     };
 
-    // Escuchar el scroll en window
     window.addEventListener('scroll', () => handleScroll(window), { passive: true });
 
-    // Escuchar el scroll en el contenedor especial de index.php si existe
     const mainScroller = document.getElementById('main-scroller');
     if (mainScroller) {
         lastScrollTops.set(mainScroller, 0);

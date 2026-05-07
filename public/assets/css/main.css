@@ -1452,3 +1452,13 @@ body.tour-active {
         pointer-events: none;
     }
 }
+
+/* Botón push para tickets */
+.btn-ticket-push {
+    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    -webkit-tap-highlight-color: transparent;
+}
+.btn-ticket-push:active {
+    transform: translate(2px, 2px) !important;
+    box-shadow: 0px 0px 0px var(--color-black, #1b1b1b) !important;
+}

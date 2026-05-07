@@ -819,7 +819,7 @@ table {
 .import-tab.active {
     background: var(--accent-color);
     color: white;
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
 }
 
 .import-tab:hover:not(.active) {
@@ -838,8 +838,15 @@ table {
 }
 
 @keyframes slideInUp {
-    from { transform: translateY(10px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .import-mapping-form {
@@ -3892,6 +3899,38 @@ body {
         background-color: var(--accent-red-20);
         color: var(--accent-red);
     }
+
+    .action-balance .icon-circle {
+        background-color: var(--accent-violet-20);
+        color: var(--accent-violet);
+    }
+
+    .action-metrics .icon-circle {
+        background-color: var(--accent-yellow-20);
+        color: var(--accent-yellow);
+    }
+
+    .action-history .icon-circle {
+        background-color: var(--accent-green-20);
+        color: var(--accent-green);
+    }
+
+    .action-providers .icon-circle {
+        background-color: var(--accent-blue-20);
+        color: var(--accent-blue);
+    }
+
+    .action-customers .icon-circle {
+        background-color: var(--accent-red-20);
+        color: var(--accent-red);
+    }
+
+    .action-employees .icon-circle {
+        background-color: var(--accent-violet-20);
+        color: var(--accent-violet);
+    }
+
+
 
     /* Naranja Consulta */
     .action-logout {

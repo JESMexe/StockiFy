@@ -285,13 +285,13 @@ export class SalesModule {
                     </div>
                 </div>
 
-                <div id="detail-sale-modal" class="modal-overlay hidden" style="display:none; z-index:2000;">
-                    <div class="modal-content" style="width:400px; max-width:90vw; background:#fff; padding:0; overflow:hidden; display:flex; flex-direction:column;">
-                        <div class="modal-header" style="padding:15px; border-bottom:1px solid #eee;">
-                            <h3>Ticket de Venta</h3>
-                            <button class="modal-close-btn" id="close-detail-modal">&times;</button>
+                <div id="detail-sale-modal" class="modal-overlay hidden" style="display:none; z-index:2000; padding: 20px; align-items: center; justify-content: center;" onclick="if(event.target === this) window.salesModuleInstance.closeModal('detail-sale-modal')">
+                    <div class="modal-content" style="width:400px; max-width: 100%; background:#fff; padding:0; overflow:hidden; display:flex; flex-direction:column; border-radius: 16px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                        <div class="modal-header" style="padding:15px; border-bottom:1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 1.2rem;">Ticket de Venta</h3>
+                            <button class="modal-close-btn" id="close-detail-modal" onclick="window.salesModuleInstance.closeModal('detail-sale-modal')">&times;</button>
                         </div>
-                        <div id="detail-modal-content" style="padding:20px; overflow-y:auto; max-height:80vh; background:#fff;"></div>
+                        <div id="detail-modal-content" style="padding:20px; overflow-y:auto; max-height: calc(100vh - 120px); background:#fff;"></div>
                     </div>
                 </div>
             </div>
@@ -1045,6 +1045,9 @@ export class SalesModule {
     }
 
     async showDetails(id) {
+        if (!document.getElementById('detail-modal-content')) {
+            this.init();
+        }
         try {
             const res = await getSaleDetails(id); if (!res.success) throw new Error(res.message || "Error al cargar detalles");
             const s = res.sale;

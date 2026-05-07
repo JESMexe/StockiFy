@@ -2,10 +2,12 @@
  */
 import { pop_ups } from "../notifications/pop-up.js?v=3.0";
 import * as api from "../api.js";
+import { getWhatsAppLink } from "../universal-functions.js";
 
 export async function initMobileApp() {
     console.log("📱 StockiFy Mobile Mode Iniciado");
     updateMobileInventoryName();
+    updateMobileDollarInfo();
 
     const checkerInput = document.getElementById('checker-input');
     if (checkerInput) {
@@ -29,6 +31,38 @@ export async function initMobileApp() {
     if(closeChecker) closeChecker.onclick = window.closePriceChecker;
 }
 
+async function updateMobileDollarInfo() {
+    try {
+        const rateData = await api.getExchangeRate();
+        const priceEl = document.getElementById('mobile-dollar-price');
+        const sourceEl = document.getElementById('mobile-dollar-source');
+        if (priceEl && sourceEl) {
+            priceEl.textContent = parseFloat(rateData.buy).toFixed(2);
+            
+            let s = (rateData.source || 'Auto').toLowerCase();
+            let readable = 'Automático';
+            if (s.includes('cache')) readable = 'Automático (Caché)';
+            else if (s === 'manual') readable = 'Personalizado';
+            else if (s === 'blue') readable = 'Blue (Mercado)';
+            else if (s === 'oficial') readable = 'Oficial (Bancario)';
+            else if (s === 'mep') readable = 'MEP (Bolsa)';
+            else if (s === 'ccl') readable = 'CCL (Contado c/ Liq.)';
+            else if (s === 'tarjeta') readable = 'Dólar Tarjeta';
+            else if (s !== 'auto') readable = s.charAt(0).toUpperCase() + s.slice(1);
+            
+            sourceEl.textContent = `Modo: ${readable}`;
+        }
+    } catch (e) {
+        console.warn("No se pudo cargar la cotización en la vista móvil.", e);
+        const priceEl = document.getElementById('mobile-dollar-price');
+        const sourceEl = document.getElementById('mobile-dollar-source');
+        if (priceEl && sourceEl) {
+            priceEl.textContent = "Error";
+            sourceEl.textContent = "Sin Conexión";
+        }
+    }
+}
+
 function closeMobileTransaction() {
     const ids = ['create-sale-modal', 'create-purchase-modal', 'grey-background', 'new-transaction-container'];
     ids.forEach(id => {
@@ -40,6 +74,89 @@ function closeMobileTransaction() {
     });
 }
 
+window.openMobileEntityList = function(type) {
+    const modal = document.getElementById('mobile-entity-list-modal');
+    if (!modal) return;
+    
+    // Check if locked
+    const menuBtn = document.querySelector(`.menu-btn[data-target-view="${type}"]`);
+    if (!menuBtn) {
+        pop_ups.info("No tienes acceso a esta sección o no está lista.");
+        return;
+    }
+    
+    // Configurar titulo
+    let title = 'Lista';
+    let icon = 'ph-users';
+    if (type === 'providers') { title = 'Proveedores'; icon = 'ph-truck'; }
+    if (type === 'customers') { title = 'Clientes'; icon = 'ph-users'; }
+    if (type === 'employees') { title = 'Trabajadores'; icon = 'ph-identification-card'; }
+    
+    document.getElementById('m-entity-title').innerHTML = `<i class="ph ${icon}"></i> ${title}`;
+    
+    // Mostrar modal
+    modal.classList.remove('hidden');
+    document.getElementById('m-entity-body').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><i class="ph ph-spinner ph-spin"></i> Cargando...</div>';
+    
+    // Cargar datos
+    loadMobileEntityData(type);
+};
+
+async function loadMobileEntityData(type) {
+    const container = document.getElementById('m-entity-body');
+    try {
+        let endpoint = '';
+        if (type === 'providers') endpoint = '/api/providers/get-all';
+        if (type === 'customers') endpoint = '/api/customers/get-all';
+        if (type === 'employees') endpoint = '/api/employees/get-all';
+        
+        const response = await fetch(endpoint + '?order=DESC');
+        const data = await response.json();
+        
+        let list = [];
+        if (type === 'providers') list = data.providers || [];
+        if (type === 'customers') list = data.customers || [];
+        if (type === 'employees') list = data.employees || [];
+        
+        if (!list || list.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><p>No hay registros.</p></div>';
+            return;
+        }
+        
+        let html = '';
+        const totalItems = list.length;
+        list.forEach((item, index) => {
+            const name = item.full_name || item.name || 'Desconocido';
+            const extra = item.phone || item.email || item.role || item.cuit || '';
+            const displayNum = totalItems - index;
+            
+            const waLink = getWhatsAppLink(item.phone);
+            const waButtonHtml = waLink 
+                ? `<a href="${waLink}" target="_blank" style="color: var(--accent-green); text-decoration:none; display:flex; align-items:center; justify-content:center; padding: 5px; background: var(--accent-green-20); border-radius: 6px; font-size: 1.2rem;"><i class="ph-fill ph-whatsapp-logo"></i></a>`
+                : `<div style="color: #ccc; display:flex; align-items:center; justify-content:center; padding: 5px; background: #eee; border-radius: 6px; font-size: 1.2rem;"><i class="ph-fill ph-whatsapp-logo"></i></div>`;
+            
+            html += `
+                <div style="background: #fff; padding: 15px; border-radius: 12px; border: 2px solid #1b1b1b; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; flex-direction: column;">
+                        <strong style="font-size: 1.1rem; color: #1b1b1b;">${name}</strong>
+                        ${extra ? `<small style="color: #666; margin-top: 4px;">${extra}</small>` : ''}
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        ${waButtonHtml}
+                        <div style="background: var(--accent-color-quat-opacity); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 0.8rem;">
+                            #${displayNum}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+    } catch (e) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent-red); font-weight: bold;">Error al cargar los datos.</div>';
+    }
+}
 
 window.openMobileTransaction = function(type) {
     console.log("Iniciando transacción:", type);
@@ -373,7 +490,7 @@ window.showMobileTransactionList = function(title, list, type) {
                 </div>
                 <div style="text-align:right;">
                     <div style="font-weight:900; color:var(--accent-color); font-size:1.1rem;">${fmt(item.total_amount)}</div>
-                    <button class="btn-brutal-mini" onclick="window.viewTransactionDetail(${item.id}, '${type}')" style="margin-top:5px; padding:4px 8px; font-size:0.7rem;">
+                    <button class="btn-ticket-push" onclick="window.viewTransactionDetail(${item.id}, '${type}')" style="margin-top:5px; padding:6px 12px; font-size:0.75rem; background: #fff; color: var(--color-black, #1b1b1b); border: 2px solid var(--color-black, #1b1b1b); border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: 2px 2px 0px var(--color-black, #1b1b1b);">
                         VER TICKET
                     </button>
                 </div>
@@ -390,8 +507,15 @@ window.viewTransactionDetail = function(id, type) {
         } else {
             pop_ups.error("El módulo de ventas no está listo.");
         }
+    } else if (type === 'purchase') {
+        const module = window.purchasesModule || window.purchaseModuleInstance;
+        if (module && typeof module.showDetails === 'function') {
+            module.showDetails(id);
+        } else {
+            pop_ups.error("El módulo de compras no está listo.");
+        }
     } else {
-        pop_ups.info("Detalle de compra próximamente.");
+        pop_ups.info("Detalle de transacción próximamente.");
     }
 };
 
