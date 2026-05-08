@@ -22,10 +22,14 @@ class AnalyticsModel {
     }
 
     private function getDolarValue(): float {
-        if (isset($_SESSION['dolar_oficial'])) {
-            return (float)$_SESSION['dolar_oficial'];
+        try {
+            require_once dirname(__DIR__) . '/Services/ExchangeService.php';
+            $service = new \App\Services\ExchangeService();
+            $rates = $service->getContextualRate();
+            return (float)($rates['avg'] ?? $rates['sell'] ?? 1200.00);
+        } catch (\Exception $e) {
+            return 1200.00; // Solo como último recurso
         }
-        return 1200.00; // Valor de respaldo
     }
 
     private function parseCurrency($value): float {

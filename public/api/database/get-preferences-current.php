@@ -18,7 +18,7 @@ if (!$user || !$activeInventoryId) {
 
 $db = Database::getInstance();
 
-$stmt = $db->prepare("SELECT preferences FROM inventories WHERE id = ? AND user_id = ?");
+$stmt = $db->prepare("SELECT preferences, report_enabled FROM inventories WHERE id = ? AND user_id = ?");
 $stmt->execute([$activeInventoryId, $user['id']]);
 $inv = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -38,7 +38,8 @@ if ($inv) {
         'visible_columns' => $prefs['visible_columns'] ?? [],
         'hidden_columns' => $prefs['hidden_columns'] ?? null,
         'column_order' => $prefs['column_order'] ?? [],
-        'column_colors' => $prefs['column_colors'] ?? []
+        'column_colors' => $prefs['column_colors'] ?? [],
+        'report_enabled' => isset($inv['report_enabled']) ? (int)$inv['report_enabled'] : 1
     ];
     echo json_encode($response);
 } else {

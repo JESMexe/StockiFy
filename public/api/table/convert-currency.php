@@ -58,6 +58,13 @@ try {
         $db->exec("ALTER TABLE $tableName ADD COLUMN $metaCol VARCHAR(10) DEFAULT 'ARS'");
     }
 
+    $checkStmt = $db->prepare("SELECT COUNT(*) FROM $tableName WHERE $metaCol != :curr");
+    $checkStmt->execute([':curr' => $targetCurrency]);
+    if ((int)$checkStmt->fetchColumn() === 0) {
+        echo json_encode(['success' => false, 'message' => 'Los precios ya están en ' . $targetCurrency]);
+        exit;
+    }
+
     $exchangeConfig = $prefs['exchange_config'] ?? null;
     $service = new ExchangeService();
     $rates = $service->getContextualRate($exchangeConfig);
@@ -87,7 +94,7 @@ try {
     $stmt->execute([':rate' => $rate]);
     $rowsAffected = $stmt->rowCount();
 
-    $db->exec("UPDATE $tableName SET $metaCol = '$targetCurrency' WHERE $metaCol != '$targetCurrency'");
+    // La línea de limpieza destructiva fue eliminada para evitar corrupción de doble conversión
 
     $db->commit();
 

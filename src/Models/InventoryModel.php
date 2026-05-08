@@ -456,11 +456,11 @@ class InventoryModel
         try {
             // Si nos dan el ID del inventario, buscamos la tabla exacta
             if ($inventoryId) {
-                $sqlTable = "SELECT table_name FROM user_tables WHERE inventory_id = :inv_id LIMIT 1";
+                $sqlTable = "SELECT ut.table_name, i.preferences FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE ut.inventory_id = :inv_id LIMIT 1";
                 $params = [':inv_id' => $inventoryId];
             } else {
                 // Fallback (Peligroso si tiene varias DBs, pero compatible hacia atrás)
-                $sqlTable = "SELECT ut.table_name FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1";
+                $sqlTable = "SELECT ut.table_name, i.preferences FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1";
                 $params = [':uid' => $userId];
             }
 
@@ -472,8 +472,12 @@ class InventoryModel
 
             $safeTable = "`" . str_replace("`", "``", $row['table_name']) . "`";
 
-            // Asumimos columna 'stock'
-            $sql = "UPDATE {$safeTable} SET stock = stock + :qty WHERE id = :id";
+            // Leer mapeo dinámico de preferencias
+            $prefs = !empty($row['preferences']) ? json_decode($row['preferences'], true) : [];
+            $stockColName = $prefs['mapping']['stock'] ?? 'stock';
+            $safeStockCol = "`" . str_replace("`", "``", $stockColName) . "`";
+
+            $sql = "UPDATE {$safeTable} SET {$safeStockCol} = {$safeStockCol} + :qty WHERE id = :id";
             $stmtUpdate = $this->db->prepare($sql);
             return $stmtUpdate->execute([':qty' => $quantity, ':id' => $productId]);
         } catch (Exception $e) {

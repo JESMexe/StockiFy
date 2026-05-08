@@ -116,6 +116,11 @@ try {
         $currentPrefs['exchange_config'] = $input['exchange_config'];
     }
 
+    if (isset($input['report_enabled'])) {
+        $stmtReport = $db->prepare("UPDATE inventories SET report_enabled = ?, inactivity_days = 0 WHERE id = ?");
+        $stmtReport->execute([$input['report_enabled'] ? 1 : 0, $invId]);
+    }
+
     $stmtSave = $db->prepare("UPDATE inventories SET preferences = ? WHERE id = ?");
     $stmtSave->execute([json_encode($currentPrefs), $invId]);
 

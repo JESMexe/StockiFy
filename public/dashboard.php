@@ -481,6 +481,36 @@ try {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div class="rustic-block" style="margin-bottom: 1.5rem; border-color: var(--accent-color);">
+                                            <div class="block-header"
+                                                style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem;">
+                                                <label style="position: relative; display: inline-block; width: 40px; height: 20px; margin: 0;">
+                                                    <input type="checkbox" id="feature-daily-report" style="opacity: 0; width: 0; height: 0; position: absolute;" checked>
+                                                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: .4s; border-radius: 20px;" class="slider round"></span>
+                                                    <style>
+                                                        #feature-daily-report + .slider { background-color: #ccc; }
+                                                        #feature-daily-report:checked + .slider { background-color: var(--accent-color); }
+                                                        #feature-daily-report:focus + .slider { box-shadow: 0 0 1px var(--accent-color); }
+                                                        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+                                                        #feature-daily-report:checked + .slider:before { transform: translateX(20px); }
+                                                    </style>
+                                                </label>
+                                                <span class="option-label"
+                                                    style="font-weight: bold; font-size: 1.1rem; color: var(--accent-color);">Reporte Diario Automático</span>
+                                                <span id="report-status-text" style="font-size: 0.85rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; margin-left: auto;"></span>
+                                            </div>
+
+                                            <div class="reveal-inner" style="padding-left: 50px;">
+                                                <p style="font-size: 0.9rem; color: #666; margin-top: 0; margin-bottom: 1rem; line-height: 1.4;">
+                                                    Recibí un balance general de tu caja todos los días a las 22:00 hs (Ventas, Compras y Balance Final).
+                                                </p>
+                                                <p style="font-size: 0.8rem; color: #888; font-style: italic; margin-top: 0;">
+                                                    <i class="ph-bold ph-info" style="color: var(--accent-color);"></i> Si el inventario no registra movimientos durante 10 días, el reporte se pausará automáticamente.
+                                                </p>
+                                            </div>
+                                        </div>
+
                                         <div class="rustic-block">
                                             <div class="block-header"
                                                 style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem;">

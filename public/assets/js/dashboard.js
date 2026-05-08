@@ -4166,6 +4166,31 @@ async function setupRecomendedColumns() {
             radiosGain.forEach(r => { if (r.value === prefs.features.gain_type) r.checked = true; });
         }
 
+        const updateReportStatusText = (isEnabled) => {
+            const statusText = document.getElementById('report-status-text');
+            if(statusText) {
+                if(isEnabled) {
+                    statusText.textContent = 'Activado';
+                    statusText.style.backgroundColor = 'var(--accent-color-quat-opacity)';
+                    statusText.style.color = 'var(--accent-color)';
+                } else {
+                    statusText.textContent = 'Desactivado';
+                    statusText.style.backgroundColor = '#eaeaea';
+                    statusText.style.color = '#888';
+                }
+            }
+        };
+
+        const chkReport = document.getElementById('feature-daily-report');
+        if (chkReport && prefs.hasOwnProperty('report_enabled')) {
+            chkReport.checked = !!prefs.report_enabled;
+            updateReportStatusText(chkReport.checked);
+
+            chkReport.addEventListener('change', () => {
+                updateReportStatusText(chkReport.checked);
+            });
+        }
+
         if (prefs.exchange_config) {
             const ext = prefs.exchange_config;
             radiosExchange.forEach(r => { if (r.value === ext.type) r.checked = true; });
@@ -4217,7 +4242,14 @@ async function setupRecomendedColumns() {
                 manual_rate: inpManualRate ? parseFloat(inpManualRate.value) || 1200 : 1200
             };
 
-            const res = await api.setCurrentInventoryPreferences({ features: newFeat, exchange_config: newExchangeConfig });
+            const chkReport = document.getElementById('feature-daily-report');
+            const reportEnabled = chkReport ? chkReport.checked : true;
+
+            const res = await api.setCurrentInventoryPreferences({ 
+                features: newFeat, 
+                exchange_config: newExchangeConfig,
+                report_enabled: reportEnabled 
+            });
             if (res.success) {
                 activeFeatures = newFeat;
                 prefs.exchange_config = newExchangeConfig;

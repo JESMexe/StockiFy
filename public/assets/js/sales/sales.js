@@ -602,6 +602,9 @@ export class SalesModule {
             }
             exist.cantidad++;
         } else {
+            if (parseFloat(p.stock) <= 0) {
+                pop_ups.warning(`Atención: "${p.name}" no tiene stock disponible.`);
+            }
             let costInArs = p.cost_price != null ? parseFloat(p.cost_price) : null;
             if (costInArs != null && p.currency === 'USD') costInArs = costInArs * this.rates.USD;
             this.currentSale.items.push({
@@ -832,10 +835,14 @@ export class SalesModule {
                 const wasEdited = item.precio_original && Math.abs(item.precio - item.precio_original) > 0.01;
                 const editedBadge = wasEdited ? `<span style="font-size:0.65rem; color:var(--accent-color); margin-left:4px;" title="Precio original: ${fmtMoney(item.precio_original)}">✏️</span>` : '';
                 const belowCost = item.cost_price != null && item.precio < item.cost_price;
-                const costWarning = belowCost ? `<div style="font-size:0.65rem; color:var(--accent-red); font-weight:bold;">⚠ Bajo costo (${fmtMoney(item.cost_price)})</div>` : '';
+                const costWarning = belowCost ? `<div style="font-size:0.65rem; color:var(--accent-red); font-weight:bold; margin-top:2px;">⚠ Bajo costo (${fmtMoney(item.cost_price)})</div>` : '';
+                const negativeStock = item.cantidad > item.max_stock;
+                const stockWarning = negativeStock ? `<div style="font-size:0.65rem; color:var(--accent-red); font-weight:bold; margin-top:2px;">⚠ Stock insuficiente (quedará en negativo)</div>` : '';
+                
                 return `<div class="cart-card">
                     <div class="cart-row-top"><div class="cart-name">${item.nombre}</div><div class="cart-unit-price editable-price" data-idx="${idx}" title="Doble click para editar precio">${fmtMoney(item.precio)} c/u${editedBadge}</div></div>
                     ${costWarning}
+                    ${stockWarning}
                     <div class="cart-row-bottom"><div class="cart-total">${fmtMoney(item.precio * item.cantidad)}</div>
                     <div class="cart-controls-wrapper"><button class="ctrl-btn sub" data-idx="${idx}">-</button><div class="qty-val">${item.cantidad}</div><button class="ctrl-btn add" data-idx="${idx}">+</button><button class="del-btn del" data-idx="${idx}" title="Eliminar"><i class="ph ph-trash"></i></button></div></div>
                 </div>`;

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 declare(strict_types=1)
 ;
@@ -126,7 +126,8 @@ class MailService
         string $date,
         float $totalSales,
         float $totalPurchases,
-        float $balance
+        float $balance,
+        string $inventoryName = ''
     ): bool {
         try {
             $mail = $this->getMailer();
@@ -134,9 +135,10 @@ class MailService
             $mail->addAddress($toEmail);
             $mail->isHTML(true);
 
-            $mail->Subject = '📄 Tu Cierre de Caja Diario (' . $date . ')';
-            $mail->Subject = 'StockiFy Reportes: Cierre de caja del ' . $date;
-            $mail->AltBody = "Hola {$userName}, tu balance del {$date}: Ingresos $ {$totalSales} | Egresos $ {$totalPurchases} | Balance Final: $ {$balance}.";
+            $subjectInv = $inventoryName ? " - $inventoryName" : "";
+            $mail->Subject = 'StockiFy Reportes: Cierre de caja del ' . $date . $subjectInv;
+            $mail->Body = $this->generateDailyBalanceEmailHtml($userName, $date, $totalSales, $totalPurchases, $balance, $inventoryName);
+            $mail->AltBody = "Hola {$userName}, tu balance del {$date} para {$inventoryName}: Ingresos $ {$totalSales} | Egresos $ {$totalPurchases} | Balance Final: $ {$balance}.";
 
             return $mail->send();
         } catch (Exception | \Throwable $e) {
@@ -185,15 +187,17 @@ class MailService
         return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
     }
 
-    private function generateDailyBalanceEmailHtml(string $userName, string $date, float $totalSales, float $totalPurchases, float $balance): string
+    private function generateDailyBalanceEmailHtml(string $userName, string $date, float $totalSales, float $totalPurchases, float $balance, string $inventoryName = ''): string
     {
         $c = $balance >= 0 ? '#A3BE8C' : '#BF616A';
         $safe = htmlspecialchars($userName, ENT_QUOTES, 'UTF-8');
         $sd = htmlspecialchars($date, ENT_QUOTES, 'UTF-8');
+        $si = htmlspecialchars($inventoryName, ENT_QUOTES, 'UTF-8');
         $bf = '$ ' . number_format($balance, 2, ',', '.');
         $sf = '$ ' . number_format($totalSales, 2, ',', '.');
         $pf = '$ ' . number_format($totalPurchases, 2, ',', '.');
-        $x = "<h2 style='font-family:Outfit,Arial,sans-serif;color:{$c};margin:0 0 4px;font-size:26px;font-weight:700;'>Cierre de caja</h2><p style='font-family:Outfit,Arial,sans-serif;color:#999;font-size:12px;text-transform:uppercase;margin:0 0 24px;'>Resumen diario &mdash; {$sd}</p><p style='font-family:Outfit,Arial,sans-serif;color:#333;font-size:15px;line-height:1.7;margin:0 0 12px;'>Hola <strong>{$safe}</strong>,</p><p style='font-family:Outfit,Arial,sans-serif;color:#555;font-size:15px;line-height:1.7;margin:0 0 24px;'>El d&iacute;a cerr&oacute;. Ac&aacute; ten&eacute;s el balance general de tus movimientos de caja de hoy.</p><div style='background:{$c}22;border:2px dashed {$c};border-radius:12px;padding:20px;margin-bottom:20px;'><table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin-bottom:14px;'><tr><td style='text-align:center;width:50%;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:#888;text-transform:uppercase;font-weight:600;'>Ingresos (Ventas)</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:22px;font-weight:700;color:#555;'>{$sf}</p></td><td style='text-align:center;width:50%;border-left:1px solid #ddd;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:#888;text-transform:uppercase;font-weight:600;'>Egresos (Compras)</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:22px;font-weight:700;color:#555;'>{$pf}</p></td></tr></table><div style='background:#fff;border:2px solid {$c};border-radius:8px;padding:14px;text-align:center;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:{$c};text-transform:uppercase;font-weight:600;'>Balance neto</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:36px;font-weight:900;color:{$c};'>{$bf}</p></div></div><p style='font-family:Outfit,Arial,sans-serif;color:#888;font-size:13px;line-height:1.7;margin:0;font-style:italic;'>Ten&eacute;s en claro tu balance diario. Eso te ayuda a prever gastos y calcular la ganancia real de tu negocio.</p>";
+        $invHtml = $si ? "<p style='font-family:Outfit,Arial,sans-serif;color:{$c};font-size:16px;font-weight:700;margin:0 0 24px;text-transform:uppercase;'>Inventario: {$si}</p>" : "";
+        $x = "<h2 style='font-family:Outfit,Arial,sans-serif;color:{$c};margin:0 0 4px;font-size:26px;font-weight:700;'>Cierre de caja</h2><p style='font-family:Outfit,Arial,sans-serif;color:#999;font-size:12px;text-transform:uppercase;margin:0 0 24px;'>Resumen diario &mdash; {$sd}</p>{$invHtml}<p style='font-family:Outfit,Arial,sans-serif;color:#333;font-size:15px;line-height:1.7;margin:0 0 12px;'>Hola <strong>{$safe}</strong>,</p><p style='font-family:Outfit,Arial,sans-serif;color:#555;font-size:15px;line-height:1.7;margin:0 0 24px;'>Ac&aacute; ten&eacute;s el balance general de tus movimientos de caja de hoy.</p><div style='background:{$c}22;border:2px dashed {$c};border-radius:12px;padding:20px;margin-bottom:20px;'><table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin-bottom:14px;'><tr><td style='text-align:center;width:50%;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:#888;text-transform:uppercase;font-weight:600;'>Ingresos (Ventas)</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:22px;font-weight:700;color:#555;'>{$sf}</p></td><td style='text-align:center;width:50%;border-left:1px solid #ddd;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:#888;text-transform:uppercase;font-weight:600;'>Egresos (Compras)</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:22px;font-weight:700;color:#555;'>{$pf}</p></td></tr></table><div style='background:#fff;border:2px solid {$c};border-radius:8px;padding:14px;text-align:center;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:{$c};text-transform:uppercase;font-weight:600;'>Balance neto</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:36px;font-weight:900;color:{$c};'>{$bf}</p></div></div><p style='font-family:Outfit,Arial,sans-serif;color:#888;font-size:13px;line-height:1.7;margin:0;font-style:italic;'>Ten&eacute;s en claro tu balance diario. Eso te ayuda a prever gastos y calcular la ganancia real de tu negocio.</p>";
         return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
     }
 
