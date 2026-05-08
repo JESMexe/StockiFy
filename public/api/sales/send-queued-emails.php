@@ -45,7 +45,8 @@ try {
                     $sentCount++;
                 }
                 if (!empty($toCell)) {
-                    $waSvc->sendLowStockAlert($toCell, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock'], $invName);
+                    $productId = $alert['product_id'] ?? '-';
+                    $waSvc->sendLowStockAlert($toCell, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock'], $invName, $productId);
                     $sentCount++;
                 }
             } elseif ($alert['type'] === 'negative_profit') {

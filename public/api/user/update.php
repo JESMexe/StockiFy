@@ -39,6 +39,8 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Perfil actualizado']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el perfil']);
     }
 
 } catch (Exception $e) {

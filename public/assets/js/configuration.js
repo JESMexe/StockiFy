@@ -246,9 +246,19 @@ function initGeneralProfile() {
     const checkChanges = () => {
         let hasChanges = false;
         for (const [key, input] of Object.entries(inputs)) {
-            if (input && input.value.trim() !== (original[key] || '')) {
-                hasChanges = true;
-                break;
+            if (!input) continue;
+            
+            const isChanged = input.value.trim() !== (original[key] || '');
+            if (isChanged) hasChanges = true;
+            
+            // Toggle hint for this specific input
+            const container = input.closest('.rustic-block');
+            if (container) {
+                const hint = container.querySelector('.unsaved-hint');
+                if (hint) {
+                    if (isChanged) hint.classList.remove('hidden');
+                    else hint.classList.add('hidden');
+                }
             }
         }
         btnGuardar.disabled = !hasChanges;
@@ -278,7 +288,13 @@ function initGeneralProfile() {
             const result = await response.json();
 
             if (result.success) {
-                pop_ups.success("Perfil Guardado");
+                Swal.fire({
+                    title: '¡Guardado!',
+                    text: 'Tus datos se actualizaron correctamente.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
                 window.userData = { ...window.userData, ...payload };
                 checkChanges();
             } else {

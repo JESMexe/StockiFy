@@ -542,6 +542,7 @@ class InventoryModel
                         $alerts[] = [
                             'type' => 'low_stock',
                             'product_name' => $prodName,
+                            'product_id' => $productId,
                             'current_stock' => $newStock,
                             'min_stock' => $minStock,
                             'inventory_name' => $row['inv_name'] ?? 'Principal'
@@ -560,7 +561,7 @@ class InventoryModel
                             if (!empty($u['cell'])) {
                                 require_once dirname(__DIR__) . '/Services/WhatsappService.php';
                                 $waSvc = new \App\Services\WhatsappService();
-                                $waSvc->sendLowStockAlert($u['cell'], $u['full_name'] ?? 'Socio', $prodName, $newStock, $minStock, $row['inv_name'] ?? 'Principal');
+                                $waSvc->sendLowStockAlert($u['cell'], $u['full_name'] ?? 'Socio', $prodName, $newStock, $minStock, $row['inv_name'] ?? 'Principal', $productId);
                             }
                         }
                     }

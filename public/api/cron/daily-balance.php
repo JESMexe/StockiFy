@@ -22,13 +22,13 @@ try {
     $now = new DateTime('now', $tz);
 
     $start = new DateTime($now->format('Y-m-d 00:00:00'), $tz);
-    $end   = (clone $start)->modify('+1 day');
+    $end = (clone $start)->modify('+1 day');
     $startDate = $start->format('Y-m-d H:i:s');
-    $endDate   = $end->format('Y-m-d H:i:s');
+    $endDate = $end->format('Y-m-d H:i:s');
 
     $db = \App\core\Database::getInstance();
     $db->query("SET time_zone = '-03:00'");
-    
+
     $mailService = new \App\Services\MailService();
     $whatsappService = new \App\Services\WhatsappService();
 
@@ -38,10 +38,11 @@ try {
 
     $emailsSent = 0;
     $whatsappsSent = 0;
+    $whatsappErrors = [];
 
     foreach ($users as $u) {
         $userId = $u['id'];
-        
+
         // Obtener inventarios del usuario que tengan los reportes activados
         $stmtInv = $db->prepare("SELECT id, name, inactivity_days FROM inventories WHERE user_id = ? AND report_enabled = 1");
         $stmtInv->execute([$userId]);
@@ -50,7 +51,7 @@ try {
         foreach ($inventories as $inv) {
             $invId = $inv['id'];
             $invName = $inv['name'];
-            $inactivityDays = (int)$inv['inactivity_days'];
+            $inactivityDays = (int) $inv['inactivity_days'];
 
             $stmtSales = $db->prepare("
                 SELECT SUM(total_amount) as total_sales, COUNT(*) as count_sales
@@ -68,29 +69,33 @@ try {
             $stmtPurchases->execute([$userId, $invId, $startDate, $endDate]);
             $purchasesData = $stmtPurchases->fetch(PDO::FETCH_ASSOC);
 
-            $totalSales = (float)($salesData['total_sales'] ?? 0);
-            $totalPurchases = (float)($purchasesData['total_purchases'] ?? 0);
+            $totalSales = (float) ($salesData['total_sales'] ?? 0);
+            $totalPurchases = (float) ($purchasesData['total_purchases'] ?? 0);
             $balance = $totalSales - $totalPurchases;
-            
-            $countSales = (int)($salesData['count_sales'] ?? 0);
-            $countPurchases = (int)($purchasesData['count_purchases'] ?? 0);
+
+            $countSales = (int) ($salesData['count_sales'] ?? 0);
+            $countPurchases = (int) ($purchasesData['count_purchases'] ?? 0);
 
             if ($countSales > 0 || $countPurchases > 0) {
                 // Hay movimientos: resetear inactividad a 0
                 $db->prepare("UPDATE inventories SET inactivity_days = 0 WHERE id = ?")->execute([$invId]);
 
                 if (!empty($u['email'])) {
-                    $mailService->sendDailyBalance($u['email'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), $totalSales, $totalPurchases, $balance, $invName);
-                    $emailsSent++;
+                    if ($mailService->sendDailyBalance($u['email'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), $totalSales, $totalPurchases, $balance, $invName)) {
+                        $emailsSent++;
+                    }
                 }
                 if (!empty($u['cell'])) {
-                    $whatsappService->sendDailyBalance($u['cell'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), $totalSales, $totalPurchases, $balance, $invName);
-                    $whatsappsSent++;
+                    if ($whatsappService->sendDailyBalance($u['cell'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), $totalSales, $totalPurchases, $balance, $invName)) {
+                        $whatsappsSent++;
+                    } else {
+                        $whatsappErrors[] = "Error para {$u['cell']}: " . $whatsappService->lastError;
+                    }
                 }
             } else {
                 // No hay movimientos: incrementar inactividad
                 $newInactivity = $inactivityDays + 1;
-                
+
                 if ($newInactivity >= 10) {
                     // Apagar reportes
                     $db->prepare("UPDATE inventories SET inactivity_days = ?, report_enabled = 0 WHERE id = ?")->execute([$newInactivity, $invId]);
@@ -101,12 +106,16 @@ try {
 
                 // Enviar aviso de "Sin movimientos"
                 if (!empty($u['email'])) {
-                    $mailService->sendDailyBalance($u['email'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), 0, 0, 0, $invName);
-                    $emailsSent++;
+                    if ($mailService->sendDailyBalance($u['email'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), 0, 0, 0, $invName)) {
+                        $emailsSent++;
+                    }
                 }
                 if (!empty($u['cell'])) {
-                    $whatsappService->sendDailyBalance($u['cell'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), 0, 0, 0, $invName);
-                    $whatsappsSent++;
+                    if ($whatsappService->sendDailyBalance($u['cell'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), 0, 0, 0, $invName)) {
+                        $whatsappsSent++;
+                    } else {
+                        $whatsappErrors[] = "Error para {$u['cell']}: " . $whatsappService->lastError;
+                    }
                 }
             }
         }
@@ -116,7 +125,8 @@ try {
         'success' => true,
         'message' => 'Cron de Balance Diario ejecutado con exito.',
         'emails_sent' => $emailsSent,
-        'whatsapps_sent' => $whatsappsSent
+        'whatsapps_sent' => $whatsappsSent,
+        'whatsapp_errors' => array_slice($whatsappErrors, 0, 3) // Mostrar solo los primeros 3 errores
     ]);
 
 } catch (Throwable $e) {

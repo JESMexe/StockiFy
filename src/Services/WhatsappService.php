@@ -39,7 +39,7 @@ class WhatsappService
             foreach ($parameters as $param) {
                 $bodyParams[] = [
                     'type' => 'text',
-                    'text' => (string)$param
+                    'text' => (string) $param
                 ];
             }
             $components = [
@@ -76,7 +76,7 @@ class WhatsappService
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            
+
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
@@ -107,15 +107,16 @@ class WhatsappService
      * Envia alerta de stock critico vía WhatsApp 
      * Nota: Ahora incluye la variable para el Inventario como 5to parametro
      */
-    public function sendLowStockAlert(string $toPhoneNumber, string $userName, string $productName, float $currentStock, float $minStock, string $inventoryName = 'Principal'): bool
+    public function sendLowStockAlert(string $toPhoneNumber, string $userName, string $productName, float $currentStock, float $minStock, string $inventoryName = 'Principal', $productId = '-'): bool
     {
-        // En base a comentarios del User: {{1}} Usuario, {{2}} Producto, {{3}} Stock Actual, {{4}} Min Stock, {{5}} Inventario
+        // En base a comentarios del User: {{1}} Usuario, {{2}} Inventario, {{3}} Producto, {{4}} Producto ID, {{5}} Stock Actual, {{6}} Min Stock
         $params = [
             $userName,
+            $inventoryName,
             $productName,
-            (string)$currentStock,
-            (string)$minStock,
-            $inventoryName
+            (string) $productId,
+            (string) $currentStock,
+            (string) $minStock
         ];
         return $this->sendTemplateMessage($toPhoneNumber, 'alerta_stock_critico', $params);
     }
@@ -127,14 +128,14 @@ class WhatsappService
      */
     public function sendDailyBalance(string $toPhoneNumber, string $userName, string $date, float $totalSales, float $totalPurchases, float $balance, string $inventoryName = 'General'): bool
     {
-        // En base a la plantilla original: {{1}} Usuario, {{2}} Fecha, {{3}} Ventas, {{4}} Compras, {{5}} Balance, {{6}} Inventario
+        // En base a la plantilla: {{1}} Inventario, {{2}} Usuario, {{3}} Fecha, {{4}} Ventas, {{5}} Compras, {{6}} Balance
         $params = [
+            $inventoryName,
             $userName,
             $date,
             number_format($totalSales, 2, ',', '.'),
             number_format($totalPurchases, 2, ',', '.'),
-            number_format($balance, 2, ',', '.'),
-            $inventoryName
+            number_format($balance, 2, ',', '.')
         ];
         return $this->sendTemplateMessage($toPhoneNumber, 'reporte_cierre_caja', $params);
     }

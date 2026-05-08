@@ -239,6 +239,10 @@ class UserModel
             $fields[] = "username = :username";
             $params[':username'] = $data['username'];
         }
+        if (isset($data['cell'])) {
+            $fields[] = "cell = :cell";
+            $params[':cell'] = $data['cell'];
+        }
         // Agrega otros campos si es necesario
 
         if (empty($fields)) {

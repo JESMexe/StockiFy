@@ -67,11 +67,13 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                 <label class="option-label" for="username">Nombre de Usuario</label>
                                 <input class="config-input" type="text" id="username" name="username"
                                     value="<?php echo htmlspecialchars($currentUser['username'] ?? ''); ?>">
+                                <p class="unsaved-hint hidden" style="color: var(--accent-color); font-size: 0.8rem; margin-top: 4px; font-weight: 500;">Recordá guardar los cambios</p>
                             </div>
                             <div class="rustic-block">
                                 <label class="option-label" for="full_name">Nombre Completo</label>
                                 <input class="config-input" type="text" id="full_name" name="full_name"
                                     value="<?php echo htmlspecialchars($currentUser['full_name'] ?? ''); ?>">
+                                <p class="unsaved-hint hidden" style="color: var(--accent-color); font-size: 0.8rem; margin-top: 4px; font-weight: 500;">Recordá guardar los cambios</p>
                             </div>
                             <div class="rustic-block" style="display: none;">
                                 <label class="option-label" for="dni">DNI / Identificación</label>
@@ -101,6 +103,7 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                                 </span>
                                 <input type="hidden" id="cell" name="cell"
                                     value="<?php echo htmlspecialchars($currentUser['cell'] ?? ''); ?>">
+                                <p class="unsaved-hint hidden" style="color: var(--accent-color); font-size: 0.8rem; margin-top: 4px; font-weight: 500;">Recordá guardar los cambios</p>
                             </div>
                         </div>
 
@@ -125,6 +128,27 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                             </div>
                         </div>
 
+                        <style>
+                            #btn-guardar {
+                                background-color: #ffffff !important;
+                                color: var(--accent-color) !important;
+                                box-shadow: none !important;
+                                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                            }
+                            #btn-guardar:hover:not(:disabled) {
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+                                transform: translateY(-3px);
+                            }
+                            #btn-guardar:active:not(:disabled) {
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+                                transform: translateY(1px);
+                            }
+                            #btn-guardar:disabled {
+                                background-color: #f1f5f9 !important;
+                                color: #94a3b8 !important;
+                                border-color: #cbd5e1 !important;
+                            }
+                        </style>
                         <button type="submit" class="btn btn-primary" id="btn-guardar" disabled>Guardar Cambios de
                             Perfil</button>
                     </form>
