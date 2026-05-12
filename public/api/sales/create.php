@@ -11,9 +11,13 @@ try {
     require_once $root . '/src/helpers/auth_helper.php';
     require_once $root . '/src/Models/SalesModel.php';
 
-    if (!function_exists('getCurrentUser')) throw new Exception('Auth error');
+    if (!function_exists('getCurrentUser'))
+        throw new Exception('Auth error');
     $user = getCurrentUser();
-    if (!$user) { echo json_encode(['success'=>false, 'message'=>'No autorizado']); exit; }
+    if (!$user) {
+        echo json_encode(['success' => false, 'message' => 'No autorizado']);
+        exit;
+    }
 
     $input = json_decode(file_get_contents('php://input'), true);
 
@@ -23,34 +27,38 @@ try {
     }
 
     $data = [
-        'total'             => (float)($input['total_final'] ?? $input['total'] ?? 0),
-        'amount_tendered'   => (float)($input['amount_tendered'] ?? 0),
-        'change_returned'   => (float)($input['change_returned'] ?? 0),
-        'commission_amount' => (float)($input['commission_amount'] ?? 0),
-        'discount_amount'   => (float)($input['discount_amount'] ?? 0),
+        'total' => (float) ($input['total'] ?? 0),
+        'amount_tendered' => (float) ($input['amount_tendered'] ?? 0),
+        'change_returned' => (float) ($input['change_returned'] ?? 0),
+        'commission_amount' => (float) ($input['commission_amount'] ?? 0),
+        'discount_amount' => (float) ($input['discount_amount'] ?? 0),
 
-        'exchange_rate_snapshot' => (float)($input['exchange_rate_snapshot'] ?? 1),
+        'exchange_rate_snapshot' => (float) ($input['exchange_rate_snapshot'] ?? 1),
 
-        'seller_id'         => !empty($input['seller_id']) ? (int)$input['seller_id'] : null,
+        'seller_id' => !empty($input['seller_id']) ? (int) $input['seller_id'] : null,
         'payment_method_id' => $primaryMethodId,
 
-        'notes'             => $input['notes'] ?? null,
-        'items'             => $input['items'] ?? [],
+        'notes' => $input['notes'] ?? null,
+        'items' => $input['items'] ?? [],
 
-        'payments'          => $input['payments'] ?? []
+        'payments' => $input['payments'] ?? []
     ];
 
-    $clientId = !empty($input['customer_id']) ? (int)$input['customer_id'] : null;
+    $clientId = !empty($input['customer_id']) ? (int) $input['customer_id'] : null;
 
-    if (session_status() === PHP_SESSION_NONE) { session_start(); }
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     $inventoryId = $input['inventory_id'] ?? $_SESSION['active_inventory_id'] ?? null;
-    
+
     $model = new SalesModel();
     if (!$inventoryId) {
         try {
             $ctx = $model->getInventoryContext($user['id']);
             $inventoryId = $ctx['inventory_id'];
-        } catch (Exception $e) { $inventoryId = 1; }
+        } catch (Exception $e) {
+            $inventoryId = 1;
+        }
     }
 
     if (empty($data['items'])) {
@@ -69,6 +77,6 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['success'=>false, 'message'=>$e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 ?>

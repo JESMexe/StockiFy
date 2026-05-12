@@ -22,11 +22,12 @@ const fmtDate = (dateString) => {
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+// Modificado: clave total_final unificada a total
 export class SalesModule {
     constructor() {
         this.containerId = 'sales';
         this.isInitialized = false;
-        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total_final: 0, exchange_rate: 1 };
+        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total: 0, exchange_rate: 1 };
         this.resources = { products: [], customers: [], paymentMethods: [], employees: [], config: null };
         this.currentSortOrder = 'DESC';
 
@@ -487,7 +488,7 @@ export class SalesModule {
             document.getElementById('sale-modal-body').style.display = 'flex';
         }
 
-        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total_final: 0, exchange_rate: this.rates.USD };
+        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total: 0, exchange_rate: this.rates.USD };
         this.activePaymentTabSingle = 'ARS';
         this.activePaymentTabMulti = 'ARS';
         this.showingCartInUSD = false;
@@ -765,12 +766,12 @@ export class SalesModule {
         const rawSurcharges = this.currentSale.payments.reduce((sum, p) => sum + p.surcharge_val, 0);
         const rawPaid = this.currentSale.payments.reduce((sum, p) => sum + p.amount, 0);
         this.currentSale.total_surcharges = rawSurcharges;
-        this.currentSale.total_final = round(rawSubtotal - discountAmount + rawSurcharges);
+        this.currentSale.total = round(rawSubtotal - discountAmount + rawSurcharges);
         const totalPaid = round(rawPaid);
-        const diff = round(totalPaid - this.currentSale.total_final);
+        const diff = round(totalPaid - this.currentSale.total);
         document.getElementById('checkout-subtotal').textContent = fmtMoney(this.currentSale.subtotal_items);
         document.getElementById('checkout-surcharges').textContent = fmtMoney(this.currentSale.total_surcharges);
-        document.getElementById('checkout-total-final').textContent = fmtMoney(this.currentSale.total_final);
+        document.getElementById('checkout-total-final').textContent = fmtMoney(this.currentSale.total);
         this.updateCartSubtotalDisplay();
         const diffEl = document.getElementById('checkout-diff');
         const rowDiff = document.getElementById('change-row');
@@ -786,7 +787,7 @@ export class SalesModule {
         const mobTotal = document.getElementById('mob-bar-total');
         const mobCount = document.getElementById('mob-bar-count');
         if (mobTotal && mobCount) {
-            mobTotal.textContent = fmtMoney(this.currentSale.total_final);
+            mobTotal.textContent = fmtMoney(this.currentSale.total);
             const count = this.currentSale.items.reduce((s, i) => s + i.cantidad, 0);
             mobCount.textContent = `${count} Ítems`;
         }
@@ -809,9 +810,9 @@ export class SalesModule {
             return;
         }
 
-        let totalToPayInCurrency = this.currentSale.total_final;
+        let totalToPayInCurrency = this.currentSale.total;
         if (this.activePaymentTabSingle !== 'ARS') {
-            totalToPayInCurrency = this.currentSale.total_final / this.rates[this.activePaymentTabSingle];
+            totalToPayInCurrency = this.currentSale.total / this.rates[this.activePaymentTabSingle];
         }
 
         const diff = givenAmount - totalToPayInCurrency;
@@ -838,7 +839,7 @@ export class SalesModule {
                 const costWarning = belowCost ? `<div style="font-size:0.65rem; color:var(--accent-red); font-weight:bold; margin-top:2px;">⚠ Bajo costo (${fmtMoney(item.cost_price)})</div>` : '';
                 const negativeStock = item.cantidad > item.max_stock;
                 const stockWarning = negativeStock ? `<div style="font-size:0.65rem; color:var(--accent-red); font-weight:bold; margin-top:2px;">⚠ Stock insuficiente (quedará en negativo)</div>` : '';
-                
+
                 return `<div class="cart-card">
                     <div class="cart-row-top"><div class="cart-name">${item.nombre}</div><div class="cart-unit-price editable-price" data-idx="${idx}" title="Doble click para editar precio">${fmtMoney(item.precio)} c/u${editedBadge}</div></div>
                     ${costWarning}
@@ -917,7 +918,7 @@ export class SalesModule {
 
         let finalPayments = JSON.parse(JSON.stringify(this.currentSale.payments));
         const rawPaid = finalPayments.reduce((sum, p) => sum + p.amount, 0);
-        const diff = rawPaid - this.currentSale.total_final;
+        const diff = rawPaid - this.currentSale.total;
 
         if (diff > 0.01 && finalPayments.length > 0) {
             let remainingDiff = diff;
@@ -947,7 +948,7 @@ export class SalesModule {
             seller_id: document.getElementById('sale-seller').value || null,
             commission_amount: this.currentSale.subtotal_items * (pct / 100),
             discount_amount: this.currentSale.discount_amount || 0,
-            total_final: this.currentSale.total_final,
+            total: this.currentSale.total,
             notes: document.getElementById('sale-notes').value,
             exchange_rate_snapshot: this.currentSale.exchange_rate,
             items: this.currentSale.items.map(i => ({ id: i.id || null, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio, subtotal: i.precio * i.cantidad })),
@@ -1076,7 +1077,7 @@ export class SalesModule {
             if (discAmt > 0) {
                 bodyContainer.insertAdjacentHTML('beforeend', `<div style="display:flex; justify-content:space-between; padding:8px 0; color:var(--accent-color); font-weight:700; border-top:1px dotted #ccc; margin-top:10px;"><span>Descuento:</span><span>-${fmtMoney(discAmt)}</span></div>`);
             }
-            bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-total-section"><span id="detail-total-label">TOTAL A PAGAR</span><span id="detail-total">${fmtMoney(s.total_final)}</span></div>`);
+            bodyContainer.insertAdjacentHTML('beforeend', `<div id="detail-total-section"><span id="detail-total-label">TOTAL A PAGAR</span><span id="detail-total">${fmtMoney(s.total)}</span></div>`);
             bodyContainer.insertAdjacentHTML('beforeend', '<h4>FORMA DE PAGO</h4>');
             const paymentsTable = document.createElement('table'); paymentsTable.innerHTML = '<tbody id="detail-payments-list"></tbody>';
             bodyContainer.appendChild(paymentsTable);
@@ -1232,7 +1233,7 @@ export class SalesModule {
 
                 <div style="background-color: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 4px; text-align: center; margin-bottom: 25px;">
                     <span style="display: block; font-size: 12px; color: #777; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">TOTAL A PAGAR</span>
-                    <span style="display: block; font-size: 28px; font-weight: bold; color: #333;">${fmtMoney(s.total_final)}</span>
+                    <span style="display: block; font-size: 28px; font-weight: bold; color: #333;">${fmtMoney(s.total)}</span>
                 </div>
 
                 <h4 style="margin: 0 0 10px 0; color: #555; text-transform: uppercase; font-size: 13px; text-align: center;">FORMA DE PAGO</h4>

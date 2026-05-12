@@ -9,10 +9,12 @@ use App\Models\InventoryModel;
 use PDO;
 use Exception;
 
-class SalesModel {
+class SalesModel
+{
     private PDO $db;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->db = Database::getInstance();
     }
 
@@ -20,21 +22,25 @@ class SalesModel {
        HELPERS Y MÉTODOS EXISTENTES (Preservados)
        ========================================================= */
 
-    public function getInventoryContext($userId) {
+    public function getInventoryContext($userId)
+    {
         $stmt = $this->db->prepare("SELECT i.id as inventory_id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1");
         $stmt->execute([':uid' => $userId]);
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$res) throw new Exception("No se encontró un inventario activo.");
+        if (!$res)
+            throw new Exception("No se encontró un inventario activo.");
         $prefs = json_decode($res['preferences'], true);
         $stockCol = $prefs['mapping']['stock'] ?? null;
-        if (!$stockCol) throw new Exception("Error Config: Columna Stock no definida.");
+        if (!$stockCol)
+            throw new Exception("Error Config: Columna Stock no definida.");
         return ['inventory_id' => $res['inventory_id'], 'table' => "`" . str_replace("`", "``", $res['table_name']) . "`", 'stock_col' => "`" . str_replace("`", "``", $stockCol) . "`"];
     }
 
     public function createSale($userId, $inventoryId, $clientId, $data, array &$outAlerts = []): bool|string
     {
         try {
-            if (!$this->db->inTransaction()) $this->db->beginTransaction();
+            if (!$this->db->inTransaction())
+                $this->db->beginTransaction();
 
             $sql = "INSERT INTO sales 
                     (user_id, inventory_id, customer_id, seller_id, payment_method_id, sale_date, total_amount, amount_tendered, change_returned, commission_amount, discount_amount, notes, proof_file) 
@@ -43,21 +49,21 @@ class SalesModel {
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
-                ':user'       => $userId,
-                ':inv'        => $inventoryId,
-                ':client'     => $clientId,
+                ':user' => $userId,
+                ':inv' => $inventoryId,
+                ':client' => $clientId,
 
                 // --- CORRECCIÓN AQUÍ: Usar seller_id o employee_id ---
-                ':seller'     => !empty($data['seller_id']) ? $data['seller_id'] : ($data['employee_id'] ?? null),
+                ':seller' => !empty($data['seller_id']) ? $data['seller_id'] : ($data['employee_id'] ?? null),
 
                 ':pay_method' => !empty($data['payment_method_id']) ? $data['payment_method_id'] : null,
-                ':total'      => $data['total_final'] ?? $data['total'],
-                ':tendered'   => $data['amount_tendered'] ?? 0,
-                ':change'     => $data['change_returned'] ?? 0,
-                ':comm'       => $data['commission_amount'] ?? 0,
-                ':disc'       => $data['discount_amount'] ?? 0,
-                ':notes'      => $data['notes'] ?? null,
-                ':file'       => $data['proof_file'] ?? null
+                ':total' => $data['total'],
+                ':tendered' => $data['amount_tendered'] ?? 0,
+                ':change' => $data['change_returned'] ?? 0,
+                ':comm' => $data['commission_amount'] ?? 0,
+                ':disc' => $data['discount_amount'] ?? 0,
+                ':notes' => $data['notes'] ?? null,
+                ':file' => $data['proof_file'] ?? null
             ]);
 
             // ... resto del código igual (Items y Pagos) ...
@@ -66,7 +72,7 @@ class SalesModel {
             // 2. Detalles y Stock
             if (!empty($data['items']) && is_array($data['items'])) {
                 $inventoryModel = new InventoryModel(); // Asegúrate de tener esto importado o instanciado
-                
+
                 // PREPARAR METADATOS PARA ALERTAS DE GANANCIA
                 $stmtInv = $this->db->prepare("SELECT i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId LIMIT 1");
                 $stmtInv->execute([':invId' => $inventoryId]);
@@ -87,12 +93,12 @@ class SalesModel {
                     $productId = !empty($item['id']) ? $item['id'] : null;
 
                     $stmtDet->execute([
-                        ':sid'   => $saleId,
-                        ':pid'   => $productId,
-                        ':name'  => $item['nombre'] ?? $item['nombre_producto'] ?? 'Item',
-                        ':qty'   => $item['cantidad'],
+                        ':sid' => $saleId,
+                        ':pid' => $productId,
+                        ':name' => $item['nombre'] ?? $item['nombre_producto'] ?? 'Item',
+                        ':qty' => $item['cantidad'],
                         ':price' => $item['precio'] ?? $item['precio_unitario'],
-                        ':sub'   => ($item['precio'] ?? $item['precio_unitario']) * $item['cantidad']
+                        ':sub' => ($item['precio'] ?? $item['precio_unitario']) * $item['cantidad']
                     ]);
 
                     // IMPORTANTE: Decrementar Stock y Controlar Ganancia
@@ -107,9 +113,9 @@ class SalesModel {
                             $costRow = $stmtCost->fetch(PDO::FETCH_ASSOC);
 
                             if ($costRow && isset($costRow['cost'])) {
-                                $cost = (float)$costRow['cost'];
-                                $salePrice = (float)($item['precio'] ?? $item['precio_unitario']);
-                                
+                                $cost = (float) $costRow['cost'];
+                                $salePrice = (float) ($item['precio'] ?? $item['precio_unitario']);
+
                                 if ($salePrice > 0 && $salePrice < $cost && $cost > 0) {
                                     $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? 'Producto';
                                     $outAlerts[] = [
@@ -142,7 +148,8 @@ class SalesModel {
             return $saleId;
 
         } catch (Exception $e) {
-            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ($this->db->inTransaction())
+                $this->db->rollBack();
             error_log("SalesModel Error: " . $e->getMessage());
             throw $e;
         }
@@ -164,14 +171,18 @@ class SalesModel {
         }
     }
 
-    public function updateSale($id, $userId, $data): bool {
+    public function updateSale($id, $userId, $data): bool
+    {
         try {
             $stmt = $this->db->prepare("UPDATE sales SET customer_id = :cust WHERE id = :id AND user_id = :user");
             return $stmt->execute([':id' => $id, ':user' => $userId, ':cust' => !empty($data['customer_id']) ? $data['customer_id'] : null]);
-        } catch (Exception $e) { return false; }
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
-    public function deleteSale($id, $userId): bool {
+    public function deleteSale($id, $userId): bool
+    {
         try {
             $this->db->beginTransaction();
             $stmtGetItems = $this->db->prepare("SELECT product_id as item_id, quantity FROM sale_details WHERE sale_id = :id");
@@ -181,17 +192,26 @@ class SalesModel {
             // Recuperar contexto (asumimos el activo para devolver stock)
             try {
                 $ctx = $this->getInventoryContext($userId);
-                $table = $ctx['table']; $stockCol = $ctx['stock_col'];
+                $table = $ctx['table'];
+                $stockCol = $ctx['stock_col'];
                 foreach ($items as $item) {
                     $this->db->exec("UPDATE $table SET $stockCol = $stockCol + {$item['quantity']} WHERE id = {$item['item_id']}");
                 }
-            } catch(Exception $e) { /* Si falla contexto, borramos igual la venta */ }
+            } catch (Exception $e) { /* Si falla contexto, borramos igual la venta */
+            }
 
             $stmtDel = $this->db->prepare("DELETE FROM sales WHERE id = :id AND user_id = :user");
             $stmtDel->execute([':id' => $id, ':user' => $userId]);
-            if ($stmtDel->rowCount() > 0) { $this->db->commit(); return true; }
-            $this->db->rollBack(); return false;
-        } catch (Exception $e) { $this->db->rollBack(); return false; }
+            if ($stmtDel->rowCount() > 0) {
+                $this->db->commit();
+                return true;
+            }
+            $this->db->rollBack();
+            return false;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
     }
 
     public function getHistory($userId, $inventoryId = null, $order = 'DESC'): array
@@ -302,14 +322,15 @@ class SalesModel {
         }
     }
 
-    public function getDetails($saleId, $userId, $inventoryId = null): ?array {
+    public function getDetails($saleId, $userId, $inventoryId = null): ?array
+    {
         try {
             // 1. Cabecera (Traemos datos de la tabla nueva 'sales')
             $stmt = $this->db->prepare("
                 SELECT 
                     s.*, 
                     s.sale_date as created_at,         -- JS usa 'created_at'
-                    s.total_amount as total_final,     -- JS usa 'total_final'
+                    s.total_amount as total,           -- JS usa 'total'
                     c.full_name as customer_name,
                     c.full_name as nombre_cliente,     -- Compatibilidad
                     c.email as customer_email,
@@ -328,7 +349,8 @@ class SalesModel {
             $stmt->execute($params);
             $sale = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$sale) return null;
+            if (!$sale)
+                return null;
 
             // 2. Items (Buscamos en 'sale_details' y renombramos para JS)
             // Tu JS usa: i.product_name, i.quantity, i.price, i.subtotal
@@ -361,7 +383,8 @@ class SalesModel {
                 ");
                 $stmtPay->execute([':id' => $saleId]);
                 $payments = $stmtPay->fetchAll(PDO::FETCH_ASSOC);
-            } catch(Exception $ex) { /* Ignorar si no hay pagos */ }
+            } catch (Exception $ex) { /* Ignorar si no hay pagos */
+            }
 
             return ['sale' => $sale, 'items' => $items, 'payments' => $payments];
 

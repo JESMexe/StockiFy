@@ -12,3 +12,8 @@
     RewriteCond %{REQUEST_FILENAME}\.php -f
     RewriteRule ^(.*)$ $1.php [L]
 </IfModule>
+
+# Proteger archivos de caché JSON
+<FilesMatch "\.json$">
+    Require all denied
+</FilesMatch>
