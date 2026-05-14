@@ -136,6 +136,27 @@ class PurchaseModel {
         try {
             $this->db->beginTransaction();
 
+            // 0. Restablecer stock de los productos comprados
+            $stmtItems = $this->db->prepare("SELECT product_id, quantity FROM purchase_details WHERE purchase_id = :id");
+            $stmtItems->execute([':id' => $id]);
+            $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+            
+            require_once __DIR__ . '/InventoryModel.php';
+            $invModel = new \App\Models\InventoryModel();
+            
+            // Traer inventory_id de la compra para pasarlo a decreaseStock
+            $stmtInv = $this->db->prepare("SELECT inventory_id FROM purchases WHERE id = :id AND user_id = :user");
+            $stmtInv->execute([':id' => $id, ':user' => $userId]);
+            $purchaseInvId = $stmtInv->fetchColumn();
+
+            if ($purchaseInvId) {
+                foreach ($items as $item) {
+                    if (!empty($item['product_id'])) {
+                        $invModel->decreaseStock($userId, $item['product_id'], $item['quantity'], $purchaseInvId);
+                    }
+                }
+            }
+
             // 1. Borrar detalles primero (Foreign Key cascade debería hacerlo, pero aseguramos)
             $stmtDet = $this->db->prepare("DELETE FROM purchase_details WHERE purchase_id = :id");
             $stmtDet->execute([':id' => $id]);

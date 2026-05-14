@@ -36,6 +36,20 @@ class SalesModel
         return ['inventory_id' => $res['inventory_id'], 'table' => "`" . str_replace("`", "``", $res['table_name']) . "`", 'stock_col' => "`" . str_replace("`", "``", $stockCol) . "`"];
     }
 
+    public function getInventoryContextById($userId, $inventoryId)
+    {
+        $stmt = $this->db->prepare("SELECT i.id as inventory_id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId AND i.user_id = :uid LIMIT 1");
+        $stmt->execute([':invId' => $inventoryId, ':uid' => $userId]);
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$res)
+            throw new Exception("No se encontró el inventario especificado.");
+        $prefs = json_decode($res['preferences'], true);
+        $stockCol = $prefs['mapping']['stock'] ?? null;
+        if (!$stockCol)
+            throw new Exception("Error Config: Columna Stock no definida.");
+        return ['inventory_id' => $res['inventory_id'], 'table' => "`" . str_replace("`", "``", $res['table_name']) . "`", 'stock_col' => "`" . str_replace("`", "``", $stockCol) . "`"];
+    }
+
     public function createSale($userId, $inventoryId, $clientId, $data, array &$outAlerts = []): bool|string
     {
         try {
@@ -159,11 +173,13 @@ class SalesModel
     {
         try {
             $sql = "
-                SET @count = 0;
-                UPDATE sales SET id = @count:= @count + 1 ORDER BY sale_date ASC;
-                ALTER TABLE sales AUTO_INCREMENT = 1;
+                UPDATE sales
+                CROSS JOIN (SELECT @cnt := 0) AS dummy
+                SET sales.id = (@cnt := @cnt + 1)
+                ORDER BY sale_date ASC
             ";
             $this->db->exec($sql);
+            $this->db->exec("ALTER TABLE sales AUTO_INCREMENT = 1");
             return true;
         } catch (Exception $e) {
             error_log("Error resetIds: " . $e->getMessage());
@@ -189,13 +205,21 @@ class SalesModel
             $stmtGetItems->execute([':id' => $id]);
             $items = $stmtGetItems->fetchAll(PDO::FETCH_ASSOC);
 
-            // Recuperar contexto (asumimos el activo para devolver stock)
+            // Recuperar contexto (inventario de la venta) para devolver stock
             try {
-                $ctx = $this->getInventoryContext($userId);
-                $table = $ctx['table'];
-                $stockCol = $ctx['stock_col'];
-                foreach ($items as $item) {
-                    $this->db->exec("UPDATE $table SET $stockCol = $stockCol + {$item['quantity']} WHERE id = {$item['item_id']}");
+                $saleInv = $this->db->prepare("SELECT inventory_id FROM sales WHERE id = :id");
+                $saleInv->execute([':id' => $id]);
+                $correctInvId = $saleInv->fetchColumn();
+                
+                if ($correctInvId) {
+                    $ctx = $this->getInventoryContextById($userId, $correctInvId);
+                    $table = $ctx['table'];
+                    $stockCol = $ctx['stock_col'];
+                    
+                    $stmtRestore = $this->db->prepare("UPDATE $table SET $stockCol = $stockCol + :qty WHERE id = :pid");
+                    foreach ($items as $item) {
+                        $stmtRestore->execute([':qty' => $item['quantity'], ':pid' => $item['item_id']]);
+                    }
                 }
             } catch (Exception $e) { /* Si falla contexto, borramos igual la venta */
             }

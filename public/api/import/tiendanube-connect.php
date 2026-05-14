@@ -19,7 +19,10 @@ if (!$inventoryId) {
 // Guardamos el inventory_id en la sesión para recuperarlo en el callback
 $_SESSION['tn_pending_inventory_id'] = $inventoryId;
 
-$authUrl = "https://www.tiendanube.com/apps/{$appId}/authorize?scope={$scope}";
+$state = bin2hex(random_bytes(16));
+$_SESSION['tn_oauth_state'] = $state;
+
+$authUrl = "https://www.tiendanube.com/apps/{$appId}/authorize?scope={$scope}&state={$state}";
 
 header("Location: $authUrl");
 exit;

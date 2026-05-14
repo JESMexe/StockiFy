@@ -138,8 +138,15 @@ try {
 
     $mappedCols = array_keys($finalMap);
 
+    $MAX_ROWS = 5000;
+    $rowCount = 0;
     $rows = [];
     while (($line = fgetcsv($fh, 0, $delimiter)) !== false) {
+        if (++$rowCount > $MAX_ROWS) {
+            fclose($fh);
+            jsonFail("El archivo supera el límite de {$MAX_ROWS} filas. Por favor, dividí el CSV en partes más pequeñas.");
+        }
+
         $allEmpty = true;
         foreach ($line as $v) {
             if (trim((string)$v) !== '') { $allEmpty = false; break; }

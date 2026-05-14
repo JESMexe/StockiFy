@@ -9,6 +9,9 @@ use App\core\Database;
 Dotenv\Dotenv::createImmutable($root)->load();
 
 $code = $_GET['code'] ?? null;
+$receivedState = $_GET['state'] ?? '';
+$expectedState = $_SESSION['tn_oauth_state'] ?? '';
+
 $inventoryId = $_SESSION['tn_pending_inventory_id'] ?? null;
 
 $appId = $_SERVER['TIENDANUBE_APP_ID'] ?? $_ENV['TIENDANUBE_APP_ID'] ?? null;
@@ -17,6 +20,11 @@ $clientSecret = $_SERVER['TIENDANUBE_CLIENT_SECRET'] ?? $_ENV['TIENDANUBE_CLIENT
 if (!$code || !$inventoryId) {
     die("Error: Datos de autorización no válidos o sesión expirada.");
 }
+
+if (!$receivedState || !hash_equals($expectedState, $receivedState)) {
+    die("Error: State inválido. Posible ataque CSRF.");
+}
+unset($_SESSION['tn_oauth_state']);
 
 if (!$appId || !$clientSecret) {
     die("Error: Credenciales de TiendaNube no encontradas en .env.");

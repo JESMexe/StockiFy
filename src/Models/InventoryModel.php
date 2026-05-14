@@ -499,11 +499,11 @@ class InventoryModel
             // 1. Identificar la tabla correcta
             if ($inventoryId) {
                 // Búsqueda precisa por ID de inventario
-                $sqlTable = "SELECT ut.table_name, i.name as inv_name FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE ut.inventory_id = :inv_id LIMIT 1";
+                $sqlTable = "SELECT ut.table_name, i.name as inv_name, i.preferences FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE ut.inventory_id = :inv_id LIMIT 1";
                 $params = [':inv_id' => $inventoryId];
             } else {
                 // Búsqueda "a ciegas" por usuario (Legacy)
-                $sqlTable = "SELECT ut.table_name, i.name as inv_name FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1";
+                $sqlTable = "SELECT ut.table_name, i.name as inv_name, i.preferences FROM user_tables ut JOIN inventories i ON ut.inventory_id = i.id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1";
                 $params = [':uid' => $userId];
             }
 
@@ -518,14 +518,18 @@ class InventoryModel
 
             $safeTable = "`" . str_replace("`", "``", $row['table_name']) . "`";
 
+            $prefs = !empty($row['preferences']) ? json_decode($row['preferences'], true) : [];
+            $stockColName = $prefs['mapping']['stock'] ?? 'stock';
+            $safeStockCol = "`" . str_replace("`", "``", $stockColName) . "`";
+
             // 2. CHECK ALERTA DE STOCK (Antes de descontar)
             // Ya no buscamos 'name' porque la columna del usuario puede tener cualquier nombre.
-            $stmtBefore = $this->db->prepare("SELECT stock, min_stock FROM {$safeTable} WHERE id = :id");
+            $stmtBefore = $this->db->prepare("SELECT {$safeStockCol} as stock, min_stock FROM {$safeTable} WHERE id = :id");
             $stmtBefore->execute([':id' => $productId]);
             $prod = $stmtBefore->fetch(PDO::FETCH_ASSOC);
 
             // 3. Ejecutar descuento
-            $sql = "UPDATE {$safeTable} SET stock = stock - :qty WHERE id = :id";
+            $sql = "UPDATE {$safeTable} SET {$safeStockCol} = {$safeStockCol} - :qty WHERE id = :id";
             $stmtUpdate = $this->db->prepare($sql);
             $success = $stmtUpdate->execute([':qty' => $quantity, ':id' => $productId]);
 
