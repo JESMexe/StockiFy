@@ -2,8 +2,10 @@
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
+require_once __DIR__ . '/../../../src/Models/ActivityLogModel.php';
 
 use App\Models\TableModel;
+use App\Models\ActivityLogModel;
 
 header('Content-Type: application/json');
 
@@ -35,6 +37,14 @@ if (!$activeInventoryId) {
     exit;
 }
 
+// RBAC: verificar acceso al inventario
+$myRole = getInventoryRole($user['id'], (int)$activeInventoryId);
+if (!$myRole) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Acceso denegado a este inventario.']);
+    exit;
+}
+
 try {
     $tableModel = new TableModel();
 
@@ -47,6 +57,21 @@ try {
     $tableName = $metadata['table_name'];
 
     if ($tableModel->deleteRow($tableName, $idToDelete)) {
+        // Auditoría
+        try {
+            $logModel = new ActivityLogModel();
+            $logModel->log(
+                (int)$activeInventoryId,
+                (int)$user['id'],
+                $myRole['name'],
+                'delete',
+                'product',
+                (string)$idToDelete,
+                'Producto eliminado (ID: ' . $idToDelete . ')'
+            );
+        } catch (\Throwable $logErr) {
+            error_log('ActivityLog error en delete-row: ' . $logErr->getMessage());
+        }
         echo json_encode(['success' => true, 'message' => 'Registro eliminado correctamente.']);
     } else {
         throw new Exception("No se pudo eliminar el registro en la base de datos.");

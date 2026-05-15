@@ -11,6 +11,7 @@ import { analyticsModuleInstance } from './statistics/statistics.js';
 import { paymentsModuleInstance } from './payment/payment.js';
 import { openImportModal } from './import.js';
 import { ui_helper } from "./ui-helper.js";
+import { usersModuleInstance } from './users/users.js';
 
 export let activeInventoryId = null;
 let allData = []; // Guardo todos los datos para filtrar
@@ -768,6 +769,8 @@ function showDashboardView(viewId) {
         }
     }
 }
+
+window.showDashboardView = showDashboardView;
 
 function setupMenuNavigation() {
     const menuButtons = document.querySelectorAll('.menu-btn');

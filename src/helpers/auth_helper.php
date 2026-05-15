@@ -36,28 +36,23 @@ if (!function_exists('getCurrentUser')) {
 if (!function_exists('getInventoryRole')) {
     /**
      * Obtiene el rol activo de un usuario para un inventario específico.
-     * Devuelve ['role_id' => X, 'name' => 'RoleName'] o null si no tiene acceso.
+     * Consulta ÚNICAMENTE inventory_collaborators (fuente de verdad del RBAC).
+     * El Owner es insertado automáticamente en esta tabla al crear el inventario.
+     * Devuelve ['role_id' => X, 'name' => 'RoleName'] o null si no tiene acceso activo.
      */
     function getInventoryRole(int $userId, int $inventoryId): ?array
     {
-        $db = \App\core\Database::getInstance();
-        
-        // 1. Verificar si es el dueño absoluto (Legacy fallback / Seguridad extra)
-        $stmtOwner = $db->prepare("SELECT id FROM inventories WHERE id = ? AND user_id = ?");
-        $stmtOwner->execute([$inventoryId, $userId]);
-        if ($stmtOwner->fetch()) {
-            return ['role_id' => 1, 'name' => 'Owner'];
-        }
+        $db = \App\Core\Database::getInstance();
 
-        // 2. Buscar en colaboradores activos
-        $stmtCollab = $db->prepare("
-            SELECT r.id as role_id, r.name 
+        $stmt = $db->prepare("
+            SELECT ic.role_id, r.name
             FROM inventory_collaborators ic
             JOIN roles r ON ic.role_id = r.id
             WHERE ic.inventory_id = ? AND ic.user_id = ? AND ic.status = 'active'
+            LIMIT 1
         ");
-        $stmtCollab->execute([$inventoryId, $userId]);
-        $res = $stmtCollab->fetch(PDO::FETCH_ASSOC);
+        $stmt->execute([$inventoryId, $userId]);
+        $res = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         return $res ?: null;
     }

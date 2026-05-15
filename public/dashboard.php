@@ -43,7 +43,15 @@ try {
 } catch (Exception $e) {
     $activeInventoryName = "Error BD";
 }
+<?php
+// Determinar rol del usuario en el inventario activo (para condicionales PHP en el template)
+$activeInventoryId = (int)($_SESSION['active_inventory_id'] ?? 0);
+$currentUserRbac   = ($activeInventoryId && $currentUser)
+    ? getInventoryRole((int)$currentUser['id'], $activeInventoryId)
+    : null;
+$isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
 ?>
+
 <!DOCTYPE html>
 <html lang="es" xmlns:type="http://www.w3.org/1999/xhtml">
 
@@ -159,6 +167,33 @@ try {
             <br>
             <button class="btn btn-primary" id="close-inventory-info-modal">Cerrar</button>
         </div>
+        
+        <div id="invite-collaborator-modal" class="hidden" style="background: white; border: 2px solid #1b1b1b; border-radius: 12px; padding: 25px; max-width: 450px; width: 90%; text-align: left; position: relative;">
+            <button id="close-invite-modal-btn" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #1b1b1b;"><i class="ph-bold ph-x"></i></button>
+            <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px; color: #1b1b1b; font-size: 1.4rem;">
+                <i class="ph-fill ph-envelope-simple-open" style="color: var(--accent-violet);"></i> Enviar Invitación
+            </h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
+                Ingresa el correo electrónico de la persona y asígnale un rol. Recibirá un email seguro con un enlace de acceso único.
+            </p>
+            <form id="invite-collaborator-form">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label class="micro-label" style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Correo Electrónico</label>
+                    <input type="email" id="invite-email" class="rustic-input" placeholder="ejemplo@correo.com" required style="width: 100%; box-sizing: border-box;">
+                </div>
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label class="micro-label" style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Rol Asignado</label>
+                    <select id="invite-role" class="rustic-select" required style="width: 100%; box-sizing: border-box;">
+                        <option value="3" selected>Empleado (Limitado - Sin acceso a métricas/configuración)</option>
+                        <option value="2">Administrador (Control total excepto borrar inventario)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" id="send-invite-submit-btn" style="width: 100%; height: 48px; background: var(--accent-violet); border-color: var(--accent-violet); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="ph-bold ph-paper-plane-right"></i> Enviar Invitación
+                </button>
+            </form>
+        </div>
+
     </div>
 
     <div class="desktop-app-view">
@@ -230,11 +265,13 @@ try {
                                         style="margin-left: auto; color: var(--accent-red)"></i></button></li>
                             <?php
                         endif; ?>
-                        <hr>
-                    </ul>
-
                     <h3>Usuario</h3>
                     <ul>
+                        <li>
+                            <button class="menu-btn" data-target-view="users-manage">
+                                <i class="ph ph-users-three"></i> Colaboradores
+                            </button>
+                        </li>
                         <li><button class="menu-btn" data-target-view="analysis"><i class="ph ph-chart-line"></i>
                                 Analíticas</button></li>
                         <li><button class="menu-btn" data-target-view="notifications"><i class="ph ph-bell"></i>
@@ -247,6 +284,7 @@ try {
                     </ul>
                 </nav>
             </aside>
+
 
             <main class="dashboard-main">
                 <div id="view-db" class="dashboard-view">
@@ -620,6 +658,7 @@ try {
                             </div>
                         </div>
 
+                        <?php if ($isOwner): ?>
                         <div class="accordion-item" style="border:2px solid var(--accent-red);">
                             <button class="accordion-header" aria-expanded="false">
                                 <span style="color: var(--accent-red)">Zona de Peligro</span>
@@ -632,12 +671,53 @@ try {
                                 <button id="delete-db-btn" class="btn btn-danger">Eliminar Inventario</button>
                             </div>
                         </div>
+                        <?php endif; ?>
 
                     </div>
                 </div>
 
                 <div id="analysis" class="dashboard-view hidden">
                 </div>
+
+                <div id="users-manage" class="dashboard-view hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b1b1b; padding-bottom: 15px; margin-bottom: 1.5rem;">
+                        <div>
+                            <h2 style="margin:0;"><i class="ph ph-users-three"></i> Gestión de Colaboradores</h2>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">Invitá a otras personas a tu inventario y administrá sus permisos.</p>
+                        </div>
+                        <button id="invite-collaborator-btn" class="btn btn-primary" style="margin:0;">
+                            <i class="ph ph-user-plus"></i> Nueva Invitación
+                        </button>
+                    </div>
+
+                    <div id="collaborators-list-container" style="background: #fff; border: 2px solid #1b1b1b; border-radius: 12px; padding: 20px;">
+                        <p style="color: #666;"><i class="ph ph-spinner ph-spin"></i> Cargando colaboradores...</p>
+                    </div>
+
+                    <!-- Panel de control de acceso por rol: solo visible para Owner (controlado vía JS) -->
+                    <div id="role-permissions-panel" class="hidden" style="margin-top: 2rem; border-top: 2px dashed #e5e5e5; padding-top: 1.5rem;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h3 style="margin: 0 0 4px; display: flex; align-items: center; gap: 8px;">
+                                <i class="ph ph-sliders" style="color: var(--accent-violet);"></i> Control de Acceso por Rol
+                            </h3>
+                            <p style="color: #666; font-size: 0.9rem; margin: 0;">
+                                Elegí qué secciones del dashboard puede ver cada rol. El Owner siempre tiene acceso total y no puede ser restringido.
+                            </p>
+                        </div>
+
+                        <div id="permissions-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; background: #fff; border: 2px solid #1b1b1b; border-radius: 12px; padding: 20px;">
+                            <!-- Renderizado dinámicamente por users.js -->
+                            <p style="color: #999; grid-column: 1/-1;"><i class="ph ph-spinner ph-spin"></i> Cargando configuración...</p>
+                        </div>
+
+                        <div style="text-align: right; margin-top: 1.5rem;">
+                            <button id="save-permissions-btn" class="btn btn-primary" style="background: var(--accent-violet); border-color: var(--accent-violet);">
+                                <i class="ph ph-floppy-disk"></i> Guardar Configuración
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
 
                 <div id="notifications" class="dashboard-view hidden">
                     <div

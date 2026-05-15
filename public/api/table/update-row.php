@@ -8,8 +8,10 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
+require_once __DIR__ . '/../../../src/Models/ActivityLogModel.php';
 
-use App\core\Database;
+use App\Core\Database;
+use App\Models\ActivityLogModel;
 
 try {
     $user = getCurrentUser();
@@ -38,14 +40,21 @@ try {
 
     $db = Database::getInstance();
 
+    // RBAC: verificar acceso al inventario
+    $myRole = getInventoryRole($user['id'], $inventoryId);
+    if (!$myRole) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Acceso denegado a este inventario.']);
+        exit;
+    }
+
     $stmtTable = $db->prepare("
         SELECT t.table_name
         FROM user_tables t
-        JOIN inventories i ON t.inventory_id = i.id
-        WHERE i.id = :invId AND i.user_id = :uid
+        WHERE t.inventory_id = :invId
         LIMIT 1
     ");
-    $stmtTable->execute([':invId' => $inventoryId, ':uid' => $user['id']]);
+    $stmtTable->execute([':invId' => $inventoryId]);
     $rawTableName = $stmtTable->fetchColumn();
 
     if (!$rawTableName) {
@@ -106,11 +115,25 @@ try {
     if ($stmt->execute($params)) {
         $stmtGet = $db->prepare("SELECT * FROM $tableName WHERE `id` = :id");
         $stmtGet->execute([':id' => $id]);
+        $updatedItem = $stmtGet->fetch(PDO::FETCH_ASSOC);
 
-        echo json_encode([
-            'success' => true,
-            'updatedItem' => $stmtGet->fetch(PDO::FETCH_ASSOC)
-        ]);
+        // Auditoría
+        try {
+            $logModel = new ActivityLogModel();
+            $logModel->log(
+                $inventoryId,
+                (int)$user['id'],
+                $myRole['name'],
+                'update',
+                'product',
+                (string)$id,
+                'Producto actualizado (ID: ' . $id . ')'
+            );
+        } catch (\Throwable $logErr) {
+            error_log('ActivityLog error en update-row: ' . $logErr->getMessage());
+        }
+
+        echo json_encode(['success' => true, 'updatedItem' => $updatedItem]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Error SQL']);
     }

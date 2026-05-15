@@ -224,6 +224,30 @@ class MailService
         }
     }
 
+    public function sendInvitationEmail(
+        string $toEmail,
+        string $inventoryName,
+        string $roleName,
+        string $inviteLink,
+        string $senderName
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Invitaciones');
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            $mail->Subject = 'Has sido invitado a colaborar en ' . $inventoryName;
+            $mail->Body = $this->generateInvitationEmailHtml($inventoryName, $roleName, $inviteLink, $senderName);
+            $mail->AltBody = "Hola, {$senderName} te ha invitado a unirte al inventario '{$inventoryName}' en StockiFy con el rol de {$roleName}. Haz clic aquí para aceptar: {$inviteLink}";
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendInvitationEmail error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     private function generateRestockReportEmailHtml(string $userName, string $inventoryName, array $productsList): string
     {
         $c = '#B48EAD';
@@ -241,9 +265,47 @@ class MailService
         return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
     }
 
+    private function generateInvitationEmailHtml(string $inventoryName, string $roleName, string $inviteLink, string $senderName): string
+    {
+        $c = '#B48EAD'; // Violet requested by user
+        $safeInv = htmlspecialchars($inventoryName, ENT_QUOTES, 'UTF-8');
+        $safeSender = htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8');
+        $safeRole = htmlspecialchars($roleName, ENT_QUOTES, 'UTF-8');
+        
+        $x = "<h2 style='font-family:Outfit,Arial,sans-serif;color:{$c};margin:0 0 4px;font-size:26px;font-weight:700;'>Invitaci&oacute;n de Colaboraci&oacute;n</h2><p style='font-family:Outfit,Arial,sans-serif;color:#999;font-size:12px;text-transform:uppercase;margin:0 0 24px;'>Sistema de Usuarios &mdash; StockiFy</p><p style='font-family:Outfit,Arial,sans-serif;color:#333;font-size:15px;line-height:1.7;margin:0 0 12px;'>Hola,</p><p style='font-family:Outfit,Arial,sans-serif;color:#555;font-size:15px;line-height:1.7;margin:0 0 24px;'><strong>{$safeSender}</strong> te ha invitado a unirte al inventario <strong style='color:{$c};'>{$safeInv}</strong> en StockiFy con el rol de <strong>{$safeRole}</strong>.</p><table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin:0 0 20px;'><tr><td align='center'><a href='{$inviteLink}' style='display:inline-block;background:{$c};color:#fff;font-family:Outfit,Arial,sans-serif;font-size:16px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:8px;'>Aceptar Invitaci&oacute;n</a></td></tr></table><table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0'><tr><td style='background:{$c}18;border-left:4px solid {$c};border-radius:0 6px 6px 0;padding:12px 16px;'><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:14px;color:#5c3a56;line-height:1.6;'>Si no esperabas esta invitaci&oacute;n o no conoces al remitente, puedes ignorar este correo de forma segura.</p></td></tr></table>";
+        return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
+    }
+
+    /**
+     * Envía un email de notificación a un usuario que fue agregado como colaborador.
+     * Con la nueva política, la invitación ya está aceptada — este email es solo notificación.
+     */
+    public function sendInvitationEmail(
+        string $toEmail,
+        string $inventoryName,
+        string $roleName,
+        string $dashboardLink,
+        string $senderName
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, MAIL_NAME_SECURITY);
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+            $mail->Subject = "¡Fuiste invitado a colaborar en StockiFy!";
+            $mail->AltBody = "{$senderName} te agregó al inventario \"{$inventoryName}\" como {$roleName}. Ingresá a: {$dashboardLink}";
+            $mail->Body    = $this->generateInvitationEmailHtml($inventoryName, $roleName, $dashboardLink, $senderName);
+            return $mail->send();
+        } catch (\Exception $e) {
+            error_log("MailService::sendInvitationEmail error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     private function getBaseTemplate(string $color = '#B48EAD'): string
     {
         $logo = 'https://stockify.com.ar/assets/img/LogoE3.png';
         return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>StockiFy</title><link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700" rel="stylesheet"></head><body style="margin:0;padding:0;background:#f4f4f6;font-family:Outfit,Arial,sans-serif;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f4f6;padding:36px 0;"><tr><td align="center" style="padding:0 16px;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:#fff;border:2px solid ' . $color . ';border-radius:16px;overflow:hidden;"><tr><td style="padding:18px 28px;background:' . $color . ';"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td><img src="' . $logo . '" alt="StockiFy" height="42" style="display:block;border:0;"></td><td align="right"><span style="font-family:Outfit,Arial,sans-serif;font-size:11px;color:rgba(255,255,255,0.75);letter-spacing:1px;text-transform:uppercase;">Notificaci&oacute;n autom&aacute;tica</span></td></tr></table></td></tr><tr><td style="padding:32px 32px 24px;font-family:Outfit,Arial,sans-serif;">{{content}}</td></tr><tr><td style="padding:0 32px;"><div style="height:1px;background:' . $color . ';opacity:0.15;"></div></td></tr><tr><td style="padding:16px 32px 22px;background:#fafafa;"><p style="margin:0;font-family:Outfit,Arial,sans-serif;font-size:12px;color:#999;line-height:1.6;">Mensaje generado autom&aacute;ticamente por <strong style="color:' . $color . ';">StockiFy</strong>. No respond&aacute;s este correo. &mdash; <a href="mailto:soporte@stockify.com.ar" style="color:' . $color . ';text-decoration:none;font-weight:600;">soporte@stockify.com.ar</a></p></td></tr></table></td></tr></table></body></html>';
     }
 }
+

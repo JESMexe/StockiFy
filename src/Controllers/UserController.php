@@ -21,7 +21,7 @@ class UserController
         }
 
         $inventoryModel = new InventoryModel();
-        $inventories = $inventoryModel->findByUserId((int)$user['id']);
+        $inventories = $inventoryModel->findCollaboratedInventories((int)$user['id']);
 
         $hasAnyDatabase   = !empty($inventories);
         $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;

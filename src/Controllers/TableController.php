@@ -22,19 +22,21 @@ class TableController
 
         try {
             $tableModel = new TableModel();
-            $inventoryModel = new InventoryModel();
             $metadata = $tableModel->getTableMetadata($activeInventoryId);
 
-            $inventoryName = null;
-            $inventories = $inventoryModel->findByUserId($user['id']);
-            foreach($inventories as $inv){
-                if($inv['id'] == $activeInventoryId){
-                    $inventoryName = $inv['name'];
-                    break;
-                }
+            $role = getInventoryRole($user['id'], $activeInventoryId);
+            if (!$role) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'No tienes permisos para acceder a este inventario.']);
+                return;
             }
 
-            if (!$metadata || $inventoryName === null) {
+            $db = \App\core\Database::getInstance();
+            $stmtInv = $db->prepare("SELECT name FROM inventories WHERE id = ?");
+            $stmtInv->execute([$activeInventoryId]);
+            $inventoryName = $stmtInv->fetchColumn();
+
+            if (!$metadata || !$inventoryName) {
                 http_response_code(404);
                 echo json_encode(['success' => false, 'message' => 'No se encontraron los datos de la tabla para este inventario.']);
                 return;

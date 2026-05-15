@@ -190,6 +190,28 @@ class InventoryModel
         return $rows ?: [];
     }
 
+    /**
+     * Devuelve todas las bases de inventario a las que el usuario tiene acceso (propias y compartidas).
+     *
+     * @param int $userId
+     * @return array
+     */
+    public function findCollaboratedInventories(int $userId): array
+    {
+        $sql = "SELECT i.id, i.name, i.user_id, i.created_at, r.name as role_name 
+                FROM inventories i 
+                JOIN inventory_collaborators ic ON i.id = ic.inventory_id 
+                JOIN roles r ON ic.role_id = r.id 
+                WHERE ic.user_id = :user_id AND ic.status = 'active'
+                ORDER BY i.created_at ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':user_id' => $userId]);
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ?: [];
+    }
+
 
     /**
      * Elimina un inventario, su tabla física y sus metadatos.

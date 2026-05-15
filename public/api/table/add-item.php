@@ -8,8 +8,10 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
+require_once __DIR__ . '/../../../src/Models/ActivityLogModel.php';
 
-use App\core\Database;
+use App\Core\Database;
+use App\Models\ActivityLogModel;
 
 try {
     $user = getCurrentUser();
@@ -36,18 +38,25 @@ try {
 
     $db = Database::getInstance();
 
+    // RBAC: verificar acceso al inventario (Owner, Admin o Employee)
+    $myRole = getInventoryRole($user['id'], $inventoryId);
+    if (!$myRole) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Acceso denegado a este inventario.']);
+        exit;
+    }
+
     $stmtInv = $db->prepare("
         SELECT t.table_name
         FROM user_tables t
-        JOIN inventories i ON t.inventory_id = i.id
-        WHERE i.id = :invId AND i.user_id = :uid
+        WHERE t.inventory_id = :invId
         LIMIT 1
     ");
-    $stmtInv->execute([':invId' => $inventoryId, ':uid' => $user['id']]);
+    $stmtInv->execute([':invId' => $inventoryId]);
     $rawTableName = $stmtInv->fetchColumn();
 
     if (!$rawTableName) {
-        throw new Exception("Inventario no encontrado o acceso denegado.");
+        throw new Exception("Tabla no encontrada para este inventario.");
     }
 
     $tableName = "`" . str_replace("`", "``", $rawTableName) . "`";
@@ -97,11 +106,25 @@ try {
 
         $stmtGet = $db->prepare("SELECT * FROM $tableName WHERE `id` = :id");
         $stmtGet->execute([':id' => $newId]);
+        $newItem = $stmtGet->fetch(PDO::FETCH_ASSOC);
 
-        echo json_encode([
-            'success' => true,
-            'newItem' => $stmtGet->fetch(PDO::FETCH_ASSOC)
-        ]);
+        // Auditoría: registrar la creación en activity_logs
+        try {
+            $logModel = new ActivityLogModel();
+            $logModel->log(
+                $inventoryId,
+                (int)$user['id'],
+                $myRole['name'],
+                'create',
+                'product',
+                (string)$newId,
+                'Producto creado (ID: ' . $newId . ')'
+            );
+        } catch (\Throwable $logErr) {
+            error_log('ActivityLog error en add-item: ' . $logErr->getMessage());
+        }
+
+        echo json_encode(['success' => true, 'newItem' => $newItem]);
     } else {
         throw new Exception("Error SQL al insertar.");
     }
