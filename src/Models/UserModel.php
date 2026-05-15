@@ -209,18 +209,21 @@ class UserModel
         $stmt->execute([':id' => $userId]);
     }
 
-    public function createUser(array $data): bool
+    public function createUser(array $data): int|bool
     {
         $sql = "INSERT INTO users (username, email, password_hash, full_name, created_at) 
                 VALUES (:username, :email, :pass, :name, NOW())";
         $stmt = $this->db->prepare($sql);
         try {
-            return $stmt->execute([
+            if ($stmt->execute([
                 ':username' => $data['username'],
                 ':email' => $data['email'],
                 ':pass' => password_hash($data['password'], PASSWORD_DEFAULT),
                 ':name' => $data['full_name'] ?? $data['name'] ?? null
-            ]);
+            ])) {
+                return (int)$this->db->lastInsertId();
+            }
+            return false;
         } catch (\PDOException $e) {
             return false;
         }

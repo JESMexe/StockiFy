@@ -159,6 +159,11 @@ class SalesModel
             }
 
             $this->db->commit();
+            
+            require_once __DIR__ . '/ActivityLogModel.php';
+            $logModel = new \App\Models\ActivityLogModel();
+            $logModel->log($inventoryId, $userId, 'Venta Registrada', 'sale', $saleId, 'Total: $' . ($data['total'] ?? 0));
+            
             return $saleId;
 
         } catch (Exception $e) {
@@ -228,6 +233,11 @@ class SalesModel
             $stmtDel->execute([':id' => $id, ':user' => $userId]);
             if ($stmtDel->rowCount() > 0) {
                 $this->db->commit();
+                
+                require_once __DIR__ . '/ActivityLogModel.php';
+                $logModel = new \App\Models\ActivityLogModel();
+                $logModel->log($correctInvId ?? 0, $userId, 'Venta Eliminada', 'sale', $id, 'ID de Venta original: ' . $id);
+
                 return true;
             }
             $this->db->rollBack();

@@ -119,6 +119,10 @@ class InventoryModel
             $stmtMeta = $this->db->prepare("INSERT INTO user_tables (inventory_id, table_name, columns_json) VALUES (?, ?, ?)");
             $stmtMeta->execute([$inventoryId, $tableName, json_encode(array_values($finalColumnJson))]);
 
+            // [NUEVO RBAC] 2.2.5 Instanciación Automática como Owner (Role 1)
+            $stmtOwner = $this->db->prepare("INSERT INTO inventory_collaborators (inventory_id, user_id, role_id, status) VALUES (?, ?, 1, 'active')");
+            $stmtOwner->execute([$inventoryId, $userId]);
+
             // 2.3 COMMIT ADMINISTRATIVO
             $this->db->commit();
 

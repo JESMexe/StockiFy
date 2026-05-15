@@ -90,10 +90,21 @@ class AuthController
 
         // Llamp al modelo para crear el usuario
         $userModel = new UserModel();
-        $success = $userModel->createUser($data);
+        $newUserId = $userModel->createUser($data);
 
         // Devuelvo la respuesta
-        if ($success) {
+        if ($newUserId !== false) {
+            if (session_status() === PHP_SESSION_NONE) session_start();
+            if (!empty($_SESSION['pending_invitation_token'])) {
+                require_once __DIR__ . '/../Models/InvitationModel.php';
+                $invModel = new \App\Models\InvitationModel();
+                $inv = $invModel->findByToken($_SESSION['pending_invitation_token']);
+                if ($inv) {
+                    $invModel->acceptInvitation($inv['id'], $newUserId);
+                }
+                unset($_SESSION['pending_invitation_token']);
+            }
+
             echo json_encode(['success' => true, 'message' => '¡Usuario registrado con éxito!']);
         } else {
             http_response_code(409); // Conflict
