@@ -43,7 +43,7 @@ try {
 } catch (Exception $e) {
     $activeInventoryName = "Error BD";
 }
-<?php
+
 // Determinar rol del usuario en el inventario activo (para condicionales PHP en el template)
 $activeInventoryId = (int)($_SESSION['active_inventory_id'] ?? 0);
 $currentUserRbac   = ($activeInventoryId && $currentUser)

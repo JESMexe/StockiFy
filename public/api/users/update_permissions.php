@@ -10,7 +10,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 
-use App\Core\Database;
+use App\core\Database;
 
 $user = getCurrentUser();
 if (!$user) {

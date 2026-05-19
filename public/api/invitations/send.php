@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../../src/Services/MailService.php';
 
 use App\Models\InvitationModel;
 use App\Services\MailService;
-use App\Core\Database;
+use App\core\Database;
 
 $user = getCurrentUser();
 if (!$user) {

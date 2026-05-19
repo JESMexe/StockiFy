@@ -9,7 +9,7 @@
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 
-use App\Core\Database;
+use App\core\Database;
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 

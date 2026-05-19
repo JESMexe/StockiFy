@@ -10,9 +10,12 @@ use App\Models\PaymentMethodModel;
 $user = getCurrentUser();
 if (!$user) { echo json_encode(['success'=>false]); exit; }
 
-
 $inventoryId = $_SESSION['active_inventory_id'] ?? null;
 if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
+
+// RBAC: métodos de pago pertenecen al owner del inventario
+$ownerId = getInventoryOwnerId((int)$inventoryId) ?? $user['id'];
+
 $model = new PaymentMethodModel();
-$methods = $model->getAll($user['id'], $inventoryId);
+$methods = $model->getAll($ownerId, $inventoryId);
 echo json_encode(['success'=>true, 'methods'=>$methods]);

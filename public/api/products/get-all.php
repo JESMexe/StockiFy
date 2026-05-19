@@ -11,8 +11,16 @@ try {
 
     $user = getCurrentUser();
     $user_id = $_SESSION['user_id'];
+    $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
 
-    $databases = $inventoryModel->findByUserId($user_id);
+    // RBAC: si hay un inventario activo, trabajar solo con ese (y con el owner_id real)
+    if ($activeInventoryId) {
+        $ownerId = getInventoryOwnerId((int)$activeInventoryId) ?? $user_id;
+        $databases = [['id' => $activeInventoryId, 'user_id' => $ownerId]];
+    } else {
+        $databases = $inventoryModel->findByUserId($user_id);
+    }
+
     $productList = [];
 
     foreach($databases as $database){

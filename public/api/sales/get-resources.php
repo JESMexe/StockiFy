@@ -22,34 +22,36 @@ try {
         exit;
     }
 
-    $userId = $user['id'];
+    // RBAC: los datos pertenecen al owner del inventario, no al colaborador activo
+    $ownerId = getInventoryOwnerId((int)$activeInventoryId) ?? $user['id'];
     $db = Database::getInstance();
 
     $customers = [];
     try {
         $stmt = $db->prepare("SELECT id, full_name FROM customers WHERE user_id = ? AND inventory_id = ? ORDER BY full_name ASC");
-        $stmt->execute([$userId, $activeInventoryId]);
+        $stmt->execute([$ownerId, $activeInventoryId]);
         $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) { /* Ignorar si no existe tabla */ }
 
     $employees = [];
     try {
         $stmt = $db->prepare("SELECT id, full_name FROM employees WHERE user_id = ? AND inventory_id = ? ORDER BY full_name ASC");
-        $stmt->execute([$userId, $activeInventoryId]);
+        $stmt->execute([$ownerId, $activeInventoryId]);
         $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) { /* Ignorar */ }
 
     $paymentMethods = [];
     try {
         $stmtPM = $db->prepare("SELECT id, name, surcharge, currency FROM payment_methods WHERE user_id = ? AND is_active = 1");
-        $stmtPM->execute([$userId]);
+        $stmtPM->execute([$ownerId]);
         $paymentMethods = $stmtPM->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) { /* Ignorar */ }
 
     $products = [];
 
-    $stmtInv = $db->prepare("SELECT id, preferences FROM inventories WHERE id = ? AND user_id = ?");
-    $stmtInv->execute([$activeInventoryId, $userId]);
+    // Sin filtro user_id: el acceso ya fue validado por RBAC al seleccionar el inventario
+    $stmtInv = $db->prepare("SELECT id, preferences FROM inventories WHERE id = ?");
+    $stmtInv->execute([$activeInventoryId]);
     $inv = $stmtInv->fetch(PDO::FETCH_ASSOC);
 
     if ($inv) {

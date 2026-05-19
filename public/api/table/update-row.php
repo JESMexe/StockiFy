@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../../src/helpers/auth_helper.php';
 require_once __DIR__ . '/../../../src/core/Database.php';
 require_once __DIR__ . '/../../../src/Models/ActivityLogModel.php';
 
-use App\Core\Database;
+use App\core\Database;
 use App\Models\ActivityLogModel;
 
 try {

@@ -42,7 +42,7 @@ if (!function_exists('getInventoryRole')) {
      */
     function getInventoryRole(int $userId, int $inventoryId): ?array
     {
-        $db = \App\Core\Database::getInstance();
+        $db = \App\core\Database::getInstance();
 
         $stmt = $db->prepare("
             SELECT ic.role_id, r.name
@@ -55,5 +55,24 @@ if (!function_exists('getInventoryRole')) {
         $res = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         return $res ?: null;
+    }
+}
+
+if (!function_exists('getInventoryOwnerId')) {
+    /**
+     * Dado el ID de un inventario, devuelve el user_id del propietario (Owner).
+     * Útil para que colaboradores (Admin/Employee) puedan acceder a los datos
+     * del inventario activo, que están guardados bajo el user_id del Owner.
+     *
+     * @param int $inventoryId
+     * @return int|null El user_id del propietario, o null si no se encuentra.
+     */
+    function getInventoryOwnerId(int $inventoryId): ?int
+    {
+        $db = \App\core\Database::getInstance();
+        $stmt = $db->prepare("SELECT user_id FROM inventories WHERE id = ? LIMIT 1");
+        $stmt->execute([$inventoryId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $row ? (int)$row['user_id'] : null;
     }
 }

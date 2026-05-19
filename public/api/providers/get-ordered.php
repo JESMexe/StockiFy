@@ -13,9 +13,12 @@ $response = [];
 try {
     $pdo = Database::getInstance();
     $user = getCurrentUser();
-    $user_id = $_SESSION['user_id'];
     $inventoryId = $_SESSION['active_inventory_id'] ?? null;
-    if (!$inventoryId) throw new Exception('Inventario no seleccionado');
+    if (!$user || !$inventoryId) throw new Exception('Inventario no seleccionado');
+
+    // RBAC: proveedores pertenecen al owner del inventario
+    $user_id = getInventoryOwnerId((int)$inventoryId);
+    if (!$user_id) throw new Exception('Inventario no encontrado');
 
     $dateDescending = $pdo->prepare("SELECT * FROM providers WHERE user_id = ? AND inventory_id = ? ORDER BY created_at DESC");
     $dateDescending->execute([$user_id, $inventoryId]);

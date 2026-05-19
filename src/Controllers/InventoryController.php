@@ -168,24 +168,18 @@ class InventoryController
             return;
         }
 
-        $inventoryModel = new InventoryModel();
-        $inventories = $inventoryModel->findByUserId($user['id']);
-        $isOwner = false;
-        foreach ($inventories as $inv) {
-            if ($inv['id'] == $inventoryId) {
-                $isOwner = true;
-                break;
-            }
-        }
+        // RBAC: verificamos acceso via inventory_collaborators (propietario O colaborador activo)
+        $role = getInventoryRole((int)$user['id'], (int)$inventoryId);
 
-        if (!$isOwner) {
+        if (!$role) {
             http_response_code(403); // Forbidden
-            echo json_encode(['success' => false, 'message' => 'No tienes permiso para acceder a este recurso.']);
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para acceder a este inventario.']);
             return;
         }
 
-        // Si todo es correcto, guardo la selección en la sesión
+        // Si todo es correcto, guardo la selección y el rol en la sesión
         $_SESSION['active_inventory_id'] = $inventoryId;
+        $_SESSION['active_inventory_role'] = $role['name']; // 'Owner', 'Admin', 'Employee'
         echo json_encode(['success' => true, 'message' => 'Inventario seleccionado.']);
     }
 

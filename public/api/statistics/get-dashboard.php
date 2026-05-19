@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 require_once dirname(__DIR__, 3) . '/vendor/autoload.php';
 
@@ -10,13 +10,19 @@ use App\Models\AnalyticsModel;
 header('Content-Type: application/json');
 
 if (session_status() === PHP_SESSION_NONE) session_start();
+require_once dirname(__DIR__, 3) . '/src/helpers/auth_helper.php';
 
-$userId = $_SESSION['user_id'] ?? null;
+$userId   = $_SESSION['user_id'] ?? null;
 $inventoryId = $_SESSION['active_inventory_id'] ?? ($_SESSION['inventory_id'] ?? null);
 
 if (!$userId) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
+}
+
+// RBAC: las analíticas corresponden al owner del inventario activo
+if ($inventoryId) {
+    $userId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
 }
 
 try {

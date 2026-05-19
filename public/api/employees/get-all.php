@@ -16,11 +16,14 @@ try {
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false]); exit; }
 
-    
-$inventoryId = $_SESSION['active_inventory_id'] ?? null;
-if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
-$model = new EmployeeModel();
-    $employees = $model->getAll($user['id'], $_GET['order'] ?? 'desc', $inventoryId);
+    $inventoryId = $_SESSION['active_inventory_id'] ?? null;
+    if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
+
+    // RBAC: empleados pertenecen al owner del inventario
+    $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $user['id'];
+
+    $model = new EmployeeModel();
+    $employees = $model->getAll($ownerId, $_GET['order'] ?? 'desc', $inventoryId);
 
     echo json_encode(['success'=>true, 'employees'=>$employees]);
 

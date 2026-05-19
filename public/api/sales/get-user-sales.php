@@ -10,12 +10,15 @@ $data = json_decode(file_get_contents('php://input'), true);
 try {
     $pdo = Database::getInstance();
     $user = getCurrentUser();
-    $user_id = $_SESSION['user_id'];
     $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
 
     if (!$user || !$activeInventoryId) {
         throw new Exception('No autorizado o sin inventario activo');
     }
+
+    // RBAC: los datos pertenecen al owner del inventario, no necesariamente al usuario activo
+    $user_id = getInventoryOwnerId((int)$activeInventoryId);
+    if (!$user_id) throw new Exception('Inventario no encontrado');
 
     $stmt = $pdo->prepare("SELECT * FROM sales WHERE user_id = ? AND inventory_id = ? ORDER BY sale_date DESC");
     $stmt ->execute([$user_id, $activeInventoryId]);

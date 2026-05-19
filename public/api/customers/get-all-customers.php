@@ -10,9 +10,12 @@ use App\core\Database;
 try {
     $pdo = Database::getInstance();
     $user = getCurrentUser();
-    $user_id = $_SESSION['user_id'];
     $inventoryId = $_SESSION['active_inventory_id'] ?? null;
-    if (!$inventoryId) throw new Exception('Inventario no seleccionado');
+    if (!$user || !$inventoryId) throw new Exception('No autorizado o inventario no seleccionado');
+
+    // RBAC: clientes pertenecen al owner del inventario
+    $user_id = getInventoryOwnerId((int)$inventoryId);
+    if (!$user_id) throw new Exception('Inventario no encontrado');
 
     $clients = $pdo->prepare("SELECT * FROM customers WHERE user_id = ? AND inventory_id = ?");
     $clients ->execute([$user_id, $inventoryId]);
