@@ -12,6 +12,9 @@ try {
     require_once $root . '/src/helpers/auth_helper.php';
     require_once $root . '/src/Models/EmployeeModel.php';
 
+    // Guard RBAC
+    requireSectionAccess('can_view_employees');
+
 
     $user = getCurrentUser();
     if (!$user) { echo json_encode(['success'=>false]); exit; }

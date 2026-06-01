@@ -84,7 +84,7 @@ export class PurchaseModule {
                         <td style="padding:12px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" data-id="${p.id}" title="Ver Detalle"><i class="ph ph-receipt"></i></button><button class="action-btn edit" data-id="${p.id}" title="Editar"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" data-id="${p.id}" title="Eliminar"><i class="ph ph-trash"></i></button></div></td>
                     </tr>`;
             }).join('');
-        } catch (error) { tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding: 15px;">Error al cargar historial</td></tr>'; }
+        } catch (error) { tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--accent-red); padding: 15px;">Error al cargar historial</td></tr>'; }
     }
 
     renderBaseStructure() {

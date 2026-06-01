@@ -7,6 +7,9 @@ require_once dirname(__DIR__, 3) . '/src/helpers/auth_helper.php';
 require_once dirname(__DIR__, 3) . '/src/Models/PaymentMethodModel.php';
 use App\Models\PaymentMethodModel;
 
+// Guard RBAC
+requireSectionAccess('can_view_payments');
+
 $user = getCurrentUser();
 if (!$user) { echo json_encode(['success'=>false]); exit; }
 

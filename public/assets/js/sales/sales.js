@@ -1019,7 +1019,7 @@ export class SalesModule {
                 }
                 return `<tr style="border-bottom:1px solid #eee;"><td style="padding:10px 15px;">${fmtDate(dateStr)}<div style="font-size:0.75rem; color:#999;">#${displayNum}</div></td><td style="padding:10px 15px;"><div style="font-weight:600; color:#444;"><i class="ph ph-user-focus" style="color:var(--accent-color); font-size:1.1rem; padding-right: 6px"></i>${s.customer_name}</div></td><td style="padding:10px 15px;">${sellerHtml}</td><td style="padding:10px 15px; text-align:right;"><div style="font-weight:800; color:var(--sale-green); font-size:1.1rem; line-height:1.2;">${fmtMoney(total_amount)}</div>${payBadge}</td><td style="padding:10px 15px; text-align:center;"><div class="btn-icon-group" style="justify-content:center;"><button class="action-btn view" data-id="${s.id}" title="Ver Ticket"><i class="ph ph-receipt"></i></button><button class="action-btn edit" data-id="${s.id}" title="Editar"><i class="ph ph-pencil-simple"></i></button><button class="action-btn delete" data-id="${s.id}" title="Eliminar"><i class="ph ph-trash"></i></button></div></td></tr>`;
             }).join('');
-        } catch (e) { console.error(e); b.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error de visualización</td></tr>'; }
+        } catch (e) { console.error(e); b.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Error al cargar historial</td></tr>'; }
     }
 
     async addManualItem() {

@@ -31,7 +31,7 @@ class ProviderModel {
                     VALUES (:user, :inv, :name, :phone, :address, :email, :tax_id, NOW())";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([
+            $success = $stmt->execute([
                 ':user'    => $userId,
                 ':inv'     => $inv,
                 ':name'    => $data['name'],
@@ -41,7 +41,26 @@ class ProviderModel {
                 ':tax_id'  => $data['tax_id'] ?? null
             ]);
 
-            return $this->db->lastInsertId();
+            if ($success) {
+                $newId = $this->db->lastInsertId();
+                try {
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Proveedores',
+                        'create',
+                        'provider',
+                        (string)$newId,
+                        "Registró un proveedor: " . $data['name'],
+                        "Email: " . ($data['email'] ?? '-') . " | Teléfono: " . ($data['phone'] ?? '-') . " | CUIT: " . ($data['tax_id'] ?? '-'),
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in createProvider: ' . $logErr->getMessage());
+                }
+                return $newId;
+            }
+            return false;
         } catch (Exception $e) {
             error_log("ProviderModel Error: " . $e->getMessage());
             return false;
@@ -54,12 +73,15 @@ class ProviderModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            // Fetch old record for logging comparison
+            $oldRow = $this->getById($id, $userId, $inv);
+
             $sql = "UPDATE providers 
                     SET full_name = :name, phone = :phone, address = :address, email = :email, tax_id = :tax_id 
                     WHERE id = :id AND user_id = :user AND inventory_id = :inv";
 
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
+            $success = $stmt->execute([
                 ':id'      => $id,
                 ':user'    => $userId,
                 ':inv'     => $inv,
@@ -69,6 +91,27 @@ class ProviderModel {
                 ':email'   => $data['email'] ?? null,
                 ':tax_id'  => $data['tax_id'] ?? null
             ]);
+
+            if ($success && $oldRow) {
+                try {
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Proveedores',
+                        'update',
+                        'provider',
+                        (string)$id,
+                        "Editó el proveedor: " . $data['name'],
+                        "Anterior - Nombre: {$oldRow['full_name']}, Email: " . ($oldRow['email'] ?? '-') . ", Teléfono: " . ($oldRow['phone'] ?? '-') . ", CUIT: " . ($oldRow['tax_id'] ?? '-') . " | " .
+                        "Nuevo - Nombre: {$data['name']}, Email: " . ($data['email'] ?? '-') . ", Teléfono: " . ($data['phone'] ?? '-') . ", CUIT: " . ($data['tax_id'] ?? '-'),
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in updateProvider: ' . $logErr->getMessage());
+                }
+                return true;
+            }
+            return $success;
         } catch (Exception $e) {
             error_log("Update Provider Error: " . $e->getMessage());
             return false;
@@ -81,9 +124,31 @@ class ProviderModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            // Fetch old record for logging
+            $oldRow = $this->getById($id, $userId, $inv);
+
             $stmt = $this->db->prepare("DELETE FROM providers WHERE id = :id AND user_id = :user AND inventory_id = :inv");
             $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
-            return $stmt->rowCount() > 0;
+            $success = $stmt->rowCount() > 0;
+
+            if ($success && $oldRow) {
+                try {
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Proveedores',
+                        'delete',
+                        'provider',
+                        (string)$id,
+                        "Eliminó el proveedor: " . $oldRow['full_name'],
+                        "Email: " . ($oldRow['email'] ?? '-') . " | Teléfono: " . ($oldRow['phone'] ?? '-'),
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in deleteProvider: ' . $logErr->getMessage());
+                }
+            }
+            return $success;
         } catch (Exception $e) {
             return false;
         }

@@ -17,7 +17,11 @@ try {
     if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
 
     $model = new EmployeeCategoryModel();
-    $categories = $model->getAll($user['id'], $inventoryId);
+
+    // RBAC: las categorías pertenecen al owner del inventario
+    $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $user['id'];
+
+    $categories = $model->getAll($ownerId, $inventoryId);
 
     echo json_encode(['success'=>true, 'categories'=>$categories]);
 

@@ -193,7 +193,7 @@ body#page-configuration {
 #btn-guardar:not(:disabled) {
     background-color: var(--accent-green);
     color: var(--color-black);
-    box-shadow: 8px 8px 0px var(--accent-color); /* Sombra de acento */
+    box-shadow: 8px 0 0 var(--accent-color);
 }
 
 /* --- 6. SOPORTE --- */

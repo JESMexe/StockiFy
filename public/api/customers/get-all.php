@@ -15,6 +15,9 @@ try {
     require_once $projectRoot . '/src/helpers/auth_helper.php';
     require_once $projectRoot . '/src/Models/CustomerModel.php';
 
+    // Guard RBAC
+    requireSectionAccess('can_view_customers');
+
     if (!function_exists('getCurrentUser')) {
         throw new Exception('Auth helper no cargado.');
     }
@@ -32,7 +35,11 @@ try {
     }
 
     $model = new CustomerModel();
-    $customers = $model->getAll($user['id'], $_GET['order'] ?? 'desc', $inventoryId);
+
+    // RBAC: los clientes pertenecen al owner del inventario, no al colaborador activo
+    $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $user['id'];
+
+    $customers = $model->getAll($ownerId, $_GET['order'] ?? 'desc', $inventoryId);
 
     echo json_encode(['success' => true, 'customers' => $customers]);
 

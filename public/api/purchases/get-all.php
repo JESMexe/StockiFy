@@ -6,6 +6,9 @@ require_once __DIR__ . '/../../../src/Models/PurchaseModel.php';
 
 use App\Models\PurchaseModel;
 
+
+
+
 $user = getCurrentUser();
 if (!$user) { echo json_encode(['success'=>false]); exit; }
 
@@ -16,6 +19,10 @@ if (!$activeInventoryId) {
 }
 
 $model = new PurchaseModel();
-$purchases = $model->getHistory($user['id'], $activeInventoryId, $_GET['order'] ?? 'desc');
+
+// RBAC: las compras pertenecen al owner del inventario, no al colaborador activo
+$ownerId = getInventoryOwnerId((int)$activeInventoryId) ?? $user['id'];
+
+$purchases = $model->getHistory($ownerId, $activeInventoryId, $_GET['order'] ?? 'desc');
 
 echo json_encode(['success' => true, 'purchases' => $purchases]);

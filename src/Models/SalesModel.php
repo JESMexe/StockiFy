@@ -160,9 +160,46 @@ class SalesModel
 
             $this->db->commit();
             
-            require_once __DIR__ . '/ActivityLogModel.php';
-            $logModel = new \App\Models\ActivityLogModel();
-            $logModel->log($inventoryId, $userId, 'Venta Registrada', 'sale', $saleId, 'Total: $' . ($data['total'] ?? 0));
+            try {
+                $clientName = 'Consumidor Final';
+                if ($clientId) {
+                    $stmtClient = $this->db->prepare("SELECT CONCAT(first_name, ' ', last_name) as name, company_name FROM customers WHERE id = ?");
+                    $stmtClient->execute([$clientId]);
+                    $cRow = $stmtClient->fetch(PDO::FETCH_ASSOC);
+                    if ($cRow) {
+                        $company = !empty($cRow['company_name']) ? " (" . $cRow['company_name'] . ")" : "";
+                        $clientName = trim($cRow['name']) ?: trim($cRow['company_name']) ?: 'Cliente #' . $clientId;
+                        if ($clientName !== trim($cRow['company_name'])) {
+                            $clientName .= $company;
+                        }
+                    }
+                }
+
+                $itemsList = [];
+                if (!empty($data['items'])) {
+                    foreach ($data['items'] as $item) {
+                        $qty = $item['cantidad'] ?? 1;
+                        $name = $item['nombre'] ?? $item['nombre_producto'] ?? 'Producto';
+                        $price = $item['precio'] ?? $item['precio_unitario'] ?? 0;
+                        $itemsList[] = "{$qty}x {$name} ($" . number_format((float)$price, 2, ',', '.') . ")";
+                    }
+                }
+                $extra = "Cliente: $clientName | Detalle: " . implode(', ', $itemsList);
+
+                require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                \App\helpers\ActivityLogger::log(
+                    'Ventas',
+                    'create',
+                    'sale',
+                    (string)$saleId,
+                    "Registró una venta por $" . number_format((float)($data['total'] ?? 0), 2, ',', '.'),
+                    $extra,
+                    (int)$inventoryId,
+                    (int)$userId
+                );
+            } catch (\Throwable $logErr) {
+                error_log('ActivityLogger error in SalesModel::createSale: ' . $logErr->getMessage());
+            }
             
             return $saleId;
 
@@ -195,9 +232,81 @@ class SalesModel
     public function updateSale($id, $userId, $data): bool
     {
         try {
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+            }
+            
+            // Get old customer_id, inventory_id, total_amount
+            $stmtOld = $this->db->prepare("SELECT customer_id, inventory_id, total_amount FROM sales WHERE id = :id");
+            $stmtOld->execute([':id' => $id]);
+            $oldRow = $stmtOld->fetch(PDO::FETCH_ASSOC);
+            if (!$oldRow) {
+                if ($this->db->inTransaction()) $this->db->rollBack();
+                return false;
+            }
+
+            $oldClientId = $oldRow['customer_id'];
+            $inventoryId = $oldRow['inventory_id'];
+            $totalAmount = (float)$oldRow['total_amount'];
+
+            $newClientId = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
+
             $stmt = $this->db->prepare("UPDATE sales SET customer_id = :cust WHERE id = :id AND user_id = :user");
-            return $stmt->execute([':id' => $id, ':user' => $userId, ':cust' => !empty($data['customer_id']) ? $data['customer_id'] : null]);
+            $success = $stmt->execute([':id' => $id, ':user' => $userId, ':cust' => $newClientId]);
+
+            if ($success) {
+                $this->db->commit();
+                
+                try {
+                    $oldClientName = 'Consumidor Final';
+                    if ($oldClientId) {
+                        $stmtC = $this->db->prepare("SELECT CONCAT(first_name, ' ', last_name) as name, company_name FROM customers WHERE id = ?");
+                        $stmtC->execute([$oldClientId]);
+                        $c = $stmtC->fetch(PDO::FETCH_ASSOC);
+                        if ($c) {
+                            $company = !empty($c['company_name']) ? " (" . $c['company_name'] . ")" : "";
+                            $oldClientName = trim($c['name']) ?: trim($c['company_name']) ?: 'Cliente #' . $oldClientId;
+                            if ($oldClientName !== trim($c['company_name'])) {
+                                $oldClientName .= $company;
+                            }
+                        }
+                    }
+
+                    $newClientName = 'Consumidor Final';
+                    if ($newClientId) {
+                        $stmtC = $this->db->prepare("SELECT CONCAT(first_name, ' ', last_name) as name, company_name FROM customers WHERE id = ?");
+                        $stmtC->execute([$newClientId]);
+                        $c = $stmtC->fetch(PDO::FETCH_ASSOC);
+                        if ($c) {
+                            $company = !empty($c['company_name']) ? " (" . $c['company_name'] . ")" : "";
+                            $newClientName = trim($c['name']) ?: trim($c['company_name']) ?: 'Cliente #' . $newClientId;
+                            if ($newClientName !== trim($c['company_name'])) {
+                                $newClientName .= $company;
+                            }
+                        }
+                    }
+
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Ventas',
+                        'update',
+                        'sale',
+                        (string)$id,
+                        "Editó cliente de venta (ID: $id) por $" . number_format($totalAmount, 2, ',', '.'),
+                        "Cliente anterior: $oldClientName | Cliente nuevo: $newClientName",
+                        (int)$inventoryId,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in SalesModel::updateSale: ' . $logErr->getMessage());
+                }
+
+                return true;
+            }
+            $this->db->rollBack();
+            return false;
         } catch (Exception $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
             return false;
         }
     }
@@ -210,12 +319,42 @@ class SalesModel
             $stmtGetItems->execute([':id' => $id]);
             $items = $stmtGetItems->fetchAll(PDO::FETCH_ASSOC);
 
+            // Fetch extra info before deleting the sale
+            $stmtGetSale = $this->db->prepare("SELECT total_amount, customer_id, inventory_id FROM sales WHERE id = :id");
+            $stmtGetSale->execute([':id' => $id]);
+            $saleInfo = $stmtGetSale->fetch(PDO::FETCH_ASSOC);
+            $totalAmount = $saleInfo ? (float)$saleInfo['total_amount'] : 0.0;
+            $clientId = $saleInfo ? $saleInfo['customer_id'] : null;
+            $correctInvId = $saleInfo ? $saleInfo['inventory_id'] : null;
+
+            $clientName = 'Consumidor Final';
+            if ($clientId) {
+                $stmtClient = $this->db->prepare("SELECT CONCAT(first_name, ' ', last_name) as name, company_name FROM customers WHERE id = ?");
+                $stmtClient->execute([$clientId]);
+                $cRow = $stmtClient->fetch(PDO::FETCH_ASSOC);
+                if ($cRow) {
+                    $company = !empty($cRow['company_name']) ? " (" . $cRow['company_name'] . ")" : "";
+                    $clientName = trim($cRow['name']) ?: trim($cRow['company_name']) ?: 'Cliente #' . $clientId;
+                    if ($clientName !== trim($cRow['company_name'])) {
+                        $clientName .= $company;
+                    }
+                }
+            }
+
+            $stmtGetDetails = $this->db->prepare("SELECT product_name, quantity, unit_price FROM sale_details WHERE sale_id = :id");
+            $stmtGetDetails->execute([':id' => $id]);
+            $detailsRows = $stmtGetDetails->fetchAll(PDO::FETCH_ASSOC);
+            $itemsList = [];
+            foreach ($detailsRows as $row) {
+                $qty = $row['quantity'] ?? 1;
+                $name = $row['product_name'] ?? 'Producto';
+                $price = $row['unit_price'] ?? 0;
+                $itemsList[] = "{$qty}x {$name} ($" . number_format((float)$price, 2, ',', '.') . ")";
+            }
+            $extra = "Cliente original: $clientName | Detalle: " . implode(', ', $itemsList);
+
             // Recuperar contexto (inventario de la venta) para devolver stock
             try {
-                $saleInv = $this->db->prepare("SELECT inventory_id FROM sales WHERE id = :id");
-                $saleInv->execute([':id' => $id]);
-                $correctInvId = $saleInv->fetchColumn();
-                
                 if ($correctInvId) {
                     $ctx = $this->getInventoryContextById($userId, $correctInvId);
                     $table = $ctx['table'];
@@ -234,9 +373,21 @@ class SalesModel
             if ($stmtDel->rowCount() > 0) {
                 $this->db->commit();
                 
-                require_once __DIR__ . '/ActivityLogModel.php';
-                $logModel = new \App\Models\ActivityLogModel();
-                $logModel->log($correctInvId ?? 0, $userId, 'Venta Eliminada', 'sale', $id, 'ID de Venta original: ' . $id);
+                try {
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Ventas',
+                        'delete',
+                        'sale',
+                        (string)$id,
+                        "Eliminó una venta por $" . number_format($totalAmount, 2, ',', '.'),
+                        $extra,
+                        (int)($correctInvId ?? 0),
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in SalesModel::deleteSale: ' . $logErr->getMessage());
+                }
 
                 return true;
             }

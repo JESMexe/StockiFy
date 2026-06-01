@@ -34,13 +34,14 @@ try {
     $input = json_decode(file_get_contents('php://input'), true);
     $db = Database::getInstance();
 
-    $stmt = $db->prepare("SELECT id, preferences, min_stock FROM inventories WHERE id = ? AND user_id = ?");
-    $stmt->execute([$activeInventoryId, $user['id']]);
+    // RBAC: el acceso fue validado al seleccionar el inventario; solo buscamos por id
+    $stmt = $db->prepare("SELECT id, preferences, min_stock FROM inventories WHERE id = ?");
+    $stmt->execute([$activeInventoryId]);
     $inv = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$inv) {
         http_response_code(404);
-        throw new Exception("El inventario seleccionado no existe o no te pertenece.");
+        throw new Exception("El inventario seleccionado no existe.");
     }
 
     $invId = $inv['id'];

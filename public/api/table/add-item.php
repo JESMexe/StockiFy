@@ -110,15 +110,17 @@ try {
 
         // Auditoría: registrar la creación en activity_logs
         try {
-            $logModel = new ActivityLogModel();
-            $logModel->log(
-                $inventoryId,
-                (int)$user['id'],
-                $myRole['name'],
+            $prodName = $newItem['nombre'] ?? $newItem['name'] ?? $newItem['producto'] ?? $newItem['description'] ?? '';
+            $extraDesc = $prodName ? "Nombre: {$prodName}" : "";
+
+            require_once __DIR__ . '/../../../src/helpers/ActivityLogger.php';
+            \App\helpers\ActivityLogger::log(
+                'Dashboard',
                 'create',
                 'product',
                 (string)$newId,
-                'Producto creado (ID: ' . $newId . ')'
+                'Producto agregado (ID: ' . $newId . ')',
+                $extraDesc
             );
         } catch (\Throwable $logErr) {
             error_log('ActivityLog error en add-item: ' . $logErr->getMessage());

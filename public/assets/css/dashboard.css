@@ -489,7 +489,7 @@
     display: none;
 }
 
-.dashboard-view:not(#view-db):not(#config-db):not(#notifications):not(#providers):not(#customers):not(#receipts):not(#sales):not(#analysis):not(#users-manage) {
+.dashboard-view:not(#view-db):not(#config-db):not(#notifications):not(#providers):not(#customers):not(#receipts):not(#sales):not(#analysis):not(#users-manage):not(#history-log) {
     background-color: var(--color-white);
     padding: 2rem;
     border: var(--border-strong);

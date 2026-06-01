@@ -132,21 +132,22 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                             #btn-guardar {
                                 background-color: #ffffff !important;
                                 color: var(--accent-color) !important;
+                                border-color: var(--accent-color) !important;
                                 box-shadow: none !important;
                                 transition: transform 0.2s ease, box-shadow 0.2s ease;
                             }
                             #btn-guardar:hover:not(:disabled) {
-                                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-                                transform: translateY(-3px);
+                                box-shadow: 4px 4px 0 rgba(0,0,0,0.15) !important;
+                                transform: translate(-3px, -3px);
                             }
                             #btn-guardar:active:not(:disabled) {
-                                box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-                                transform: translateY(1px);
+                                box-shadow: 0 1px 0 rgba(0,0,0,0.1) !important;
+                                transform: translate(3px, 3px);
                             }
                             #btn-guardar:disabled {
-                                background-color: #f1f5f9 !important;
-                                color: #94a3b8 !important;
-                                border-color: #cbd5e1 !important;
+                                background-color: lightgray !important;
+                                color: gray !important;
+                                border-color: gray !important;
                             }
                         </style>
                         <button type="submit" class="btn btn-primary" id="btn-guardar" disabled>Guardar Cambios de

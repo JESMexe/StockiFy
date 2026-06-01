@@ -247,6 +247,28 @@ try {
         jsonResponse(400, $result);
     }
 
+    // Auditoría
+    try {
+        require_once dirname(__DIR__, 3) . '/src/helpers/ActivityLogger.php';
+        $sale = $emailInfo['sale'] ?? [];
+        $saleId = $sale['id'] ?? 'N/A';
+        $dest = $emailInfo['to'] ?? '';
+        $totalVal = $sale['total'] ?? 0;
+        $totalFormatted = "$" . number_format((float)$totalVal, 2, ',', '.');
+        $inventoryId = $_SESSION['active_inventory_id'] ?? 0;
+        
+        \App\helpers\ActivityLogger::log(
+            'Ventas',
+            'email_receipt',
+            'sale',
+            (string)$saleId,
+            "Envió ticket digital por correo de Venta #$saleId",
+            "Destinatario: $dest | Total: $totalFormatted"
+        );
+    } catch (\Throwable $logErr) {
+        error_log('ActivityLogger error en send-email: ' . $logErr->getMessage());
+    }
+
     jsonResponse(200, $result);
 
 } catch (\Throwable $e) {

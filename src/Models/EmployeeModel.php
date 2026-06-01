@@ -31,7 +31,7 @@ class EmployeeModel {
                 INSERT INTO employees (user_id, inventory_id, full_name, dni, phone, email, category_id, custom_data, created_at)
                 VALUES (:user, :inv, :name, :dni, :phone, :email, :cat, :data, NOW())
             ");
-            $stmt->execute([
+            $success = $stmt->execute([
                 ':user' => $userId,
                 ':inv' => $inv,
                 ':name' => $name,
@@ -41,7 +41,34 @@ class EmployeeModel {
                 ':cat' => $categoryId,
                 ':data' => is_array($customData) ? json_encode($customData) : $customData
             ]);
-            return $this->db->lastInsertId();
+
+            if ($success) {
+                $newId = $this->db->lastInsertId();
+                try {
+                    $catName = 'Ninguna';
+                    if ($categoryId) {
+                        $stmtCat = $this->db->prepare("SELECT name FROM employee_categories WHERE id = ?");
+                        $stmtCat->execute([$categoryId]);
+                        $catName = $stmtCat->fetchColumn() ?: 'Ninguna';
+                    }
+
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Empleados',
+                        'create',
+                        'employee',
+                        (string)$newId,
+                        "Registró un empleado: " . $name,
+                        "Categoría: " . $catName . " | DNI: " . ($dni ?: '-') . " | Teléfono: " . ($phone ?: '-') . " | Email: " . ($email ?: '-'),
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in createEmployee: ' . $logErr->getMessage());
+                }
+                return $newId;
+            }
+            return false;
         } catch (Exception $e) {
             error_log('EmployeeModel Error: ' . $e->getMessage());
             return false;
@@ -54,12 +81,15 @@ class EmployeeModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            // Fetch old record for logging comparison
+            $oldRow = $this->getById($id, $userId, $inv);
+
             $stmt = $this->db->prepare("
                 UPDATE employees
                 SET full_name = :name, dni = :dni, phone = :phone, email = :email, category_id = :cat, custom_data = :data
                 WHERE id = :id AND user_id = :user AND inventory_id = :inv
             ");
-            return $stmt->execute([
+            $success = $stmt->execute([
                 ':id' => $id,
                 ':user' => $userId,
                 ':inv' => $inv,
@@ -70,6 +100,41 @@ class EmployeeModel {
                 ':cat' => $categoryId,
                 ':data' => is_array($customData) ? json_encode($customData) : $customData
             ]);
+
+            if ($success && $oldRow) {
+                try {
+                    $oldCatName = 'Ninguna';
+                    if (!empty($oldRow['category_id'])) {
+                        $stmtCat = $this->db->prepare("SELECT name FROM employee_categories WHERE id = ?");
+                        $stmtCat->execute([$oldRow['category_id']]);
+                        $oldCatName = $stmtCat->fetchColumn() ?: 'Ninguna';
+                    }
+
+                    $newCatName = 'Ninguna';
+                    if ($categoryId) {
+                        $stmtCat = $this->db->prepare("SELECT name FROM employee_categories WHERE id = ?");
+                        $stmtCat->execute([$categoryId]);
+                        $newCatName = $stmtCat->fetchColumn() ?: 'Ninguna';
+                    }
+
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Empleados',
+                        'update',
+                        'employee',
+                        (string)$id,
+                        "Editó el empleado: " . $name,
+                        "Anterior - Nombre: {$oldRow['full_name']}, DNI: " . ($oldRow['dni'] ?? '-') . ", Teléfono: " . ($oldRow['phone'] ?? '-') . ", Email: " . ($oldRow['email'] ?? '-') . ", Categoría: " . $oldCatName . " | " .
+                        "Nuevo - Nombre: {$name}, DNI: " . ($dni ?? '-') . ", Teléfono: " . ($phone ?? '-') . ", Email: " . ($email ?? '-') . ", Categoría: " . $newCatName,
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in updateEmployee: ' . $logErr->getMessage());
+                }
+                return true;
+            }
+            return $success;
         } catch (Exception $e) {
             return false;
         }
@@ -81,9 +146,38 @@ class EmployeeModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            // Fetch old record for logging
+            $oldRow = $this->getById($id, $userId, $inv);
+
             $stmt = $this->db->prepare("DELETE FROM employees WHERE id = :id AND user_id = :user AND inventory_id = :inv");
             $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
-            return $stmt->rowCount() > 0;
+            $success = $stmt->rowCount() > 0;
+
+            if ($success && $oldRow) {
+                try {
+                    $catName = 'Ninguna';
+                    if (!empty($oldRow['category_id'])) {
+                        $stmtCat = $this->db->prepare("SELECT name FROM employee_categories WHERE id = ?");
+                        $stmtCat->execute([$oldRow['category_id']]);
+                        $catName = $stmtCat->fetchColumn() ?: 'Ninguna';
+                    }
+
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Empleados',
+                        'delete',
+                        'employee',
+                        (string)$id,
+                        "Eliminó el empleado: " . $oldRow['full_name'],
+                        "Categoría: " . $catName . " | DNI: " . ($oldRow['dni'] ?? '-') . " | Teléfono: " . ($oldRow['phone'] ?? '-') . " | Email: " . ($oldRow['email'] ?? '-'),
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in deleteEmployee: ' . $logErr->getMessage());
+                }
+            }
+            return $success;
         } catch (Exception $e) {
             return false;
         }

@@ -488,6 +488,8 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
                             <li style="opacity: 0.6; border-bottom: none;"><i class="ph-bold ph-lock-key"
                                     style="color: var(--accent-red) !important;"></i> Gestión CRM (Clientes, Empleados y
                                 Proveedores)</li>
+                            <li style="opacity: 0.6; border-bottom: none;"><i class="ph-bold ph-lock-key"
+                                                                              style="color: var(--accent-red) !important;"></i> Gestión RBAC (Invitar Colaboradores y Asignarles un Rol)</li>
                         </ul>
                         <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20el%20Plan%20Básico%20de%20StockiFy.%20¿Cómo%20podemos%20avanzar?"
                             target="_blank" class="btn-pricing">Consultar Plan</a>

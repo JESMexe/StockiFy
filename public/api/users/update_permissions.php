@@ -64,6 +64,26 @@ foreach ($settings as $roleId => $permissions) {
 }
 
 if (empty($errors)) {
+    try {
+        $updatedRoles = [];
+        foreach (array_keys($settings) as $rId) {
+            if ($rId == 2) $updatedRoles[] = 'Administrador';
+            if ($rId == 3) $updatedRoles[] = 'Empleado';
+        }
+        require_once __DIR__ . '/../../../src/helpers/ActivityLogger.php';
+        \App\helpers\ActivityLogger::log(
+            'Colaboradores',
+            'update_permissions',
+            'role_settings',
+            null,
+            "Configuró los permisos de roles del inventario",
+            "Roles actualizados: " . (empty($updatedRoles) ? 'Ninguno' : implode(', ', $updatedRoles)),
+            (int)$inventoryId,
+            (int)$user['id']
+        );
+    } catch (\Throwable $logErr) {
+        error_log('ActivityLogger error in update_permissions: ' . $logErr->getMessage());
+    }
     echo json_encode(['success' => true, 'message' => 'Permisos actualizados correctamente.']);
 } else {
     http_response_code(500);

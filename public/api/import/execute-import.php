@@ -94,6 +94,21 @@ try {
         throw $e;
     }
 
+    // Auditoría
+    try {
+        require_once __DIR__ . '/../../../src/helpers/ActivityLogger.php';
+        \App\helpers\ActivityLogger::log(
+            'Dashboard',
+            'import',
+            'product',
+            null,
+            $overwrite ? 'Importación masiva (Sobrescribir)' : 'Importación masiva',
+            "Filas importadas: {$inserted}"
+        );
+    } catch (\Throwable $logErr) {
+        error_log('ActivityLogger error en execute-import: ' . $logErr->getMessage());
+    }
+
     unset($_SESSION['import_plan']);
 
     echo json_encode([

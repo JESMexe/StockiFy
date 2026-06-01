@@ -98,6 +98,22 @@ try {
 
     $db->commit();
 
+    // Auditoría
+    try {
+        require_once __DIR__ . '/../../../src/helpers/ActivityLogger.php';
+        $colFriendly = ($columnType === 'sale_price') ? 'Precio de Venta' : 'Costo';
+        \App\helpers\ActivityLogger::log(
+            'Configuración',
+            'update',
+            'table',
+            (string)$inventoryId,
+            "Conversión masiva de precios a $targetCurrency",
+            "Columna: $colFriendly. Tasa de conversión: $$rate. Filas afectadas: $rowsAffected"
+        );
+    } catch (\Throwable $logErr) {
+        error_log('ActivityLogger error en convert-currency: ' . $logErr->getMessage());
+    }
+
     echo json_encode([
         'success' => true,
         'message' => "Conversión Simétrica Realizada (Tasa Promedio: $$rate). Filas: $rowsAffected",

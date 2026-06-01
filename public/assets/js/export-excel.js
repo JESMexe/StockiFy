@@ -188,6 +188,31 @@ window.runExport = async () => {
 
         statusDiv.style.color = 'var(--accent-green)';
         statusDiv.textContent = `¡Excel generado con éxito!`;
+
+        // Send export log to audit history
+        try {
+            const exportedSheets = [];
+            if (chkInventory.checked) exportedSheets.push('Inventario');
+            if (chkSales.checked) exportedSheets.push('Ventas');
+            if (chkAnalytics.checked) exportedSheets.push('Métricas/Analíticas');
+
+            await fetch('/api/history/log.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    section: 'Dashboard',
+                    action: 'export',
+                    entity_type: 'inventory',
+                    entity_id: null,
+                    description: `Exportación de datos a Excel (${exportedSheets.join(', ')})`,
+                    extra_description: `Nombre de archivo generado: ${fileName}`
+                })
+            });
+        } catch (logErr) {
+            console.error('Error logging export action:', logErr);
+        }
         
         setTimeout(() => {
             window.closeExportModal();

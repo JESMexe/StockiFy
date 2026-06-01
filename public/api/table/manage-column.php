@@ -51,6 +51,19 @@ try {
             if ($model->copyColumnData($inventoryId, $source, $target)) {
                 $success = true;
                 $message = "Datos importados correctamente.";
+                try {
+                    require_once $root . '/src/helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Configuración',
+                        'update',
+                        'table_column',
+                        (string)$inventoryId,
+                        'Copia de datos de columna',
+                        "Copiados datos de la columna '$source' a la columna '$target'"
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in manage-column copy_data: ' . $logErr->getMessage());
+                }
             } else {
                 throw new Exception("Error al copiar. Verificá las columnas.");
             }
@@ -62,6 +75,19 @@ try {
             $model->addColumn($inventoryId, $user['id'], $colName);
             $success = true;
             $message = "Columna añadida.";
+            try {
+                require_once $root . '/src/helpers/ActivityLogger.php';
+                \App\helpers\ActivityLogger::log(
+                    'Configuración',
+                    'create',
+                    'table_column',
+                    (string)$inventoryId,
+                    "Agregó columna: $colName",
+                    "Nueva columna física agregada a la tabla del inventario."
+                );
+            } catch (\Throwable $logErr) {
+                error_log('ActivityLogger error in manage-column add_column: ' . $logErr->getMessage());
+            }
             break;
 
         case 'drop_column':
@@ -70,6 +96,19 @@ try {
             $model->dropColumn($inventoryId, $user['id'], $colName);
             $success = true;
             $message = "Columna eliminada.";
+            try {
+                require_once $root . '/src/helpers/ActivityLogger.php';
+                \App\helpers\ActivityLogger::log(
+                    'Configuración',
+                    'delete',
+                    'table_column',
+                    (string)$inventoryId,
+                    "Eliminó columna: $colName",
+                    "Columna física eliminada de la tabla del inventario."
+                );
+            } catch (\Throwable $logErr) {
+                error_log('ActivityLogger error in manage-column drop_column: ' . $logErr->getMessage());
+            }
             break;
 
         case 'rename_column':
@@ -79,6 +118,19 @@ try {
             $model->renameColumn($inventoryId, $user['id'], $old, $new);
             $success = true;
             $message = "Columna renombrada.";
+            try {
+                require_once $root . '/src/helpers/ActivityLogger.php';
+                \App\helpers\ActivityLogger::log(
+                    'Configuración',
+                    'update',
+                    'table_column',
+                    (string)$inventoryId,
+                    "Renombró columna '$old' a '$new'",
+                    "Cambio de nombre de columna física."
+                );
+            } catch (\Throwable $logErr) {
+                error_log('ActivityLogger error in manage-column rename_column: ' . $logErr->getMessage());
+            }
             break;
 
         default:

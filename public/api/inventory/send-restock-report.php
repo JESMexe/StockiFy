@@ -39,22 +39,43 @@ if (!$inventoryId) {
 try {
     $db = Database::getInstance();
 
-    // --- 1. Verificar ownership y obtener el nombre del inventario ---
+    // --- 1. Verificar acceso y obtener datos del inventario ---
+    // La query NO filtra por user_id del usuario actual porque puede ser un colaborador.
+    // Se verifica acceso por RBAC (inventory_collaborators) y el email va siempre al Owner real.
     $stmtInv = $db->prepare(
-        "SELECT i.name, i.preferences, ut.table_name
+        "SELECT i.name, i.preferences, i.user_id AS owner_id, ut.table_name
          FROM inventories i
          JOIN user_tables ut ON ut.inventory_id = i.id
-         WHERE i.id = ? AND i.user_id = ?
+         WHERE i.id = ?
          LIMIT 1"
     );
-    $stmtInv->execute([$inventoryId, $currentUser['id']]);
+    $stmtInv->execute([$inventoryId]);
     $invRow = $stmtInv->fetch(PDO::FETCH_ASSOC);
 
     if (!$invRow) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Inventario no encontrado.']);
+        exit;
+    }
+
+    // Verificar que el usuario actual tiene acceso al inventario (Owner o colaborador activo)
+    $stmtAccess = $db->prepare(
+        "SELECT 1 FROM inventory_collaborators
+         WHERE inventory_id = ? AND user_id = ? AND status = 'active'
+         UNION
+         SELECT 1 FROM inventories WHERE id = ? AND user_id = ?"
+    );
+    $stmtAccess->execute([$inventoryId, $currentUser['id'], $inventoryId, $currentUser['id']]);
+    if (!$stmtAccess->fetch()) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'No tienes permiso para acceder a este inventario.']);
         exit;
     }
+
+    // Obtener datos del Owner real para enviarle el reporte
+    $stmtOwner = $db->prepare("SELECT email, username, full_name, cell FROM users WHERE id = ? LIMIT 1");
+    $stmtOwner->execute([$invRow['owner_id']]);
+    $ownerData = $stmtOwner->fetch(PDO::FETCH_ASSOC);
 
     $inventoryName = $invRow['name'];
     $tableName = $invRow['table_name'];
@@ -111,22 +132,21 @@ try {
         ];
     }
 
-    // --- 5. Enviar por email ---
+    // --- 5. Enviar por email al Owner real del inventario ---
     $mailService = new \App\Services\MailService();
-    $mailSent = $mailService->sendRestockReport(
-        $currentUser['email'],
-        $currentUser['username'] ?? 'Usuario',
-        $inventoryName,
-        $productsList
-    );
+    $ownerEmail    = $ownerData['email'] ?? '';
+    $ownerUsername = $ownerData['full_name'] ?: ($ownerData['username'] ?? 'Propietario');
+    $mailSent = $ownerEmail
+        ? $mailService->sendRestockReport($ownerEmail, $ownerUsername, $inventoryName, $productsList)
+        : false;
 
-    // --- 6. Enviar por WhatsApp (si tiene celular configurado) ---
+    // --- 6. Enviar por WhatsApp al Owner (si tiene celular configurado) ---
     $whatsappSent = false;
-    if (!empty($currentUser['cell'])) {
+    if (!empty($ownerData['cell'])) {
         $whatsappService = new \App\Services\WhatsappService();
         $whatsappSent = $whatsappService->sendRestockReport(
-            $currentUser['cell'],
-            $currentUser['username'] ?? 'Usuario',
+            $ownerData['cell'],
+            $ownerUsername,
             $inventoryName,
             $productsList
         );
@@ -138,6 +158,21 @@ try {
 
     $channels = array_keys(array_filter(['email' => $mailSent, 'WhatsApp' => $whatsappSent]));
     $channelStr = implode(' y ', $channels);
+
+    // Auditoría
+    try {
+        require_once $root . '/src/helpers/ActivityLogger.php';
+        \App\helpers\ActivityLogger::log(
+            'Dashboard',
+            'report',
+            'inventory',
+            (string)$inventoryId,
+            'Generó reporte de reposición total',
+            "Reporte enviado por $channelStr conteniendo " . count($productsList) . " productos con stock crítico."
+        );
+    } catch (\Throwable $logErr) {
+        error_log('ActivityLogger error en send-restock-report: ' . $logErr->getMessage());
+    }
 
     echo json_encode([
         'success' => true,

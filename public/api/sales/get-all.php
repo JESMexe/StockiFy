@@ -7,6 +7,8 @@ require_once __DIR__ . '/../../../src/Models/SalesModel.php';
 
 use App\Models\SalesModel;
 
+
+
 try {
     $user = getCurrentUser();
     if (!$user) {
@@ -22,7 +24,10 @@ try {
 
     $model = new SalesModel();
 
-    $sales = $model->getHistory($user['id'], $activeInventoryId, $_GET['order'] ?? 'desc');
+    // RBAC: las ventas pertenecen al owner del inventario, no al colaborador activo
+    $ownerId = getInventoryOwnerId((int)$activeInventoryId) ?? $user['id'];
+
+    $sales = $model->getHistory($ownerId, $activeInventoryId, $_GET['order'] ?? 'desc');
 
     echo json_encode(['success' => true, 'sales' => $sales]); // Nota: El JS espera "sales", no "purchases"
 

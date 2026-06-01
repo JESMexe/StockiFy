@@ -12,6 +12,9 @@ header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once dirname(__DIR__, 3) . '/src/helpers/auth_helper.php';
 
+// Guard RBAC: verificar permiso de sección antes de cualquier query
+requireSectionAccess('can_view_analytics');
+
 $userId   = $_SESSION['user_id'] ?? null;
 $inventoryId = $_SESSION['active_inventory_id'] ?? ($_SESSION['inventory_id'] ?? null);
 

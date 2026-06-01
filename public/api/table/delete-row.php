@@ -56,18 +56,30 @@ try {
 
     $tableName = $metadata['table_name'];
 
+    $prodName = '';
+    try {
+        $db = \App\core\Database::getInstance();
+        $safeTable = "`" . str_replace("`", "``", $tableName) . "`";
+        $stmtProd = $db->prepare("SELECT * FROM {$safeTable} WHERE id = ?");
+        $stmtProd->execute([$idToDelete]);
+        $prod = $stmtProd->fetch(PDO::FETCH_ASSOC);
+        if ($prod) {
+            $prodName = $prod['nombre'] ?? $prod['name'] ?? $prod['producto'] ?? $prod['description'] ?? '';
+        }
+    } catch (\Throwable $e) {}
+
     if ($tableModel->deleteRow($tableName, $idToDelete)) {
         // Auditoría
         try {
-            $logModel = new ActivityLogModel();
-            $logModel->log(
-                (int)$activeInventoryId,
-                (int)$user['id'],
-                $myRole['name'],
+            $extraDesc = $prodName ? "Nombre: {$prodName}" : "";
+            require_once __DIR__ . '/../../../src/helpers/ActivityLogger.php';
+            \App\helpers\ActivityLogger::log(
+                'Dashboard',
                 'delete',
                 'product',
                 (string)$idToDelete,
-                'Producto eliminado (ID: ' . $idToDelete . ')'
+                'Producto eliminado (ID: ' . $idToDelete . ')',
+                $extraDesc
             );
         } catch (\Throwable $logErr) {
             error_log('ActivityLog error en delete-row: ' . $logErr->getMessage());

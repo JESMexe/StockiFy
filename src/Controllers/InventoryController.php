@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 require_once __DIR__ . '/../helpers/auth_helper.php';
+require_once __DIR__ . '/../helpers/quota_helper.php';
 
 use App\Models\InventoryModel;
 use App\Models\TableModel;
@@ -172,14 +173,60 @@ class InventoryController
         $role = getInventoryRole((int)$user['id'], (int)$inventoryId);
 
         if (!$role) {
-            http_response_code(403); // Forbidden
+            http_response_code(403);
             echo json_encode(['success' => false, 'message' => 'No tienes permiso para acceder a este inventario.']);
             return;
+        }
+
+        // QUOTA CHECK: si el usuario es colaborador (no Owner del inventario),
+        // verificar que el plan actual del Owner todavía permite colaboradores.
+        // Esto cubre el caso de downgrade de plan (ej: Profesional → Básico).
+        if ((int)$role['role_id'] !== 1) { // 1 = Owner
+            // Obtener el Owner real del inventario
+            $db = \App\core\Database::getInstance();
+            $stmtOwner = $db->prepare('SELECT user_id FROM inventories WHERE id = ? LIMIT 1');
+            $stmtOwner->execute([(int)$inventoryId]);
+            $ownerId = (int)$stmtOwner->fetchColumn();
+
+            if ($ownerId) {
+                $quota = getCollaboratorQuota($ownerId);
+                if ($quota['locked']) {
+                    http_response_code(403);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'El propietario de este inventario no tiene un plan que permita colaboradores. Contactálo para que actualice su suscripción.',
+                    ]);
+                    return;
+                }
+            }
         }
 
         // Si todo es correcto, guardo la selección y el rol en la sesión
         $_SESSION['active_inventory_id'] = $inventoryId;
         $_SESSION['active_inventory_role'] = $role['name']; // 'Owner', 'Admin', 'Employee'
+
+        try {
+            $db = \App\core\Database::getInstance();
+            $stmtInv = $db->prepare('SELECT name FROM inventories WHERE id = ? LIMIT 1');
+            $stmtInv->execute([(int)$inventoryId]);
+            $invName = $stmtInv->fetchColumn() ?: 'Desconocido';
+
+            require_once __DIR__ . '/../helpers/ActivityLogger.php';
+            \App\helpers\ActivityLogger::log(
+                'Colaboradores',
+                'access',
+                'inventory',
+                (string)$inventoryId,
+                "Accedió al inventario: $invName",
+                "Rol en este inventario: " . $role['name'],
+                (int)$inventoryId,
+                (int)$user['id'],
+                $role['name']
+            );
+        } catch (\Throwable $logErr) {
+            error_log('ActivityLogger error in InventoryController::select: ' . $logErr->getMessage());
+        }
+
         echo json_encode(['success' => true, 'message' => 'Inventario seleccionado.']);
     }
 

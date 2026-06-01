@@ -36,20 +36,29 @@ class ActivityLogModel
     ): bool {
         if ($inventoryId <= 0) return false;
 
-        $stmt = $this->db->prepare("
-            INSERT INTO activity_logs 
-                (inventory_id, user_id, role_name, action, entity_type, entity_id, description) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
-        return $stmt->execute([
-            $inventoryId,
-            $userId,
-            $roleName,
+        $section = 'Sistema';
+        if ($entityType === 'product') {
+            $section = 'Dashboard';
+        } elseif ($entityType === 'sale') {
+            $section = 'Ventas';
+        } elseif ($entityType === 'purchase') {
+            $section = 'Compras';
+        } elseif ($entityType === 'collaborator') {
+            $section = 'Colaboradores';
+        }
+
+        require_once __DIR__ . '/../helpers/ActivityLogger.php';
+        return \App\helpers\ActivityLogger::log(
+            $section,
             $action,
             $entityType,
             $entityId,
-            $description
-        ]);
+            $description ?: '',
+            null,
+            $inventoryId,
+            $userId,
+            $roleName
+        );
     }
 
     /**
@@ -85,6 +94,8 @@ class ActivityLogModel
                 al.entity_type,
                 al.entity_id,
                 al.description,
+                al.extra_description,
+                al.section,
                 al.role_name,
                 al.created_at,
                 u.username,

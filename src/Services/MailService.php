@@ -85,8 +85,8 @@ class MailService
             $mail->addAddress($toEmail);
             $mail->isHTML(true);
 
-            $mail->Subject = 'ALERTA: Stock critico de ' . $productName;
-            $mail->Subject = 'StockiFy Alertas: Stock cr\u00edtico de ' . $productName;
+            $mail->Subject = 'StockiFy Alertas: Stock crítico de ' . $productName;
+            $mail->Body = $this->generateLowStockEmailHtml($userName, $productName, $currentStock, $minStock);
             $mail->AltBody = "Hola {$userName}, el producto '{$productName}' ha alcanzado un stock critico de {$currentStock} (Min: {$minStock}).";
 
             return $mail->send();
@@ -109,13 +109,63 @@ class MailService
             $mail->addAddress($toEmail);
             $mail->isHTML(true);
 
-            $mail->Subject = 'PELIGRO: Ganancia Negativa en ' . $productName;
             $mail->Subject = 'StockiFy Alertas: Margen negativo en ' . $productName;
+            $mail->Body = $this->generateNegativeProfitEmailHtml($userName, $productName, $salePrice, $costPrice);
             $mail->AltBody = "Hola {$userName}, detectamos una venta de '{$productName}' a $ {$salePrice}, pero tu costo de compra es $ {$costPrice}. Estas perdiendo dinero.";
 
             return $mail->send();
         } catch (Exception | \Throwable $e) {
             error_log("MailService::sendNegativeProfitAlert error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sendOutOfStockAlert(
+        string $toEmail,
+        string $userName,
+        string $productName,
+        string $inventoryName = 'Principal'
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Alertas');
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            $mail->Subject = 'StockiFy Alertas: Producto AGOTADO - ' . $productName;
+            $mail->Body = $this->generateOutOfStockEmailHtml($userName, $productName, $inventoryName);
+            $mail->AltBody = "Hola {$userName}, el producto '{$productName}' se ha quedado sin stock (0 unidades disponibles) en el inventario {$inventoryName}.";
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendOutOfStockAlert error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sendWeeklyBalance(
+        string $toEmail,
+        string $userName,
+        string $dateRange,
+        float $totalSales,
+        float $totalPurchases,
+        float $balance,
+        string $inventoryName = ''
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Reportes');
+            $mail->addAddress($toEmail);
+            $mail->isHTML(true);
+
+            $subjectInv = $inventoryName ? " - $inventoryName" : "";
+            $mail->Subject = 'StockiFy Reportes: Resumen Semanal ' . $dateRange . $subjectInv;
+            $mail->Body = $this->generateWeeklyBalanceEmailHtml($userName, $dateRange, $totalSales, $totalPurchases, $balance, $inventoryName);
+            $mail->AltBody = "Hola {$userName}, tu resumen semanal del {$dateRange} para {$inventoryName}: Ingresos $ {$totalSales} | Egresos $ {$totalPurchases} | Balance Final: $ {$balance}.";
+
+            return $mail->send();
+        } catch (Exception | \Throwable $e) {
+            error_log("MailService::sendWeeklyBalance error: " . $e->getMessage());
             return false;
         }
     }
@@ -201,6 +251,30 @@ class MailService
         return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
     }
 
+    private function generateOutOfStockEmailHtml(string $userName, string $productName, string $inventoryName): string
+    {
+        $c = '#BF616A'; // Red color for completely out of stock
+        $safe = htmlspecialchars($userName, ENT_QUOTES, 'UTF-8');
+        $sp = htmlspecialchars($productName, ENT_QUOTES, 'UTF-8');
+        $si = htmlspecialchars($inventoryName, ENT_QUOTES, 'UTF-8');
+        $x = "<h2 style='font-family:Outfit,Arial,sans-serif;color:{$c};margin:0 0 4px;font-size:26px;font-weight:700;'>Producto Agotado</h2><p style='font-family:Outfit,Arial,sans-serif;color:#999;font-size:12px;text-transform:uppercase;margin:0 0 24px;'>Alerta crítica de inventario</p><p style='font-family:Outfit,Arial,sans-serif;color:#333;font-size:15px;line-height:1.7;margin:0 0 12px;'>Hola <strong>{$safe}</strong>,</p><p style='font-family:Outfit,Arial,sans-serif;color:#555;font-size:15px;line-height:1.7;margin:0 0 24px;'>Te informamos que el producto <strong>{$sp}</strong> se ha quedado completamente sin stock (<strong>0 unidades disponibles</strong>) en el inventario <strong>{$si}</strong>. Te sugerimos reponerlo a la brevedad para no perder ventas.</p><div style='background:{$c}22;border:2px dashed {$c};border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;'><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:18px;font-weight:700;color:{$c};'>{$sp}</p><p style='font-family:Outfit,Arial,sans-serif;margin:8px 0 0;font-size:14px;color:#555;'>Stock actual: <strong>0 unidades</strong></p></div>";
+        return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
+    }
+
+    private function generateWeeklyBalanceEmailHtml(string $userName, string $dateRange, float $totalSales, float $totalPurchases, float $balance, string $inventoryName = ''): string
+    {
+        $c = $balance >= 0 ? '#A3BE8C' : '#BF616A';
+        $safe = htmlspecialchars($userName, ENT_QUOTES, 'UTF-8');
+        $sdr = htmlspecialchars($dateRange, ENT_QUOTES, 'UTF-8');
+        $si = htmlspecialchars($inventoryName, ENT_QUOTES, 'UTF-8');
+        $bf = '$ ' . number_format($balance, 2, ',', '.');
+        $sf = '$ ' . number_format($totalSales, 2, ',', '.');
+        $pf = '$ ' . number_format($totalPurchases, 2, ',', '.');
+        $invHtml = $si ? "<p style='font-family:Outfit,Arial,sans-serif;color:{$c};font-size:16px;font-weight:700;margin:0 0 24px;text-transform:uppercase;'>Inventario: {$si}</p>" : "";
+        $x = "<h2 style='font-family:Outfit,Arial,sans-serif;color:{$c};margin:0 0 4px;font-size:26px;font-weight:700;'>Cierre semanal</h2><p style='font-family:Outfit,Arial,sans-serif;color:#999;font-size:12px;text-transform:uppercase;margin:0 0 24px;'>Resumen Semanal &mdash; {$sdr}</p>{$invHtml}<p style='font-family:Outfit,Arial,sans-serif;color:#333;font-size:15px;line-height:1.7;margin:0 0 12px;'>Hola <strong>{$safe}</strong>,</p><p style='font-family:Outfit,Arial,sans-serif;color:#555;font-size:15px;line-height:1.7;margin:0 0 24px;'>Ac&aacute; ten&eacute;s el balance general de tus movimientos de caja de la última semana.</p><div style='background:{$c}22;border:2px dashed {$c};border-radius:12px;padding:20px;margin-bottom:20px;'><table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin-bottom:14px;'><tr><td style='text-align:center;width:50%;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:#888;text-transform:uppercase;font-weight:600;'>Ingresos (Ventas)</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:22px;font-weight:700;color:#555;'>{$sf}</p></td><td style='text-align:center;width:50%;border-left:1px solid #ddd;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:#888;text-transform:uppercase;font-weight:600;'>Egresos (Compras)</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:22px;font-weight:700;color:#555;'>{$pf}</p></td></tr></table><div style='background:#fff;border:2px solid {$c};border-radius:8px;padding:14px;text-align:center;'><p style='font-family:Outfit,Arial,sans-serif;margin:0 0 4px;font-size:11px;color:{$c};text-transform:uppercase;font-weight:600;'>Balance neto</p><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:36px;font-weight:900;color:{$c};'>{$bf}</p></div></div><p style='font-family:Outfit,Arial,sans-serif;color:#888;font-size:13px;line-height:1.7;margin:0;font-style:italic;'>Monitorear tu rendimiento semanal es vital para la salud financiera a mediano plazo de tu negocio.</p>";
+        return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
+    }
+
     public function sendRestockReport(
         string $toEmail,
         string $userName,
@@ -224,29 +298,6 @@ class MailService
         }
     }
 
-    public function sendInvitationEmail(
-        string $toEmail,
-        string $inventoryName,
-        string $roleName,
-        string $inviteLink,
-        string $senderName
-    ): bool {
-        try {
-            $mail = $this->getMailer();
-            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Invitaciones');
-            $mail->addAddress($toEmail);
-            $mail->isHTML(true);
-
-            $mail->Subject = 'Has sido invitado a colaborar en ' . $inventoryName;
-            $mail->Body = $this->generateInvitationEmailHtml($inventoryName, $roleName, $inviteLink, $senderName);
-            $mail->AltBody = "Hola, {$senderName} te ha invitado a unirte al inventario '{$inventoryName}' en StockiFy con el rol de {$roleName}. Haz clic aquí para aceptar: {$inviteLink}";
-
-            return $mail->send();
-        } catch (Exception | \Throwable $e) {
-            error_log("MailService::sendInvitationEmail error: " . $e->getMessage());
-            return false;
-        }
-    }
 
     private function generateRestockReportEmailHtml(string $userName, string $inventoryName, array $productsList): string
     {

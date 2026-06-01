@@ -28,8 +28,21 @@ try {
     
     require_once $root . '/src/core/Database.php';
     $db = \App\core\Database::getInstance();
+
+    // Resolve the real owner of the active inventory
+    $ownerId = (int)$user['id'];
+    $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
+    if ($activeInventoryId) {
+        $stmtOwner = $db->prepare("SELECT user_id FROM inventories WHERE id = :inv_id");
+        $stmtOwner->execute([':inv_id' => $activeInventoryId]);
+        $ownerRow = $stmtOwner->fetch(PDO::FETCH_ASSOC);
+        if ($ownerRow && !empty($ownerRow['user_id'])) {
+            $ownerId = (int)$ownerRow['user_id'];
+        }
+    }
+
     $stmtUser = $db->prepare("SELECT email, full_name, cell FROM users WHERE id = :id");
-    $stmtUser->execute([':id' => $user['id']]);
+    $stmtUser->execute([':id' => $ownerId]);
     $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
 
     if ($u && (!empty($u['email']) || !empty($u['cell']))) {
@@ -47,6 +60,16 @@ try {
                 if (!empty($toCell)) {
                     $productId = $alert['product_id'] ?? '-';
                     $waSvc->sendLowStockAlert($toCell, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock'], $invName, $productId);
+                    $sentCount++;
+                }
+            } elseif ($alert['type'] === 'out_of_stock') {
+                if (!empty($toEmail)) {
+                    $mailSvc->sendOutOfStockAlert($toEmail, $userName, $alert['product_name'], $invName);
+                    $sentCount++;
+                }
+                if (!empty($toCell)) {
+                    $productId = $alert['product_id'] ?? '-';
+                    $waSvc->sendOutOfStockAlert($toCell, $userName, $alert['product_name'], $invName, (string)$productId);
                     $sentCount++;
                 }
             } elseif ($alert['type'] === 'negative_profit') {

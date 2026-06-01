@@ -773,10 +773,39 @@ function showDashboardView(viewId) {
 window.showDashboardView = showDashboardView;
 
 function setupMenuNavigation() {
+    // Mapa: viewId → permissionKey (debe coincidir con CONFIGURABLE_SECTIONS en users.js)
+    const VIEW_PERMISSION_MAP = {
+        'analysis':      'can_view_analytics',
+        'history-log':   'can_view_history',
+        'config-db':     'can_view_config',
+        'customers':     'can_view_customers',
+        'providers':     'can_view_providers',
+        'employees':     'can_view_employees',
+        'payments':      'can_view_payments',
+        'notifications': 'can_view_notifications',
+    };
+
+    // null = Owner (sin restricciones); objeto = permisos del colaborador
+    function isViewAllowed(viewId) {
+        const perms = window.__rbacPermissions;
+        if (perms === null || perms === undefined) return true;
+        const key = VIEW_PERMISSION_MAP[viewId];
+        if (!key) return true;
+        return perms[key] !== false;
+    }
+
     const menuButtons = document.querySelectorAll('.menu-btn');
     menuButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetView = button.dataset.targetView;
+
+            // Guard RBAC: bloquear vistas restringidas
+            if (targetView && !isViewAllowed(targetView)) {
+                if (typeof pop_ups !== 'undefined') {
+                    pop_ups.warning('No tenés permiso para acceder a esta sección.', 'Acceso Restringido');
+                }
+                return;
+            }
 
             if (targetView === 'sales' && window.SalesModule) {
                 window.SalesModule.init();
@@ -790,7 +819,7 @@ function setupMenuNavigation() {
                 salesModuleInstance.init();
             }
 
-            if (targetView === 'receipts') { // 'receipts' es el ID que usa el botón del menú
+            if (targetView === 'receipts') {
                 purchaseModuleInstance.init();
             }
 
@@ -815,6 +844,10 @@ function setupMenuNavigation() {
                 paymentsModuleInstance.init();
             }
 
+            if (targetView === 'users-manage' && window.usersModuleInstance) {
+                window.usersModuleInstance.init();
+            }
+
             if (targetView) {
                 showDashboardView(targetView);
             } else {
@@ -824,6 +857,7 @@ function setupMenuNavigation() {
     });
     console.log("Navegación del menú lateral configurada.");
 }
+
 
 
 if (typeof window.openCashBalance !== 'function') {
@@ -2289,6 +2323,62 @@ async function init() {
     try {
         console.log("[INIT] Cargando datos de tabla...");
         await loadTableData(); // ESTA ES LA ÚNICA LLAMADA QUE DEBE QUEDAR
+
+        // RBAC: aplicar restricciones de sidebar antes de habilitar la navegación.
+        // Fetch directo para evitar dependencias de timing entre módulos ES.
+        try {
+            const rbacRes  = await fetch('/api/users/get-role-settings.php');
+            const rbacData = await rbacRes.json();
+            if (rbacData.success) {
+                if (rbacData.mode === 'owner') {
+                    window.__rbacPermissions = null; // Owner: acceso total
+                } else if (rbacData.mode === 'collaborator') {
+                    window.__rbacPermissions = rbacData.permissions ?? {};
+                    // Ocultar secciones prohibidas en el sidebar
+                    const SIDEBAR_MAP = {
+                        'can_view_analytics':     'analysis',
+                        'can_view_history':       'history-log',
+                        'can_view_config':        'config-db',
+                        'can_view_customers':     'customers',
+                        'can_view_providers':     'providers',
+                        'can_view_employees':     'employees',
+                        'can_view_payments':      'payments',
+                        'can_view_notifications': 'notifications',
+                    };
+                    Object.entries(SIDEBAR_MAP).forEach(([permKey, viewId]) => {
+                        if (rbacData.permissions[permKey] === false) {
+                            document.querySelector(`[data-target-view="${viewId}"]`)
+                                ?.closest('li')?.classList.add('hidden');
+                        }
+                    });
+                    // Ocultar "Colaboradores" para todos los no-owners
+                    document.querySelector('[data-target-view="users-manage"]')
+                        ?.closest('li')?.classList.add('hidden');
+                    // Ocultar botón de invitar para Employee
+                    if (rbacData.role_id === 3) {
+                        document.getElementById('invite-collaborator-btn')?.classList.add('hidden');
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[RBAC] No se pudieron cargar restricciones de rol:', e.message);
+        } finally {
+            // Revelar el sidebar ahora que RBAC ya aplicó las restricciones.
+            // visibility:hidden en el HTML evitaba el flash de items prohibidos.
+            const sidebarNav = document.getElementById('sidebar-main-nav');
+            if (sidebarNav) sidebarNav.style.visibility = '';
+
+            // Ocultar el título "Usuario" si todos sus items están hidden
+            const usuarioList  = document.getElementById('sidebar-usuario-list');
+            const usuarioTitle = document.getElementById('sidebar-usuario-title');
+            if (usuarioList && usuarioTitle) {
+                const visibleItems = usuarioList.querySelectorAll('li:not(.hidden)');
+                if (visibleItems.length === 0) {
+                    usuarioTitle.classList.add('hidden');
+                    usuarioList.classList.add('hidden');
+                }
+            }
+        }
 
         setupMenuNavigation();
         console.log("[INIT] Post setupMenuNavigation()...");

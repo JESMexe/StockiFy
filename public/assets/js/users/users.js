@@ -24,6 +24,7 @@ export const usersModuleInstance = {
         if (this.isOwner) {
             this.showPermissionsPanel();
             this.loadPermissions();
+            await this.loadQuota(); // Cargar y renderizar cupos del plan
         }
     },
 
@@ -32,23 +33,7 @@ export const usersModuleInstance = {
      * Esconde el botón de invitar si no es Owner ni Admin.
      */
     async detectRole() {
-        try {
-            const res = await fetch('/api/users/get-role-settings.php');
-            const data = await res.json();
-            if (data.success) {
-                this.isOwner = data.mode === 'owner';
-                if (data.mode === 'collaborator') {
-                    // No-Owner: aplicar restricciones de sidebar según permisos
-                    this.applyRoleRestrictions(data.permissions);
-                    // Ocultar botón de invitar si es Employee (role_id 3)
-                    if (data.role_id === 3) {
-                        document.getElementById('invite-collaborator-btn')?.classList.add('hidden');
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('Error al detectar rol:', e);
-        }
+        await this.applyStartupRestrictions();
     },
 
     /**
@@ -67,12 +52,45 @@ export const usersModuleInstance = {
         };
 
         Object.entries(sectionMap).forEach(([permKey, viewId]) => {
-            // Solo ocultar si explícitamente está en false (ausente = permitido)
+            // Ocultar si explícitamente está en false (ausente = permitido)
             if (permissions[permKey] === false) {
                 const btn = document.querySelector(`[data-target-view="${viewId}"]`);
                 btn?.closest('li')?.classList.add('hidden');
             }
         });
+
+        // El botón "Colaboradores" solo es visible para el Owner
+        const colabBtn = document.querySelector('[data-target-view="users-manage"]');
+        colabBtn?.closest('li')?.classList.add('hidden');
+    },
+
+    /**
+     * Detecta el rol y aplica restricciones al sidebar.
+     * Llamado en el arranque del dashboard para que el sidebar ya esté correcto
+     * antes de que el usuario pueda interactuar.
+     */
+    async applyStartupRestrictions() {
+        try {
+            const res  = await fetch('/api/users/get-role-settings.php');
+            const data = await res.json();
+            if (!data.success) return;
+
+            this.isOwner = data.mode === 'owner';
+
+            if (data.mode === 'owner') {
+                window.__rbacPermissions = null;
+                // El Owner ve todo, incluyendo Colaboradores — no hay nada que ocultar
+            } else if (data.mode === 'collaborator') {
+                window.__rbacPermissions = data.permissions ?? {};
+                this.applyRoleRestrictions(data.permissions);
+                // Ocultar botón de invitar si es Employee
+                if (data.role_id === 3) {
+                    document.getElementById('invite-collaborator-btn')?.classList.add('hidden');
+                }
+            }
+        } catch (e) {
+            console.error('Error al aplicar restricciones de inicio:', e);
+        }
     },
 
     async loadCollaborators() {
@@ -92,6 +110,123 @@ export const usersModuleInstance = {
             }
         } catch (error) {
             container.innerHTML = `<p style="color: var(--accent-red);">Error de conexión.</p>`;
+        }
+    },
+
+    /**
+     * Carga la cuota de colaboradores desde el backend y actualiza la UI:
+     * - Badge de cupos junto al título
+     * - Estado del botón de invitación (habilitado / deshabilitado / bloqueado)
+     */
+    async loadQuota() {
+        try {
+            const res  = await fetch('/api/users/get-collaborator-quota.php');
+            const data = await res.json();
+            if (!data.success) return;
+
+            this.renderQuotaBadge(data);
+            this.applyQuotaToInviteButton(data);
+        } catch (e) {
+            console.warn('[Quota] No se pudo cargar la cuota de colaboradores:', e.message);
+        }
+    },
+
+    /**
+     * Renderiza el badge de cupos junto al título de la sección.
+     * Se inserta en el contenedor del título del panel de colaboradores.
+     */
+    renderQuotaBadge(quota) {
+        // Limpiar badge anterior si existe
+        document.getElementById('collab-quota-badge')?.remove();
+
+        const titleEl = document.querySelector('#users-manage h2');
+        if (!titleEl) return;
+
+        let badgeHtml;
+
+        if (quota.locked) {
+            // Plan Básico: sin colaboradores
+            badgeHtml = `
+                <span id="collab-quota-badge" style="
+                    display: inline-flex; align-items: center; gap: 5px;
+                    background: #f1f5f9; color: #94a3b8;
+                    padding: 3px 10px; border-radius: 20px;
+                    font-size: 0.75rem; font-weight: 600;
+                    border: 1px solid #e2e8f0; margin-left: 10px;
+                ">
+                    <i class="ph ph-lock"></i> Solo uso personal — Plan ${quota.plan_name}
+                </span>`;
+        } else if (quota.max === null) {
+            // Plan Vitalicio: ilimitado
+            badgeHtml = `
+                <span id="collab-quota-badge" style="
+                    display: inline-flex; align-items: center; gap: 5px;
+                    background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+                    color: var(--accent-color);
+                    padding: 3px 10px; border-radius: 20px;
+                    font-size: 0.75rem; font-weight: 600;
+                    border: 1px solid color-mix(in srgb, var(--accent-color) 30%, transparent);
+                    margin-left: 10px;
+                ">
+                    <i class="ph ph-infinity"></i> Ilimitado — Plan ${quota.plan_name}
+                </span>`;
+        } else {
+            // Planes con límite numérico
+            const isAtLimit = quota.remaining === 0;
+            const color     = isAtLimit ? 'var(--accent-red)' : 'var(--accent-color)';
+            const bgColor   = isAtLimit
+                ? 'color-mix(in srgb, var(--accent-red) 12%, transparent)'
+                : 'color-mix(in srgb, var(--accent-color) 12%, transparent)';
+            const borderColor = isAtLimit
+                ? 'color-mix(in srgb, var(--accent-red) 30%, transparent)'
+                : 'color-mix(in srgb, var(--accent-color) 30%, transparent)';
+
+            badgeHtml = `
+                <span id="collab-quota-badge" style="
+                    display: inline-flex; align-items: center; gap: 5px;
+                    background: ${bgColor}; color: ${color};
+                    padding: 3px 10px; border-radius: 20px;
+                    font-size: 0.75rem; font-weight: 600;
+                    border: 1px solid ${borderColor}; margin-left: 10px;
+                ">
+                    <i class="ph ph-users"></i>
+                    ${quota.used}/${quota.max} colaboradores — Plan ${quota.plan_name}
+                </span>`;
+        }
+
+        titleEl.insertAdjacentHTML('beforeend', badgeHtml);
+    },
+
+    /**
+     * Habilita o deshabilita el botón de invitación según la cuota disponible.
+     */
+    applyQuotaToInviteButton(quota) {
+        const btn = document.getElementById('invite-collaborator-btn');
+        if (!btn) return;
+
+        if (quota.locked) {
+            // Plan Básico: bloquear completamente con candado
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-lock"></i> Colaboradores bloqueados';
+            btn.style.opacity   = '0.55';
+            btn.style.cursor    = 'not-allowed';
+            btn.title = `El plan ${quota.plan_name} no permite agregar colaboradores.`;
+        } else if (!quota.allowed) {
+            // Sin cupos restantes
+            btn.disabled = true;
+            btn.innerHTML = `<i class="ph ph-users"></i> Sin cupos disponibles (${quota.used}/${quota.max})`;
+            btn.style.opacity = '0.6';
+            btn.style.cursor  = 'not-allowed';
+            btn.title = `Alcanzaste el límite de colaboradores de tu plan. Contactá a soporte para ampliar.`;
+        } else {
+            // Cupos disponibles — asegurarse de que el botón esté activo
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ph ph-user-plus"></i> Nueva Invitación';
+            btn.style.opacity = '';
+            btn.style.cursor  = '';
+            btn.title = quota.max !== null
+                ? `Cupos disponibles: ${quota.remaining} de ${quota.max}`
+                : 'Plan ilimitado';
         }
     },
 
@@ -121,11 +256,11 @@ export const usersModuleInstance = {
         collaborators.forEach(c => {
             let roleBadge;
             if (c.role_name === 'Owner') {
-                roleBadge = `<span style="background: var(--accent-green-20); color: var(--accent-green); padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Owner</span>`;
+                roleBadge = `<span style="background: var(--accent-green-20); color: var(--accent-green); padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Propietario</span>`;
             } else if (c.role_name === 'Admin') {
-                roleBadge = `<span style="background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Admin</span>`;
+                roleBadge = `<span style="background: color-mix(in srgb, var(--accent-color) 15%, transparent); color: var(--accent-color); padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Administrador</span>`;
             } else {
-                roleBadge = `<span style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Employee</span>`;
+                roleBadge = `<span style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Empleado</span>`;
             }
 
             const isActive = c.status === 'active';
@@ -289,8 +424,8 @@ export const usersModuleInstance = {
 
         grid.innerHTML = `
             <div>
-                <h4 style="margin: 0 0 1rem; display: flex; align-items: center; gap: 8px; color: #0284c7;">
-                    <i class="ph-fill ph-shield-check" style="font-size: 1.1rem;"></i> Administrador
+                <h4 style="margin: 0 0 1rem; display: flex; align-items: center; gap: 8px; color: var(--accent-color);">
+                    <i class="ph ph-star" style="font-size: 1.1rem; color: var(--accent-color);"></i> Administrador
                 </h4>
                 ${CONFIGURABLE_SECTIONS.map(s => this.renderCheckbox(s, 2, adminPerms[s.key] !== false)).join('')}
             </div>
@@ -337,8 +472,10 @@ export const usersModuleInstance = {
     async savePermissions() {
         this.collectPermissions();
         const saveBtn = document.getElementById('save-permissions-btn');
-        const original = saveBtn?.innerHTML;
-        if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Guardando...'; }
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Guardando...';
+        }
 
         try {
             const response = await fetch('/api/users/update_permissions.php', {
@@ -356,7 +493,11 @@ export const usersModuleInstance = {
         } catch (e) {
             pop_ups.error("Error de conexión.");
         } finally {
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = original; }
+            // Siempre restaurar al estado original con texto e ícono fijos
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar Configuración';
+            }
         }
     },
 };

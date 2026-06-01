@@ -56,7 +56,59 @@ if ($invitation['status'] === 'pending') {
         $invitation['role_id'],
         $invitation['invited_by']
     ]);
+    // Notify Owner of acceptance via WhatsApp
+    try {
+        $stmtInv = $db->prepare("SELECT user_id, name FROM inventories WHERE id = ? LIMIT 1");
+        $stmtInv->execute([$invitation['inventory_id']]);
+        $invRow = $stmtInv->fetch(PDO::FETCH_ASSOC);
+        $ownerId = $invRow ? (int)$invRow['user_id'] : null;
+        $invName = $invRow ? $invRow['name'] : 'Inventario Compartido';
+
+        if ($ownerId) {
+            $stmtOwnerDetails = $db->prepare("SELECT email, full_name, cell FROM users WHERE id = ?");
+            $stmtOwnerDetails->execute([$ownerId]);
+            $ownerDetails = $stmtOwnerDetails->fetch(PDO::FETCH_ASSOC);
+            
+            if ($ownerDetails && !empty($ownerDetails['cell'])) {
+                $collaboratorName = $user['full_name'] ?: $user['username'] ?: $user['email'];
+                $roleName = ((int)$invitation['role_id'] === 2) ? 'Administrador' : 'Empleado';
+                
+                require_once __DIR__ . '/../../../src/Services/WhatsappService.php';
+                $waSvc = new \App\Services\WhatsappService();
+                $waSvc->sendNewCollaboratorAlert(
+                    $ownerDetails['cell'],
+                    $ownerDetails['full_name'] ?? 'Socio',
+                    $collaboratorName,
+                    $user['email'],
+                    $invName,
+                    $roleName
+                );
+            }
+        }
+    } catch (\Throwable $waErr) {
+        error_log('WhatsApp sendNewCollaboratorAlert in accept.php error: ' . $waErr->getMessage());
+    }
+
     $db->prepare("UPDATE invitations SET status = 'accepted' WHERE id = ?")->execute([$invitation['id']]);
+
+    try {
+        require_once __DIR__ . '/../../../src/helpers/ActivityLogger.php';
+        $roleName = ((int)$invitation['role_id'] === 2) ? 'Administrador' : 'Empleado';
+        $collaboratorName = $user['full_name'] ?: $user['username'] ?: $user['email'];
+        \App\helpers\ActivityLogger::log(
+            'Colaboradores',
+            'accept_invite',
+            'collaborator',
+            (string)$user['id'],
+            "Aceptó invitación al inventario: " . $collaboratorName,
+            "Rol asignado: " . $roleName . " | Email: " . $user['email'],
+            (int)$invitation['inventory_id'],
+            (int)$user['id'],
+            $roleName
+        );
+    } catch (\Throwable $logErr) {
+        error_log('ActivityLogger error in invitations/accept: ' . $logErr->getMessage());
+    }
 }
 
 // Activar el inventario y redirigir al dashboard

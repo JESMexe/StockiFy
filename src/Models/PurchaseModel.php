@@ -73,6 +73,51 @@ class PurchaseModel {
             }
 
             $this->db->commit();
+
+            // Auditoría
+            try {
+                $providerName = 'Ninguno';
+                if ($providerId) {
+                    $stmtProv = $this->db->prepare("SELECT name FROM providers WHERE id = ?");
+                    $stmtProv->execute([$providerId]);
+                    $pName = $stmtProv->fetchColumn();
+                    if ($pName) $providerName = $pName;
+                }
+
+                $itemsList = [];
+                if (!empty($data['items'])) {
+                    foreach ($data['items'] as $item) {
+                        $qty = $item['cantidad'] ?? 1;
+                        $name = $item['nombre_producto'] ?? 'Producto';
+                        $price = $item['precio_unitario'] ?? 0;
+                        $itemsList[] = "{$qty}x {$name} ($" . number_format((float)$price, 2, ',', '.') . ")";
+                    }
+                }
+
+                $isGasto = empty($data['items']) && !empty($category);
+                $logDesc = $isGasto 
+                    ? "Registró un gasto por $" . number_format((float)($data['total'] ?? 0), 2, ',', '.')
+                    : "Registró una compra por $" . number_format((float)($data['total'] ?? 0), 2, ',', '.');
+                
+                $logExtra = $isGasto
+                    ? "Categoría: $category | Notas: " . ($notes ?: 'Ninguna')
+                    : "Proveedor: $providerName | Detalle: " . (empty($itemsList) ? 'Sin productos' : implode(', ', $itemsList));
+
+                require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                \App\helpers\ActivityLogger::log(
+                    'Compras',
+                    'create',
+                    'purchase',
+                    (string)$purchaseId,
+                    $logDesc,
+                    $logExtra,
+                    (int)$inventoryId,
+                    (int)$userId
+                );
+            } catch (\Throwable $logErr) {
+                error_log('ActivityLogger error in createPurchase: ' . $logErr->getMessage());
+            }
+
             return $purchaseId;
 
         } catch (Exception $e) {
@@ -86,6 +131,13 @@ class PurchaseModel {
     public function updatePurchase($id, $userId, $data): bool
     {
         try {
+            $stmtOld = $this->db->prepare("SELECT provider_id, category, notes, total, inventory_id FROM purchases WHERE id = :id AND user_id = :user");
+            $stmtOld->execute([':id' => $id, ':user' => $userId]);
+            $oldRow = $stmtOld->fetch(PDO::FETCH_ASSOC);
+            if (!$oldRow) {
+                return false;
+            }
+
             // Si es gasto rápido, permitimos cambiar el total y categoría.
             // Si es compra de inventario, el total suele ser calculado, pero aquí permitiremos editar la cabecera.
 
@@ -122,8 +174,53 @@ class PurchaseModel {
                 $params[':total'] = $data['total'];
             }
 
-            return $stmt->execute($params);
+            $success = $stmt->execute($params);
+            if ($success) {
+                try {
+                    $inventoryId = $oldRow['inventory_id'];
+                    $oldTotal = (float)$oldRow['total'];
+                    $newTotal = isset($data['total']) ? (float)$data['total'] : $oldTotal;
 
+                    // Get provider names
+                    $oldProvName = 'Ninguno';
+                    if (!empty($oldRow['provider_id'])) {
+                        $stmtP = $this->db->prepare("SELECT name FROM providers WHERE id = ?");
+                        $stmtP->execute([$oldRow['provider_id']]);
+                        $oldProvName = $stmtP->fetchColumn() ?: 'Ninguno';
+                    }
+
+                    $newProvId = !empty($data['provider_id']) ? $data['provider_id'] : null;
+                    $newProvName = 'Ninguno';
+                    if ($newProvId) {
+                        $stmtP = $this->db->prepare("SELECT name FROM providers WHERE id = ?");
+                        $stmtP->execute([$newProvId]);
+                        $newProvName = $stmtP->fetchColumn() ?: 'Ninguno';
+                    }
+
+                    $isGasto = empty($oldRow['provider_id']) && !empty($oldRow['category']);
+                    $typeStr = $isGasto ? "gasto" : "compra";
+
+                    $desc = "Editó " . $typeStr . " (ID: $id) por $" . number_format($newTotal, 2, ',', '.');
+                    $extra = "Anterior - Total: $" . number_format($oldTotal, 2, ',', '.') . ", Proveedor: $oldProvName, Categoría: " . ($oldRow['category'] ?: 'Ninguna') . ", Notas: " . ($oldRow['notes'] ?: 'Ninguna') . " | " .
+                             "Nuevo - Total: $" . number_format($newTotal, 2, ',', '.') . ", Proveedor: $newProvName, Categoría: " . ($data['category'] ?: 'Ninguna') . ", Notas: " . ($data['notes'] ?: 'Ninguna');
+
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Compras',
+                        'update',
+                        'purchase',
+                        (string)$id,
+                        $desc,
+                        $extra,
+                        (int)$inventoryId,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in PurchaseModel::updatePurchase: ' . $logErr->getMessage());
+                }
+                return true;
+            }
+            return false;
         } catch (Exception $e) {
             error_log("Update Purchase Error: " . $e->getMessage());
             return false;
@@ -134,6 +231,45 @@ class PurchaseModel {
     public function deletePurchase($id, $userId): bool
     {
         try {
+            // Fetch info before deleting the purchase
+            $stmtGetPurchase = $this->db->prepare("SELECT total, provider_id, category, notes, inventory_id FROM purchases WHERE id = :id AND user_id = :user");
+            $stmtGetPurchase->execute([':id' => $id, ':user' => $userId]);
+            $purchaseInfo = $stmtGetPurchase->fetch(PDO::FETCH_ASSOC);
+            if (!$purchaseInfo) {
+                return false;
+            }
+            $totalAmount = (float)$purchaseInfo['total'];
+            $providerId = $purchaseInfo['provider_id'];
+            $category = $purchaseInfo['category'];
+            $notes = $purchaseInfo['notes'];
+            $purchaseInvId = $purchaseInfo['inventory_id'];
+
+            $stmtGetDetails = $this->db->prepare("SELECT product_name, quantity, unit_price FROM purchase_details WHERE purchase_id = :id");
+            $stmtGetDetails->execute([':id' => $id]);
+            $detailsRows = $stmtGetDetails->fetchAll(PDO::FETCH_ASSOC);
+            $itemsList = [];
+            foreach ($detailsRows as $row) {
+                $qty = $row['quantity'] ?? 1;
+                $name = $row['product_name'] ?? 'Producto';
+                $price = $row['unit_price'] ?? 0;
+                $itemsList[] = "{$qty}x {$name} ($" . number_format((float)$price, 2, ',', '.') . ")";
+            }
+
+            $providerName = 'Ninguno';
+            if ($providerId) {
+                $stmtProv = $this->db->prepare("SELECT name FROM providers WHERE id = ?");
+                $stmtProv->execute([$providerId]);
+                $providerName = $stmtProv->fetchColumn() ?: 'Ninguno';
+            }
+
+            $isGasto = empty($detailsRows) && !empty($category);
+            $typeStr = $isGasto ? "gasto" : "compra";
+            
+            $logDesc = "Eliminó un " . $typeStr . " por $" . number_format($totalAmount, 2, ',', '.');
+            $logExtra = $isGasto
+                ? "Categoría: $category | Notas: " . ($notes ?: 'Ninguna')
+                : "Proveedor: $providerName | Detalle: " . (empty($itemsList) ? 'Sin productos' : implode(', ', $itemsList));
+
             $this->db->beginTransaction();
 
             // 0. Restablecer stock de los productos comprados
@@ -144,11 +280,6 @@ class PurchaseModel {
             require_once __DIR__ . '/InventoryModel.php';
             $invModel = new \App\Models\InventoryModel();
             
-            // Traer inventory_id de la compra para pasarlo a decreaseStock
-            $stmtInv = $this->db->prepare("SELECT inventory_id FROM purchases WHERE id = :id AND user_id = :user");
-            $stmtInv->execute([':id' => $id, ':user' => $userId]);
-            $purchaseInvId = $stmtInv->fetchColumn();
-
             if ($purchaseInvId) {
                 foreach ($items as $item) {
                     if (!empty($item['product_id'])) {
@@ -167,13 +298,32 @@ class PurchaseModel {
 
             if ($stmt->rowCount() > 0) {
                 $this->db->commit();
+
+                try {
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Compras',
+                        'delete',
+                        'purchase',
+                        (string)$id,
+                        $logDesc,
+                        $logExtra,
+                        (int)($purchaseInvId ?? 0),
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in PurchaseModel::deletePurchase: ' . $logErr->getMessage());
+                }
+
                 return true;
             } else {
                 $this->db->rollBack();
                 return false;
             }
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             return false;
         }
     }

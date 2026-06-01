@@ -596,6 +596,38 @@ class InventoryModel
                         }
                     }
                 }
+
+                // ALERTA DE STOCK AGOTADO (Cuando stock pasa de > 0 a <= 0)
+                if ($oldStock > 0 && $newStock <= 0) {
+                    $prodName = $productNameFallback ?? 'Producto #' . $productId;
+                    
+                    if ($alerts !== null) {
+                        $alerts[] = [
+                            'type' => 'out_of_stock',
+                            'product_name' => $prodName,
+                            'product_id' => $productId,
+                            'current_stock' => $newStock,
+                            'inventory_name' => $row['inv_name'] ?? 'Principal'
+                        ];
+                    } else {
+                        $stmtUser = $this->db->prepare("SELECT email, full_name, cell FROM users WHERE id = :id");
+                        $stmtUser->execute([':id' => $userId]);
+                        $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($u) {
+                            if (!empty($u['email'])) {
+                                require_once dirname(__DIR__) . '/Services/MailService.php';
+                                $mailSvc = new \App\Services\MailService();
+                                $mailSvc->sendOutOfStockAlert($u['email'], $u['full_name'] ?? 'Socio', $prodName, $row['inv_name'] ?? 'Principal');
+                            }
+                            if (!empty($u['cell'])) {
+                                require_once dirname(__DIR__) . '/Services/WhatsappService.php';
+                                $waSvc = new \App\Services\WhatsappService();
+                                $waSvc->sendOutOfStockAlert($u['cell'], $u['full_name'] ?? 'Socio', $prodName, $row['inv_name'] ?? 'Principal', (string)$productId);
+                            }
+                        }
+                    }
+                }
             }
 
             return $success;

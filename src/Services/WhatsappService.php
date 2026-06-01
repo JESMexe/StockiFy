@@ -7,84 +7,104 @@ require_once __DIR__ . '/../config/whatsapp_config.php';
 
 class WhatsappService
 {
-    private string $graphApiVersion = 'v20.0'; // Updated to Meta's v20.0
-    private string $baseUrl = 'https://graph.facebook.com';
-    public string $lastError = '';
+    private string $graphApiVersion = 'v20.0';
+    private string $baseUrl         = 'https://graph.facebook.com';
+    public  string $lastError       = '';
 
     /**
      * Envía una plantilla (Template) de WhatsApp.
-     * 
-     * @param string $toPhoneNumber Número destino (con código de país ej: 549112345678)
-     * @param string $templateName Nombre exacto de la plantilla aprobada
-     * @param array $parameters Array numérico de strings con los valores para {{1}}, {{2}}, etc.
-     * @return bool True si la llamada a la API responde con éxito
+     *
+     * Soporta dos formatos de $parameters:
+     *   - Array asociativo ['nombre_var' => 'valor'] → variables NOMBRADAS (plantillas modernas de Meta)
+     *   - Array numérico  ['valor1', 'valor2']       → variables POSICIONALES {{1}}, {{2}} (plantillas antiguas)
+     *
+     * Meta exige `parameter_name` cuando la plantilla usa variables con nombre (ej: {{nombre_usuario}}).
+     * Si se omite, devuelve HTTP 400 "Parameter name is missing or empty".
+     *
+     * @param string $toPhoneNumber  Número destino con código de país (ej: 5491112345678)
+     * @param string $templateName   Nombre exacto de la plantilla aprobada en Meta
+     * @param array  $parameters     Asociativo (nombrado) o numérico (posicional)
+     * @param string $languageCode   Código de idioma de la plantilla (default: es_AR)
+     * @return bool
      */
-    public function sendTemplateMessage(string $toPhoneNumber, string $templateName, array $parameters = []): bool
-    {
+    public function sendTemplateMessage(
+        string $toPhoneNumber,
+        string $templateName,
+        array $parameters = [],
+        string $languageCode = 'es_AR'
+    ): bool {
         if (empty(WHATSAPP_PHONE_NUMBER_ID) || empty(WHATSAPP_ACCESS_TOKEN)) {
-            $this->lastError = "Faltan credenciales empresariales. Verifica el archivo .env, actualmente ID: " . (WHATSAPP_PHONE_NUMBER_ID ?: 'VACIO') . " TOKEN: " . (WHATSAPP_ACCESS_TOKEN ? 'CARGADO' : 'VACIO');
-            error_log("WhatsappService: Faltan credenciales en el archivo config/whatsapp_config.php");
+            $this->lastError = 'Faltan credenciales. ID: ' . (WHATSAPP_PHONE_NUMBER_ID ?: 'VACÍO')
+                             . ' | TOKEN: ' . (WHATSAPP_ACCESS_TOKEN ? 'CARGADO' : 'VACÍO');
+            error_log('WhatsappService: credenciales faltantes en whatsapp_config.php');
             return false;
         }
 
-        // Limpiar formato de teléfono (sólo números)
         $cleanPhone = preg_replace('/[^0-9]/', '', $toPhoneNumber);
 
-        $url = "{$this->baseUrl}/{$this->graphApiVersion}/" . WHATSAPP_PHONE_NUMBER_ID . "/messages";
+        $url     = "{$this->baseUrl}/{$this->graphApiVersion}/" . WHATSAPP_PHONE_NUMBER_ID . '/messages';
+        $headers = [
+            'Authorization: Bearer ' . WHATSAPP_ACCESS_TOKEN,
+            'Content-Type: application/json',
+        ];
 
-        // Mapear los parámetros simples de PHP a la estructura compleja de componentes que exige JSON de Meta
+        // ── Construir componentes ──────────────────────────────────────────────
         $components = [];
         if (!empty($parameters)) {
             $bodyParams = [];
-            foreach ($parameters as $param) {
-                $bodyParams[] = [
+
+            // Detectar si el array es asociativo (keys string) → variables nombradas
+            $isNamed = array_keys($parameters) !== range(0, count($parameters) - 1);
+
+            foreach ($parameters as $key => $value) {
+                $param = [
                     'type' => 'text',
-                    'text' => (string) $param
+                    'text' => (string) $value,
                 ];
+                if ($isNamed) {
+                    // Meta requiere este campo para plantillas con variables nombradas
+                    $param['parameter_name'] = (string) $key;
+                }
+                $bodyParams[] = $param;
             }
-            $components = [
-                [
-                    'type' => 'body',
-                    'parameters' => $bodyParams
-                ]
-            ];
+
+            $components = [[
+                'type'       => 'body',
+                'parameters' => $bodyParams,
+            ]];
         }
 
         $payload = [
             'messaging_product' => 'whatsapp',
-            'to' => $cleanPhone,
-            'type' => 'template',
-            'template' => [
-                'name' => $templateName,
-                'language' => ['code' => 'es_AR'],
-            ]
+            'to'                => $cleanPhone,
+            'type'              => 'template',
+            'template'          => [
+                'name'     => $templateName,
+                'language' => ['code' => $languageCode],
+            ],
         ];
-
         if (!empty($components)) {
             $payload['template']['components'] = $components;
         }
 
-        $headers = [
-            'Authorization: Bearer ' . WHATSAPP_ACCESS_TOKEN,
-            'Content-Type: application/json'
-        ];
-
+        // ── Llamada HTTP ───────────────────────────────────────────────────────
         try {
             $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_POST,          true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS,    json_encode($payload));
+            curl_setopt($ch, CURLOPT_HTTPHEADER,    $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER,false);
+            curl_setopt($ch, CURLOPT_TIMEOUT,       15);
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
+            $curlErr  = curl_error($ch);
             curl_close($ch);
 
-            if ($error) {
-                $this->lastError = "CURL Error: " . $error;
-                error_log("WhatsappService CURL Error: " . $error);
+            if ($curlErr) {
+                $this->lastError = "CURL Error: {$curlErr}";
+                error_log("WhatsappService CURL Error: {$curlErr}");
                 return false;
             }
 
@@ -92,72 +112,176 @@ class WhatsappService
                 return true;
             }
 
-            $this->lastError = "HTTP {$httpCode}: " . $response;
-            error_log("WhatsappService Respuesta fallida HTTP {$httpCode}: " . $response);
+            // Extraer mensaje de error legible de Meta
+            $decoded    = json_decode($response, true);
+            $metaMsg    = $decoded['error']['message']         ?? '';
+            $metaDetail = $decoded['error']['error_data']['details'] ?? '';
+            $this->lastError = "HTTP {$httpCode} | {$metaMsg}" . ($metaDetail ? " | {$metaDetail}" : '');
+            error_log("WhatsappService HTTP {$httpCode}: {$response}");
             return false;
 
         } catch (\Throwable $e) {
-            $this->lastError = "Exception: " . $e->getMessage();
-            error_log("WhatsappService error de ejecución: " . $e->getMessage());
+            $this->lastError = 'Exception: ' . $e->getMessage();
+            error_log('WhatsappService excepción: ' . $e->getMessage());
             return false;
         }
     }
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // PLANTILLAS ESPECÍFICAS
+    // Los nombres de las variables deben coincidir EXACTAMENTE con los definidos
+    // en Meta Business Manager → Administrador de WhatsApp → Plantillas.
+    // ══════════════════════════════════════════════════════════════════════════
+
     /**
-     * Envia alerta de stock critico vía WhatsApp 
-     * Nota: Ahora incluye la variable para el Inventario como 5to parametro
+     * Alerta de Stock Crítico
+     *
+     * Plantilla: alerta_stock_critico (es_AR)
+     * Variables: {{nombre_usuario}}, {{nombre_inventario}}, {{nombre_producto}},
+     *            {{producto_id}}, {{stock_actual}}, {{stock_minimo}}
      */
-    public function sendLowStockAlert(string $toPhoneNumber, string $userName, string $productName, float $currentStock, float $minStock, string $inventoryName = 'Principal', $productId = '-'): bool
-    {
-        // En base a comentarios del User: {{1}} Usuario, {{2}} Inventario, {{3}} Producto, {{4}} Producto ID, {{5}} Stock Actual, {{6}} Min Stock
+    public function sendLowStockAlert(
+        string $toPhoneNumber,
+        string $userName,
+        string $productName,
+        float  $currentStock,
+        float  $minStock,
+        string $inventoryName = 'Principal',
+               $productId     = '-'
+    ): bool {
         $params = [
-            $userName,
-            $inventoryName,
-            $productName,
-            (string) $productId,
-            (string) $currentStock,
-            (string) $minStock
+            'nombre_usuario'    => $userName,
+            'nombre_inventario' => $inventoryName,
+            'nombre_producto'   => $productName,
+            'producto_id'       => (string) $productId,
+            'stock_actual'      => (string) $currentStock,
+            'stock_minimo'      => (string) $minStock,
         ];
         return $this->sendTemplateMessage($toPhoneNumber, 'alerta_stock_critico', $params);
     }
 
     /**
-     * Envia alerta balance diario de caja vía WhatsApp
-     * Nota: Ahora incluye el inventario o similar si aplica (asumo inventario como 6to parametro o ajustamos)
-     * Como el usuario dijo que ambas plantillas tienen esta info de inventario, sumaremos 1 variable extra
+     * Reporte de Cierre de Caja Diario
+     *
+     * Plantilla: reporte_cierre_caja (es_AR)
+     * Variables: {{inventario_nombre}}, {{nombre_usuario}}, {{fecha}},
+     *            {{ventas_totales}}, {{gastos_totales}}, {{balance}}
      */
-    public function sendDailyBalance(string $toPhoneNumber, string $userName, string $date, float $totalSales, float $totalPurchases, float $balance, string $inventoryName = 'General'): bool
-    {
-        // En base a la plantilla: {{1}} Inventario, {{2}} Usuario, {{3}} Fecha, {{4}} Ventas, {{5}} Compras, {{6}} Balance
+    public function sendDailyBalance(
+        string $toPhoneNumber,
+        string $userName,
+        string $date,
+        float  $totalSales,
+        float  $totalPurchases,
+        float  $balance,
+        string $inventoryName = 'General'
+    ): bool {
         $params = [
-            $inventoryName,
-            $userName,
-            $date,
-            number_format($totalSales, 2, ',', '.'),
-            number_format($totalPurchases, 2, ',', '.'),
-            number_format($balance, 2, ',', '.')
+            'inventario_nombre' => $inventoryName,
+            'nombre_usuario'    => $userName,
+            'fecha'             => $date,
+            'ventas_totales'    => number_format($totalSales,     2, ',', '.'),
+            'gastos_totales'    => number_format($totalPurchases, 2, ',', '.'),
+            'balance'           => number_format($balance,        2, ',', '.'),
         ];
         return $this->sendTemplateMessage($toPhoneNumber, 'reporte_cierre_caja', $params);
     }
 
     /**
-     * Envía reporte masivo de reposición vía WhatsApp 
+     * Reporte masivo de reposición de stock
+     *
+     * Plantilla: reporte_reposicion (es_AR)
+     * Variables: ajustar nombres según la plantilla creada en Meta.
      */
-    public function sendRestockReport(string $toPhoneNumber, string $userName, string $inventoryName, array $productsList): bool
-    {
-        $productsString = "";
+    public function sendRestockReport(
+        string $toPhoneNumber,
+        string $userName,
+        string $inventoryName,
+        array  $productsList
+    ): bool {
+        $lines = [];
         foreach ($productsList as $product) {
-            $name = $product['name'] ?? 'Producto';
+            $name     = $product['name']    ?? 'Producto';
             $faltante = $product['faltante'] ?? 0;
-            $productsString .= "• {$name}: faltan {$faltante}\n";
+            $lines[]  = "• {$name}: faltan {$faltante}";
         }
-        $productsString = trim($productsString);
+        $productsString = implode("\n", $lines);
 
         $params = [
-            $userName,
-            $inventoryName,
-            $productsString
+            'nombre'            => $userName,
+            'inventario_nombre' => $inventoryName,
+            'productos'         => $productsString,
         ];
         return $this->sendTemplateMessage($toPhoneNumber, 'reporte_reposicion', $params);
+    }
+
+    /**
+     * Alerta de Producto Agotado (Stock 0)
+     *
+     * Plantilla: producto_agotado (es_AR)
+     * Variables: {{nombre_usuario}}, {{nombre_inventario}}, {{nombre_producto}}, {{producto_id}}
+     */
+    public function sendOutOfStockAlert(
+        string $toPhoneNumber,
+        string $userName,
+        string $productName,
+        string $inventoryName = 'Principal',
+        string $productId = '-'
+    ): bool {
+        $params = [
+            'nombre_usuario'    => $userName,
+            'nombre_inventario' => $inventoryName,
+            'nombre_producto'   => $productName,
+            'producto_id'       => $productId,
+        ];
+        return $this->sendTemplateMessage($toPhoneNumber, 'producto_agotado', $params);
+    }
+
+    /**
+     * Alerta de Nuevo Colaborador Agregado / Invitación Aceptada
+     *
+     * Plantilla: invitacion_aceptada (es_AR)
+     * Variables: {{nombre_usuario}}, {{nombre_invitado}}, {{email_invitado}}, {{nombre_inventario}}, {{rol_invitado}}
+     */
+    public function sendNewCollaboratorAlert(
+        string $toPhoneNumber,
+        string $userName,
+        string $collaboratorName,
+        string $collaboratorEmail,
+        string $inventoryName,
+        string $collaboratorRole
+    ): bool {
+        $params = [
+            'nombre_usuario'    => $userName,
+            'nombre_invitado'   => $collaboratorName,
+            'email_invitado'    => $collaboratorEmail,
+            'nombre_inventario' => $inventoryName,
+            'rol_invitado'      => $collaboratorRole,
+        ];
+        return $this->sendTemplateMessage($toPhoneNumber, 'invitacion_aceptada', $params);
+    }
+
+    /**
+     * Reporte de Cierre de Caja Semanal
+     *
+     * Plantilla: cierre_semanal (es_AR)
+     * Variables: {{inventario_nombre}}, {{nombre_usuario}}, {{ventas_totales}}, {{gastos_totales}}, {{balance}}
+     */
+    public function sendWeeklyBalance(
+        string $toPhoneNumber,
+        string $userName,
+        float  $totalSales,
+        float  $totalPurchases,
+        float  $balance,
+        string $inventoryName = 'General'
+    ): bool {
+        $params = [
+            'inventario_nombre' => $inventoryName,
+            'nombre_usuario'    => $userName,
+            'ventas_totales'    => number_format($totalSales,     2, ',', '.'),
+            'gastos_totales'    => number_format($totalPurchases, 2, ',', '.'),
+            'balance'           => number_format($balance,        2, ',', '.'),
+        ];
+        return $this->sendTemplateMessage($toPhoneNumber, 'cierre_semanal', $params);
     }
 }

@@ -119,15 +119,17 @@ try {
 
         // Auditoría
         try {
-            $logModel = new ActivityLogModel();
-            $logModel->log(
-                $inventoryId,
-                (int)$user['id'],
-                $myRole['name'],
+            $prodName = $updatedItem['nombre'] ?? $updatedItem['name'] ?? $updatedItem['producto'] ?? $updatedItem['description'] ?? '';
+            $extraDesc = $prodName ? "Nombre: {$prodName}" : "";
+
+            require_once __DIR__ . '/../../../src/helpers/ActivityLogger.php';
+            \App\helpers\ActivityLogger::log(
+                'Dashboard',
                 'update',
                 'product',
                 (string)$id,
-                'Producto actualizado (ID: ' . $id . ')'
+                'Producto editado (ID: ' . $id . ')',
+                $extraDesc
             );
         } catch (\Throwable $logErr) {
             error_log('ActivityLog error en update-row: ' . $logErr->getMessage());

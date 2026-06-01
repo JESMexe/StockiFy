@@ -76,3 +76,69 @@ if (!function_exists('getInventoryOwnerId')) {
         return $row ? (int)$row['user_id'] : null;
     }
 }
+
+if (!function_exists('getActiveRolePermissions')) {
+    /**
+     * Devuelve el array de permisos del usuario activo para el inventario en sesión.
+     * - Owner (role_id=1): retorna NULL (acceso total, sin restricciones).
+     * - Admin/Employee: retorna el array de permisos desde inventory_role_settings.
+     *   Si no hay fila en la tabla, retorna [] (ningún permiso explícito = todo permitido por defecto).
+     *
+     * @return array|null null = Owner (sin restricciones), array = permisos del colaborador.
+     */
+    function getActiveRolePermissions(): ?array
+    {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $userId      = (int)($_SESSION['user_id']      ?? 0);
+        $inventoryId = (int)($_SESSION['active_inventory_id'] ?? 0);
+
+        if (!$userId || !$inventoryId) return [];
+
+        $role = getInventoryRole($userId, $inventoryId);
+        if (!$role) return []; // Sin acceso activo
+
+        // Owner: acceso total, no hay restricciones
+        if ((int)$role['role_id'] === 1) return null;
+
+        // Admin/Employee: leer sus permisos desde la tabla
+        $db   = \App\core\Database::getInstance();
+        $stmt = $db->prepare(
+            "SELECT permissions_json FROM inventory_role_settings
+             WHERE inventory_id = ? AND role_id = ? LIMIT 1"
+        );
+        $stmt->execute([$inventoryId, (int)$role['role_id']]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ? (json_decode($row['permissions_json'], true) ?? []) : [];
+    }
+}
+
+if (!function_exists('requireSectionAccess')) {
+    /**
+     * Verifica que el usuario activo tenga permiso para acceder a una sección.
+     * Si no tiene permiso, responde 403 JSON y termina la ejecución.
+     *
+     * @param string $permissionKey  Ej: 'can_view_analytics'
+     */
+    function requireSectionAccess(string $permissionKey): void
+    {
+        $permissions = getActiveRolePermissions();
+
+        // null = Owner, acceso total
+        if ($permissions === null) return;
+
+        // Si la key está explícitamente en false, denegar
+        if (isset($permissions[$permissionKey]) && $permissions[$permissionKey] === false) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Tu rol no tiene acceso a esta sección.',
+                'blocked' => true
+            ]);
+            exit;
+        }
+        // Ausente o true = permitido
+    }
+}

@@ -18,8 +18,10 @@ if (!$user || !$activeInventoryId) {
 
 $db = Database::getInstance();
 
-$stmt = $db->prepare("SELECT preferences, report_enabled FROM inventories WHERE id = ? AND user_id = ?");
-$stmt->execute([$activeInventoryId, $user['id']]);
+// RBAC: el acceso ya fue validado al seleccionar el inventario.
+// No filtramos por user_id — las preferencias pertenecen al inventario, no al usuario activo.
+$stmt = $db->prepare("SELECT preferences, report_enabled FROM inventories WHERE id = ?");
+$stmt->execute([$activeInventoryId]);
 $inv = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($inv) {

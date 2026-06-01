@@ -31,7 +31,7 @@ class CustomerModel {
                     VALUES (:user, :inv, :name, :phone, :address, :email, :dni, :birth, NOW())";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([
+            $success = $stmt->execute([
                 ':user'    => $userId,
                 ':inv'     => $inv,
                 ':name'    => $data['name'],
@@ -42,7 +42,26 @@ class CustomerModel {
                 ':birth'   => !empty($data['birth_date']) ? $data['birth_date'] : null
             ]);
 
-            return $this->db->lastInsertId();
+            if ($success) {
+                $newId = $this->db->lastInsertId();
+                try {
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Clientes',
+                        'create',
+                        'customer',
+                        (string)$newId,
+                        "Registró un cliente: " . $data['name'],
+                        "Email: " . ($data['email'] ?? '-') . " | Teléfono: " . ($data['phone'] ?? '-') . " | DNI/CUIT: " . ($data['dni'] ?? '-'),
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in createCustomer: ' . $logErr->getMessage());
+                }
+                return $newId;
+            }
+            return false;
         } catch (Exception $e) {
             error_log("CustomerModel Error: " . $e->getMessage());
             return false;
@@ -55,12 +74,15 @@ class CustomerModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            // Fetch old record for logging comparison
+            $oldRow = $this->getById($id, $userId, $inv);
+
             $sql = "UPDATE customers 
                     SET full_name = :name, phone = :phone, address = :address, email = :email, tax_id = :dni, birth_date = :birth
                     WHERE id = :id AND user_id = :user AND inventory_id = :inv";
 
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
+            $success = $stmt->execute([
                 ':id'      => $id,
                 ':user'    => $userId,
                 ':inv'     => $inv,
@@ -71,6 +93,27 @@ class CustomerModel {
                 ':dni'     => $data['dni'] ?? null,
                 ':birth'   => !empty($data['birth_date']) ? $data['birth_date'] : null
             ]);
+
+            if ($success && $oldRow) {
+                try {
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Clientes',
+                        'update',
+                        'customer',
+                        (string)$id,
+                        "Editó el cliente: " . $data['name'],
+                        "Anterior - Nombre: {$oldRow['full_name']}, Email: " . ($oldRow['email'] ?? '-') . ", Teléfono: " . ($oldRow['phone'] ?? '-') . ", DNI: " . ($oldRow['tax_id'] ?? '-') . " | " .
+                        "Nuevo - Nombre: {$data['name']}, Email: " . ($data['email'] ?? '-') . ", Teléfono: " . ($data['phone'] ?? '-') . ", DNI: " . ($data['dni'] ?? '-'),
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in updateCustomer: ' . $logErr->getMessage());
+                }
+                return true;
+            }
+            return $success;
         } catch (Exception $e) {
             error_log("Update Customer Error: " . $e->getMessage());
             return false;
@@ -83,9 +126,31 @@ class CustomerModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            // Fetch old record for logging
+            $oldRow = $this->getById($id, $userId, $inv);
+
             $stmt = $this->db->prepare("DELETE FROM customers WHERE id = :id AND user_id = :user AND inventory_id = :inv");
             $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
-            return $stmt->rowCount() > 0;
+            $success = $stmt->rowCount() > 0;
+
+            if ($success && $oldRow) {
+                try {
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Clientes',
+                        'delete',
+                        'customer',
+                        (string)$id,
+                        "Eliminó el cliente: " . $oldRow['full_name'],
+                        "Email: " . ($oldRow['email'] ?? '-') . " | Teléfono: " . ($oldRow['phone'] ?? '-'),
+                        (int)$inv,
+                        (int)$userId
+                    );
+                } catch (\Throwable $logErr) {
+                    error_log('ActivityLogger error in deleteCustomer: ' . $logErr->getMessage());
+                }
+            }
+            return $success;
         } catch (Exception $e) {
             return false;
         }

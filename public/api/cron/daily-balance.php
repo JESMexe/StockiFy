@@ -77,7 +77,7 @@ try {
             $countPurchases = (int) ($purchasesData['count_purchases'] ?? 0);
 
             if ($countSales > 0 || $countPurchases > 0) {
-                // Hay movimientos: resetear inactividad a 0
+                // Hay movimientos: resetear inactividad y notificar por ambos canales
                 $db->prepare("UPDATE inventories SET inactivity_days = 0 WHERE id = ?")->execute([$invId]);
 
                 if (!empty($u['email'])) {
@@ -93,32 +93,57 @@ try {
                     }
                 }
             } else {
-                // No hay movimientos: incrementar inactividad
+                // Sin movimientos: incrementar contador de inactividad
                 $newInactivity = $inactivityDays + 1;
 
                 if ($newInactivity >= 10) {
-                    // Apagar reportes
                     $db->prepare("UPDATE inventories SET inactivity_days = ?, report_enabled = 0 WHERE id = ?")->execute([$newInactivity, $invId]);
                     $invName .= " (Suspendido por inactividad)";
                 } else {
                     $db->prepare("UPDATE inventories SET inactivity_days = ? WHERE id = ?")->execute([$newInactivity, $invId]);
                 }
 
-                // Enviar aviso de "Sin movimientos"
+                // Solo email para "sin movimientos" — NO WhatsApp (evitar spam con $0)
                 if (!empty($u['email'])) {
                     if ($mailService->sendDailyBalance($u['email'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), 0, 0, 0, $invName)) {
                         $emailsSent++;
                     }
                 }
-                if (!empty($u['cell'])) {
-                    if ($whatsappService->sendDailyBalance($u['cell'], $u['full_name'] ?? 'Usuario', $now->format('d/m/Y'), 0, 0, 0, $invName)) {
-                        $whatsappsSent++;
-                    } else {
-                        $whatsappErrors[] = "Error para {$u['cell']}: " . $whatsappService->lastError;
-                    }
-                }
+                // WhatsApp silencioso cuando no hubo actividad
             }
         }
+    }
+
+    // --- Lógica de Retención de Logs de Auditoría ---
+    try {
+        // 1. Eliminar logs de usuarios con plan Básico (o menor) antiguos de 60 días
+        $db->exec("
+            DELETE al FROM activity_logs al
+            INNER JOIN inventories i ON al.inventory_id = i.id
+            INNER JOIN users u ON i.user_id = u.id
+            WHERE (u.subscription_active IS NULL OR u.subscription_active <= 1)
+              AND al.created_at < DATE_SUB(NOW(), INTERVAL 60 DAY)
+        ");
+
+        // 2. Eliminar logs de usuarios con plan Profesional antiguos de 365 días
+        $db->exec("
+            DELETE al FROM activity_logs al
+            INNER JOIN inventories i ON al.inventory_id = i.id
+            INNER JOIN users u ON i.user_id = u.id
+            WHERE u.subscription_active = 2
+              AND al.created_at < DATE_SUB(NOW(), INTERVAL 365 DAY)
+        ");
+
+        // 3. Eliminar logs huérfanos de más de 60 días (por si el inventario o usuario ya no existe)
+        $db->exec("
+            DELETE al FROM activity_logs al
+            LEFT JOIN inventories i ON al.inventory_id = i.id
+            LEFT JOIN users u ON i.user_id = u.id
+            WHERE (i.id IS NULL OR u.id IS NULL)
+              AND al.created_at < DATE_SUB(NOW(), INTERVAL 60 DAY)
+        ");
+    } catch (\Throwable $retentionEx) {
+        error_log("Error en limpieza de retención de logs: " . $retentionEx->getMessage());
     }
 
     echo json_encode([

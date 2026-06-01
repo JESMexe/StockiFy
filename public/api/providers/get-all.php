@@ -12,6 +12,9 @@ try {
     require_once $root . '/src/helpers/auth_helper.php';
     require_once $root . '/src/Models/ProviderModel.php';
 
+    // Guard RBAC
+    requireSectionAccess('can_view_providers');
+
 
 
     $user = getCurrentUser();
@@ -20,10 +23,14 @@ try {
     
 $inventoryId = $_SESSION['active_inventory_id'] ?? null;
 if (!$inventoryId) { echo json_encode(['success'=>false, 'message'=>'Inventario no seleccionado']); exit; }
-$model = new ProviderModel();
-    $providers = $model->getAll($user['id'], $_GET['order'] ?? 'desc', $inventoryId);
 
-    echo json_encode(['success'=>true, 'providers'=>$providers]);
+// RBAC: los proveedores pertenecen al owner del inventario, no al colaborador activo
+$ownerId = getInventoryOwnerId((int)$inventoryId) ?? $user['id'];
+
+$model = new ProviderModel();
+$providers = $model->getAll($ownerId, $_GET['order'] ?? 'desc', $inventoryId);
+
+echo json_encode(['success'=>true, 'providers'=>$providers]);
 
 } catch (Throwable $e) {
     http_response_code(500);

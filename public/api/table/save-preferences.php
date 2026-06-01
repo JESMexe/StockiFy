@@ -77,6 +77,31 @@ try {
 
     $stmtUpdate = $db->prepare("UPDATE user_tables SET columns_json = ? WHERE inventory_id = ?");
     if($stmtUpdate->execute([json_encode($newJson), $inventoryId])) {
+        // Log changes
+        try {
+            $changes = [];
+            $oldPrefs = $oldDecoded['prefs'] ?? [];
+            foreach ($prefs as $col => $visible) {
+                $oldVisible = isset($oldPrefs[$col]) ? (bool)$oldPrefs[$col] : true;
+                if ($oldVisible !== (bool)$visible) {
+                    $status = $visible ? 'mostrada' : 'oculta';
+                    $changes[] = "columna '$col' $status";
+                }
+            }
+            if (!empty($changes)) {
+                require_once $root . '/src/helpers/ActivityLogger.php';
+                \App\helpers\ActivityLogger::log(
+                    'Dashboard',
+                    'update',
+                    'table_preferences',
+                    (string)$inventoryId,
+                    'Cambió la visibilidad de las columnas',
+                    implode(', ', $changes)
+                );
+            }
+        } catch (\Throwable $logErr) {
+            error_log('ActivityLogger error en save-preferences: ' . $logErr->getMessage());
+        }
         echo json_encode(['success' => true, 'message' => 'Preferencias guardadas.']);
     } else {
         throw new Exception("Error al guardar en base de datos.");
