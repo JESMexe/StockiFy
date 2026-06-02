@@ -109,6 +109,27 @@ try {
         exit;
     }
 
+    // Obtener preferencias del inventario para saber cuál es la columna de stock
+    $stmtPref = $db->prepare("SELECT preferences FROM inventories WHERE id = :id");
+    $stmtPref->execute([':id' => $inventoryId]);
+    $invRow = $stmtPref->fetch(PDO::FETCH_ASSOC);
+    $prefs = !empty($invRow['preferences']) ? json_decode($invRow['preferences'], true) : [];
+    $stockColName = $prefs['mapping']['stock'] ?? 'stock';
+    $hasStockUpdate = array_key_exists($stockColName, $allData);
+
+    $oldStock = null;
+    $oldMinStock = null;
+    if ($hasStockUpdate) {
+        $safeStockCol = "`" . str_replace("`", "``", $stockColName) . "`";
+        $stmtBefore = $db->prepare("SELECT {$safeStockCol} as stock, min_stock FROM $tableName WHERE id = :id");
+        $stmtBefore->execute([':id' => $id]);
+        $rowBefore = $stmtBefore->fetch(PDO::FETCH_ASSOC);
+        if ($rowBefore) {
+            $oldStock = $rowBefore['stock'] !== null ? (float)$rowBefore['stock'] : null;
+            $oldMinStock = $rowBefore['min_stock'] !== null ? (float)$rowBefore['min_stock'] : 0.0;
+        }
+    }
+
     $sql = "UPDATE $tableName SET " . implode(', ', $setClause) . " WHERE `id` = :id";
     $stmt = $db->prepare($sql);
 
@@ -116,6 +137,61 @@ try {
         $stmtGet = $db->prepare("SELECT * FROM $tableName WHERE `id` = :id");
         $stmtGet->execute([':id' => $id]);
         $updatedItem = $stmtGet->fetch(PDO::FETCH_ASSOC);
+
+        // Si se actualizó el stock, evaluar si se deben disparar alertas
+        if ($hasStockUpdate && $oldStock !== null && $updatedItem) {
+            $newStock = (float)($updatedItem[$stockColName] ?? 0);
+            $minStock = (float)($updatedItem['min_stock'] ?? $oldMinStock ?? 0);
+            $prodName = $updatedItem['nombre'] ?? $updatedItem['name'] ?? $updatedItem['producto'] ?? $updatedItem['description'] ?? 'Producto #' . $id;
+
+            $shouldTriggerLowStock = ($oldStock > $minStock && $newStock <= $minStock);
+            $shouldTriggerOutOfStock = ($oldStock > 0 && $newStock <= 0);
+
+            if ($shouldTriggerLowStock || $shouldTriggerOutOfStock) {
+                // Obtener datos del Owner de este inventario
+                $stmtOwner = $db->prepare("
+                    SELECT u.email, u.full_name, u.cell, i.name as inv_name
+                    FROM users u
+                    JOIN inventories i ON u.id = i.user_id
+                    WHERE i.id = ?
+                ");
+                $stmtOwner->execute([$inventoryId]);
+                $u = $stmtOwner->fetch(PDO::FETCH_ASSOC);
+
+                if ($u) {
+                    $toEmail = $u['email'];
+                    $toCell = $u['cell'];
+                    $userName = $u['full_name'] ?? 'Socio';
+                    $invName = $u['inv_name'] ?? 'Principal';
+
+                    if ($shouldTriggerLowStock) {
+                        if (!empty($toEmail)) {
+                            require_once __DIR__ . '/../../../src/Services/MailService.php';
+                            $mailSvc = new \App\Services\MailService();
+                            $mailSvc->sendLowStockAlert($toEmail, $userName, $prodName, $newStock, $minStock);
+                        }
+                        if (!empty($toCell)) {
+                            require_once __DIR__ . '/../../../src/Services/WhatsappService.php';
+                            $waSvc = new \App\Services\WhatsappService();
+                            $waSvc->sendLowStockAlert($toCell, $userName, $prodName, $newStock, $minStock, $invName, (string)$id);
+                        }
+                    }
+
+                    if ($shouldTriggerOutOfStock) {
+                        if (!empty($toEmail)) {
+                            require_once __DIR__ . '/../../../src/Services/MailService.php';
+                            $mailSvc = new \App\Services\MailService();
+                            $mailSvc->sendOutOfStockAlert($toEmail, $userName, $prodName, $invName);
+                        }
+                        if (!empty($toCell)) {
+                            require_once __DIR__ . '/../../../src/Services/WhatsappService.php';
+                            $waSvc = new \App\Services\WhatsappService();
+                            $waSvc->sendOutOfStockAlert($toCell, $userName, $prodName, $invName, (string)$id);
+                        }
+                    }
+                }
+            }
+        }
 
         // Auditoría
         try {

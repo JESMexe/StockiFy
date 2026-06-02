@@ -14,25 +14,60 @@ class UserModel
         $this->db = Database::getInstance();
     }
 
+    private function checkAndHandleExpiration(?array $user): ?array
+    {
+        if ($user && (int)$user['subscription_active'] > 0 && !empty($user['subscription_expires_at'])) {
+            date_default_timezone_set('America/Argentina/Buenos_Aires');
+            $expiresAt = strtotime($user['subscription_expires_at']);
+            if ($expiresAt !== false && $expiresAt < time()) {
+                $stmt = $this->db->prepare("UPDATE users SET subscription_active = 0 WHERE id = ?");
+                $stmt->execute([$user['id']]);
+                $user['subscription_active'] = 0;
+            }
+        }
+        return $user;
+    }
+
     public function findByEmail(string $email)
     {
         $stmt = $this->db->prepare("SELECT * FROM users WHERE email = :email");
         $stmt->execute([':email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $user ? $this->checkAndHandleExpiration($user) : null;
     }
 
     public function findById(int $id)
     {
         $stmt = $this->db->prepare("SELECT * FROM users WHERE id = :id");
         $stmt->execute([':id' => $id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $user ? $this->checkAndHandleExpiration($user) : null;
     }
 
     // --- MÉTODOS DE GOOGLE AUTH ---
     public function findByGoogleId(string $googleId) {
         $stmt = $this->db->prepare("SELECT * FROM users WHERE google_id = :gid");
         $stmt->execute([':gid' => $googleId]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $user ? $this->checkAndHandleExpiration($user) : null;
+    }
+
+    public function activateFreeTrial(int $userId): bool
+    {
+        date_default_timezone_set('America/Argentina/Buenos_Aires');
+        $expiresAt = (new \DateTime('+30 days'))->format('Y-m-d H:i:s');
+        
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET subscription_active = 4,
+                trial_used = 1,
+                subscription_expires_at = :expires_at
+            WHERE id = :id AND trial_used = 0
+        ");
+        return $stmt->execute([
+            ':expires_at' => $expiresAt,
+            ':id' => $userId
+        ]);
     }
 
     public function linkGoogleAccount(int $userId, string $googleId): bool

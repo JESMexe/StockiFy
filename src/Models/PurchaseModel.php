@@ -25,6 +25,9 @@ class PurchaseModel {
                 throw new Exception("No se ha definido un ID de inventario para esta compra.");
             }
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
             $stmt = $this->db->prepare("
                 INSERT INTO purchases (user_id, inventory_id, provider_id, total, category, notes, created_at) 
                 VALUES (:user, :inventory_id, :prov, :total, :cat, :notes, NOW())
@@ -35,7 +38,7 @@ class PurchaseModel {
             $notes = !empty($data['notes']) ? $data['notes'] : null;
 
             $stmt->execute([
-                ':user' => $userId,
+                ':user' => $ownerId,
                 ':inventory_id' => $inventoryId,
                 ':prov' => $providerId,
                 ':total' => $data['total'],
@@ -67,7 +70,7 @@ class PurchaseModel {
                     
                     // Incremento estricto del inventario
                     if (!empty($item['id'])) {
-                        $inventoryModel->increaseStock($userId, $item['id'], $item['cantidad'], $inventoryId);
+                        $inventoryModel->increaseStock($ownerId, $item['id'], $item['cantidad'], $inventoryId);
                     }
                 }
             }
@@ -127,19 +130,24 @@ class PurchaseModel {
         }
     }
 
-    // --- NUEVO: Actualizar ---
     public function updatePurchase($id, $userId, $data): bool
     {
         try {
-            $stmtOld = $this->db->prepare("SELECT provider_id, category, notes, total, inventory_id FROM purchases WHERE id = :id AND user_id = :user");
-            $stmtOld->execute([':id' => $id, ':user' => $userId]);
+            $stmtOld = $this->db->prepare("SELECT provider_id, category, notes, total, inventory_id, user_id FROM purchases WHERE id = :id");
+            $stmtOld->execute([':id' => $id]);
             $oldRow = $stmtOld->fetch(PDO::FETCH_ASSOC);
             if (!$oldRow) {
                 return false;
             }
 
-            // Si es gasto rápido, permitimos cambiar el total y categoría.
-            // Si es compra de inventario, el total suele ser calculado, pero aquí permitiremos editar la cabecera.
+            $inventoryId = $oldRow['inventory_id'];
+
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
+            if ((int)$oldRow['user_id'] !== (int)$ownerId) {
+                return false;
+            }
 
             $sql = "UPDATE purchases SET 
                     provider_id = :prov, 
@@ -148,7 +156,6 @@ class PurchaseModel {
                     created_at = :date
                     WHERE id = :id AND user_id = :user";
 
-            // Si viene el total (solo para gastos rápidos usualmente), lo agregamos al SQL
             if (isset($data['total'])) {
                 $sql = "UPDATE purchases SET 
                         provider_id = :prov, 
@@ -163,7 +170,7 @@ class PurchaseModel {
 
             $params = [
                 ':id'    => $id,
-                ':user'  => $userId,
+                ':user'  => $ownerId,
                 ':prov'  => !empty($data['provider_id']) ? $data['provider_id'] : null,
                 ':cat'   => !empty($data['category']) ? $data['category'] : null,
                 ':notes' => !empty($data['notes']) ? $data['notes'] : null,
@@ -177,7 +184,6 @@ class PurchaseModel {
             $success = $stmt->execute($params);
             if ($success) {
                 try {
-                    $inventoryId = $oldRow['inventory_id'];
                     $oldTotal = (float)$oldRow['total'];
                     $newTotal = isset($data['total']) ? (float)$data['total'] : $oldTotal;
 
@@ -227,13 +233,12 @@ class PurchaseModel {
         }
     }
 
-    // --- NUEVO: Eliminar ---
     public function deletePurchase($id, $userId): bool
     {
         try {
             // Fetch info before deleting the purchase
-            $stmtGetPurchase = $this->db->prepare("SELECT total, provider_id, category, notes, inventory_id FROM purchases WHERE id = :id AND user_id = :user");
-            $stmtGetPurchase->execute([':id' => $id, ':user' => $userId]);
+            $stmtGetPurchase = $this->db->prepare("SELECT total, provider_id, category, notes, inventory_id, user_id FROM purchases WHERE id = :id");
+            $stmtGetPurchase->execute([':id' => $id]);
             $purchaseInfo = $stmtGetPurchase->fetch(PDO::FETCH_ASSOC);
             if (!$purchaseInfo) {
                 return false;
@@ -243,6 +248,13 @@ class PurchaseModel {
             $category = $purchaseInfo['category'];
             $notes = $purchaseInfo['notes'];
             $purchaseInvId = $purchaseInfo['inventory_id'];
+
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = $purchaseInvId ? (getInventoryOwnerId((int)$purchaseInvId) ?? $userId) : $userId;
+
+            if ((int)$purchaseInfo['user_id'] !== (int)$ownerId) {
+                return false;
+            }
 
             $stmtGetDetails = $this->db->prepare("SELECT product_name, quantity, unit_price FROM purchase_details WHERE purchase_id = :id");
             $stmtGetDetails->execute([':id' => $id]);
@@ -283,18 +295,18 @@ class PurchaseModel {
             if ($purchaseInvId) {
                 foreach ($items as $item) {
                     if (!empty($item['product_id'])) {
-                        $invModel->decreaseStock($userId, $item['product_id'], $item['quantity'], $purchaseInvId);
+                        $invModel->decreaseStock($ownerId, $item['product_id'], $item['quantity'], $purchaseInvId);
                     }
                 }
             }
 
-            // 1. Borrar detalles primero (Foreign Key cascade debería hacerlo, pero aseguramos)
+            // 1. Borrar detalles primero
             $stmtDet = $this->db->prepare("DELETE FROM purchase_details WHERE purchase_id = :id");
             $stmtDet->execute([':id' => $id]);
 
             // 2. Borrar cabecera verificando usuario
             $stmt = $this->db->prepare("DELETE FROM purchases WHERE id = :id AND user_id = :user");
-            $stmt->execute([':id' => $id, ':user' => $userId]);
+            $stmt->execute([':id' => $id, ':user' => $ownerId]);
 
             if ($stmt->rowCount() > 0) {
                 $this->db->commit();
@@ -328,16 +340,15 @@ class PurchaseModel {
         }
     }
 
-    // En src/Models/PurchaseModel.php
-
     public function getHistory($userId, $inventoryId = null, $order = 'DESC'): array
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         try {
-            // ESTRATEGIA SEGURA:
-            // 1. Traemos p.* (todas las columnas) para no fallar si falta alguna específica.
-            // 2. Traemos el nombre del proveedor con JOIN.
-            // 3. Ordenamos por ID (que siempre existe) para evitar errores con fechas mal nombradas.
+            if (session_status() === PHP_SESSION_NONE) @session_start();
+            $inv = $inventoryId ?? $_SESSION['active_inventory_id'] ?? null;
+
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = $inv ? (getInventoryOwnerId((int)$inv) ?? $userId) : $userId;
 
             $sql = "
                 SELECT 
@@ -352,7 +363,7 @@ class PurchaseModel {
             ";
 
             $stmt = $this->db->prepare($sql);
-            $params = [':user' => $userId];
+            $params = [':user' => $ownerId];
             if ($inventoryId) {
                 $params[':inv'] = $inventoryId;
             }
@@ -360,17 +371,12 @@ class PurchaseModel {
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             return array_map(function($row) {
-                // DETECTIVE DE FECHAS: Buscamos cuál es la columna de fecha real
                 $date = $row['created_at']
                     ?? $row['purchase_date']
                     ?? $row['date']
                     ?? $row['fecha']
-                    ?? date('Y-m-d H:i:s'); // Fallback final
+                    ?? date('Y-m-d H:i:s');
 
-                // DETECTIVE DE NOMBRE:
-                // Si hay proveedor en la tabla relacionada, úsalo.
-                // Si no, busca si existe columna 'provider_name' en compras.
-                // Si no, usa la categoría.
                 $provName = '-';
                 if (!empty($row['provider_real_name'])) {
                     $provName = $row['provider_real_name'];
@@ -382,7 +388,7 @@ class PurchaseModel {
 
                 return [
                     'id' => $row['id'],
-                    'created_at' => $date, // Ahora siempre tendrá un valor
+                    'created_at' => $date,
                     'total' => (float)($row['total'] ?? $row['total_amount'] ?? 0),
                     'notes' => $row['notes'] ?? '',
                     'category' => $row['category'] ?? '',
@@ -391,7 +397,6 @@ class PurchaseModel {
             }, $results);
 
         } catch (Exception $e) {
-            // Si falla, escribimos el error en el log de PHP para poder verlo
             error_log("PurchaseModel Error: " . $e->getMessage());
             return [];
         }
@@ -400,10 +405,6 @@ class PurchaseModel {
     public function resetIds(): bool
     {
         try {
-            // MÉTODO ATÓMICO (CROSS JOIN)
-            // Este es el método más robusto. Inicializa el contador dentro de la misma consulta
-            // para que PHP no pierda la conexión entre líneas.
-
             $sql = "
                 UPDATE purchases
                 CROSS JOIN (SELECT @cnt := 0) AS dummy
@@ -411,10 +412,7 @@ class PurchaseModel {
                 ORDER BY created_at ASC
             ";
 
-            // Ejecutamos la actualización masiva
             $this->db->exec($sql);
-
-            // Reseteamos el autoincrement para que la próxima compra sea la siguiente
             $this->db->exec("ALTER TABLE purchases AUTO_INCREMENT = 1");
 
             return true;
@@ -428,6 +426,18 @@ class PurchaseModel {
     public function getDetails($purchaseId, $userId, $inventoryId = null): ?array
     {
         try {
+            if (session_status() === PHP_SESSION_NONE) @session_start();
+            $inv = $inventoryId ?? $_SESSION['active_inventory_id'] ?? null;
+
+            if (!$inv) {
+                $stmtInv = $this->db->prepare("SELECT inventory_id FROM purchases WHERE id = ?");
+                $stmtInv->execute([$purchaseId]);
+                $inv = $stmtInv->fetchColumn();
+            }
+
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = $inv ? (getInventoryOwnerId((int)$inv) ?? $userId) : $userId;
+
             $stmt = $this->db->prepare("
                 SELECT p.*, pr.full_name as provider_name 
                 FROM purchases p
@@ -435,7 +445,7 @@ class PurchaseModel {
                 WHERE p.id = :id AND p.user_id = :user
                 " . ($inventoryId ? " AND p.inventory_id = :inv" : "") . "
             ");
-            $params = [':id' => $purchaseId, ':user' => $userId];
+            $params = [':id' => $purchaseId, ':user' => $ownerId];
             if ($inventoryId) {
                 $params[':inv'] = $inventoryId;
             }

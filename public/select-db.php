@@ -33,7 +33,8 @@
         <a href="/" id="header-logo">
             <img src="assets/img/LogoE.png" alt="StockiFy Logo">
         </a>
-        <nav id="header-nav">
+        <nav id="header-nav" style="display: flex; gap: 10px;">
+            <a href="index" class="btn btn-secondary" style="margin:0;">Volver al Inicio</a>
         </nav>
     </header>
 

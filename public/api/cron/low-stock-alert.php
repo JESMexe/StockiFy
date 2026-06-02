@@ -53,11 +53,14 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
+    // Limpieza global de suscripciones expiradas antes de procesar
+    $db->query("UPDATE users SET subscription_active = 0 WHERE subscription_active > 0 AND subscription_expires_at IS NOT NULL AND subscription_expires_at < NOW()");
+
     // --- Obtener todos los usuarios elegibles ---
     $stmtUsers = $db->query(
         "SELECT id, email, full_name, cell
          FROM users
-         WHERE subscription_active >= 2
+         WHERE subscription_active >= 1
            AND (email IS NOT NULL OR cell IS NOT NULL)"
     );
     $users = $stmtUsers->fetchAll(PDO::FETCH_ASSOC);

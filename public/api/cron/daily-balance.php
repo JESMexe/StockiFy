@@ -32,8 +32,11 @@ try {
     $mailService = new \App\Services\MailService();
     $whatsappService = new \App\Services\WhatsappService();
 
-    // Obtener usuarios con suscripción >= 2
-    $stmtUsers = $db->query("SELECT id, email, full_name, cell FROM users WHERE subscription_active >= 2 AND (email IS NOT NULL OR cell IS NOT NULL)");
+    // Limpieza global de suscripciones expiradas antes de procesar
+    $db->query("UPDATE users SET subscription_active = 0 WHERE subscription_active > 0 AND subscription_expires_at IS NOT NULL AND subscription_expires_at < NOW()");
+
+    // Obtener usuarios con suscripción >= 1
+    $stmtUsers = $db->query("SELECT id, email, full_name, cell FROM users WHERE subscription_active >= 1 AND (email IS NOT NULL OR cell IS NOT NULL)");
     $users = $stmtUsers->fetchAll(PDO::FETCH_ASSOC);
 
     $emailsSent = 0;

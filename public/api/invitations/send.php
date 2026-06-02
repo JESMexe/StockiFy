@@ -129,7 +129,7 @@ try {
     $stmtInsert->execute([$inventoryId, $targetUser['id'], $roleId, $user['id']]);
 
     // --- Guardar registro histórico de la invitación (auditoría) ---
-    $invModel->createInvitation($inventoryId, $email, $roleId, $user['id']);
+    $token = $invModel->createInvitation($inventoryId, $email, $roleId, $user['id']);
 
     // --- Enviar email de notificación al nuevo colaborador ---
     $targetName = $targetUser['full_name'] ?: $targetUser['username'] ?: $email;
@@ -149,7 +149,7 @@ try {
     } catch (\Throwable $logErr) {
         error_log('ActivityLogger error in invitations/send: ' . $logErr->getMessage());
     }
-    $dashboardLink = "https://" . $_SERVER['HTTP_HOST'] . "/dashboard";
+    $dashboardLink = "https://" . $_SERVER['HTTP_HOST'] . "/api/invitations/accept?token=" . $token;
 
     // --- Enviar notificación WhatsApp al Owner ---
     if ($ownerId) {

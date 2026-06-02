@@ -27,12 +27,15 @@ class EmployeeModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $stmt = $this->db->prepare("
                 INSERT INTO employees (user_id, inventory_id, full_name, dni, phone, email, category_id, custom_data, created_at)
                 VALUES (:user, :inv, :name, :dni, :phone, :email, :cat, :data, NOW())
             ");
             $success = $stmt->execute([
-                ':user' => $userId,
+                ':user' => $ownerId,
                 ':inv' => $inv,
                 ':name' => $name,
                 ':dni' => $dni,
@@ -81,6 +84,9 @@ class EmployeeModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             // Fetch old record for logging comparison
             $oldRow = $this->getById($id, $userId, $inv);
 
@@ -91,7 +97,7 @@ class EmployeeModel {
             ");
             $success = $stmt->execute([
                 ':id' => $id,
-                ':user' => $userId,
+                ':user' => $ownerId,
                 ':inv' => $inv,
                 ':name' => $name,
                 ':dni' => $dni,
@@ -146,11 +152,14 @@ class EmployeeModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             // Fetch old record for logging
             $oldRow = $this->getById($id, $userId, $inv);
 
             $stmt = $this->db->prepare("DELETE FROM employees WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inv]);
             $success = $stmt->rowCount() > 0;
 
             if ($success && $oldRow) {
@@ -190,6 +199,9 @@ class EmployeeModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return [];
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $check = $this->db->query("SHOW TABLES LIKE 'employees'");
             if($check->rowCount() == 0) return [];
 
@@ -200,7 +212,7 @@ class EmployeeModel {
                 WHERE e.user_id = :user AND e.inventory_id = :inv 
                 ORDER BY e.created_at $order
             ");
-            $stmt->execute([':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':user' => $ownerId, ':inv' => $inv]);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($results as &$r) {
                 $r['custom_data'] = json_decode($r['custom_data'], true) ?: [];
@@ -217,8 +229,11 @@ class EmployeeModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return null;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $stmt = $this->db->prepare("SELECT * FROM employees WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inv]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             return null;

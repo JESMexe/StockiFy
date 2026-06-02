@@ -27,12 +27,15 @@ class CustomerModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $sql = "INSERT INTO customers (user_id, inventory_id, full_name, phone, address, email, tax_id, birth_date, created_at) 
                     VALUES (:user, :inv, :name, :phone, :address, :email, :dni, :birth, NOW())";
 
             $stmt = $this->db->prepare($sql);
             $success = $stmt->execute([
-                ':user'    => $userId,
+                ':user'    => $ownerId,
                 ':inv'     => $inv,
                 ':name'    => $data['name'],
                 ':phone'   => $data['phone'] ?? null,
@@ -74,6 +77,9 @@ class CustomerModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             // Fetch old record for logging comparison
             $oldRow = $this->getById($id, $userId, $inv);
 
@@ -84,7 +90,7 @@ class CustomerModel {
             $stmt = $this->db->prepare($sql);
             $success = $stmt->execute([
                 ':id'      => $id,
-                ':user'    => $userId,
+                ':user'    => $ownerId,
                 ':inv'     => $inv,
                 ':name'    => $data['name'],
                 ':phone'   => $data['phone'] ?? null,
@@ -126,11 +132,14 @@ class CustomerModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             // Fetch old record for logging
             $oldRow = $this->getById($id, $userId, $inv);
 
             $stmt = $this->db->prepare("DELETE FROM customers WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inv]);
             $success = $stmt->rowCount() > 0;
 
             if ($success && $oldRow) {
@@ -163,11 +172,14 @@ class CustomerModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return [];
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $check = $this->db->query("SHOW TABLES LIKE 'customers'");
             if($check->rowCount() == 0) return [];
 
             $stmt = $this->db->prepare("SELECT * FROM customers WHERE user_id = :user AND inventory_id = :inv ORDER BY created_at $order");
-            $stmt->execute([':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':user' => $ownerId, ':inv' => $inv]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             return [];
@@ -179,8 +191,11 @@ class CustomerModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return null;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $stmt = $this->db->prepare("SELECT * FROM customers WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $stmt->execute([':id' => $customerId, ':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':id' => $customerId, ':user' => $ownerId, ':inv' => $inv]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             return null;

@@ -5383,3 +5383,38 @@ window.columnMapping = columnMapping;
 
 window.salesModuleInstance = salesModuleInstance;
 window.purchasesModule = purchaseModuleInstance;
+
+// Add keyboard shortcuts for row editing
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        if (e.target.matches('.editing-input, .form-control')) {
+            const tr = e.target.closest('tr');
+            if (tr) {
+                const saveNewBtn = tr.querySelector('.save-new-row-btn');
+                const saveEditBtn = tr.querySelector('.action-save');
+                if (saveNewBtn) {
+                    e.preventDefault();
+                    saveNewBtn.click();
+                } else if (saveEditBtn) {
+                    e.preventDefault();
+                    saveEditBtn.click();
+                }
+            }
+        }
+    } else if (e.key === 'Escape') {
+        if (e.target.matches('.editing-input, .form-control')) {
+            const tr = e.target.closest('tr');
+            if (tr) {
+                const cancelNewBtn = tr.querySelector('.cancel-new-row-btn');
+                const cancelEditBtn = tr.querySelector('.action-cancel');
+                if (cancelNewBtn) {
+                    e.preventDefault();
+                    cancelNewBtn.click();
+                } else if (cancelEditBtn) {
+                    e.preventDefault();
+                    cancelEditBtn.click();
+                }
+            }
+        }
+    }
+});

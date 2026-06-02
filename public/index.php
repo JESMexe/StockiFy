@@ -12,7 +12,7 @@ if ($currentUser) {
 $showWelcome = !$currentUser ? '' : 'hidden';
 $showDashboard = $currentUser ? '' : 'hidden';
 
-$showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0);
+$showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0 && (int)$currentUser['trial_used'] === 0);
 ?>
 
 <!DOCTYPE html>
@@ -49,6 +49,7 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css" />
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="assets/js/promo-bar.js" defer></script>
 </head>
 
@@ -222,7 +223,11 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
             <div class="promo-main-content">
                 <div class="promo-text-center">Potenciá tu negocio al máximo nivel: Probá el Acceso Total de <strong>StockiFy</strong> <span class="text-accent">GRATIS</span> por 30 días.</div>
                 <div class="promo-button-wrapper">
-                    <a href="https://wa.me/5491163642040?text=Hola!%20Quiero%20obtener%20la%20prueba%20gratuita%20de%2030%20días%20de%20StockiFy." target="_blank" class="btn-promo">Probar Ahora</a>
+                    <?php if ($currentUser): ?>
+                        <button class="btn-promo" id="btn-start-trial" style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
+                    <?php else: ?>
+                        <a href="register" class="btn-promo">Probar Ahora</a>
+                    <?php endif; ?>
                 </div>
             </div>
             <button class="btn-close-promo" id="closePromo">Cerrar</button>
@@ -438,12 +443,12 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
 
                     <div class="swiper-slide">
                         <div class="slide-img-container">
-                            <img src="./assets/img/4.png" alt="Notificaciones en tiempo real y alertas de Stock bajo">
+                            <img src="./assets/img/4.png" alt="Control de Auditoría e historial de actividad">
                         </div>
                         <div class="slide-content">
-                            <i class="ph ph-bell slide-icon"></i>
-                            <h3>Alertas de Stock</h3>
-                            <p>Notificaciones automáticas cuando el inventario es bajo.</p>
+                            <i class="ph ph-clipboard-text slide-icon"></i>
+                            <h3>Control de Auditoría</h3>
+                            <p>Registro permanente e inmutable de la actividad del sistema.</p>
                         </div>
                     </div>
 
@@ -470,6 +475,33 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
                 <p style="color: #666; max-width: 600px; margin: 0 auto;">Elige el plan que mejor se
                     adapte a las necesidades de tu emprendimiento para llevar el control al máximo nivel.</p>
             </div>
+            <?php if ($showPromoBar): ?>
+                <div class="pricing-trial-card">
+                    <div class="trial-card-badge">Prueba Gratuita</div>
+                    <div class="trial-card-content">
+                        <div class="trial-card-info">
+                            <h3>Habilitá tu Mes Gratis de inmediato</h3>
+                            <p class="trial-card-desc">Probá el nivel de acceso más alto (Vitalicio / Nivel 4) durante 30 días de forma instantánea. Sin tarjetas de crédito, sin compromisos y con activación inmediata.</p>
+                            <ul class="trial-card-features">
+                                <li><i class="ph-bold ph-bolt"></i> Acceso Nivel 4 Vitalicio</li>
+                                <li><i class="ph-bold ph-credit-card-slash"></i> Sin tarjetas de crédito</li>
+                                <li><i class="ph-bold ph-clock"></i> 30 días de prueba</li>
+                            </ul>
+                        </div>
+                        <div class="trial-card-action">
+                            <div class="trial-card-price">
+                                <span class="price">Gratis</span>
+                                <span class="period">/ 30 días</span>
+                            </div>
+                            <?php if ($currentUser): ?>
+                                <button class="btn-pricing btn-start-trial">Comenzar Prueba</button>
+                            <?php else: ?>
+                                <a href="register" class="btn-pricing">Comenzar Prueba</a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <div id="pricing-carousel-container" style="width: 100%; max-width: 100vw; overflow: visible;">
                 <div class="pricing-wrapper scale-wrapper" id="pricing-wrapper">

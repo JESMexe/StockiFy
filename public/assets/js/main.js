@@ -181,3 +181,80 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 });
+
+// Manejo de activación de Prueba Gratuita (Free Trial)
+document.addEventListener("DOMContentLoaded", () => {
+    const btnsStartTrial = document.querySelectorAll('.btn-start-trial, #btn-start-trial');
+    btnsStartTrial.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+                title: '¿Activar prueba gratuita?',
+                text: 'Tendrás acceso de nivel 4 (Vitalicio) completamente gratis durante 30 días.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, activar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#1b1b1b',
+                cancelButtonColor: '#6c757d',
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Procesando...',
+                        text: 'Estamos configurando tu acceso elevado.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    fetch('api/user/start-trial.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => { throw new Error(err.message || 'Error en la petición'); });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: '¡Activado con éxito!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonText: 'Ir al Panel',
+                                confirmButtonColor: '#1b1b1b'
+                            }).then(() => {
+                                window.location.href = 'select-db';
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.message || 'No se pudo activar la prueba.',
+                                icon: 'error',
+                                confirmButtonColor: '#1b1b1b'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            title: 'Error',
+                            text: error.message || 'Ocurrió un error en el servidor.',
+                            icon: 'error',
+                            confirmButtonColor: '#1b1b1b'
+                        });
+                    });
+                }
+            });
+        });
+    });
+});

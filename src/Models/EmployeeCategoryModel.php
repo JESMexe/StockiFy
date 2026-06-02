@@ -19,12 +19,15 @@ class EmployeeCategoryModel
     public function createCategory($userId, $inventoryId, $name, $fields)
     {
         try {
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
             $stmt = $this->db->prepare("
                 INSERT INTO employee_categories (user_id, inventory_id, name, fields, created_at)
                 VALUES (:user, :inv, :name, :fields, NOW())
             ");
             $success = $stmt->execute([
-                ':user' => $userId,
+                ':user' => $ownerId,
                 ':inv' => $inventoryId,
                 ':name' => $name,
                 ':fields' => json_encode($fields)
@@ -58,6 +61,9 @@ class EmployeeCategoryModel
     public function updateCategory($id, $userId, $inventoryId, $name, $fields)
     {
         try {
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
             // Fetch old record for logging comparison
             $oldRow = $this->getById($id, $userId, $inventoryId);
 
@@ -68,7 +74,7 @@ class EmployeeCategoryModel
             ");
             $success = $stmt->execute([
                 ':id' => $id,
-                ':user' => $userId,
+                ':user' => $ownerId,
                 ':inv' => $inventoryId,
                 ':name' => $name,
                 ':fields' => json_encode($fields)
@@ -102,11 +108,14 @@ class EmployeeCategoryModel
     public function deleteCategory($id, $userId, $inventoryId)
     {
         try {
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
             // Fetch old record for logging
             $oldRow = $this->getById($id, $userId, $inventoryId);
 
             $stmt = $this->db->prepare("DELETE FROM employee_categories WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $success = $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inventoryId]);
+            $success = $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inventoryId]);
 
             if ($success && $oldRow) {
                 try {
@@ -134,8 +143,11 @@ class EmployeeCategoryModel
     public function getAll($userId, $inventoryId)
     {
         try {
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
             $stmt = $this->db->prepare("SELECT * FROM employee_categories WHERE user_id = :user AND inventory_id = :inv ORDER BY name ASC");
-            $stmt->execute([':user' => $userId, ':inv' => $inventoryId]);
+            $stmt->execute([':user' => $ownerId, ':inv' => $inventoryId]);
             $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($categories as &$cat) {
@@ -150,8 +162,11 @@ class EmployeeCategoryModel
     public function getById($id, $userId, $inventoryId)
     {
         try {
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
             $stmt = $this->db->prepare("SELECT * FROM employee_categories WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inventoryId]);
+            $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inventoryId]);
             $cat = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($cat) {
                 $cat['fields'] = json_decode($cat['fields'], true) ?: [];

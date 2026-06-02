@@ -27,12 +27,15 @@ class ProviderModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $sql = "INSERT INTO providers (user_id, inventory_id, full_name, phone, address, email, tax_id, created_at) 
                     VALUES (:user, :inv, :name, :phone, :address, :email, :tax_id, NOW())";
 
             $stmt = $this->db->prepare($sql);
             $success = $stmt->execute([
-                ':user'    => $userId,
+                ':user'    => $ownerId,
                 ':inv'     => $inv,
                 ':name'    => $data['name'],
                 ':phone'   => $data['phone'] ?? null,
@@ -73,6 +76,9 @@ class ProviderModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             // Fetch old record for logging comparison
             $oldRow = $this->getById($id, $userId, $inv);
 
@@ -83,7 +89,7 @@ class ProviderModel {
             $stmt = $this->db->prepare($sql);
             $success = $stmt->execute([
                 ':id'      => $id,
-                ':user'    => $userId,
+                ':user'    => $ownerId,
                 ':inv'     => $inv,
                 ':name'    => $data['name'],
                 ':phone'   => $data['phone'] ?? null,
@@ -124,11 +130,14 @@ class ProviderModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             // Fetch old record for logging
             $oldRow = $this->getById($id, $userId, $inv);
 
             $stmt = $this->db->prepare("DELETE FROM providers WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inv]);
             $success = $stmt->rowCount() > 0;
 
             if ($success && $oldRow) {
@@ -161,11 +170,14 @@ class ProviderModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return [];
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $check = $this->db->query("SHOW TABLES LIKE 'providers'");
             if($check->rowCount() == 0) return [];
 
             $stmt = $this->db->prepare("SELECT * FROM providers WHERE user_id = :user AND inventory_id = :inv ORDER BY created_at $order");
-            $stmt->execute([':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':user' => $ownerId, ':inv' => $inv]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             return [];
@@ -177,8 +189,11 @@ class ProviderModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return null;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $stmt = $this->db->prepare("SELECT * FROM providers WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inv]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             return null;

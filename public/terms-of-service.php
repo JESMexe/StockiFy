@@ -14,6 +14,7 @@ $currentUser = getCurrentUser();
     <link rel="stylesheet" href="assets/css/promo-bar.css?v=<?= time() ?>">
     <script src="assets/js/theme.js"></script>
     <script src="assets/js/promo-bar.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .legal-content {
             max-width: 800px;
@@ -91,7 +92,7 @@ $currentUser = getCurrentUser();
         </nav>
     </header>
     <?php
-    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0);
+    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0 && (int)$currentUser['trial_used'] === 0);
     if ($showPromoBar):
     ?>
         <div class="promo-secondary-bar">
@@ -105,7 +106,11 @@ $currentUser = getCurrentUser();
                     <strong>StockiFy</strong> <span class="text-accent">GRATIS</span> por 30 días.
                 </div>
                 <div class="promo-button-wrapper">
-                    <a href="https://wa.me/5491163642040?text=Hola!%20Quiero%20obtener%20la%20prueba%20gratuita%20de%2030%20días%20de%20StockiFy." target="_blank" class="btn-promo">Probar Ahora</a>
+                    <?php if ($currentUser): ?>
+                        <button class="btn-promo" id="btn-start-trial" style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
+                    <?php else: ?>
+                        <a href="register" class="btn-promo">Probar Ahora</a>
+                    <?php endif; ?>
                 </div>
             </div>
             <button class="btn-close-promo" id="closePromo">Cerrar</button>

@@ -24,9 +24,46 @@ class SalesModel
 
     public function getInventoryContext($userId)
     {
-        $stmt = $this->db->prepare("SELECT i.id as inventory_id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1");
-        $stmt->execute([':uid' => $userId]);
-        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (session_status() === PHP_SESSION_NONE) @session_start();
+        $inventoryId = $_SESSION['active_inventory_id'] ?? null;
+        
+        $res = null;
+        if ($inventoryId) {
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+            
+            $stmt = $this->db->prepare("SELECT i.id as inventory_id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId AND i.user_id = :uid LIMIT 1");
+            $stmt->execute([':invId' => $inventoryId, ':uid' => $ownerId]);
+            $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+        
+        if (!$res) {
+            $stmt = $this->db->prepare("SELECT i.id as inventory_id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.user_id = :uid ORDER BY i.created_at DESC LIMIT 1");
+            $stmt->execute([':uid' => $userId]);
+            $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+        
+        if (!$res) {
+            // Fallback: search active collaboration
+            $stmtCollab = $this->db->prepare("
+                SELECT ic.inventory_id 
+                FROM inventory_collaborators ic 
+                WHERE ic.user_id = ? AND ic.status = 'active' 
+                LIMIT 1
+            ");
+            $stmtCollab->execute([$userId]);
+            $collabInvId = $stmtCollab->fetchColumn();
+            if ($collabInvId) {
+                require_once __DIR__ . '/../helpers/auth_helper.php';
+                $ownerId = getInventoryOwnerId((int)$collabInvId);
+                if ($ownerId) {
+                    $stmt = $this->db->prepare("SELECT i.id as inventory_id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId AND i.user_id = :uid LIMIT 1");
+                    $stmt->execute([':invId' => $collabInvId, ':uid' => $ownerId]);
+                    $res = $stmt->fetch(PDO::FETCH_ASSOC);
+                }
+            }
+        }
+        
         if (!$res)
             throw new Exception("No se encontró un inventario activo.");
         $prefs = json_decode($res['preferences'], true);
@@ -38,8 +75,11 @@ class SalesModel
 
     public function getInventoryContextById($userId, $inventoryId)
     {
+        require_once __DIR__ . '/../helpers/auth_helper.php';
+        $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
         $stmt = $this->db->prepare("SELECT i.id as inventory_id, i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId AND i.user_id = :uid LIMIT 1");
-        $stmt->execute([':invId' => $inventoryId, ':uid' => $userId]);
+        $stmt->execute([':invId' => $inventoryId, ':uid' => $ownerId]);
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$res)
             throw new Exception("No se encontró el inventario especificado.");
@@ -56,6 +96,9 @@ class SalesModel
             if (!$this->db->inTransaction())
                 $this->db->beginTransaction();
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
             $sql = "INSERT INTO sales 
                     (user_id, inventory_id, customer_id, seller_id, payment_method_id, sale_date, total_amount, amount_tendered, change_returned, commission_amount, discount_amount, notes, proof_file) 
                     VALUES 
@@ -63,13 +106,10 @@ class SalesModel
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
-                ':user' => $userId,
+                ':user' => $ownerId,
                 ':inv' => $inventoryId,
                 ':client' => $clientId,
-
-                // --- CORRECCIÓN AQUÍ: Usar seller_id o employee_id ---
                 ':seller' => !empty($data['seller_id']) ? $data['seller_id'] : ($data['employee_id'] ?? null),
-
                 ':pay_method' => !empty($data['payment_method_id']) ? $data['payment_method_id'] : null,
                 ':total' => $data['total'],
                 ':tendered' => $data['amount_tendered'] ?? 0,
@@ -80,12 +120,11 @@ class SalesModel
                 ':file' => $data['proof_file'] ?? null
             ]);
 
-            // ... resto del código igual (Items y Pagos) ...
             $saleId = $this->db->lastInsertId();
 
             // 2. Detalles y Stock
             if (!empty($data['items']) && is_array($data['items'])) {
-                $inventoryModel = new InventoryModel(); // Asegúrate de tener esto importado o instanciado
+                $inventoryModel = new InventoryModel();
 
                 // PREPARAR METADATOS PARA ALERTAS DE GANANCIA
                 $stmtInv = $this->db->prepare("SELECT i.preferences, t.table_name FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId LIMIT 1");
@@ -95,7 +134,6 @@ class SalesModel
                 $prefs = $invRow ? json_decode($invRow['preferences'], true) : [];
                 $costCol = $prefs['mapping']['receipt_price'] ?? null;
                 $safeCostCol = $costCol ? "`" . str_replace("`", "``", $costCol) . "`" : null;
-                $mailSvc = null;
 
                 $stmtDet = $this->db->prepare("
                     INSERT INTO sale_details 
@@ -115,10 +153,10 @@ class SalesModel
                         ':sub' => ($item['precio'] ?? $item['precio_unitario']) * $item['cantidad']
                     ]);
 
-                    // IMPORTANTE: Decrementar Stock y Controlar Ganancia
+                    // Decrementar Stock
                     if ($productId) {
                         $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? null;
-                        $inventoryModel->decreaseStock($userId, $productId, $item['cantidad'], $inventoryId, $prodName, $outAlerts);
+                        $inventoryModel->decreaseStock($ownerId, $productId, $item['cantidad'], $inventoryId, $prodName, $outAlerts);
 
                         // ALERTA DE GANANCIA NEGATIVA
                         if ($tableName && $safeCostCol) {
@@ -236,8 +274,8 @@ class SalesModel
                 $this->db->beginTransaction();
             }
             
-            // Get old customer_id, inventory_id, total_amount
-            $stmtOld = $this->db->prepare("SELECT customer_id, inventory_id, total_amount FROM sales WHERE id = :id");
+            // Get old customer_id, inventory_id, total_amount, user_id
+            $stmtOld = $this->db->prepare("SELECT customer_id, inventory_id, total_amount, user_id FROM sales WHERE id = :id");
             $stmtOld->execute([':id' => $id]);
             $oldRow = $stmtOld->fetch(PDO::FETCH_ASSOC);
             if (!$oldRow) {
@@ -249,10 +287,18 @@ class SalesModel
             $inventoryId = $oldRow['inventory_id'];
             $totalAmount = (float)$oldRow['total_amount'];
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
+            if ((int)$oldRow['user_id'] !== (int)$ownerId) {
+                if ($this->db->inTransaction()) $this->db->rollBack();
+                return false;
+            }
+
             $newClientId = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
 
             $stmt = $this->db->prepare("UPDATE sales SET customer_id = :cust WHERE id = :id AND user_id = :user");
-            $success = $stmt->execute([':id' => $id, ':user' => $userId, ':cust' => $newClientId]);
+            $success = $stmt->execute([':id' => $id, ':user' => $ownerId, ':cust' => $newClientId]);
 
             if ($success) {
                 $this->db->commit();
@@ -320,12 +366,24 @@ class SalesModel
             $items = $stmtGetItems->fetchAll(PDO::FETCH_ASSOC);
 
             // Fetch extra info before deleting the sale
-            $stmtGetSale = $this->db->prepare("SELECT total_amount, customer_id, inventory_id FROM sales WHERE id = :id");
+            $stmtGetSale = $this->db->prepare("SELECT total_amount, customer_id, inventory_id, user_id FROM sales WHERE id = :id");
             $stmtGetSale->execute([':id' => $id]);
             $saleInfo = $stmtGetSale->fetch(PDO::FETCH_ASSOC);
-            $totalAmount = $saleInfo ? (float)$saleInfo['total_amount'] : 0.0;
-            $clientId = $saleInfo ? $saleInfo['customer_id'] : null;
-            $correctInvId = $saleInfo ? $saleInfo['inventory_id'] : null;
+            if (!$saleInfo) {
+                if ($this->db->inTransaction()) $this->db->rollBack();
+                return false;
+            }
+            $totalAmount = (float)$saleInfo['total_amount'];
+            $clientId = $saleInfo['customer_id'];
+            $correctInvId = $saleInfo['inventory_id'];
+
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = $correctInvId ? (getInventoryOwnerId((int)$correctInvId) ?? $userId) : $userId;
+
+            if ((int)$saleInfo['user_id'] !== (int)$ownerId) {
+                if ($this->db->inTransaction()) $this->db->rollBack();
+                return false;
+            }
 
             $clientName = 'Consumidor Final';
             if ($clientId) {
@@ -356,7 +414,7 @@ class SalesModel
             // Recuperar contexto (inventario de la venta) para devolver stock
             try {
                 if ($correctInvId) {
-                    $ctx = $this->getInventoryContextById($userId, $correctInvId);
+                    $ctx = $this->getInventoryContextById($ownerId, $correctInvId);
                     $table = $ctx['table'];
                     $stockCol = $ctx['stock_col'];
                     
@@ -369,7 +427,7 @@ class SalesModel
             }
 
             $stmtDel = $this->db->prepare("DELETE FROM sales WHERE id = :id AND user_id = :user");
-            $stmtDel->execute([':id' => $id, ':user' => $userId]);
+            $stmtDel->execute([':id' => $id, ':user' => $ownerId]);
             if ($stmtDel->rowCount() > 0) {
                 $this->db->commit();
                 
@@ -394,7 +452,9 @@ class SalesModel
             $this->db->rollBack();
             return false;
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             return false;
         }
     }
@@ -403,7 +463,12 @@ class SalesModel
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         try {
-            // Agregamos una subconsulta (payment_names_str) para traer los nombres de los pagos
+            if (session_status() === PHP_SESSION_NONE) @session_start();
+            $inv = $inventoryId ?? $_SESSION['active_inventory_id'] ?? null;
+
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = $inv ? (getInventoryOwnerId((int)$inv) ?? $userId) : $userId;
+
             $sql = "
                 SELECT 
                     s.id,
@@ -416,7 +481,6 @@ class SalesModel
                         (SELECT full_name FROM users WHERE id = s.seller_id),
                         '-'
                     ) as seller_name,
-                    -- Subconsulta para obtener los métodos de pago separados por '|||'
                     (
                         SELECT GROUP_CONCAT(pm.name SEPARATOR '|||') 
                         FROM sale_payments sp 
@@ -432,22 +496,19 @@ class SalesModel
             ";
 
             $stmt = $this->db->prepare($sql);
-            $params = [':user' => $userId];
+            $params = [':user' => $ownerId];
             if ($inventoryId) {
                 $params[':inv'] = $inventoryId;
             }
             $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Procesamos el string para convertirlo en el array que espera tu JS
             foreach ($results as &$row) {
                 if (!empty($row['payment_names_str'])) {
-                    // Convertimos "Efectivo|||Mercado Pago" -> ['Efectivo', 'Mercado Pago']
                     $row['payments'] = explode('|||', $row['payment_names_str']);
                 } else {
                     $row['payments'] = [];
                 }
-                // Limpiamos la variable temporal para no ensuciar el JSON
                 unset($row['payment_names_str']);
             }
 
@@ -462,6 +523,9 @@ class SalesModel
     {
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         try {
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = $inventoryId ? (getInventoryOwnerId((int)$inventoryId) ?? $userId) : $userId;
+
             $sql = "
                 SELECT 
                     s.id,
@@ -484,7 +548,7 @@ class SalesModel
             ";
 
             $stmt = $this->db->prepare($sql);
-            $params = [':user' => $userId, ':employee' => $employeeId];
+            $params = [':user' => $ownerId, ':employee' => $employeeId];
             if ($inventoryId) {
                 $params[':inv'] = $inventoryId;
             }
@@ -510,14 +574,26 @@ class SalesModel
     public function getDetails($saleId, $userId, $inventoryId = null): ?array
     {
         try {
+            if (session_status() === PHP_SESSION_NONE) @session_start();
+            $inv = $inventoryId ?? $_SESSION['active_inventory_id'] ?? null;
+
+            if (!$inv) {
+                $stmtInv = $this->db->prepare("SELECT inventory_id FROM sales WHERE id = ?");
+                $stmtInv->execute([$saleId]);
+                $inv = $stmtInv->fetchColumn();
+            }
+
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = $inv ? (getInventoryOwnerId((int)$inv) ?? $userId) : $userId;
+
             // 1. Cabecera (Traemos datos de la tabla nueva 'sales')
             $stmt = $this->db->prepare("
                 SELECT 
                     s.*, 
-                    s.sale_date as created_at,         -- JS usa 'created_at'
-                    s.total_amount as total,           -- JS usa 'total'
+                    s.sale_date as created_at,
+                    s.total_amount as total,
                     c.full_name as customer_name,
-                    c.full_name as nombre_cliente,     -- Compatibilidad
+                    c.full_name as nombre_cliente,
                     c.email as customer_email,
                     COALESCE(e.full_name, u.full_name, 'Sistema') as seller_name
                 FROM sales s
@@ -527,7 +603,7 @@ class SalesModel
                 WHERE s.id = :id AND s.user_id = :user
                 " . ($inventoryId ? " AND s.inventory_id = :inv" : "") . "
             ");
-            $params = [':id' => $saleId, ':user' => $userId];
+            $params = [':id' => $saleId, ':user' => $ownerId];
             if ($inventoryId) {
                 $params[':inv'] = $inventoryId;
             }
@@ -538,18 +614,17 @@ class SalesModel
                 return null;
 
             // 2. Items (Buscamos en 'sale_details' y renombramos para JS)
-            // Tu JS usa: i.product_name, i.quantity, i.price, i.subtotal
             $stmtDet = $this->db->prepare("
                 SELECT 
                     id,
                     sale_id,
                     product_id,
                     product_name, 
-                    product_name as nombre,    -- Para edición
+                    product_name as nombre,
                     quantity, 
-                    quantity as cantidad,      -- Para edición
-                    unit_price as price,       -- <--- IMPORTANTE: JS usa 'price'
-                    unit_price as precio,      -- Para edición
+                    quantity as cantidad,
+                    unit_price as price,
+                    unit_price as precio,
                     subtotal
                 FROM sale_details 
                 WHERE sale_id = :id
@@ -568,7 +643,7 @@ class SalesModel
                 ");
                 $stmtPay->execute([':id' => $saleId]);
                 $payments = $stmtPay->fetchAll(PDO::FETCH_ASSOC);
-            } catch (Exception $ex) { /* Ignorar si no hay pagos */
+            } catch (Exception $ex) {
             }
 
             return ['sale' => $sale, 'items' => $items, 'payments' => $payments];

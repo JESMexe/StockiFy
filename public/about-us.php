@@ -23,6 +23,7 @@ $currentUser = getCurrentUser();
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css" />
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Dynamic Theme -->
     <script src="assets/js/theme.js"></script>
@@ -43,7 +44,7 @@ $currentUser = getCurrentUser();
         </nav>
     </header>
     <?php
-    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int) $currentUser['subscription_active'] === 0);
+    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int) $currentUser['subscription_active'] === 0 && (int) $currentUser['trial_used'] === 0);
     if ($showPromoBar):
         ?>
         <div class="promo-secondary-bar">
@@ -57,7 +58,11 @@ $currentUser = getCurrentUser();
                     <strong>StockiFy</strong> <span class="text-accent">GRATIS</span> por 30 días.
                 </div>
                 <div class="promo-button-wrapper">
-                    <a href="https://wa.me/5491163642040?text=Hola!%20Quiero%20obtener%20la%20prueba%20gratuita%20de%2030%20días%20de%20StockiFy." target="_blank" class="btn-promo">Probar Ahora</a>
+                    <?php if ($currentUser): ?>
+                        <button class="btn-promo" id="btn-start-trial" style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
+                    <?php else: ?>
+                        <a href="register" class="btn-promo">Probar Ahora</a>
+                    <?php endif; ?>
                 </div>
             </div>
             <button class="btn-close-promo" id="closePromo">Cerrar</button>
@@ -182,9 +187,10 @@ $currentUser = getCurrentUser();
 
                 <div class="gallery-container">
                     <div class="gallery-item active" data-gallery="inventory">
-                        <div class="gallery-item-overlay"></div>
-                        <i class="ph ph-database" style="font-size: 6rem; color: #ccc;"></i>
-                        <div class="gallery-progress">
+                        <div class="gallery-item-overlay" style="z-index: 2;"></div>
+                        <video src="assets/img/lolo.mp4" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
+                        <i class="ph ph-database" style="font-size: 6rem; color: #ccc; position: relative; z-index: 3;"></i>
+                        <div class="gallery-progress" style="z-index: 4;">
                             <div class="gallery-progress-fill"></div>
                         </div>
                     </div>
@@ -264,6 +270,24 @@ $currentUser = getCurrentUser();
             </div>
         </section>
 
+        <!-- Final Story Block (¿Quiénes Somos?) -->
+        <section class="section-full section-bg-gray"
+            style="border-top: 3px solid #1b1b1b; border-bottom: 2px solid #1b1b1b;">
+            <div class="container">
+                <div class="story-card">
+                    <h2>¿Quiénes Somos?</h2>
+                    <p>StockiFy nació de una idea clara: sacarle peso de encima a los que deciden <strong>"ponerle el
+                            pecho"</strong> a un proyecto propio con energía y visión. Emprender es un viaje increíble,
+                        pero la gestión debe ser profesional, segura y escalable.</p>
+                    <p>
+                        Somos un equipo que cree en la superioridad técnica. No creamos herramientas simples; creamos
+                        arquitecturas de trabajo robustas que te permiten competir al nivel de los grandes, respaldadas
+                        por la tecnología de mayor confianza del mercado mundial.
+                    </p>
+                </div>
+            </div>
+        </section>
+
         <!-- Pricing Section (Clustered from Index) -->
         <section class="section-full section-bg-gray" id="pricing-conversion">
             <div class="container">
@@ -272,6 +296,33 @@ $currentUser = getCurrentUser();
                     <p style="color: #666; max-width: 600px; margin: 20px auto 0;">Elegí el plan que mejor se adapte a
                         las necesidades de tu emprendimiento.</p>
                 </div>
+            <?php if ($showPromoBar): ?>
+                <div class="pricing-trial-card">
+                    <div class="trial-card-badge">Prueba Gratuita</div>
+                    <div class="trial-card-content">
+                        <div class="trial-card-info">
+                            <h3>Habilitá tu Mes Gratis de inmediato</h3>
+                            <p class="trial-card-desc">Probá el nivel de acceso más alto (Vitalicio / Nivel 4) durante 30 días de forma instantánea. Sin tarjetas de crédito, sin compromisos y con activación inmediata.</p>
+                            <ul class="trial-card-features">
+                                <li><i class="ph-bold ph-bolt"></i> Acceso Nivel 4 Vitalicio</li>
+                                <li><i class="ph-bold ph-credit-card-slash"></i> Sin tarjetas de crédito</li>
+                                <li><i class="ph-bold ph-clock"></i> 30 días de prueba</li>
+                            </ul>
+                        </div>
+                        <div class="trial-card-action">
+                            <div class="trial-card-price">
+                                <span class="price">Gratis</span>
+                                <span class="period">/ 30 días</span>
+                            </div>
+                            <?php if ($currentUser): ?>
+                                <button class="btn-pricing btn-start-trial">Comenzar Prueba</button>
+                            <?php else: ?>
+                                <a href="register" class="btn-pricing">Comenzar Prueba</a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
                 <div id="pricing-carousel-container" style="width: 100%; max-width: 100vw; overflow: visible;">
                     <div class="pricing-wrapper scale-wrapper" id="pricing-wrapper">
@@ -482,23 +533,7 @@ $currentUser = getCurrentUser();
             </div>
         </section>
 
-        <!-- Final Story Block (¿Quiénes Somos?) -->
-        <section class="section-full section-bg-gray"
-            style="border-top: 3px solid #1b1b1b; border-bottom: 2px solid #1b1b1b;">
-            <div class="container">
-                <div class="story-card">
-                    <h2>¿Quiénes Somos?</h2>
-                    <p>StockiFy nació de una idea clara: sacarle peso de encima a los que deciden <strong>"ponerle el
-                            pecho"</strong> a un proyecto propio con energía y visión. Emprender es un viaje increíble,
-                        pero la gestión debe ser profesional, segura y escalable.</p>
-                    <p>
-                        Somos un equipo que cree en la superioridad técnica. No creamos herramientas simples; creamos
-                        arquitecturas de trabajo robustas que te permiten competir al nivel de los grandes, respaldadas
-                        por la tecnología de mayor confianza del mercado mundial.
-                    </p>
-                </div>
-            </div>
-        </section>
+
 
         <!-- Final Footer Snap -->
         <section style="height: 100px; background: #fff;"></section>

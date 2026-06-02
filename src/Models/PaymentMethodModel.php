@@ -27,12 +27,15 @@ class PaymentMethodModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $stmt = $this->db->prepare("
                 INSERT INTO payment_methods (user_id, inventory_id, name, type, currency, surcharge, is_active) 
                 VALUES (:user, :inv, :name, :type, :currency, :surcharge, 1)
             ");
             $success = $stmt->execute([
-                ':user'      => $userId,
+                ':user'      => $ownerId,
                 ':inv'       => $inv,
                 ':name'      => $data['name'],
                 ':type'      => $data['type'] ?? 'Other',
@@ -69,8 +72,11 @@ class PaymentMethodModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return [];
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $stmt = $this->db->prepare("SELECT * FROM payment_methods WHERE user_id = :user AND inventory_id = :inv ORDER BY id ASC");
-            $stmt->execute([':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':user' => $ownerId, ':inv' => $inv]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) { return []; }
     }
@@ -80,8 +86,11 @@ class PaymentMethodModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return null;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             $stmt = $this->db->prepare("SELECT * FROM payment_methods WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
+            $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inv]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             return null;
@@ -93,6 +102,9 @@ class PaymentMethodModel {
         try {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
+
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
 
             // Fetch old record for logging comparison
             $oldRow = $this->getById($id, $userId, $inv);
@@ -108,7 +120,7 @@ class PaymentMethodModel {
                 ':currency'  => $data['currency'],
                 ':surcharge' => $data['surcharge'],
                 ':id'        => $id,
-                ':user'      => $userId,
+                ':user'      => $ownerId,
                 ':inv'       => $inv
             ]);
 
@@ -141,11 +153,14 @@ class PaymentMethodModel {
             $inv = $this->resolveInventoryId($inventoryId);
             if (!$inv) return false;
 
+            require_once __DIR__ . '/../helpers/auth_helper.php';
+            $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
+
             // Fetch old record for logging
             $oldRow = $this->getById($id, $userId, $inv);
 
             $stmt = $this->db->prepare("DELETE FROM payment_methods WHERE id = :id AND user_id = :user AND inventory_id = :inv");
-            $success = $stmt->execute([':id' => $id, ':user' => $userId, ':inv' => $inv]);
+            $success = $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inv]);
 
             if ($success && $oldRow) {
                 try {
