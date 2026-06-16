@@ -120,10 +120,16 @@ header.nav-hidden {
 #header-nav {
     display: flex;
     gap: 1rem;
+    align-items: center;
+}
+
+#header-nav .btn i {
+    display: none;
 }
 
 @media (max-width: 768px) {
     #header-logo img {
+        content: url("../img/LogoCelu.png");
         height: 30px;
     }
 
@@ -131,8 +137,37 @@ header.nav-hidden {
         padding: 1rem;
     }
 
-    #header-nav>.btn {
-        font-size: 13px !important;
+    #header-nav {
+        gap: 6px !important;
+    }
+
+    #header-nav .btn {
+        font-size: 11px !important;
+        height: 32px !important;
+        padding: 0 10px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    #header-nav .btn-header-tutoriales span,
+    #header-nav .btn-header-logout span {
+        display: none !important;
+    }
+
+    #header-nav .btn-header-tutoriales i,
+    #header-nav .btn-header-logout i {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.2rem !important;
+        margin: 0 !important;
+    }
+
+    #header-nav .btn-header-tutoriales,
+    #header-nav .btn-header-logout {
+        width: 32px !important;
+        padding: 0 !important;
     }
 }
 
@@ -145,6 +180,9 @@ header.nav-hidden {
     line-height: 1;
     box-shadow: none;
     transform: translate(0, 0);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #header-nav .btn:hover {
@@ -687,14 +725,26 @@ h4 {
 #welcome-container {
     width: 90%;
     margin: 5rem 0;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 5rem;
     overflow: hidden;
 }
 
 #welcome-container>div {
-    width: 800px;
     justify-content: center;
+}
+
+#welcome-container>div:first-child {
+    flex: 1.3;
+    max-width: 900px;
+    align-items: flex-start;
+    text-align: left;
+}
+
+#welcome-container>div:last-child {
+    flex: 0.9;
+    max-width: 550px;
+    align-items: center;
 }
 
 #mi-cuenta-dropdown {
@@ -1088,11 +1138,13 @@ h4 {
 }
 
 #welcome-container>div>h1 {
-    font-size: 4.5rem;
+    font-size: clamp(2.5rem, 4.5vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.1;
 }
 
 #welcome-container>div>h2 {
-    font-size: 2rem;
+    font-size: clamp(1.3rem, 2.2vw, 2.2rem);
     margin-top: 2rem;
     width: fit-content;
 }
@@ -1148,19 +1200,38 @@ h4 {
     }
 }
 
-@media (max-width: 1510px) {
+@media (max-width: 1150px) {
     #welcome-container {
         margin: 2rem;
         flex-direction: column;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 3rem;
+    }
+
+    #welcome-container>div:first-child {
+        width: 100%;
+        max-width: 100%;
+        text-align: left;
+        align-items: flex-start;
+    }
+
+    #welcome-container>div:last-child {
+        width: 100%;
+        max-width: 550px;
+        align-items: center;
+        align-self: center;
     }
 
     #welcome-container>div>h1 {
-        font-size: 4rem;
-        width: 650px;
+        font-size: clamp(2.2rem, 8vw, 4rem);
+        width: 100%;
+        text-align: left;
     }
 
-    #welcome-container>div {
-        width: fit-content;
+    #welcome-container>div>h2 {
+        text-align: left;
+        align-self: flex-start;
     }
 
     #index-sections-container h3 {

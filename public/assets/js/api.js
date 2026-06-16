@@ -106,12 +106,20 @@ export async function setCurrentInventoryPreferences(preferences) {
     return handleResponse(response);
 }
 
+let verifiedTablesPromise = null;
 export async function getUserVerifiedTables() {
-    const response = await fetch('/api/database/get-verified-tables', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-    });
-    return handleResponse(response);
+    if (!verifiedTablesPromise) {
+        verifiedTablesPromise = fetch('/api/database/get-verified-tables', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        })
+        .then(res => handleResponse(res))
+        .catch(err => {
+            verifiedTablesPromise = null;
+            throw err;
+        });
+    }
+    return verifiedTablesPromise;
 }
 
 export async function saveInventoryPreferences(data) {
@@ -194,9 +202,17 @@ export async function executeImport() {
     return res.json();
 }
 
+let userProfilePromise = null;
 export async function getUserProfile() {
-    const response = await fetch('/api/user/profile');
-    return handleResponse(response);
+    if (!userProfilePromise) {
+        userProfilePromise = fetch('/api/user/profile')
+        .then(res => handleResponse(res))
+        .catch(err => {
+            userProfilePromise = null;
+            throw err;
+        });
+    }
+    return userProfilePromise;
 }
 
 export async function checkUserAdmin(){
@@ -571,8 +587,9 @@ export async function registerContactForm(contactData){
 
 export async function getExchangeRate(forceRefresh = false) {
     try {
-        const url = forceRefresh ? '/api/table/get-rate.php?force_refresh=true' : '/api/table/get-rate.php';
-        const response = await fetch(url);
+        const ts = Date.now();
+        const url = forceRefresh ? `/api/table/get-rate.php?force_refresh=true&_ts=${ts}` : `/api/table/get-rate.php?_ts=${ts}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) {
             const data = await response.json().catch(() => null);
             if (data && data.message === 'API_DOWN') {

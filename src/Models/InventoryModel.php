@@ -565,7 +565,7 @@ class InventoryModel
                 $minStock = (float)$prod['min_stock'];
                 $newStock = $oldStock - $quantity;
 
-                if ($oldStock > $minStock && $newStock <= $minStock) {
+                if ($oldStock > $minStock && $newStock <= $minStock && $newStock > 0) {
                     $prodName = $productNameFallback ?? 'Producto #' . $productId;
                     
                     if ($alerts !== null) {
@@ -575,7 +575,8 @@ class InventoryModel
                             'product_id' => $productId,
                             'current_stock' => $newStock,
                             'min_stock' => $minStock,
-                            'inventory_name' => $row['inv_name'] ?? 'Principal'
+                            'inventory_name' => $row['inv_name'] ?? 'Principal',
+                            'inventory_id' => $inventoryId,  // Para que send-queued-emails resuelva el owner correcto
                         ];
                     } else {
                         $stmtUser = $this->db->prepare("SELECT email, full_name, cell FROM users WHERE id = :id");
@@ -607,7 +608,8 @@ class InventoryModel
                             'product_name' => $prodName,
                             'product_id' => $productId,
                             'current_stock' => $newStock,
-                            'inventory_name' => $row['inv_name'] ?? 'Principal'
+                            'inventory_name' => $row['inv_name'] ?? 'Principal',
+                            'inventory_id' => $inventoryId,  // Para que send-queued-emails resuelva el owner correcto
                         ];
                     } else {
                         $stmtUser = $this->db->prepare("SELECT email, full_name, cell FROM users WHERE id = :id");

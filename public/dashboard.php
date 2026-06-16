@@ -45,11 +45,11 @@ try {
 }
 
 // Determinar rol del usuario en el inventario activo (para condicionales PHP en el template)
-$activeInventoryId = (int)($_SESSION['active_inventory_id'] ?? 0);
-$currentUserRbac   = ($activeInventoryId && $currentUser)
-    ? getInventoryRole((int)$currentUser['id'], $activeInventoryId)
+$activeInventoryId = (int) ($_SESSION['active_inventory_id'] ?? 0);
+$currentUserRbac = ($activeInventoryId && $currentUser)
+    ? getInventoryRole((int) $currentUser['id'], $activeInventoryId)
     : null;
-$isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
+$isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
 ?>
 
 <!DOCTYPE html>
@@ -57,15 +57,16 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Panel de Control - StockiFy</title>
 
-    <link rel="stylesheet" href="assets/css/main.css?v=1.2">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=1.3">
-    <link rel="stylesheet" href="assets/css/notifications.css?v=1.0">
+    <link rel="stylesheet" href="assets/css/main.css?v=1.3">
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=1.6">
+    <link rel="stylesheet" href="assets/css/notifications.css?v=2.0">
     <link rel="stylesheet" href="assets/css/employees.css?v=1.3">
-    <link rel="stylesheet" href="assets/css/purchases.css?v=1.2">
+    <link rel="stylesheet" href="assets/css/purchases.css?v=2.0">
     <link rel="stylesheet" href="assets/css/payments.css?v=1.2">
+    <link rel="stylesheet" href="assets/css/tutorials.css?v=1.0">
 
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
@@ -79,8 +80,6 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.css"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
-    <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/analytics.css">
     <link rel="stylesheet" href="assets/css/sales.css">
     <style>
@@ -103,6 +102,30 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
         .notif-tab-btn.active {
             color: var(--accent-color) !important;
             border-bottom-color: var(--accent-color) !important;
+        }
+
+        /* Botones de periodo en modal de Métricas */
+        .metrics-period-btn {
+            flex: 1;
+            padding: 8px 4px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            font-family: inherit;
+        }
+        .metrics-period-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+        .metrics-period-btn.active {
+            background: #1b1b1b;
+            color: #fff;
+            border-color: #1b1b1b;
         }
     </style>
 </head>
@@ -167,28 +190,39 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
             <br>
             <button class="btn btn-primary" id="close-inventory-info-modal">Cerrar</button>
         </div>
-        
-        <div id="invite-collaborator-modal" class="hidden" style="background: white; border: 2px solid #1b1b1b; border-radius: 12px; padding: 25px; max-width: 450px; width: 90%; text-align: left; position: relative;">
-            <button id="close-invite-modal-btn" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #1b1b1b;"><i class="ph-bold ph-x"></i></button>
+
+        <div id="invite-collaborator-modal" class="hidden"
+            style="background: white; border: 2px solid #1b1b1b; border-radius: 12px; padding: 25px; max-width: 450px; width: 90%; text-align: left; position: relative;">
+            <button id="close-invite-modal-btn"
+                style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #1b1b1b;"><i
+                    class="ph-bold ph-x"></i></button>
             <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px; color: #1b1b1b; font-size: 1.4rem;">
                 <i class="ph-fill ph-envelope-simple-open" style="color: var(--accent-color);"></i> Enviar Invitación
             </h3>
             <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
-                Ingresá el correo electrónico de la persona y asigná un rol. Recibirá un email seguro con un enlace de acceso único.
+                Ingresá el correo electrónico de la persona y asigná un rol. Recibirá un email seguro con un enlace de
+                acceso único.
             </p>
             <form id="invite-collaborator-form">
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label class="micro-label" style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Correo Electrónico</label>
-                    <input type="email" id="invite-email" class="rustic-input" placeholder="ejemplo@correo.com" required style="width: 100%; box-sizing: border-box;">
+                    <label class="micro-label"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Correo
+                        Electrónico</label>
+                    <input type="email" id="invite-email" class="rustic-input" placeholder="ejemplo@correo.com" required
+                        style="width: 100%; box-sizing: border-box;">
                 </div>
                 <div class="form-group" style="margin-bottom: 25px;">
-                    <label class="micro-label" style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Rol Asignado</label>
-                    <select id="invite-role" class="rustic-select" required style="width: 100%; box-sizing: border-box;">
+                    <label class="micro-label"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Rol
+                        Asignado</label>
+                    <select id="invite-role" class="rustic-select" required
+                        style="width: 100%; box-sizing: border-box;">
                         <option value="3" selected>Empleado</option>
                         <option value="2">Administrador</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary" id="send-invite-submit-btn" style="width: 100%; height: 48px; background: var(--accent-color); border-color: #1b1b1b; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <button type="submit" class="btn btn-primary" id="send-invite-submit-btn"
+                    style="width: 100%; height: 48px; background: var(--accent-color); border-color: #1b1b1b; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <i class="ph-bold ph-paper-plane-right"></i> Enviar Invitación
                 </button>
             </form>
@@ -200,12 +234,14 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
         <div class="dashboard-container">
             <aside class="dashboard-sidebar">
                 <nav class="main-menu" id="sidebar-main-nav" style="visibility:hidden">
-                    <h3>Base de Datos</h3>
+                    <h3>Inventario</h3>
                     <ul>
                         <li><button class="menu-btn active" data-target-view="view-db"><i class="ph ph-table"></i> Ver
                                 Datos</button></li>
                         <li><button class="menu-btn" data-target-view="config-db"><i class="ph ph-gear"></i> Configurar
                                 Tabla</button></li>
+                        <li><button class="menu-btn" data-target-view="analysis"><i class="ph ph-chart-line"></i>
+                                Analíticas</button></li>
                         <li><a href="select-db" class="menu-link"><i class="ph ph-database"></i> Cambiar Inventario</a>
                         </li>
 
@@ -218,18 +254,17 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                         ?>
 
                         <?php if ($canCreateDb): ?>
-                            <li><a href="create-db" class="menu-link"><i class="ph ph-plus-circle"></i> Crear Nuevo
-                                    Inventario</a></li>
+                            <li><a href="create-db" class="menu-link"><i class="ph ph-plus-circle"></i> Crear Inventario</a>
+                            </li>
                             <?php
                         else: ?>
                             <li style="opacity: 0.5;" title="Límite del Plan Básico alcanzado."><a href="#"
                                     onclick="window.showLockedFeatureToast('Múltiples Inventarios'); return false;"
-                                    class="menu-link"><i class="ph ph-plus-circle"></i> Nuevo Inventario <i
+                                    class="menu-link"><i class="ph ph-plus-circle"></i> Crear Inventario <i
                                         class="ph-fill ph-lock-key"
                                         style="margin-left: auto; color: var(--accent-red)"></i></a></li>
                             <?php
                         endif; ?>
-                        <hr>
                     </ul>
 
                     <h3>Transacciones</h3>
@@ -238,7 +273,10 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                                 Registrar Ingreso</button></li>
                         <li><button class="menu-btn" data-target-view="receipts"><i class="ph ph-stack"></i>
                                 Registrar Egreso</button></li>
+                    </ul>
 
+                    <h3>Directorio</h3>
+                    <ul>
                         <?php if ($currentUser['subscription_active'] >= 2): ?>
                             <li><button class="menu-btn" data-target-view="customers"><i class="ph ph-user-focus"></i>
                                     Clientes</button></li>
@@ -265,22 +303,28 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                                         style="margin-left: auto; color: var(--accent-red)"></i></button></li>
                             <?php
                         endif; ?>
-                    <h3 id="sidebar-usuario-title">Usuario</h3>
-                    <ul id="sidebar-usuario-list">
+                    </ul>
+
+                    <h3 id="sidebar-negocio-title">Negocio</h3>
+                    <ul id="sidebar-negocio-list">
                         <li>
                             <button class="menu-btn" data-target-view="users-manage">
                                 <i class="ph ph-users-three"></i> Colaboradores
                             </button>
                         </li>
-                        <li><button class="menu-btn" data-target-view="analysis"><i class="ph ph-chart-line"></i>
-                                Analíticas</button></li>
+                        <li><button class="menu-btn" data-target-view="payments"><i class="ph ph-wallet"></i> Métodos de
+                                Pago</button></li>
                         <li><button class="menu-btn" data-target-view="notifications"><i class="ph ph-bell"></i>
                                 Notificaciones</button></li>
                         <li><button class="menu-btn" data-target-view="history-log"><i
                                     class="ph ph-clock-counter-clockwise"></i>
                                 Historial</button></li>
-                        <li><button class="menu-btn" data-target-view="payments"><i class="ph ph-wallet"></i> Métodos de
-                                Pago</button></li>
+                    </ul>
+
+                    <h3>Ayuda</h3>
+                    <ul>
+                        <li><button class="menu-btn" data-target-view="tutorials"><i class="ph ph-book-open"></i>
+                                Tutoriales</button></li>
                     </ul>
                 </nav>
             </aside>
@@ -290,9 +334,10 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                 <div id="view-db" class="dashboard-view">
                     <div class="table-container">
                         <div class="table-header">
-                            <div
-                                style="display: flex; align-items: center; gap: 10px; height: 100%; min-width: 0; overflow: hidden;">
-                                <h2 id="table-title" style="margin: 0; line-height: 1;">Cargando...
+                            <div style="display: flex; align-items: center; gap: 10px; height: 100%; min-width: 0;">
+                                <h2 id="table-title"
+                                    style="margin: 0; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    Cargando...
                                 </h2>
                                 <button id="refresh-table-btn" class="btn btn-secondary"
                                     title="Recargar y actualizar datos"
@@ -520,31 +565,66 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                                             </div>
                                         </div>
 
-                                        <div class="rustic-block" style="margin-bottom: 1.5rem; border-color: var(--accent-color);">
+                                        <div class="rustic-block"
+                                            style="margin-bottom: 1.5rem; border-color: var(--accent-color);">
                                             <div class="block-header"
                                                 style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem;">
-                                                <label style="position: relative; display: inline-block; width: 40px; height: 20px; margin: 0;">
-                                                    <input type="checkbox" id="feature-daily-report" style="opacity: 0; width: 0; height: 0; position: absolute;" checked>
-                                                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: .4s; border-radius: 20px;" class="slider round"></span>
+                                                <label
+                                                    style="position: relative; display: inline-block; width: 40px; height: 20px; margin: 0;">
+                                                    <input type="checkbox" id="feature-daily-report"
+                                                        style="opacity: 0; width: 0; height: 0; position: absolute;"
+                                                        checked>
+                                                    <span
+                                                        style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; transition: .4s; border-radius: 20px;"
+                                                        class="slider round"></span>
                                                     <style>
-                                                        #feature-daily-report + .slider { background-color: #ccc; }
-                                                        #feature-daily-report:checked + .slider { background-color: var(--accent-color); }
-                                                        #feature-daily-report:focus + .slider { box-shadow: 0 0 1px var(--accent-color); }
-                                                        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-                                                        #feature-daily-report:checked + .slider:before { transform: translateX(20px); }
+                                                        #feature-daily-report+.slider {
+                                                            background-color: #ccc;
+                                                        }
+
+                                                        #feature-daily-report:checked+.slider {
+                                                            background-color: var(--accent-color);
+                                                        }
+
+                                                        #feature-daily-report:focus+.slider {
+                                                            box-shadow: 0 0 1px var(--accent-color);
+                                                        }
+
+                                                        .slider:before {
+                                                            position: absolute;
+                                                            content: "";
+                                                            height: 14px;
+                                                            width: 14px;
+                                                            left: 3px;
+                                                            bottom: 3px;
+                                                            background-color: white;
+                                                            transition: .4s;
+                                                            border-radius: 50%;
+                                                        }
+
+                                                        #feature-daily-report:checked+.slider:before {
+                                                            transform: translateX(20px);
+                                                        }
                                                     </style>
                                                 </label>
                                                 <span class="option-label"
-                                                    style="font-weight: bold; font-size: 1.1rem; color: var(--accent-color);">Reporte Diario Automático</span>
-                                                <span id="report-status-text" style="font-size: 0.85rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; margin-left: auto;"></span>
+                                                    style="font-weight: bold; font-size: 1.1rem; color: var(--accent-color);">Reporte
+                                                    Diario Automático</span>
+                                                <span id="report-status-text"
+                                                    style="font-size: 0.85rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; margin-left: auto;"></span>
                                             </div>
 
                                             <div class="reveal-inner" style="padding-left: 50px;">
-                                                <p style="font-size: 0.9rem; color: #666; margin-top: 0; margin-bottom: 1rem; line-height: 1.4;">
-                                                    Recibí un balance general de tu caja todos los días a las 22:00 hs (Ventas, Compras y Balance Final).
+                                                <p
+                                                    style="font-size: 0.9rem; color: #666; margin-top: 0; margin-bottom: 1rem; line-height: 1.4;">
+                                                    Recibí un balance general de tu caja todos los días a las 22:00 hs
+                                                    (Ventas, Compras y Balance Final).
                                                 </p>
-                                                <p style="font-size: 0.8rem; color: #888; font-style: italic; margin-top: 0;">
-                                                    <i class="ph-bold ph-info" style="color: var(--accent-color);"></i> Si el inventario no registra movimientos durante 10 días, el reporte se pausará automáticamente.
+                                                <p
+                                                    style="font-size: 0.8rem; color: #888; font-style: italic; margin-top: 0;">
+                                                    <i class="ph-bold ph-info" style="color: var(--accent-color);"></i>
+                                                    Si el inventario no registra movimientos durante 10 días, el reporte
+                                                    se pausará automáticamente.
                                                 </p>
                                             </div>
                                         </div>
@@ -659,18 +739,18 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                         </div>
 
                         <?php if ($isOwner): ?>
-                        <div class="accordion-item" style="border:2px solid var(--accent-red);">
-                            <button class="accordion-header" aria-expanded="false">
-                                <span style="color: var(--accent-red)">Zona de Peligro</span>
-                                <i class="ph ph-caret-down"></i>
-                            </button>
-                            <div class="accordion-content">
-                                <p style="color: var(--accent-red); margin-bottom: 1rem;">
-                                    Esta acción borrará permanentemente el inventario y sus registros.
-                                </p>
-                                <button id="delete-db-btn" class="btn btn-danger">Eliminar Inventario</button>
+                            <div class="accordion-item" style="border:2px solid var(--accent-red);">
+                                <button class="accordion-header" aria-expanded="false">
+                                    <span style="color: var(--accent-red)">Zona de Peligro</span>
+                                    <i class="ph ph-caret-down"></i>
+                                </button>
+                                <div class="accordion-content">
+                                    <p style="color: var(--accent-red); margin-bottom: 1rem;">
+                                        Esta acción borrará permanentemente el inventario y sus registros.
+                                    </p>
+                                    <button id="delete-db-btn" class="btn btn-danger">Eliminar Inventario</button>
+                                </div>
                             </div>
-                        </div>
                         <?php endif; ?>
 
                     </div>
@@ -680,38 +760,48 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                 </div>
 
                 <div id="users-manage" class="dashboard-view hidden">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b1b1b; padding-bottom: 15px; margin-bottom: 1.5rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b1b1b; padding-bottom: 15px; margin-bottom: 1.5rem;">
                         <div>
                             <h2 style="margin:0;"><i class="ph ph-users-three"></i> Gestión de Colaboradores</h2>
-                            <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">Invitá a otras personas a tu inventario y administrá sus permisos.</p>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">Invitá a otras personas a tu
+                                inventario y administrá sus permisos.</p>
                         </div>
-                        <button id="invite-collaborator-btn" class="btn btn-primary" style="margin:0; width:auto; white-space:nowrap;">
+                        <button id="invite-collaborator-btn" class="btn btn-primary"
+                            style="margin:0; width:auto; white-space:nowrap;">
                             <i class="ph ph-user-plus"></i> Nueva Invitación
                         </button>
                     </div>
 
-                    <div id="collaborators-list-container" style="background: #fff; border: 2px solid #1b1b1b; border-radius: 12px; padding: 20px;">
+                    <div id="collaborators-list-container"
+                        style="background: #fff; border: 2px solid #1b1b1b; border-radius: 12px; padding: 0; overflow: hidden;">
                         <p style="color: #666;"><i class="ph ph-spinner ph-spin"></i> Cargando colaboradores...</p>
                     </div>
 
                     <!-- Panel de control de acceso por rol: solo visible para Owner (controlado vía JS) -->
-                    <div id="role-permissions-panel" class="hidden" style="margin-top: 2rem; border-top: 2px dashed #e5e5e5; padding-top: 1.5rem;">
+                    <div id="role-permissions-panel" class="hidden"
+                        style="margin-top: 2rem; border-top: 2px dashed #e5e5e5; padding-top: 1.5rem;">
                         <div style="margin-bottom: 1.5rem;">
                             <h3 style="margin: 0 0 4px; display: flex; align-items: center; gap: 8px;">
-                                <i class="ph ph-sliders" style="color: var(--accent-color);"></i> Control de Acceso por Rol
+                                <i class="ph ph-sliders" style="color: var(--accent-color);"></i> Control de Acceso por
+                                Rol
                             </h3>
                             <p style="color: #666; font-size: 0.9rem; margin: 0;">
-                                Elegí qué secciones del dashboard puede ver cada rol. El Propietario siempre tiene acceso total y no puede ser restringido.
+                                Elegí qué secciones del dashboard puede ver cada rol. El Propietario siempre tiene
+                                acceso total y no puede ser restringido.
                             </p>
                         </div>
 
-                        <div id="permissions-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; background: #fff; border: 2px solid #1b1b1b; border-radius: 12px; padding: 20px;">
+                        <div id="permissions-grid"
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; background: #fff; border: 2px solid #1b1b1b; border-radius: 12px; padding: 20px;">
                             <!-- Renderizado dinámicamente por users.js -->
-                            <p style="color: #999; grid-column: 1/-1;"><i class="ph ph-spinner ph-spin"></i> Cargando configuración...</p>
+                            <p style="color: #999; grid-column: 1/-1;"><i class="ph ph-spinner ph-spin"></i> Cargando
+                                configuración...</p>
                         </div>
 
                         <div style="text-align: right; margin-top: 1.5rem;">
-                            <button id="save-permissions-btn" class="btn btn-primary" style="background: var(--accent-color); border-color: #1b1b1b;">
+                            <button id="save-permissions-btn" class="btn btn-primary"
+                                style="background: var(--accent-color); border-color: #1b1b1b;">
                                 <i class="ph ph-floppy-disk"></i> Guardar Configuración
                             </button>
                         </div>
@@ -810,7 +900,7 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                 </div>
             </div>
             <div
-                style="background: var(--accent-color-quat-opacity); border: 2px solid var(--accent-color); color: var(--accent-color); padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 0.8rem;">
+                style="background: var(--accent-color-quat-opacity); border: 2px solid var(--accent-color); color: var(--accent-color); padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; white-space: nowrap; text-align: center; display: inline-flex; align-items: center; justify-content: center; height: fit-content; flex-shrink: 0;">
                 Cambio Actual
             </div>
         </div>
@@ -819,14 +909,20 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
 
             <div class="mobile-card action-sale" onclick="window.openMobileTransaction('sale')">
                 <div class="icon-circle"><i class="ph-bold ph-shopping-cart"></i></div>
-                <h3>Nueva Venta</h3>
+                <h3>Registrar Ingreso</h3>
                 <p>Registrar salida</p>
             </div>
 
             <div class="mobile-card action-purchase" onclick="window.openMobileTransaction('purchase')">
                 <div class="icon-circle"><i class="ph-bold ph-package"></i></div>
-                <h3>Nueva Compra</h3>
+                <h3>Registrar Compra</h3>
                 <p>Registrar entrada</p>
+            </div>
+
+            <div class="mobile-card action-expense" onclick="window.openMobileExpense()">
+                <div class="icon-circle"><i class="ph-bold ph-lightning"></i></div>
+                <h3>Registrar Gasto</h3>
+                <p>Gasto rápido</p>
             </div>
 
             <div class="mobile-card action-check" onclick="window.openMobilePriceChecker()">
@@ -880,7 +976,7 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
     <div id="mobile-balance-modal" class="mobile-modal-overlay hidden">
         <div class="mobile-modal-content">
             <div class="mobile-modal-header">
-                <h2>Balance & Caja</h2>
+                <h2>Balance y Caja</h2>
                 <button class="close-icon" onclick="window.closeCashBalance()">&times;</button>
             </div>
 
@@ -911,7 +1007,7 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                     <div class="detail-row expense">
                         <div class="icon"><i class="ph-fill ph-arrow-up-right"></i></div>
                         <div class="info">
-                            <span>Egresos (Compras)</span>
+                            <span>Egresos (Compras/Gastos)</span>
                             <h4 id="balance-expense">$0.00</h4>
                         </div>
                     </div>
@@ -1021,8 +1117,7 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                     <div id="import-step-2" class="hidden">
                         <h3>Mapeá las Columnas</h3>
                         <p>Asigná las columnas de tu archivo a las de StockiFy.</p>
-                        <form id="mapping-form" class="import-mapping-form"
-                            style="max-height: 40vh; overflow-y: auto; padding-right: 10px;"></form>
+                        <form id="mapping-form" class="import-mapping-form" style="padding-right: 10px;"></form>
                     </div>
                 </div>
 
@@ -1035,16 +1130,14 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                     <div id="tn-config-step" class="hidden">
                         <p style="margin-bottom: 15px;">Mapeá las columnas de tu inventario con los datos de tu tienda.
                         </p>
-                        <div id="tn-mapping-form" class="import-mapping-form"
-                            style="max-height: 40vh; overflow-y: auto; padding-right: 10px;"></div>
+                        <div id="tn-mapping-form" class="import-mapping-form" style="padding-right: 10px;"></div>
                     </div>
                 </div>
-
-                <div class="modal-footer">
-                    <button id="import-cancel-btn" class="btn btn-secondary">Cancelar</button>
-                    <button id="validate-prepare-btn" class="btn btn-primary hidden">Validar y Preparar Datos</button>
-                    <button id="tn-import-btn" class="btn btn-primary hidden">Sincronizar con TiendaNube</button>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="import-cancel-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="validate-prepare-btn" class="btn btn-primary hidden">Validar y Preparar Datos</button>
+                <button id="tn-import-btn" class="btn btn-primary hidden">Sincronizar con TiendaNube</button>
             </div>
         </div>
 
@@ -1179,61 +1272,129 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
     </div>
 
     <!-- Modal de Detalles de Historial (Auditoría) -->
+    <style>
+        .history-modal-content {
+            box-shadow: 8px 8px 0px #1b1b1b;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .history-modal-content:hover {
+            box-shadow: 8px 8px 0px var(--accent-color);
+        }
+
+        .history-inner-box {
+            background: #fff;
+            border: 1px solid #eaeaea;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            transition: border-color 0.2s ease;
+        }
+
+        .history-inner-box:hover {
+            border-color: color-mix(in srgb, var(--accent-color) 30%, transparent);
+        }
+
+        .history-desc-box {
+            background: color-mix(in srgb, var(--accent-color) 4%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent-color) 20%, transparent);
+            border-radius: 10px;
+            padding: 15px;
+            color: #333;
+        }
+
+        .history-extra-box {
+            background: #fafafa;
+            border: 1px dashed #ddd;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        #close-history-detail-modal:hover {
+            color: var(--accent-color) !important;
+        }
+    </style>
     <div id="history-detail-modal" class="modal-overlay hidden" style="z-index: 2100;">
-        <div class="modal-content" style="max-width: 550px; padding: 0; border-radius: 16px; overflow: hidden; border: 2px solid #1b1b1b; box-shadow: 8px 8px 0px var(--accent-color);">
-            <div class="modal-header" style="background: #fafafa; border-bottom: 2px solid #1b1b1b; padding: 20px 25px; position: relative;">
-                <h2 style="margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; color: #1b1b1b;">
+        <div class="modal-content history-modal-content"
+            style="max-width: 500px; padding: 0; border-radius: 16px; overflow: hidden; border: 2px solid #1b1b1b;">
+            <div class="modal-header"
+                style="background: #fff; border-bottom: 1px solid #eaeaea; padding: 20px 25px; position: relative;">
+                <h2
+                    style="margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; color: #1b1b1b;">
                     <i class="ph-bold ph-notebook" style="color: var(--accent-color);"></i> Detalle de Actividad
                 </h2>
-                <button class="modal-close-btn" id="close-history-detail-modal" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; transition: color 0.2s;">&times;</button>
+                <button class="modal-close-btn" id="close-history-detail-modal"
+                    style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999; transition: color 0.2s;">&times;</button>
             </div>
-            <div class="modal-body" style="padding: 25px; display: flex; flex-direction: column; gap: 20px; max-height: 70vh; overflow-y: auto;">
-                
+            <div class="modal-body"
+                style="padding: 25px; display: flex; flex-direction: column; gap: 20px; max-height: 70vh; overflow-y: auto; background: #fafafa;">
+
                 <!-- Tarjeta del Usuario Snapshot -->
-                <div style="background: #f9f9f9; border: 1.5px solid #1b1b1b; border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px; box-shadow: 3px 3px 0px rgba(0,0,0,0.05);">
-                    <div id="history-detail-avatar" style="width: 48px; height: 48px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; border: 2px solid #1b1b1b; flex-shrink: 0; color: #1b1b1b;">
+                <div class="history-inner-box" style="display: flex; align-items: center; gap: 15px;">
+                    <div id="history-detail-avatar"
+                        style="width: 48px; height: 48px; background: color-mix(in srgb, var(--accent-color) 15%, transparent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; border: 1px solid color-mix(in srgb, var(--accent-color) 30%, transparent); flex-shrink: 0; color: var(--accent-color);">
                         U
                     </div>
                     <div>
-                        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 700; margin-bottom: 2px;">Realizado por</div>
-                        <div id="history-detail-username" style="font-size: 1.05rem; font-weight: 700; color: #1b1b1b; line-height: 1.2;">Nombre Usuario</div>
-                        <div id="history-detail-role" style="font-size: 0.8rem; font-weight: 600; color: var(--accent-color); margin-top: 3px; display: inline-block; padding: 2px 8px; background: rgba(0,0,0,0.05); border-radius: 4px; border: 1px solid rgba(0,0,0,0.1);">Rol</div>
+                        <div
+                            style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #a0a0a0; font-weight: 700; margin-bottom: 2px;">
+                            Realizado por</div>
+                        <div id="history-detail-username"
+                            style="font-size: 1.05rem; font-weight: 700; color: #1b1b1b; line-height: 1.2;">Nombre
+                            Usuario</div>
+                        <div id="history-detail-role"
+                            style="font-size: 0.75rem; font-weight: 700; color: var(--accent-color); margin-top: 4px; display: inline-block; padding: 3px 8px; background: color-mix(in srgb, var(--accent-color) 10%, transparent); border-radius: 6px;">
+                            Rol</div>
                     </div>
                 </div>
 
                 <!-- Detalles Metadatos -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-bottom: 1px dashed #eee; padding-bottom: 15px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 5px;">
                     <div>
-                        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 700; margin-bottom: 5px;">Fecha y Hora</div>
-                        <div id="history-detail-datetime" style="font-size: 0.95rem; font-weight: 600; color: #333;">dd/mm/yyyy hh:mm</div>
+                        <div
+                            style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #a0a0a0; font-weight: 700; margin-bottom: 6px;">
+                            Fecha y Hora</div>
+                        <div id="history-detail-datetime" style="font-size: 0.95rem; font-weight: 600; color: #444;">
+                            dd/mm/yyyy hh:mm</div>
                     </div>
                     <div>
-                        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 700; margin-bottom: 5px;">Módulo / Sección</div>
+                        <div
+                            style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #a0a0a0; font-weight: 700; margin-bottom: 6px;">
+                            Módulo / Sección</div>
                         <div>
-                            <span id="history-detail-section" class="history-badge" style="font-size: 0.8rem; padding: 4px 10px;">SECCIÓN</span>
+                            <span id="history-detail-section" class="history-badge"
+                                style="font-size: 0.75rem; padding: 4px 10px; background: #eee; color: #555; border-radius: 6px; font-weight: 700; border: 1px solid #ddd;">SECCIÓN</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Descripción Principal -->
                 <div>
-                    <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 700; margin-bottom: 8px;">Descripción</div>
-                    <div id="history-detail-description" style="font-size: 1.05rem; font-weight: 600; color: #1b1b1b; background: #fff5f5; border: 1.5px solid #1b1b1b; border-radius: 10px; padding: 15px; line-height: 1.4; box-shadow: 3px 3px 0px rgba(0,0,0,0.05); word-break: break-word;">
+                    <div
+                        style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #a0a0a0; font-weight: 700; margin-bottom: 8px; padding-left: 5px;">
+                        Descripción</div>
+                    <div id="history-detail-description" class="history-desc-box"
+                        style="font-size: 1rem; font-weight: 600; line-height: 1.5; word-break: break-word;">
                         Detalle principal...
                     </div>
                 </div>
 
                 <!-- Descripción Secundaria (Extra) -->
                 <div id="history-detail-extra-container" style="display: none;">
-                    <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 700; margin-bottom: 8px;">Información Adicional</div>
-                    <div id="history-detail-extra-description" style="font-size: 0.95rem; color: #555; background: #fafafa; border: 1.5px solid #ddd; border-radius: 10px; padding: 15px; line-height: 1.4; white-space: pre-wrap; word-break: break-word;">
+                    <div
+                        style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #a0a0a0; font-weight: 700; margin-bottom: 8px; padding-left: 5px;">
+                        Información Adicional</div>
+                    <div id="history-detail-extra-description" class="history-extra-box"
+                        style="font-size: 0.9rem; color: #666; line-height: 1.5; white-space: pre-wrap; word-break: break-word;">
                         Detalles técnicos adicionales...
                     </div>
                 </div>
 
             </div>
-            <div class="modal-footer" style="background: #fafafa; border-top: 2px solid #1b1b1b; padding: 15px 25px; border-radius: 0 0 16px 16px;">
-                <button type="button" class="btn btn-secondary" id="history-detail-close-btn" style="min-width: 100px;">Cerrar</button>
+            <div class="modal-footer"
+                style="background: #fff; border-top: 1px solid #eaeaea; padding: 15px 25px; border-radius: 0 0 16px 16px; display: flex; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="history-detail-close-btn"
+                    style="min-width: 100px; margin: 0; background: #fafafa; border-color: #ddd; color: #555;">Cerrar</button>
             </div>
         </div>
     </div>
@@ -1348,13 +1509,13 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
     </div>
 
     <div id="mobile-price-checker-modal" class="mobile-modal-overlay hidden">
-        <div class="mobile-modal-content" style="height: 60vh;">
+        <div class="mobile-modal-content" style="height: 80vh; display: flex; flex-direction: column;">
             <div class="mobile-modal-header">
                 <h2>Consultar Precio</h2>
                 <button class="close-icon" onclick="window.closePriceChecker()">&times;</button>
             </div>
 
-            <div id="checker-body" class="checker-body" style="padding: 0 20px; border-bottom: 2px solid #1b1b1b;">
+            <div id="checker-body" class="checker-body" style="padding: 0 20px; border-bottom: 2px solid #1b1b1b; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <input type="text" id="checker-input" placeholder="Buscar producto o escanear..."
                         style="width: 100%; padding: 15px; border: 2px solid #1b1b1b; border-radius: 12px; font-size: 1.1rem;">
@@ -1364,7 +1525,7 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                     </button>
                 </div>
 
-                <div id="checker-list-container" style="max-height: 330px; overflow-y: auto; display: none;"></div>
+                <div id="checker-list-container" style="flex: 1; overflow-y: auto; display: none;"></div>
 
                 <div id="checker-result" class="hidden"
                     style="text-align: center; border: 2px dashed #ccc; padding: 20px; border-radius: 12px;">
@@ -1386,6 +1547,11 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                             <div id="res-cost" style="font-weight: bold; font-size: 1.2rem;">$0.00</div>
                         </div>
                     </div>
+
+                    <button id="checker-back-btn" onclick="window.checkerBackToList()"
+                        style="margin-top: 20px; background: transparent; border: 2px solid #1b1b1b; border-radius: 10px; padding: 10px 20px; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="ph-bold ph-arrow-left"></i> Volver a la Lista
+                    </button>
                 </div>
 
                 <div id="checker-error" class="hidden"
@@ -1403,6 +1569,21 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                 <h2><i class="ph ph-chart-pie-slice"></i> Métricas Estratégicas</h2>
                 <button class="close-icon"
                     onclick="document.getElementById('mobile-metrics-modal').classList.add('hidden')">&times;</button>
+            </div>
+            <!-- Selectores de Periodo -->
+            <div style="display: flex; gap: 6px; padding: 10px 15px; border-bottom: 2px solid #eee; background: #fafafa;">
+                <button id="metrics-btn-today" class="metrics-period-btn active" onclick="window.loadMobileMetricsData('today')">
+                    Hoy
+                </button>
+                <button id="metrics-btn-month" class="metrics-period-btn" onclick="window.loadMobileMetricsData('month')">
+                    Mes
+                </button>
+                <button id="metrics-btn-year" class="metrics-period-btn" onclick="window.loadMobileMetricsData('year')">
+                    Año
+                </button>
+                <button id="metrics-btn-total" class="metrics-period-btn" onclick="window.loadMobileMetricsData('total')">
+                    Total
+                </button>
             </div>
             <div class="mobile-modal-body" style="padding: 20px; overflow-y: auto;">
                 <div id="metrics-loader" style="text-align: center; padding: 40px;">
@@ -1433,7 +1614,7 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
                     <div class="metric-card-mobile"
                         style="background: #fff; color: #1b1b1b; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #1b1b1b; display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <small style="color: #888;">Balance Neto (Hoy)</small>
+                            <small style="color: #888;">Balance Neto (<span id="mobile-m-period-label">Hoy</span>)</small>
                             <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
                                 <span id="mobile-m-balance">$0.00</span>
                                 <span id="mobile-m-balance-arrow"></span>
@@ -1547,12 +1728,14 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
 
     <script type="module" src="assets/js/users/users.js?v=1.1"></script>
 
-    <script type="module" src="assets/js/import.js?v=1.2"></script>
+    <script type="module" src="assets/js/import.js?v=1.3"></script>
     <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
-    <script type="module" src="assets/js/dashboard.js?v=1.4"></script>
-    <script type="module" src="assets/js/sales/sales.js?v=1.2"></script>
+    <script type="module" src="assets/js/dashboard.js?v=2.0"></script>
+    <script type="module" src="assets/js/sales/sales.js?v=2.1"></script>
+    <script type="module" src="assets/js/purchases/purchases.js?v=2.2"></script>
     <script type="module" src="assets/js/history/history.js?v=1.3"></script>
     <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>
+    <script src="assets/js/tutorials.js?v=1.0"></script>
 
     <script type="module">
         import { pop_ups } from './assets/js/notifications/pop-up.js?v=3.0';
@@ -1562,7 +1745,7 @@ $isOwner = $currentUserRbac && (int)$currentUserRbac['role_id'] === 1;
     </script>
 
     <script type="module">
-        import { initMobileApp } from './assets/js/mobile/mobile-app.js?v=1.7';
+        import { initMobileApp } from './assets/js/mobile/mobile-app.js?v=2.4';
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 initMobileApp();

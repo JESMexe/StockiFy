@@ -39,7 +39,7 @@ export class EmployeeModule {
                         <input type="text" style="display:none" aria-hidden="true">
                         <input type="search" id="emp-search-input" name="e_find" placeholder="Buscar por nombre, DNI o email..."
                             style="padding:8px 12px; border:2px solid #1b1b1b; border-radius:8px; font-family:'Satoshi',sans-serif; font-weight:500; font-size:0.95rem; outline:none; width:280px; box-shadow:2px 2px 0px rgba(0,0,0,0.1); transition:all 0.2s; align-self:stretch;">
-                        <button id="emp-categories-btn" class="btn btn-secondary"><i class="ph ph-tag"></i> Categorías</button>
+                        <button id="emp-categories-btn" class="btn btn-secondary"><i class="ph ph-tag" style="padding-right: 5px;"></i> Categorías</button>
                         <button id="emp-create-btn" class="btn btn-primary">+ Nuevo Empleado</button>
                     </div>
                 </div>
@@ -193,8 +193,8 @@ export class EmployeeModule {
         });
 
         document.getElementById('emp-list-body')?.addEventListener('click', (e) => {
-            const editBtn       = e.target.closest('.btn-edit-emp');
-            const deleteBtn     = e.target.closest('.btn-delete-emp');
+            const editBtn = e.target.closest('.btn-edit-emp');
+            const deleteBtn = e.target.closest('.btn-delete-emp');
             const customContainer = e.target.closest('.emp-custom-container');
 
             if (editBtn) {

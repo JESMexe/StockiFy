@@ -1,7 +1,7 @@
 /**
  */
 import { pop_ups } from "../notifications/pop-up.js?v=3.0";
-import * as api from "../api.js";
+import * as api from "../api.js?v=2.1";
 import { getWhatsAppLink } from "../universal-functions.js";
 
 export async function initMobileApp() {
@@ -37,18 +37,34 @@ async function updateMobileDollarInfo() {
         const priceEl = document.getElementById('mobile-dollar-price');
         const sourceEl = document.getElementById('mobile-dollar-source');
         if (priceEl && sourceEl) {
-            priceEl.textContent = parseFloat(rateData.buy).toFixed(2);
+            priceEl.textContent = parseFloat(rateData.avg || rateData.buy).toFixed(2);
             
-            let s = (rateData.source || 'Auto').toLowerCase();
-            let readable = 'Automático';
-            if (s.includes('cache')) readable = 'Automático (Caché)';
-            else if (s === 'manual') readable = 'Personalizado';
-            else if (s === 'blue') readable = 'Blue (Mercado)';
-            else if (s === 'oficial') readable = 'Oficial (Bancario)';
-            else if (s === 'mep') readable = 'MEP (Bolsa)';
-            else if (s === 'ccl') readable = 'CCL (Contado c/ Liq.)';
-            else if (s === 'tarjeta') readable = 'Dólar Tarjeta';
-            else if (s !== 'auto') readable = s.charAt(0).toUpperCase() + s.slice(1);
+            let type = rateData.type || (rateData.source === 'manual' ? 'manual' : 'api');
+            let apiSource = rateData.api_source || 'blue';
+            
+            let readable = 'MEP';
+            if (type === 'manual') {
+                readable = 'Manual';
+            } else {
+                let s = apiSource.toLowerCase();
+                if (s.includes('blue')) {
+                    readable = 'Blue';
+                } else if (s.includes('oficial')) {
+                    readable = 'Oficial';
+                } else if (s.includes('mep') || s.includes('bolsa')) {
+                    readable = 'MEP';
+                } else if (s.includes('cripto')) {
+                    readable = 'Cripto';
+                } else if (s.includes('mayorista')) {
+                    readable = 'Mayorista';
+                } else if (s.includes('ccl')) {
+                    readable = 'CCL';
+                } else if (s.includes('tarjeta')) {
+                    readable = 'Tarjeta';
+                } else {
+                    readable = s.charAt(0).toUpperCase() + s.slice(1);
+                }
+            }
             
             sourceEl.textContent = `Modo: ${readable}`;
         }
@@ -211,6 +227,48 @@ window.openMobileTransaction = function(type) {
 };
 
 
+window.openMobileExpense = function() {
+    console.log("Iniciando registro de gasto rápido móvil");
+
+    let attempts = 0;
+    const maxAttempts = 30; // 3 segundos
+
+    const checkModuleInterval = setInterval(() => {
+        attempts++;
+        const module = window.purchasesModule || window.purchaseModuleInstance;
+
+        if (module) {
+            clearInterval(checkModuleInterval);
+            console.log("✅ Módulo compras conectado para gasto rápido");
+            try {
+                if (module.init && !module.isInitialized) module.init();
+                
+                const modal = document.getElementById('quick-expense-modal');
+                if (modal) {
+                    if (modal.parentElement !== document.body) {
+                        document.body.appendChild(modal);
+                    }
+                }
+                
+                setTimeout(() => {
+                    if (module.openQuickModal) {
+                        module.openQuickModal();
+                    } else {
+                        alert("Error: El módulo de compras no está listo.");
+                    }
+                }, 50);
+            } catch (err) {
+                console.error(err);
+                alert(`Error crítico: ${err.message}`);
+            }
+        } else if (attempts >= maxAttempts) {
+            clearInterval(checkModuleInterval);
+            if(confirm("El sistema está tardando en cargar. ¿Recargar?")) location.reload();
+        }
+    }, 100);
+};
+
+
 window.openMobilePriceChecker = async function() {
     const modal = document.getElementById('mobile-price-checker-modal');
     if (!modal) return;
@@ -288,7 +346,13 @@ window.performPriceCheck = function(directProduct = null) {
         if (!input || !input.value.trim()) return;
         const query = input.value.toLowerCase().trim();
         const map = window.columnMapping || {}; const colName = map.name || 'nombre';
-        found = data.find(p => String(p.barcode || p.codigo_barras || '').toLowerCase() === query);
+        // 1. Exact barcode match
+        found = data.find(p => String(p.barcode || p.codigo_barras || p['Codigo de Barras'] || '').toLowerCase() === query);
+        // 2. Partial barcode match
+        if (!found) found = data.find(p => String(p.barcode || p.codigo_barras || p['Codigo de Barras'] || '').toLowerCase().includes(query));
+        // 3. Partial SKU match
+        if (!found) found = data.find(p => String(p.sku || p.SKU || p['sku'] || '').toLowerCase().includes(query));
+        // 4. Partial name match
         if (!found) found = data.find(p => String(p[colName] || p['nombre'] || '').toLowerCase().includes(query));
         checkerBody.style.borderBottom = '2px solid #1b1b1b';
     }
@@ -307,6 +371,21 @@ window.performPriceCheck = function(directProduct = null) {
         checkerBody.style.borderBottom = '2px solid #1b1b1b';
         resultCard.classList.add('hidden'); errorMsg.classList.remove('hidden');
     }
+};
+
+window.checkerBackToList = function() {
+    const resultCard = document.getElementById('checker-result');
+    const errorMsg = document.getElementById('checker-error');
+    const listContainer = document.getElementById('checker-list-container');
+    const checkerBody = document.getElementById('checker-body');
+    if (resultCard) resultCard.classList.add('hidden');
+    if (errorMsg) errorMsg.classList.add('hidden');
+    if (listContainer) listContainer.style.display = 'block';
+    if (checkerBody) checkerBody.style.borderBottom = '2px solid #1b1b1b';
+    // Clear input and show full list
+    const input = document.getElementById('checker-input');
+    if (input) { input.value = ''; input.focus(); }
+    window.renderCheckerList(window.allData);
 };
 
 window.openCashBalance = function() {
@@ -363,14 +442,38 @@ window.openMobileMetrics = async function() {
     const modal = document.getElementById('mobile-metrics-modal');
     if(!modal) return;
     modal.classList.remove('hidden');
-    
+    window.loadMobileMetricsData('today');
+};
+
+window.loadMobileMetricsData = async function(period = 'today') {
+    const modal = document.getElementById('mobile-metrics-modal');
     const loader = document.getElementById('metrics-loader');
     const content = document.getElementById('metrics-content');
-    loader.classList.remove('hidden');
-    content.classList.add('hidden');
+
+    // Actualizar botón activo
+    document.querySelectorAll('.metrics-period-btn').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById(`metrics-btn-${period}`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // Actualizar etiqueta del periodo
+    const periodLabels = { today: 'Hoy', month: 'Este Mes', year: 'Este Año', total: 'Total Histórico' };
+    const periodLabel = document.getElementById('mobile-m-period-label');
+    if (periodLabel) periodLabel.textContent = periodLabels[period] || 'Hoy';
+
+    // Actualizar etiquetas de tarjetas de Ventas y Gastos
+    const salesLabelEl = document.querySelector('#btn-show-sales-detail > small');
+    const expLabelEl   = document.querySelector('#btn-show-expenses-detail > small');
+    const periodCardLabels = { today: 'Ventas de Hoy', month: 'Ventas del Mes', year: 'Ventas del Año', total: 'Ventas Totales' };
+    const expCardLabels    = { today: 'Gastos de Hoy',  month: 'Gastos del Mes',  year: 'Gastos del Año',  total: 'Gastos Totales'  };
+    if (salesLabelEl) salesLabelEl.textContent = periodCardLabels[period] || 'Total Ventas';
+    if (expLabelEl)   expLabelEl.textContent   = expCardLabels[period]   || 'Total Gastos';
+
+    // Mostrar loader
+    if (loader) loader.classList.remove('hidden');
+    if (content) content.classList.add('hidden');
 
     try {
-        const response = await fetch(`/api/statistics/get-cash-balance-v2.php?period=today&_ts=${Date.now()}`);
+        const response = await fetch(`/api/statistics/get-cash-balance-v2.php?period=${encodeURIComponent(period)}&_ts=${Date.now()}`);
         const result = await response.json();
 
         if (result.success) {
@@ -412,17 +515,19 @@ window.openMobileMetrics = async function() {
             }
 
             // 2. Click para detalles
+            const transListTitle = { today: 'de Hoy', month: 'del Mes', year: 'del Año', total: 'Histórico' };
+            const suffix = transListTitle[period] || '';
             const btnSales = document.getElementById('btn-show-sales-detail');
             const btnExp = document.getElementById('btn-show-expenses-detail');
-            if (btnSales) btnSales.onclick = () => window.showMobileTransactionList('Ventas de Hoy', data.recent_sales, 'sale');
-            if (btnExp) btnExp.onclick = () => window.showMobileTransactionList('Gastos de Hoy', data.recent_purchases, 'purchase');
+            if (btnSales) btnSales.onclick = () => window.showMobileTransactionList(`Ventas ${suffix}`, data.recent_sales, 'sale');
+            if (btnExp) btnExp.onclick = () => window.showMobileTransactionList(`Gastos ${suffix}`, data.recent_purchases, 'purchase');
 
             // 3. Rankings
             const renderRanking = (id, list, key, labelKey) => {
                 const container = document.getElementById(id);
                 if (!container) return;
                 if (!list || list.length === 0) {
-                    container.innerHTML = '<p style="font-size:0.85rem; color:#888; font-style:italic;">¡Aún no hay movimientos registrados para este ranking hoy!</p>';
+                    container.innerHTML = '<p style="font-size:0.85rem; color:#888; font-style:italic;">¡Aún no hay movimientos registrados para este ranking!</p>';
                     return;
                 }
                 if (list.length < 2) {
@@ -449,15 +554,15 @@ window.openMobileMetrics = async function() {
             renderRanking('mobile-m-top-products', data.top_products, 'qty', 'name');
             renderRanking('mobile-m-top-clients', data.top_clients, 'total', 'name');
 
-            loader.classList.add('hidden');
-            content.classList.remove('hidden');
+            if (loader) loader.classList.add('hidden');
+            if (content) content.classList.remove('hidden');
         } else {
             throw new Error(result.message || "Error desconocido en el servidor");
         }
     } catch (e) {
         console.error("[METRICS ERROR]", e);
-        loader.classList.add('hidden');
-        modal.classList.add('hidden'); // Cerramos para que no quede el modal vacío
+        if (loader) loader.classList.add('hidden');
+        if (modal) modal.classList.add('hidden');
         pop_ups.error("Error al cargar métricas: " + e.message);
     }
 };
@@ -531,40 +636,82 @@ window.openMobileHistory = async function() {
         const res = await response.json();
 
         if (res.success) {
-            const logs = res.notifications.filter(n => n.type !== 'error').slice(0, 20);
-            if(logs.length === 0) {
+            const logs = (res.logs || []).slice(0, 30);
+            if (logs.length === 0) {
                 body.innerHTML = '<p style="text-align:center; padding:40px; color:#999;">No hay movimientos registrados.</p>';
                 return;
             }
 
+            // Mapas de acción → título, ícono y color
+            const actionTitles = {
+                create: 'Creó',
+                update: 'Actualizó',
+                delete: 'Eliminó',
+                login:  'Ingresó al sistema',
+            };
+            const entityLabels = {
+                product:      'Producto',
+                sale:         'Venta',
+                purchase:     'Compra',
+                collaborator: 'Colaborador',
+                expense:      'Gasto',
+                config:       'Configuración',
+            };
+            const actionColors = {
+                create: 'var(--accent-green)',
+                update: '#f0a500',
+                delete: 'var(--accent-red)',
+                login:  'var(--accent-color)',
+            };
+            const actionIcons = {
+                create: 'ph-plus-circle',
+                update: 'ph-pencil-simple',
+                delete: 'ph-trash',
+                login:  'ph-sign-in',
+            };
+
             body.innerHTML = logs.map(item => {
-                const date = new Date(item.created_at.replace(/-/g, '/'));
-                const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const day = date.toLocaleDateString();
-                
-                let icon = 'ph-info';
-                let color = 'var(--accent-blue)';
-                if (item.type === 'success') { icon = 'ph-check-circle'; color = 'var(--accent-green)'; }
-                if (item.type === 'warning') { icon = 'ph-warning'; color = 'var(--accent-yellow)'; }
+                const date = new Date((item.created_at || '').replace(/-/g, '/'));
+                const time = isNaN(date) ? '' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const day  = isNaN(date) ? '' : date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+
+                const actionKey  = (item.action || 'update').toLowerCase();
+                const entityKey  = (item.entity_type || '').toLowerCase();
+                const actionVerb = actionTitles[actionKey] || item.action;
+                const entityName = entityLabels[entityKey] || item.entity_type || '';
+                const color      = actionColors[actionKey] || '#999';
+                const icon       = actionIcons[actionKey] || 'ph-activity';
+
+                // Título: "Creó Producto", "Eliminó Venta", etc.
+                const title = `${actionVerb} ${entityName}`.trim();
+
+                // Mensaje: descripción + autor
+                const actor  = item.full_name || item.username || 'Sistema';
+                const desc   = item.description
+                    ? `${item.description.substring(0, 60)}${item.description.length > 60 ? '…' : ''}`
+                    : '';
+                const message = desc ? `${desc} — por ${actor}` : `por ${actor}`;
 
                 return `
                     <div style="background:#fff; border:2px solid #1b1b1b; border-radius:15px; padding:15px; margin-bottom:12px; display:flex; gap:12px; align-items:start;">
                         <div style="background:${color}; color:#fff; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                             <i class="ph ${icon}" style="font-size:1.4rem;"></i>
                         </div>
-                        <div style="flex-grow:1;">
+                        <div style="flex-grow:1; min-width:0;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <span style="font-size:0.75rem; font-weight:800; color:#888;">${day} - ${time}</span>
+                                <span style="font-size:0.75rem; font-weight:800; color:#888;">${day} ${time}</span>
                             </div>
-                            <div style="font-weight:800; font-size:1rem; color:#1b1b1b; line-height:1.2;">${item.title}</div>
-                            <div style="font-size:0.85rem; color:#666; margin-top:4px;">${item.message}</div>
+                            <div style="font-weight:800; font-size:1rem; color:#1b1b1b; line-height:1.2;">${title}</div>
+                            <div style="font-size:0.85rem; color:#666; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${message}</div>
                         </div>
                     </div>
                 `;
             }).join('');
+        } else {
+            body.innerHTML = `<p style="text-align:center; padding:20px; color:var(--accent-red);">${res.message || 'Error al obtener el historial.'}</p>`;
         }
     } catch (e) {
-        console.error(e);
+        console.error('[HISTORY ERROR]', e);
         body.innerHTML = '<p style="text-align:center; padding:20px; color:red;">Error al cargar datos.</p>';
     }
 };
@@ -607,8 +754,7 @@ async function ensureCheckerDataLoaded() {
 async function updateMobileInventoryName() {
     const nameEl = document.getElementById('mobile-current-inv-name');
     try {
-        const response = await fetch('/api/database/get-verified-tables.php', { method: 'POST' });
-        const result = await response.json();
+        const result = await api.getUserVerifiedTables();
         
         console.log("📱 [MOBILE SESSION CHECK]", result);
 
@@ -635,8 +781,7 @@ window.openMobileInventorySelector = async function() {
     container.innerHTML = '<div style="text-align:center; padding:20px;"><i class="ph ph-spinner ph-spin"></i> Cargando tus negocios...</div>';
 
     try {
-        const response = await fetch('/api/database/get-verified-tables.php', { method: 'POST' });
-        const result = await response.json();
+        const result = await api.getUserVerifiedTables();
 
         if (result.success) {
             const inventories = result.verifiedInventories || result.inventories || result.data || [];

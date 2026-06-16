@@ -1,4 +1,4 @@
-﻿/* public/assets/css/notifications.css */
+/* public/assets/css/notifications.css */
 
 /* --- 1. CONTENEDOR DE TOASTS --- */
 #toast-container {
@@ -141,3 +141,44 @@
     opacity: 1; /* Se muestra al hacer hover en la noti */
 }
 
+/* =========================================
+   ADAPTACIÓN MÓVIL (≤768px)
+   ========================================= */
+@media (max-width: 768px) {
+
+    /* Contenedor: fijo en la parte superior, ancho completo */
+    #toast-container {
+        top: 10px !important;
+        bottom: auto !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: calc(100% - 20px) !important;
+        max-width: none !important;
+        gap: 0.6rem;
+    }
+
+    /* Toast: aparece desde arriba hacia abajo */
+    .toast-notification {
+        opacity: 0;
+        transform: scale(0.97) translateY(-20px);
+        transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
+    }
+
+    .toast-notification.show {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+
+    .toast-notification.hide {
+        opacity: 0;
+        transform: scale(0.95) translateY(-15px);
+        transition: all 0.25s ease-in;
+    }
+
+    /* Texto un poco más compacto en pantallas pequeñas */
+    .toast-title   { font-size: 0.95rem; }
+    .toast-message { font-size: 0.82rem; }
+    .toast-icon    { font-size: 1.5rem; }
+}

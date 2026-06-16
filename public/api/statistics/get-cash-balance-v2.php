@@ -32,7 +32,11 @@ try {
     } else if ($period === 'year') {
         $start = new DateTime($now->format('Y-01-01 00:00:00'), $tz);
         $end   = (clone $start)->modify('+1 year');
+    } else if ($period === 'total') {
+        $start = new DateTime('1970-01-01 00:00:00', $tz);
+        $end   = new DateTime('2099-12-31 23:59:59', $tz);
     } else {
+        // 'today' (default)
         $start = new DateTime($now->format('Y-m-d 00:00:00'), $tz);
         $end   = (clone $start)->modify('+1 day');
     }

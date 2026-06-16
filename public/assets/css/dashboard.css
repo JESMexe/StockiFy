@@ -236,7 +236,8 @@
 
 .main-menu h3 {
     font-weight: 700;
-    margin-bottom: 1.5rem;
+    margin-top: 20px;
+    margin-bottom: 10px;
     font-size: 1.2rem;
 }
 
@@ -3853,8 +3854,19 @@ body {
     }
 
     .mobile-card:active {
-        transform: translate(2px, 2px);
+        transform: translate(2px, 2px) scale(0.96) !important;
         box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+        opacity: 0.85;
+    }
+
+    /* Feedback active para botones en móviles */
+    .btn:active,
+    button:active,
+    .btn-ticket-push:active,
+    .close-icon:active,
+    a.btn:active {
+        transform: scale(0.96) !important;
+        opacity: 0.85 !important;
     }
 
     .icon-circle {
@@ -3929,6 +3941,11 @@ body {
     .action-employees .icon-circle {
         background-color: var(--accent-violet-20);
         color: var(--accent-violet);
+    }
+
+    .action-expense .icon-circle {
+        background-color: var(--accent-yellow-20);
+        color: var(--accent-yellow);
     }
 
 
@@ -4046,28 +4063,38 @@ body {
     /* Selector de Período */
     .period-selector {
         display: flex;
-        background: #f1f5f9;
-        padding: 5px;
-        border-radius: 10px;
+        gap: 10px;
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
         margin-bottom: 25px;
     }
 
     .period-btn {
         flex: 1;
-        border: none;
-        background: none;
+        border: 2px solid #1b1b1b;
+        background: #fff;
         padding: 10px;
-        border-radius: 8px;
-        font-weight: 600;
-        color: #64748b;
-        transition: all 0.2s;
+        border-radius: 6px;
+        font-weight: 700;
+        color: #1b1b1b;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        cursor: pointer;
+        transform: translate(0, 0);
+        box-shadow: 3px 3px 0px #1b1b1b;
+    }
+
+    .period-btn:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 5px 5px 0px #1b1b1b;
+        background-color: rgba(0,0,0,0.03);
     }
 
     .period-btn.active {
-        background: #fff;
-        color: #1b1b1b;
-        border: 1px solid #1b1b1b;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        background: var(--accent-color, #1b1b1b);
+        color: #fff;
+        transform: translate(3px, 3px);
+        box-shadow: none;
     }
 
     /* Tarjeta Principal */
@@ -4157,25 +4184,26 @@ body {
 #import-modal .modal-content.import-modal {
     width: min(1100px, 94vw) !important;
     max-width: min(1100px, 94vw) !important;
-    min-height: 670px !important;
+    height: 90vh !important;
+    max-height: 90vh !important;
+    display: flex !important;
+    flex-direction: column !important;
     overflow: hidden !important;
-    /* el scroll va adentro */
 }
 
-/* Header / Body / Footer prolijos */
 #import-modal .modal-header {
+    flex-shrink: 0;
     border-bottom: 1px solid #eee;
 }
 
 #import-modal .modal-body {
-    overflow: hidden !important;
-    /* scroll del contenido */
-    min-height: 270px !important;
-    /* deja lugar a header+footer */
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+    padding-bottom: 20px;
 }
 
 #import-modal .modal-footer {
-    position: sticky;
     bottom: 0;
     background: #f9f9f9;
     border-top: 1px solid #eee;
@@ -4201,10 +4229,6 @@ body {
     grid-template-columns: repeat(2, minmax(280px, 1fr)) !important;
     gap: 16px !important;
     align-items: start !important;
-
-    /* tu inline style ya pone max-height/overflow; igual lo reforzamos */
-    max-height: 52vh !important;
-    overflow: auto !important;
 
     padding-right: 10px !important;
     margin-top: 1rem !important;
@@ -4424,29 +4448,38 @@ body {
     /* Selector de Período */
     .period-selector {
         display: flex;
-        background: #f1f5f9;
-        padding: 5px;
-        border-radius: 10px;
+        gap: 10px;
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
         margin-bottom: 25px;
     }
 
     .period-btn {
         flex: 1;
-        border: none;
-        background: none;
+        border: 2px solid #1b1b1b;
+        background: #fff;
         padding: 10px;
-        border-radius: 8px;
-        font-weight: 600;
-        color: #64748b;
-        transition: all 0.2s;
+        border-radius: 6px;
+        font-weight: 700;
+        color: #1b1b1b;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
         cursor: pointer;
+        transform: translate(0, 0);
+        box-shadow: 3px 3px 0px #1b1b1b;
+    }
+
+    .period-btn:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 5px 5px 0px #1b1b1b;
+        background-color: rgba(0,0,0,0.03);
     }
 
     .period-btn.active {
-        background: #fff;
-        color: #1b1b1b;
-        border: 1px solid #1b1b1b;
-        box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.05);
+        background: var(--accent-color, #1b1b1b);
+        color: #fff;
+        transform: translate(3px, 3px);
+        box-shadow: none;
     }
 
     .modal-content {
@@ -4646,4 +4679,25 @@ body {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 4px rgba(var(--accent-color-rgb), .12);
     background: rgba(var(--accent-color-rgb), .12);
+}
+
+/* Quitar bordes curvos de las cabeceras de tabla para hacerlas 100% cuadradas */
+table,
+#data-table,
+table thead,
+#data-table thead,
+table tr,
+#data-table tr,
+table thead th,
+table thead th:first-child,
+table thead th:last-child,
+table thead th:first-of-type,
+table thead th:last-of-type,
+#data-table thead th,
+.table-wrapper {
+    border-radius: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
 }

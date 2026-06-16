@@ -1,4 +1,4 @@
-﻿/* public/assets/css/purchases.css */
+/* public/assets/css/purchases.css */
 
 /* --- VARIABLES (Idénticas a Sales) --- */
 :root {
@@ -199,7 +199,9 @@ tbody td {
     #create-purchase-modal {
         position: fixed !important;
         top: 0 !important; left: 0 !important;
-        width: 100vw !important; height: 100vh !important;
+        width: 100vw !important;
+        /* dvh = dynamic viewport height: se ajusta cuando aparece/desaparece la barra del browser */
+        height: 100dvh !important;
         background-color: rgba(0,0,0,0.8) !important;
         z-index: 2147483650 !important;
         display: flex !important;
@@ -225,7 +227,9 @@ tbody td {
     #mobile-checkout-bar, #mobile-purch-bar {
         display: block !important;
         z-index: 2147483660 !important;
-        border-top: 1px solid #ccc;
+        border-top: 2px solid #1b1b1b;
+        /* Desplazamos la barra hacia arriba para que la barra del navegador no la tape */
+        padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     #mobile-checkout-bar > div, #mobile-purch-bar > div {
@@ -286,6 +290,28 @@ tbody td {
         border-radius: 0 !important;
         z-index: 2147483651 !important;
         font-size: 1.2rem !important;
+    }
+
+    #quick-expense-modal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background-color: rgba(0, 0, 0, 0.6) !important;
+        z-index: 2147483650 !important;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #quick-expense-modal .modal-content {
+        margin: auto !important;
+        width: 90% !important;
+        max-width: 400px !important;
+        border-radius: 12px !important;
+        border: 2px solid #1b1b1b !important;
+        box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1) !important;
     }
 }
 

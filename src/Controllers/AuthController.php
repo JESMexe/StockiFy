@@ -43,7 +43,11 @@ class AuthController
                     ?? $user['username']
                     ?? explode('@', $user['email'])[0]
                     ?? 'Usuario';
-                echo json_encode(['success' => true]);
+                $redirectUrl = $_SESSION['redirect_url'] ?? null;
+                if ($redirectUrl) {
+                    unset($_SESSION['redirect_url']);
+                }
+                echo json_encode(['success' => true, 'redirect_url' => $redirectUrl]);
             } else {
                 $fails++;
                 file_put_contents($cacheFile, json_encode(['count' => $fails, 'time' => time()]));

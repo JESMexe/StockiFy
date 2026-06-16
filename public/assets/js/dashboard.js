@@ -1,9 +1,9 @@
 
-import * as api from './api.js';
+import * as api from './api.js?v=2.0';
 import * as setup from './setupMiCuentaDropdown.js';
 import { notificationConfig, pop_ups } from './notifications/pop-up.js?v=3.0';
-import { salesModuleInstance } from './sales/sales.js';
-import { purchaseModuleInstance } from './purchases/purchases.js';
+import { salesModuleInstance } from './sales/sales.js?v=2.1';
+import { purchaseModuleInstance } from './purchases/purchases.js?v=2.2';
 import { customerModuleInstance } from './customers/customers.js';
 import { providerModuleInstance } from './providers/providers.js';
 import { employeeModuleInstance } from './employees/employees.js';
@@ -366,11 +366,11 @@ async function renderTable(columns, data) {
                                     style="padding: 0 5px; font-size: 0.7rem; background: #eee; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; cursor: pointer;">
                                     ${currency}
                                 </button>
-                                <input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" data-currency-type="${isSale ? 'sale' : 'buy'}" data-current-currency="${currency}" style="width:100%; border-radius: 0 4px 4px 0;">
+                                <input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" data-currency-type="${isSale ? 'sale' : 'buy'}" data-current-currency="${currency}" autocomplete="off" data-lpignore="true" style="width:100%; border-radius: 0 4px 4px 0;">
                             </div>
                         </td>`;
                     }
-                    return `<td${tdStyle}><input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" style="width:100%"></td>`;
+                    return `<td${tdStyle}><input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" autocomplete="off" data-lpignore="true" style="width:100%"></td>`;
                 }
                 return `<td class="${cellClass}"${tdStyle}>${value}</td>`;
             }).join('');
@@ -775,13 +775,13 @@ window.showDashboardView = showDashboardView;
 function setupMenuNavigation() {
     // Mapa: viewId → permissionKey (debe coincidir con CONFIGURABLE_SECTIONS en users.js)
     const VIEW_PERMISSION_MAP = {
-        'analysis':      'can_view_analytics',
-        'history-log':   'can_view_history',
-        'config-db':     'can_view_config',
-        'customers':     'can_view_customers',
-        'providers':     'can_view_providers',
-        'employees':     'can_view_employees',
-        'payments':      'can_view_payments',
+        'analysis': 'can_view_analytics',
+        'history-log': 'can_view_history',
+        'config-db': 'can_view_config',
+        'customers': 'can_view_customers',
+        'providers': 'can_view_providers',
+        'employees': 'can_view_employees',
+        'payments': 'can_view_payments',
         'notifications': 'can_view_notifications',
     };
 
@@ -803,6 +803,13 @@ function setupMenuNavigation() {
             if (targetView && !isViewAllowed(targetView)) {
                 if (typeof pop_ups !== 'undefined') {
                     pop_ups.warning('No tenés permiso para acceder a esta sección.', 'Acceso Restringido');
+                }
+                return;
+            }
+
+            if (targetView === 'tutorials') {
+                if (typeof window.openTutorials === 'function') {
+                    window.openTutorials();
                 }
                 return;
             }
@@ -1650,9 +1657,9 @@ async function loadNotifications() {
                 e.stopPropagation();
                 const id = btn.getAttribute('data-id');
                 const toast = btn.closest('.toast-notification');
-                
+
                 try {
-                    const response = await fetch('/api/notifications/delete.php', { 
+                    const response = await fetch('/api/notifications/delete.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ id: id })
@@ -1829,7 +1836,7 @@ async function createEditableRow(columns) {
             extraAttrs = '';
         }
 
-        td.innerHTML = `<input type="${inputType}" class="form-control" value="${val}" data-column="${colName}" ${extraAttrs} style="width:100%; text-align:${align}">`;
+        td.innerHTML = `<input type="${inputType}" class="form-control" value="${val}" data-column="${colName}" ${extraAttrs} autocomplete="off" data-lpignore="true" style="width:100%; text-align:${align}">`;
         tr.appendChild(td);
     });
 
@@ -2327,7 +2334,7 @@ async function init() {
         // RBAC: aplicar restricciones de sidebar antes de habilitar la navegación.
         // Fetch directo para evitar dependencias de timing entre módulos ES.
         try {
-            const rbacRes  = await fetch('/api/users/get-role-settings.php');
+            const rbacRes = await fetch('/api/users/get-role-settings.php');
             const rbacData = await rbacRes.json();
             if (rbacData.success) {
                 if (rbacData.mode === 'owner') {
@@ -2336,13 +2343,13 @@ async function init() {
                     window.__rbacPermissions = rbacData.permissions ?? {};
                     // Ocultar secciones prohibidas en el sidebar
                     const SIDEBAR_MAP = {
-                        'can_view_analytics':     'analysis',
-                        'can_view_history':       'history-log',
-                        'can_view_config':        'config-db',
-                        'can_view_customers':     'customers',
-                        'can_view_providers':     'providers',
-                        'can_view_employees':     'employees',
-                        'can_view_payments':      'payments',
+                        'can_view_analytics': 'analysis',
+                        'can_view_history': 'history-log',
+                        'can_view_config': 'config-db',
+                        'can_view_customers': 'customers',
+                        'can_view_providers': 'providers',
+                        'can_view_employees': 'employees',
+                        'can_view_payments': 'payments',
                         'can_view_notifications': 'notifications',
                     };
                     Object.entries(SIDEBAR_MAP).forEach(([permKey, viewId]) => {
@@ -2368,14 +2375,14 @@ async function init() {
             const sidebarNav = document.getElementById('sidebar-main-nav');
             if (sidebarNav) sidebarNav.style.visibility = '';
 
-            // Ocultar el título "Usuario" si todos sus items están hidden
-            const usuarioList  = document.getElementById('sidebar-usuario-list');
-            const usuarioTitle = document.getElementById('sidebar-usuario-title');
-            if (usuarioList && usuarioTitle) {
-                const visibleItems = usuarioList.querySelectorAll('li:not(.hidden)');
+            // Ocultar el título "Negocio" si todos sus items están hidden
+            const negocioList = document.getElementById('sidebar-negocio-list');
+            const negocioTitle = document.getElementById('sidebar-negocio-title');
+            if (negocioList && negocioTitle) {
+                const visibleItems = negocioList.querySelectorAll('li:not(.hidden)');
                 if (visibleItems.length === 0) {
-                    usuarioTitle.classList.add('hidden');
-                    usuarioList.classList.add('hidden');
+                    negocioTitle.classList.add('hidden');
+                    negocioList.classList.add('hidden');
                 }
             }
         }
@@ -4261,8 +4268,8 @@ async function setupRecomendedColumns() {
 
         const updateReportStatusText = (isEnabled) => {
             const statusText = document.getElementById('report-status-text');
-            if(statusText) {
-                if(isEnabled) {
+            if (statusText) {
+                if (isEnabled) {
                     statusText.textContent = 'Activado';
                     statusText.style.backgroundColor = 'var(--accent-color-quat-opacity)';
                     statusText.style.color = 'var(--accent-color)';
@@ -4338,10 +4345,10 @@ async function setupRecomendedColumns() {
             const chkReport = document.getElementById('feature-daily-report');
             const reportEnabled = chkReport ? chkReport.checked : true;
 
-            const res = await api.setCurrentInventoryPreferences({ 
-                features: newFeat, 
+            const res = await api.setCurrentInventoryPreferences({
+                features: newFeat,
                 exchange_config: newExchangeConfig,
-                report_enabled: reportEnabled 
+                report_enabled: reportEnabled
             });
             if (res.success) {
                 activeFeatures = newFeat;
@@ -5402,18 +5409,17 @@ document.addEventListener('keydown', (e) => {
             }
         }
     } else if (e.key === 'Escape') {
-        if (e.target.matches('.editing-input, .form-control')) {
-            const tr = e.target.closest('tr');
-            if (tr) {
-                const cancelNewBtn = tr.querySelector('.cancel-new-row-btn');
-                const cancelEditBtn = tr.querySelector('.action-cancel');
-                if (cancelNewBtn) {
-                    e.preventDefault();
-                    cancelNewBtn.click();
-                } else if (cancelEditBtn) {
-                    e.preventDefault();
-                    cancelEditBtn.click();
-                }
+        const newRow = document.querySelector('.editing-row');
+        if (newRow) {
+            const cancelNewBtn = newRow.querySelector('.cancel-new-row-btn');
+            if (cancelNewBtn) {
+                e.preventDefault();
+                cancelNewBtn.click();
+            }
+        } else if (typeof editingRowId !== 'undefined' && editingRowId !== null) {
+            if (typeof window.cancelEditRow === 'function') {
+                e.preventDefault();
+                window.cancelEditRow(editingRowId);
             }
         }
     }

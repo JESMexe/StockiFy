@@ -144,7 +144,7 @@ try {
             $minStock = (float)($updatedItem['min_stock'] ?? $oldMinStock ?? 0);
             $prodName = $updatedItem['nombre'] ?? $updatedItem['name'] ?? $updatedItem['producto'] ?? $updatedItem['description'] ?? 'Producto #' . $id;
 
-            $shouldTriggerLowStock = ($oldStock > $minStock && $newStock <= $minStock);
+            $shouldTriggerLowStock  = ($oldStock > $minStock && $newStock <= $minStock && $newStock > 0);
             $shouldTriggerOutOfStock = ($oldStock > 0 && $newStock <= 0);
 
             if ($shouldTriggerLowStock || $shouldTriggerOutOfStock) {

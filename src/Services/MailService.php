@@ -305,14 +305,25 @@ class MailService
         $safe = htmlspecialchars($userName, ENT_QUOTES, 'UTF-8');
         $si = htmlspecialchars($inventoryName, ENT_QUOTES, 'UTF-8');
         $count = count($productsList);
+        
+        $limit = 30;
+        $itemsToShow = array_slice($productsList, 0, $limit);
+        
         $rows = '';
-        foreach ($productsList as $p) {
+        foreach ($itemsToShow as $p) {
             $n = htmlspecialchars($p['name'] ?? 'Producto Desconocido', ENT_QUOTES, 'UTF-8');
             $cur = htmlspecialchars((string) ($p['current'] ?? 0), ENT_QUOTES, 'UTF-8');
             $fal = htmlspecialchars((string) ($p['faltante'] ?? 0), ENT_QUOTES, 'UTF-8');
-            $rows .= "<tr><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#2d1a2d;'>{$n}</td><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#7a6478;text-align:center;'>{$cur}</td><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#BF616A;text-align:center;font-weight:700;'>{$fal}</td></tr>";
+            $rows .= "<tr><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#2d1a2d;'>{$n}</td><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#7a6478;text-align:center;'>{$cur}</td><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#BF616A;text-align:center;font-weight:700;'>{$fal}</td></tr>\n";
         }
-        $x = "<h2 style='font-family:Outfit,Arial,sans-serif;color:{$c};margin:0 0 4px;font-size:26px;font-weight:700;'>Reporte de Reposici&oacute;n</h2><p style='font-family:Outfit,Arial,sans-serif;color:#999;font-size:12px;text-transform:uppercase;margin:0 0 24px;'>{$count} producto(s) en estado cr&iacute;tico</p><p style='font-family:Outfit,Arial,sans-serif;color:#333;font-size:15px;line-height:1.7;margin:0 0 12px;'>Hola <strong>{$safe}</strong>,</p><p style='font-family:Outfit,Arial,sans-serif;color:#555;font-size:15px;line-height:1.7;margin:0 0 24px;'>Solicitaste un reporte de productos con stock cr&iacute;tico para tu inventario <strong style='color:{$c};'>{$si}</strong>. A continuaci&oacute;n, las cantidades a reponer:</p><table width='100%' cellspacing='0' cellpadding='0' border='0' style='border-collapse:collapse;margin-bottom:20px;'><thead><tr style='background:#f5eef5;'><th style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:2px solid #e8d4e8;color:{$c};font-size:12px;text-transform:uppercase;text-align:left;'>Producto</th><th style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:2px solid #e8d4e8;color:{$c};font-size:12px;text-transform:uppercase;text-align:center;'>Stock actual</th><th style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:2px solid #e8d4e8;color:#BF616A;font-size:12px;text-transform:uppercase;text-align:center;'>A reponer</th></tr></thead><tbody>{$rows}</tbody></table><p style='font-family:Outfit,Arial,sans-serif;color:#9c8498;font-size:13px;line-height:1.7;margin:0;font-style:italic;'>Pod&eacute;s reenviar este correo directamente a tu proveedor para gestionar el pedido.</p>";
+        
+        $extraMessage = '';
+        if ($count > $limit) {
+            $remaining = $count - $limit;
+            $extraMessage = "<tr style='background: #fff8f8;'><td colspan='3' style='font-family:Outfit,Arial,sans-serif;padding:14px;border-bottom:1px solid #f0e4ef;color:#BF616A;text-align:center;font-size:13px;font-weight:bold;'>Y {$remaining} producto(s) más. Revisá tu panel para ver la lista completa.</td></tr>\n";
+        }
+
+        $x = "<h2 style='font-family:Outfit,Arial,sans-serif;color:{$c};margin:0 0 4px;font-size:26px;font-weight:700;'>Reporte de Reposici&oacute;n</h2><p style='font-family:Outfit,Arial,sans-serif;color:#999;font-size:12px;text-transform:uppercase;margin:0 0 24px;'>{$count} producto(s) en estado cr&iacute;tico</p><p style='font-family:Outfit,Arial,sans-serif;color:#333;font-size:15px;line-height:1.7;margin:0 0 12px;'>Hola <strong>{$safe}</strong>,</p><p style='font-family:Outfit,Arial,sans-serif;color:#555;font-size:15px;line-height:1.7;margin:0 0 24px;'>Solicitaste un reporte de productos con stock cr&iacute;tico para tu inventario <strong style='color:{$c};'>{$si}</strong>. A continuaci&oacute;n, las cantidades a reponer:</p><table width='100%' cellspacing='0' cellpadding='0' border='0' style='border-collapse:collapse;margin-bottom:20px;'><thead><tr style='background:#f5eef5;'><th style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:2px solid #e8d4e8;color:{$c};font-size:12px;text-transform:uppercase;text-align:left;'>Producto</th><th style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:2px solid #e8d4e8;color:{$c};font-size:12px;text-transform:uppercase;text-align:center;'>Stock actual</th><th style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:2px solid #e8d4e8;color:#BF616A;font-size:12px;text-transform:uppercase;text-align:center;'>A reponer</th></tr></thead><tbody>{$rows}{$extraMessage}</tbody></table><p style='font-family:Outfit,Arial,sans-serif;color:#9c8498;font-size:13px;line-height:1.7;margin:0;font-style:italic;'>Pod&eacute;s reenviar este correo directamente a tu proveedor para gestionar el pedido.</p>";
         return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
     }
 

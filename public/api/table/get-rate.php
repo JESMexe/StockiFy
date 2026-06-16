@@ -1,5 +1,8 @@
 <?php
 header('Content-Type: application/json');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -43,7 +46,9 @@ try {
         'sell' => $rates['sell'],
         'avg' => $rates['avg'],
         'updated' => $rates['updated'],
-        'source' => $rates['source']
+        'source' => $rates['source'],
+        'type' => $exchangeConfig['type'] ?? 'api',
+        'api_source' => $exchangeConfig['api_source'] ?? 'blue'
     ]);
 
 } catch (Throwable $e) {

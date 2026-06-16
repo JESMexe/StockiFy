@@ -45,7 +45,11 @@ try {
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name'] = $user['full_name'] ?? $user['username'];
 
-    header('Location: /index');
+    $redirectUrl = $_SESSION['redirect_url'] ?? '/index';
+    if (isset($_SESSION['redirect_url'])) {
+        unset($_SESSION['redirect_url']);
+    }
+    header('Location: ' . $redirectUrl);
     exit;
 
 } catch (Exception $e) {

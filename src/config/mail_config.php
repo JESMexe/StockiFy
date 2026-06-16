@@ -1,8 +1,17 @@
 <?php
 // src/config/mail_config.php
 
-if (!isset($_ENV) || empty($_ENV)) {
-    require_once __DIR__ . '/../bootstrap.php';
+if (empty($_ENV['SMTP_USER']) || empty($_ENV['SMTP_PASS'])) {
+    $envRoot = __DIR__ . '/../../';
+    if (!class_exists('Dotenv\\Dotenv')) {
+        require_once $envRoot . 'vendor/autoload.php';
+    }
+    try {
+        $dotenv = \Dotenv\Dotenv::createImmutable($envRoot);
+        $dotenv->load();
+    } catch (\Throwable $e) {
+        error_log('[mail_config] No se pudo cargar .env: ' . $e->getMessage());
+    }
 }
 
 define('SMTP_HOST', $_ENV['SMTP_HOST'] ?? 'smtp.gmail.com');

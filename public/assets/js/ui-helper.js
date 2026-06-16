@@ -3,7 +3,7 @@ export const ui_helper = {
     buttons: {
         dashboard: () => `<a href="/select-db" class="btn btn-secondary">Ir al Panel</a>`,
         config: () => `<a href="/settings" class="btn btn-secondary">Configuración</a>`,
-        logout: () => `<a href="/logout" class="btn btn-secondary">Cerrar Sesión</a>`,
+        logout: () => `<a href="/logout" class="btn btn-secondary btn-header-logout"><i class="ph ph-sign-out"></i><span>Cerrar Sesión</span></a>`,
 
         userDropdown: (extraLinks = []) => {
             const defaultLinks = [

@@ -23,6 +23,7 @@ $user = getCurrentUser();
 if (!$user) {
     // No está logueado — redirigir al login con mensaje
     $_SESSION['flash_info'] = 'Iniciá sesión para acceder al inventario compartido.';
+    $_SESSION['redirect_url'] = $_SERVER['REQUEST_URI'];
     header("Location: /login");
     exit;
 }
@@ -56,7 +57,7 @@ if ($invitation['status'] === 'pending') {
         $invitation['role_id'],
         $invitation['invited_by']
     ]);
-    // Notify Owner of acceptance via WhatsApp
+    // Notify Owner of acceptance via WhatsApp and/or Email
     try {
         $stmtInv = $db->prepare("SELECT user_id, name FROM inventories WHERE id = ? LIMIT 1");
         $stmtInv->execute([$invitation['inventory_id']]);
@@ -68,25 +69,52 @@ if ($invitation['status'] === 'pending') {
             $stmtOwnerDetails = $db->prepare("SELECT email, full_name, cell FROM users WHERE id = ?");
             $stmtOwnerDetails->execute([$ownerId]);
             $ownerDetails = $stmtOwnerDetails->fetch(PDO::FETCH_ASSOC);
-            
-            if ($ownerDetails && !empty($ownerDetails['cell'])) {
-                $collaboratorName = $user['full_name'] ?: $user['username'] ?: $user['email'];
-                $roleName = ((int)$invitation['role_id'] === 2) ? 'Administrador' : 'Empleado';
-                
-                require_once __DIR__ . '/../../../src/Services/WhatsappService.php';
-                $waSvc = new \App\Services\WhatsappService();
-                $waSvc->sendNewCollaboratorAlert(
-                    $ownerDetails['cell'],
-                    $ownerDetails['full_name'] ?? 'Socio',
-                    $collaboratorName,
-                    $user['email'],
-                    $invName,
-                    $roleName
-                );
+
+            $collaboratorName = $user['full_name'] ?: $user['username'] ?: $user['email'];
+            $roleName = ((int)$invitation['role_id'] === 2) ? 'Administrador' : 'Empleado';
+
+            if ($ownerDetails) {
+                // WhatsApp al owner
+                if (!empty($ownerDetails['cell'])) {
+                    require_once __DIR__ . '/../../../src/Services/WhatsappService.php';
+                    $waSvc = new \App\Services\WhatsappService();
+                    $waOk = $waSvc->sendNewCollaboratorAlert(
+                        $ownerDetails['cell'],
+                        $ownerDetails['full_name'] ?? 'Socio',
+                        $collaboratorName,
+                        $user['email'],
+                        $invName,
+                        $roleName
+                    );
+                    if (!$waOk) {
+                        error_log('[accept.php] WA sendNewCollaboratorAlert retornó false.');
+                    }
+                }
+
+                // Email al owner como notificación de aceptación
+                if (!empty($ownerDetails['email'])) {
+                    try {
+                        require_once __DIR__ . '/../../../src/Services/MailService.php';
+                        $mailSvc = new \App\Services\MailService();
+                        $mailSvc->sendInvitationEmail(
+                            $ownerDetails['email'],
+                            $invName,
+                            $roleName,
+                            'https://' . $_SERVER['HTTP_HOST'] . '/dashboard',
+                            $collaboratorName . ' (aceptó la invitación)'
+                        );
+                    } catch (\Throwable $mailErr) {
+                        error_log('[accept.php] Mail al owner falló: ' . $mailErr->getMessage());
+                    }
+                }
+            } else {
+                error_log('[accept.php] No se encontraron datos del owner ID: ' . $ownerId);
             }
+        } else {
+            error_log('[accept.php] No se pudo obtener ownerId para inventario: ' . $invitation['inventory_id']);
         }
     } catch (\Throwable $waErr) {
-        error_log('WhatsApp sendNewCollaboratorAlert in accept.php error: ' . $waErr->getMessage());
+        error_log('[accept.php] Error en notificación al owner: ' . $waErr->getMessage());
     }
 
     $db->prepare("UPDATE invitations SET status = 'accepted' WHERE id = ?")->execute([$invitation['id']]);

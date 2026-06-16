@@ -71,17 +71,45 @@ try {
         }
 
         if ($overwrite) {
+            // Fetch old rows to preserve unmapped columns
+            $stmtOld = $db->query("SELECT * FROM $tableName ORDER BY id ASC");
+            $oldRows = $stmtOld->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Get all columns in the table
+            $stmtCols = $db->query("DESCRIBE $tableName");
+            $allTableCols = $stmtCols->fetchAll(PDO::FETCH_COLUMN);
+            
             $db->exec("DELETE FROM $tableName");
             $db->exec("ALTER TABLE $tableName AUTO_INCREMENT = 1");
-        }
-
-        foreach ($rows as $r) {
-            $values = [];
-            foreach ($cols as $c) {
-                $values[] = $r[$c] ?? null;
+            
+            // We insert all columns except id, created_at, updated_at
+            $colsToInsert = array_filter($allTableCols, fn($c) => !in_array(strtolower($c), ['id', 'created_at', 'updated_at']));
+            $safeColsToInsert = array_map(fn($c) => "`" . str_replace("`", "``", $c) . "`", $colsToInsert);
+            $placeholders = "(" . implode(", ", array_fill(0, count($colsToInsert), "?")) . ")";
+            $sqlInsertAll = "INSERT INTO $tableName (" . implode(", ", $safeColsToInsert) . ") VALUES $placeholders";
+            $stmtInsAll = $db->prepare($sqlInsertAll);
+            
+            foreach ($rows as $i => $r) {
+                $values = [];
+                foreach ($colsToInsert as $c) {
+                    if (in_array($c, $cols)) {
+                        $values[] = $r[$c] ?? null;
+                    } else {
+                        $values[] = $oldRows[$i][$c] ?? null;
+                    }
+                }
+                $stmtInsAll->execute($values);
+                $inserted++;
             }
-            $stmtIns->execute($values);
-            $inserted++;
+        } else {
+            foreach ($rows as $r) {
+                $values = [];
+                foreach ($cols as $c) {
+                    $values[] = $r[$c] ?? null;
+                }
+                $stmtIns->execute($values);
+                $inserted++;
+            }
         }
 
         if ($txStarted && $db->inTransaction()) {

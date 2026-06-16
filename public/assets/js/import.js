@@ -440,13 +440,15 @@ async function checkTNStatus() {
 
         if (data.success && data.connected) {
             tnStatusContainer.innerHTML = `
-                <div class="tn-connected-box" style="background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #4CAF50; display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                    <i class="ph-fill ph-check-circle" style="color: #4CAF50; font-size: 1.5rem;"></i>
-                    <div style="text-align: left;">
-                        <strong style="display: block;">Tienda Conectada</strong>
-                        <span style="font-size: 0.85rem; color: #666;">ID de Tienda: ${data.store_id}</span>
+                <div class="tn-connected-box" style="background: #e8f5e9; padding: 15px 25px; border-radius: 8px; border: 1px solid #4CAF50; display: flex; align-items: center; justify-content: space-between; gap: 15px; margin: 0 auto 20px auto; width: 100%; max-width: 500px;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="ph-fill ph-check-circle" style="color: #4CAF50; font-size: 1.5rem;"></i>
+                        <div style="text-align: left;">
+                            <strong style="display: block; font-size: 1.05rem; white-space: nowrap;">Tienda Conectada</strong>
+                            <span style="font-size: 0.85rem; color: #666;">ID de Tienda: ${data.store_id}</span>
+                        </div>
                     </div>
-                    <button id="tn-disconnect-btn" class="btn btn-secondary btn-sm" style="margin-left: auto;">Desconectar</button>
+                    <button id="tn-disconnect-btn" class="btn btn-secondary btn-sm" style="flex-shrink: 0; width: auto; padding: 6px 16px; font-size: 0.9rem; margin: 0;">Desconectar</button>
                 </div>
             `;
             

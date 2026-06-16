@@ -39,6 +39,7 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
     <link rel="stylesheet" href="assets/css/index.css?v=<?= time() ?>">
     <link rel="stylesheet" href="assets/css/about-section.css?v=<?= time() ?>">
     <link rel="stylesheet" href="assets/css/promo-bar.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="assets/css/tutorials.css?v=<?= time() ?>">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 
     <link rel="stylesheet" type="text/css"
@@ -203,10 +204,11 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
             <img src="assets/img/LogoE.png" alt="Logotipo Oficial de StockiFy">
         </a>
         <nav id="header-nav" style="display: flex; gap: 10px;">
+            <button onclick="window.openTutorials()" class="btn btn-secondary btn-header-tutoriales" style="margin:0;"><i class="ph ph-book-open"></i><span>Tutoriales</span></button>
             <a href="about-us" class="btn btn-secondary" style="margin:0;">¿Quiénes Somos?</a>
             <?php if ($currentUser): ?>
                 <a href="select-db" class="btn btn-primary" style="margin:0;">Ir al Panel</a>
-                <a href="logout" class="btn btn-secondary" style="margin:0;">Cerrar Sesión</a>
+                <a href="logout" class="btn btn-secondary btn-header-logout" style="margin:0;"><i class="ph ph-sign-out"></i><span>Cerrar Sesión</span></a>
             <?php else: ?>
                 <a href="login" class="btn btn-secondary" style="margin:0;">Iniciar Sesión</a>
             <?php endif; ?>
@@ -605,7 +607,7 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
 
 
         <section class="section bg-pattern" id="section-footer"
-            style="min-height: auto; padding: 0; scroll-snap-align: end;">
+            style="min-height: auto; padding: 0;">
             <footer class="footer"
                 style="background-color: var(--accent-color); color: white; padding: 4rem 2rem 2rem; width: 100%;">
                 <div class="footer-container" style="max-width: 1200px; margin: 0 auto;">
@@ -635,6 +637,7 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
 
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="assets/js/tutorials.js?v=1.0"></script>
     <script src="assets/js/main.js"></script>
 </body>
 

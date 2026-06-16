@@ -338,7 +338,14 @@ function initImageGallery() {
     // Eventos Click Manual
     galleryItems.forEach((item, index) => {
         item.addEventListener('click', () => {
-            if (index === currentIndex) return;
+            if (index === currentIndex) {
+                // Si la pestaña ya está activa, abrir en pantalla completa
+                const img = item.querySelector('img');
+                const video = item.querySelector('video');
+                if (img) openFullScreenMedia(img.src, 'img');
+                else if (video) openFullScreenMedia(video.src, 'video');
+                return;
+            }
             currentIndex = index;
             updateGallery(currentIndex);
         });
@@ -346,6 +353,107 @@ function initImageGallery() {
 
     // Inicio
     updateGallery(0);
+
+    // Función para crear y mostrar el lightbox (soporta img y video)
+    function openFullScreenMedia(src, type) {
+        let overlay = document.getElementById('gallery-fullscreen-overlay');
+        
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'gallery-fullscreen-overlay';
+            Object.assign(overlay.style, {
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                width: '100vw',
+                height: '100vh',
+                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                zIndex: '9999',
+                display: 'none',
+                justifyContent: 'center',
+                alignItems: 'center',
+                opacity: '0',
+                transition: 'opacity 0.3s ease',
+                cursor: 'zoom-out'
+            });
+
+            const mediaContainer = document.createElement('div');
+            mediaContainer.id = 'gallery-fullscreen-container';
+            Object.assign(mediaContainer.style, {
+                maxWidth: '90%',
+                maxHeight: '90%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                transition: 'transform 0.3s ease',
+                transform: 'scale(0.95)'
+            });
+            overlay.appendChild(mediaContainer);
+
+            const closeBtn = document.createElement('div');
+            closeBtn.innerHTML = '&times;';
+            Object.assign(closeBtn.style, {
+                position: 'absolute',
+                top: '20px',
+                right: '30px',
+                color: 'white',
+                fontSize: '40px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+            });
+            overlay.appendChild(closeBtn);
+
+            document.body.appendChild(overlay);
+
+            // Lógica de cierre
+            const closeOverlay = () => {
+                overlay.style.opacity = '0';
+                mediaContainer.style.transform = 'scale(0.95)';
+                setTimeout(() => { 
+                    overlay.style.display = 'none'; 
+                    mediaContainer.innerHTML = ''; 
+                }, 300);
+            };
+
+            overlay.addEventListener('click', closeOverlay);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlay.style.display === 'flex') {
+                    closeOverlay();
+                }
+            });
+        }
+
+        const overlayEl = document.getElementById('gallery-fullscreen-overlay');
+        const containerEl = document.getElementById('gallery-fullscreen-container');
+        containerEl.innerHTML = ''; // Limpiar contenido previo
+
+        let mediaEl;
+        if (type === 'img') {
+            mediaEl = document.createElement('img');
+        } else {
+            mediaEl = document.createElement('video');
+            mediaEl.autoplay = true;
+            mediaEl.loop = true;
+            mediaEl.muted = true;
+            mediaEl.playsInline = true;
+        }
+
+        mediaEl.src = src;
+        Object.assign(mediaEl.style, {
+            maxWidth: '100%',
+            maxHeight: '100%',
+            borderRadius: '8px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+        });
+        
+        containerEl.appendChild(mediaEl);
+        
+        overlayEl.style.display = 'flex';
+        // Forzar repintado para que la transición funcione
+        void overlayEl.offsetWidth;
+        overlayEl.style.opacity = '1';
+        containerEl.style.transform = 'scale(1)';
+    }
 }
 
 /**

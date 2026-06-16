@@ -6,7 +6,7 @@ import {
     getEmployeeList,
     getCurrentInventoryPreferences,
     getSaleDetails
-} from '../api.js';
+} from '../api.js?v=2.0';
 import { pop_ups } from '../notifications/pop-up.js?v=3.0';
 
 const fmtMoney = (amount, currency = 'ARS') => {
@@ -270,7 +270,7 @@ export class SalesModule {
                                 </div>
                             </div>
                             
-                            <div id="mobile-checkout-bar" class="hidden-desktop" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:white; padding:15px; border-top:1px solid #ccc; box-shadow:0 -5px 15px rgba(0,0,0,0.1); z-index:99999;">
+                            <div id="mobile-checkout-bar" class="hidden-desktop" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:white; padding:15px; padding-bottom:calc(15px + env(safe-area-inset-bottom, 0px)); border-top:1px solid #ccc; box-shadow:0 -5px 15px rgba(0,0,0,0.1); z-index:99999;">
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
                                     <div>
                                         <div id="mob-bar-count" style="font-size:0.8rem; color:#666;">0 Ítems</div>
@@ -965,6 +965,8 @@ export class SalesModule {
                     res.alerts.forEach(a => {
                         if (a.type === 'low_stock') {
                             pop_ups.warning(`Stock mínimo alcanzado en ${a.product_name}. Actual: ${a.current_stock}. Min: ${a.min_stock}`, 'Bajo Stock');
+                        } else if (a.type === 'out_of_stock') {
+                            pop_ups.error(`¡Producto Agotado! ${a.product_name} se quedó sin stock.`, 'Sin Stock');
                         } else if (a.type === 'negative_profit') {
                             pop_ups.error(`¡Alerta de Rentabilidad en ${a.product_name}! Venta a $${a.sale_price}, Costo $${a.cost_price}`, 'Rentabilidad Crítica');
                         }

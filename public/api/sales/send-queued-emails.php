@@ -29,56 +29,80 @@ try {
     require_once $root . '/src/core/Database.php';
     $db = \App\core\Database::getInstance();
 
-    // Resolve the real owner of the active inventory
-    $ownerId = (int)$user['id'];
-    $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
-    if ($activeInventoryId) {
-        $stmtOwner = $db->prepare("SELECT user_id FROM inventories WHERE id = :inv_id");
-        $stmtOwner->execute([':inv_id' => $activeInventoryId]);
-        $ownerRow = $stmtOwner->fetch(PDO::FETCH_ASSOC);
-        if ($ownerRow && !empty($ownerRow['user_id'])) {
-            $ownerId = (int)$ownerRow['user_id'];
+    // Cache de owners por inventory_id para no repetir queries
+    $ownerCache = [];
+
+    /**
+     * Resuelve el owner de un inventario dado su ID.
+     * Siempre devuelve los datos del propietario del inventario,
+     * sin importar si el usuario activo es un colaborador.
+     */
+    $resolveOwner = function(int $invId) use ($db, &$ownerCache): ?array {
+        if (isset($ownerCache[$invId])) {
+            return $ownerCache[$invId];
         }
-    }
+        $stmt = $db->prepare(
+            "SELECT u.email, u.full_name, u.cell
+             FROM users u
+             JOIN inventories i ON u.id = i.user_id
+             WHERE i.id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$invId]);
+        $owner = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        $ownerCache[$invId] = $owner;
+        return $owner;
+    };
 
-    $stmtUser = $db->prepare("SELECT email, full_name, cell FROM users WHERE id = :id");
-    $stmtUser->execute([':id' => $ownerId]);
-    $u = $stmtUser->fetch(PDO::FETCH_ASSOC);
+    foreach ($alerts as $alert) {
+        $invName = $alert['inventory_name'] ?? 'Principal';
 
-    if ($u && (!empty($u['email']) || !empty($u['cell']))) {
-        $toEmail = $u['email'];
-        $toCell = $u['cell'];
-        $userName = $u['full_name'] ?? 'Socio';
-        
-        foreach ($alerts as $alert) {
-            $invName = $alert['inventory_name'] ?? 'Principal';
-            if ($alert['type'] === 'low_stock') {
-                if (!empty($toEmail)) {
-                    $mailSvc->sendLowStockAlert($toEmail, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock']);
-                    $sentCount++;
-                }
-                if (!empty($toCell)) {
-                    $productId = $alert['product_id'] ?? '-';
-                    $waSvc->sendLowStockAlert($toCell, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock'], $invName, $productId);
-                    $sentCount++;
-                }
-            } elseif ($alert['type'] === 'out_of_stock') {
-                if (!empty($toEmail)) {
-                    $mailSvc->sendOutOfStockAlert($toEmail, $userName, $alert['product_name'], $invName);
-                    $sentCount++;
-                }
-                if (!empty($toCell)) {
-                    $productId = $alert['product_id'] ?? '-';
-                    $waSvc->sendOutOfStockAlert($toCell, $userName, $alert['product_name'], $invName, (string)$productId);
-                    $sentCount++;
-                }
-            } elseif ($alert['type'] === 'negative_profit') {
-                if (!empty($toEmail)) {
-                    $mailSvc->sendNegativeProfitAlert($toEmail, $userName, $alert['product_name'], $alert['sale_price'], $alert['cost_price']);
-                    $sentCount++;
-                }
-                // Negative profit currently does not have a WhatsApp template based on our plan, but if it did, we would dispatch it here.
+        // Resolver owner por inventory_id de la alerta (si viene).
+        // Fallback: inventario activo en sesión; último fallback: usuario actual.
+        $inventoryIdForAlert = (int)($alert['inventory_id'] ?? $_SESSION['active_inventory_id'] ?? 0);
+        $owner = $inventoryIdForAlert ? $resolveOwner($inventoryIdForAlert) : null;
+
+        if (!$owner) {
+            // Fallback de seguridad: usar datos del usuario actual
+            $stmtFallback = $db->prepare("SELECT email, full_name, cell FROM users WHERE id = ?");
+            $stmtFallback->execute([$user['id']]);
+            $owner = $stmtFallback->fetch(PDO::FETCH_ASSOC) ?: null;
+        }
+
+        if (!$owner || (empty($owner['email']) && empty($owner['cell']))) {
+            continue; // Sin destinatario, saltar
+        }
+
+        $toEmail  = $owner['email'] ?? '';
+        $toCell   = $owner['cell'] ?? '';
+        $userName = $owner['full_name'] ?? 'Socio';
+
+        if ($alert['type'] === 'low_stock') {
+            if (!empty($toEmail)) {
+                $mailSvc->sendLowStockAlert($toEmail, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock']);
+                $sentCount++;
             }
+            if (!empty($toCell)) {
+                $productId = $alert['product_id'] ?? '-';
+                $waSvc->sendLowStockAlert($toCell, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock'], $invName, $productId);
+                $sentCount++;
+            }
+        } elseif ($alert['type'] === 'out_of_stock') {
+            if (!empty($toEmail)) {
+                $mailSvc->sendOutOfStockAlert($toEmail, $userName, $alert['product_name'], $invName);
+                $sentCount++;
+            }
+            if (!empty($toCell)) {
+                $productId = $alert['product_id'] ?? '-';
+                $waSvc->sendOutOfStockAlert($toCell, $userName, $alert['product_name'], $invName, (string)$productId);
+                $sentCount++;
+            }
+        } elseif ($alert['type'] === 'negative_profit') {
+            if (!empty($toEmail)) {
+                $mailSvc->sendNegativeProfitAlert($toEmail, $userName, $alert['product_name'], $alert['sale_price'], $alert['cost_price']);
+                $sentCount++;
+            }
+            // WhatsApp: sin plantilla aprobada para ganancia negativa actualmente.
         }
     }
 

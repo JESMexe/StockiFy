@@ -240,14 +240,14 @@ export const usersModuleInstance = {
         }
 
         let html = `
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                    <tr style="border-bottom: 2px solid #eee;">
-                        <th style="text-align: left; padding: 10px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Usuario</th>
-                        <th style="text-align: left; padding: 10px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Email</th>
-                        <th style="text-align: left; padding: 10px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Rol</th>
-                        <th style="text-align: left; padding: 10px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Estado</th>
-                        ${this.isOwner ? '<th style="text-align: center; padding: 10px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Acciones</th>' : ''}
+                    <tr style="border-bottom: 2px solid #eee; background: #fafafa;">
+                        <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Usuario</th>
+                        <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Email</th>
+                        <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Rol</th>
+                        <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Estado</th>
+                        ${this.isOwner ? '<th style="text-align: center; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Acciones</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>
@@ -269,15 +269,15 @@ export const usersModuleInstance = {
 
             html += `
                 <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px 10px;"><strong>${c.full_name || c.username}</strong></td>
-                    <td style="padding: 12px 10px; font-size: 0.9rem; color: #555;">${c.email}</td>
-                    <td style="padding: 12px 10px;">${roleBadge}</td>
-                    <td style="padding: 12px 10px;">
+                    <td style="padding: 16px 20px;"><strong>${c.full_name || c.username}</strong></td>
+                    <td style="padding: 16px 20px; font-size: 0.9rem; color: #555;">${c.email}</td>
+                    <td style="padding: 16px 20px;">${roleBadge}</td>
+                    <td style="padding: 16px 20px;">
                         <span style="font-size: 0.85rem; ${isActive ? 'color: var(--accent-green);' : 'color: #888;'}">
                             ${isActive ? '● Activo' : '● Pendiente'}
                         </span>
                     </td>
-                    ${this.isOwner ? `<td style="padding: 12px 10px; text-align: center;">
+                    ${this.isOwner ? `<td style="padding: 16px 20px; text-align: center;">
                         ${canDelete
                             ? `<button class="btn btn-secondary" style="color: var(--accent-red); border-color: var(--accent-red); padding: 5px 10px; width: auto; margin: 0;" onclick="window.usersModuleInstance.removeCollaborator(${c.collaborator_id})">
                                 <i class="ph ph-trash"></i>
@@ -308,6 +308,7 @@ export const usersModuleInstance = {
             if (result.success) {
                 pop_ups.success(result.message);
                 this.loadCollaborators();
+                if (this.isOwner) this.loadQuota();
             } else {
                 pop_ups.error(result.message);
             }
@@ -378,6 +379,7 @@ export const usersModuleInstance = {
                 document.getElementById('close-invite-modal-btn')?.click();
                 if (emailInput) emailInput.value = '';
                 this.loadCollaborators();
+                if (this.isOwner) this.loadQuota();
             } else if (response.status === 422) {
                 // Condición esperada (usuario no registrado, ya colaborador, etc.)
                 pop_ups.warning(result.message);

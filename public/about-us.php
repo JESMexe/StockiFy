@@ -59,7 +59,8 @@ $currentUser = getCurrentUser();
                 </div>
                 <div class="promo-button-wrapper">
                     <?php if ($currentUser): ?>
-                        <button class="btn-promo" id="btn-start-trial" style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
+                        <button class="btn-promo" id="btn-start-trial"
+                            style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
                     <?php else: ?>
                         <a href="register" class="btn-promo">Probar Ahora</a>
                     <?php endif; ?>
@@ -188,32 +189,37 @@ $currentUser = getCurrentUser();
                 <div class="gallery-container">
                     <div class="gallery-item active" data-gallery="inventory">
                         <div class="gallery-item-overlay" style="z-index: 2;"></div>
-                        <video src="assets/img/lolo.mp4" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
-                        <i class="ph ph-database" style="font-size: 6rem; color: #ccc; position: relative; z-index: 3;"></i>
+                        <video src="assets/img/Database.mp4?v=<?= time() ?>" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
+                        <i class="ph ph-database"
+                            style="font-size: 6rem; color: #ccc; position: relative; z-index: 3;"></i>
                         <div class="gallery-progress" style="z-index: 4;">
                             <div class="gallery-progress-fill"></div>
                         </div>
                     </div>
                     <div class="gallery-item" data-gallery="dashboard">
-                        <div class="gallery-item-overlay"></div>
-                        <i class="ph ph-chart-line-up" style="font-size: 6rem; color: #ccc;"></i>
-                        <div class="gallery-progress">
+                        <div class="gallery-item-overlay" style="z-index: 2;"></div>
+                        <video src="assets/img/Analitycs.mp4?v=<?= time() ?>" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
+                        <i class="ph ph-chart-line-up" style="font-size: 6rem; color: #ccc; position: relative; z-index: 3;"></i>
+                        <div class="gallery-progress" style="z-index: 4;">
                             <div class="gallery-progress-fill"></div>
                         </div>
                     </div>
                     <div class="gallery-item" data-gallery="setup">
-                        <div class="gallery-item-overlay"></div>
-                        <i class="ph ph-gear" style="font-size: 6rem; color: #ccc;"></i>
-                        <div class="gallery-progress">
+                        <div class="gallery-item-overlay" style="z-index: 2;"></div>
+                        <video src="assets/img/Configuration.mp4?v=<?= time() ?>" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
+                        <i class="ph ph-gear" style="font-size: 6rem; color: #ccc; position: relative; z-index: 3;"></i>
+                        <div class="gallery-progress" style="z-index: 4;">
                             <div class="gallery-progress-fill"></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="gallery-info">
-                    <h3 id="gallery-target-title">Control de Inventario Preciso</h3>
-                    <p id="gallery-target-desc">Visualizá todo tu stock con filtros avanzados. El sistema te muestra
-                        alertas visuales de bajo stock y te permite realizar ajustes globales en segundos.</p>
+                    <div id="gallery-info-inner" class="gallery-info-inner">
+                        <h3 id="gallery-target-title">Control de Inventario Preciso</h3>
+                        <p id="gallery-target-desc">Visualizá todo tu stock con filtros avanzados. El sistema te muestra
+                            alertas visuales de bajo stock y te permite realizar ajustes globales en segundos.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -296,33 +302,35 @@ $currentUser = getCurrentUser();
                     <p style="color: #666; max-width: 600px; margin: 20px auto 0;">Elegí el plan que mejor se adapte a
                         las necesidades de tu emprendimiento.</p>
                 </div>
-            <?php if ($showPromoBar): ?>
-                <div class="pricing-trial-card">
-                    <div class="trial-card-badge">Prueba Gratuita</div>
-                    <div class="trial-card-content">
-                        <div class="trial-card-info">
-                            <h3>Habilitá tu Mes Gratis de inmediato</h3>
-                            <p class="trial-card-desc">Probá el nivel de acceso más alto (Vitalicio / Nivel 4) durante 30 días de forma instantánea. Sin tarjetas de crédito, sin compromisos y con activación inmediata.</p>
-                            <ul class="trial-card-features">
-                                <li><i class="ph-bold ph-bolt"></i> Acceso Nivel 4 Vitalicio</li>
-                                <li><i class="ph-bold ph-credit-card-slash"></i> Sin tarjetas de crédito</li>
-                                <li><i class="ph-bold ph-clock"></i> 30 días de prueba</li>
-                            </ul>
-                        </div>
-                        <div class="trial-card-action">
-                            <div class="trial-card-price">
-                                <span class="price">Gratis</span>
-                                <span class="period">/ 30 días</span>
+                    <?php if ($showPromoBar): ?>
+                    <div class="pricing-trial-card">
+                        <div class="trial-card-badge">Prueba Gratuita</div>
+                        <div class="trial-card-content">
+                            <div class="trial-card-info">
+                                <h3>Habilitá tu Mes Gratis de inmediato</h3>
+                                <p class="trial-card-desc">Probá el nivel de acceso más alto (Vitalicio / Nivel 4) durante
+                                    30 días de forma instantánea. Sin tarjetas de crédito, sin compromisos y con activación
+                                    inmediata.</p>
+                                <ul class="trial-card-features">
+                                    <li><i class="ph-bold ph-bolt"></i> Acceso Nivel 4 Vitalicio</li>
+                                    <li><i class="ph-bold ph-credit-card-slash"></i> Sin tarjetas de crédito</li>
+                                    <li><i class="ph-bold ph-clock"></i> 30 días de prueba</li>
+                                </ul>
                             </div>
-                            <?php if ($currentUser): ?>
-                                <button class="btn-pricing btn-start-trial">Comenzar Prueba</button>
-                            <?php else: ?>
-                                <a href="register" class="btn-pricing">Comenzar Prueba</a>
-                            <?php endif; ?>
+                            <div class="trial-card-action">
+                                <div class="trial-card-price">
+                                    <span class="price">Gratis</span>
+                                    <span class="period">/ 30 días</span>
+                                </div>
+                                    <?php if ($currentUser): ?>
+                                    <button class="btn-pricing btn-start-trial">Comenzar Prueba</button>
+                                    <?php else: ?>
+                                    <a href="register" class="btn-pricing">Comenzar Prueba</a>
+                                    <?php endif; ?>
+                            </div>
                         </div>
                     </div>
-                </div>
-            <?php endif; ?>
+                    <?php endif; ?>
 
                 <div id="pricing-carousel-container" style="width: 100%; max-width: 100vw; overflow: visible;">
                     <div class="pricing-wrapper scale-wrapper" id="pricing-wrapper">
@@ -344,7 +352,8 @@ $currentUser = getCurrentUser();
                                     Empleados y
                                     Proveedores)</li>
                                 <li style="opacity: 0.6; border-bottom: none;"><i class="ph-bold ph-lock-key"
-                                                                                  style="color: var(--accent-red) !important;"></i> Gestión RBAC (Invitar Colaboradores y Asignarles un Rol)</li>
+                                        style="color: var(--accent-red) !important;"></i> Gestión RBAC (Invitar
+                                    Colaboradores y Asignarles un Rol)</li>
                             </ul>
                             <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20el%20Plan%20Básico%20de%20StockiFy.%20¿Cómo%20podemos%20avanzar?"
                                 target="_blank" class="btn-pricing">Consultar Plan</a>
