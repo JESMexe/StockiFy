@@ -201,15 +201,11 @@ class SalesModel
             try {
                 $clientName = 'Consumidor Final';
                 if ($clientId) {
-                    $stmtClient = $this->db->prepare("SELECT CONCAT(first_name, ' ', last_name) as name, company_name FROM customers WHERE id = ?");
+                    $stmtClient = $this->db->prepare("SELECT full_name as name FROM customers WHERE id = ?");
                     $stmtClient->execute([$clientId]);
                     $cRow = $stmtClient->fetch(PDO::FETCH_ASSOC);
                     if ($cRow) {
-                        $company = !empty($cRow['company_name']) ? " (" . $cRow['company_name'] . ")" : "";
-                        $clientName = trim($cRow['name']) ?: trim($cRow['company_name']) ?: 'Cliente #' . $clientId;
-                        if ($clientName !== trim($cRow['company_name'])) {
-                            $clientName .= $company;
-                        }
+                        $clientName = trim($cRow['name']) ?: 'Cliente #' . $clientId;
                     }
                 }
 
@@ -306,29 +302,21 @@ class SalesModel
                 try {
                     $oldClientName = 'Consumidor Final';
                     if ($oldClientId) {
-                        $stmtC = $this->db->prepare("SELECT CONCAT(first_name, ' ', last_name) as name, company_name FROM customers WHERE id = ?");
+                        $stmtC = $this->db->prepare("SELECT full_name as name FROM customers WHERE id = ?");
                         $stmtC->execute([$oldClientId]);
                         $c = $stmtC->fetch(PDO::FETCH_ASSOC);
                         if ($c) {
-                            $company = !empty($c['company_name']) ? " (" . $c['company_name'] . ")" : "";
-                            $oldClientName = trim($c['name']) ?: trim($c['company_name']) ?: 'Cliente #' . $oldClientId;
-                            if ($oldClientName !== trim($c['company_name'])) {
-                                $oldClientName .= $company;
-                            }
+                            $oldClientName = trim($c['name']) ?: 'Cliente #' . $oldClientId;
                         }
                     }
 
                     $newClientName = 'Consumidor Final';
                     if ($newClientId) {
-                        $stmtC = $this->db->prepare("SELECT CONCAT(first_name, ' ', last_name) as name, company_name FROM customers WHERE id = ?");
+                        $stmtC = $this->db->prepare("SELECT full_name as name FROM customers WHERE id = ?");
                         $stmtC->execute([$newClientId]);
                         $c = $stmtC->fetch(PDO::FETCH_ASSOC);
                         if ($c) {
-                            $company = !empty($c['company_name']) ? " (" . $c['company_name'] . ")" : "";
-                            $newClientName = trim($c['name']) ?: trim($c['company_name']) ?: 'Cliente #' . $newClientId;
-                            if ($newClientName !== trim($c['company_name'])) {
-                                $newClientName .= $company;
-                            }
+                            $newClientName = trim($c['name']) ?: 'Cliente #' . $newClientId;
                         }
                     }
 
@@ -387,15 +375,11 @@ class SalesModel
 
             $clientName = 'Consumidor Final';
             if ($clientId) {
-                $stmtClient = $this->db->prepare("SELECT CONCAT(first_name, ' ', last_name) as name, company_name FROM customers WHERE id = ?");
+                $stmtClient = $this->db->prepare("SELECT full_name as name FROM customers WHERE id = ?");
                 $stmtClient->execute([$clientId]);
                 $cRow = $stmtClient->fetch(PDO::FETCH_ASSOC);
                 if ($cRow) {
-                    $company = !empty($cRow['company_name']) ? " (" . $cRow['company_name'] . ")" : "";
-                    $clientName = trim($cRow['name']) ?: trim($cRow['company_name']) ?: 'Cliente #' . $clientId;
-                    if ($clientName !== trim($cRow['company_name'])) {
-                        $clientName .= $company;
-                    }
+                    $clientName = trim($cRow['name']) ?: 'Cliente #' . $clientId;
                 }
             }
 
@@ -455,7 +439,7 @@ class SalesModel
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
-            return false;
+            throw $e;
         }
     }
 

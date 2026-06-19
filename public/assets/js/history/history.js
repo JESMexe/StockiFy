@@ -18,6 +18,8 @@ const ENTITY_MAP = {
     role_permissions:  { label: 'Permisos de Roles', colorVar: 'violet' },
     role_settings:     { label: 'Permisos de Roles', colorVar: 'violet' },
     inventory:         { label: 'Inventario',    colorVar: 'blue' },
+    collaborator_debt: { label: 'Deuda Colabs.', colorVar: 'violet' },
+    delivery:          { label: 'Envío',         colorVar: 'blue' },
 };
 
 // Mapa de acciones a verbos legibles
@@ -35,6 +37,14 @@ const ACTION_MAP = {
     config: 'Configuró',
     send: 'Envió',
     update_permissions: 'Configuró',
+    add_slots: 'Deuda de agregar Slots',
+    confirm_payment: 'Pago confirmado de',
+    monthly_renewal: 'Renovación mensual de',
+    complete: 'Entregó',
+    email_receipt: 'Envió Ticket por Email de',
+    create_category: 'Creó la',
+    contact_whatsapp: 'Se contactó vía WhatsApp por el',
+    share_whatsapp: 'Notificó la Entrega del',
 };
 
 // Traductor de roles a español (excepto Admin)

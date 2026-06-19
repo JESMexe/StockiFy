@@ -1,9 +1,9 @@
-
 import * as api from './api.js?v=2.0';
 import * as setup from './setupMiCuentaDropdown.js';
 import { notificationConfig, pop_ups } from './notifications/pop-up.js?v=3.0';
-import { salesModuleInstance } from './sales/sales.js?v=2.1';
-import { purchaseModuleInstance } from './purchases/purchases.js?v=2.2';
+import { salesModuleInstance } from './sales/sales.js?v=2.2';
+import { purchaseModuleInstance } from './purchases/purchases.js?v=2.3';
+
 import { customerModuleInstance } from './customers/customers.js';
 import { providerModuleInstance } from './providers/providers.js';
 import { employeeModuleInstance } from './employees/employees.js';
@@ -12,6 +12,7 @@ import { paymentsModuleInstance } from './payment/payment.js';
 import { openImportModal } from './import.js';
 import { ui_helper } from "./ui-helper.js";
 import { usersModuleInstance } from './users/users.js';
+import { deliveriesModuleInstance } from './deliveries/deliveries.js';
 
 export let activeInventoryId = null;
 let allData = []; // Guardo todos los datos para filtrar
@@ -849,6 +850,10 @@ function setupMenuNavigation() {
 
             if (targetView === 'payments') {
                 paymentsModuleInstance.init();
+            }
+
+            if (targetView === 'deliveries') {
+                deliveriesModuleInstance.init();
             }
 
             if (targetView === 'users-manage' && window.usersModuleInstance) {

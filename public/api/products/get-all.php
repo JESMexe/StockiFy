@@ -10,6 +10,12 @@ try {
     $inventoryModel = new InventoryModel();
 
     $user = getCurrentUser();
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'No autorizado']);
+        exit;
+    }
+    requireSectionAccess('can_view_data');
     $user_id = $_SESSION['user_id'];
     $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
 

@@ -13,6 +13,22 @@ $showWelcome = !$currentUser ? '' : 'hidden';
 $showDashboard = $currentUser ? '' : 'hidden';
 
 $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0 && (int)$currentUser['trial_used'] === 0);
+
+// Configuración de Precios (Nuevos precios - PDF Sistema de pago)
+$precio_basico = 42000;
+$precio_profesional = 95000;
+$precio_vitalicio = 3499; // USD
+
+$original_basico = round($precio_basico * 1.15);
+$original_profesional = round($precio_profesional * 1.15);
+
+$basico_formatted = '$' . number_format($precio_basico, 0, ',', '.');
+$basico_original_formatted = '$' . number_format($original_basico, 0, ',', '.');
+
+$profesional_formatted = '$' . number_format($precio_profesional, 0, ',', '.');
+$profesional_original_formatted = '$' . number_format($original_profesional, 0, ',', '.');
+
+$vitalicio_formatted = 'USD ' . number_format($precio_vitalicio, 0, ',', '.');
 ?>
 
 <!DOCTYPE html>
@@ -477,6 +493,7 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
                 <p style="color: #666; max-width: 600px; margin: 0 auto;">Elige el plan que mejor se
                     adapte a las necesidades de tu emprendimiento para llevar el control al máximo nivel.</p>
             </div>
+
             <?php if ($showPromoBar): ?>
                 <div class="pricing-trial-card">
                     <div class="trial-card-badge">Prueba Gratuita</div>
@@ -510,7 +527,10 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
 
                     <div class="pricing-card-v2 card-theme-dark">
                         <h3>Básico</h3>
-                        <div class="price-val">$240.000<span style="font-size: 1rem; opacity: 0.7;">/mes</span></div>
+                        <div class="price-container">
+                            <div class="price-original"><span class="price-strike"><?= $basico_original_formatted ?></span> <span class="discount-badge">-15% OFF</span></div>
+                            <div class="price-val"><?= $basico_formatted ?><span style="font-size: 1rem; opacity: 0.7;">/mes</span></div>
+                        </div>
                         <ul>
                             <li><i class="ph-bold ph-check"></i> Un solo Inventario Activo</li>
                             <li><i class="ph-bold ph-check"></i> Gestión de Productos</li>
@@ -532,10 +552,14 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
                     <div class="pricing-card-v2 card-theme-pro">
                         <div class="pro-badge">Recomendado</div>
                         <h3>Profesional</h3>
-                        <div class="price-val">$299.999<span style="font-size: 1.1rem; opacity: 0.7;">/mes</span></div>
+                        <div class="price-container">
+                            <div class="price-original"><span class="price-strike"><?= $profesional_original_formatted ?></span> <span class="discount-badge">-15% OFF</span></div>
+                            <div class="price-val"><?= $profesional_formatted ?><span style="font-size: 1.1rem; opacity: 0.7;">/mes</span></div>
+                        </div>
                         <ul>
                             <li style="font-weight: 700;"><i class="ph-bold ph-plus"></i> Todo lo que contiene el Plan
                                 Básico</li>
+                            <li><i class="ph-bold ph-check"></i> 3 cupos de usuario incluidos (dueño + 2 colaboradores)</li>
                             <li><i class="ph-bold ph-check"></i> Inventarios Ilimitados</li>
                             <li><i class="ph-bold ph-check"></i> Gestión CRM (Clientes, Empleados y Proveedores)</li>
                             <li><i class="ph-bold ph-check"></i> Carga Ilimitada de productos</li>
@@ -577,8 +601,7 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
                     <div class="pricing-card-v2 card-theme-vital">
                         <div class="vital-badge">Único Pago</div>
                         <h3>Vitalicio</h3>
-                        <div class="price-val">USD 3.999<span style="font-size: 0.9rem; opacity: 0.7;">/único</span>
-                        </div>
+                        <div class="price-val"><?= $vitalicio_formatted ?><span style="font-size: 0.9rem; opacity: 0.7;">/único</span></div>
 
                         <div
                             style="margin-top: 5px; margin-bottom: 5px; font-size: 0.75rem; color: #555; background: #e5e5e5; padding: 6px 10px; border-radius: 4px; display: flex; align-items: flex-start; border: 1px solid #d0d0d0; line-height: 1.4;">
@@ -588,10 +611,11 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
                                 condicionado a disponibilidad (Límite operativo de 20 fundadores).</span>
                         </div>
                         <ul>
-                            <li style="font-weight: 700;"><i class="ph-bold ph-star"></i> Acceso Absoluto:</li>
+                            <li style="font-weight: 700;"><i class="ph-bold ph-star"></i> Acceso Profesional:</li>
                             <li><i class="ph-bold ph-check"></i> Pago único de por vida</li>
-                            <li><i class="ph-bold ph-check"></i> Funciones Empresariales</li>
-                            <li><i class="ph-bold ph-check"></i> Updates gratuitos infinitos</li>
+                            <li><i class="ph-bold ph-check"></i> Todas las funciones del plan Profesional</li>
+                            <li><i class="ph-bold ph-check"></i> 5 cupos de usuario incluidos (dueño + 4 colab.)</li>
+                            <li><i class="ph-bold ph-check"></i> Posibilidad de tener soporte y updates de por vida</li>
                         </ul>
                         <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20la%20Licencia%20Vitalicia%20(Edición%20Fundadores)%20de%20StockiFy.%20¿Cómo%20avanzamos?"
                             target="_blank" class="btn-pricing">Inversión Única</a>
@@ -638,6 +662,54 @@ $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && 
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="assets/js/tutorials.js?v=1.0"></script>
+    <!-- Widget Promocional Mundialista -->
+    <div id="mundial-promo-widget" class="mundial-widget-container closed">
+        <!-- Pestaña Cerrada -->
+        <div class="widget-closed-tab" onclick="toggleMundialWidget()">
+            <img src="assets/img/offmundial/pestacerrada.png" alt="Promo Cerrada" class="bg-closed">
+        </div>
+
+        <!-- Pestaña Abierta -->
+        <div class="widget-open-tab">
+            <button class="widget-close-btn" onclick="toggleMundialWidget()">✕</button>
+            <img src="assets/img/offmundial/pestaabierta.png" alt="Promo Abierta" class="bg-open">
+            
+            <!-- Animated Top Ball -->
+            <img src="assets/img/offmundial/pelotaarriba.png" alt="Pelota" class="always-spinning-ball">
+            
+            <!-- 15% OFF Container with spinning sun behind it -->
+            <div class="promo-discount-container">
+                <img src="assets/img/offmundial/solcitodemayodetrasdeO.png" alt="Sol" class="hover-spinning-sun">
+                <img src="assets/img/offmundial/quince_off.png" alt="15% OFF" class="promo-discount-img">
+            </div>
+            
+            <!-- Animated Bottom Ball -->
+            <img src="assets/img/offmundial/pelotaabajo.png" alt="Pelota" class="always-spinning-ball-bottom">
+            
+            <!-- Mascot with pop-in transition -->
+            <img src="assets/img/offmundial/CajitaCelebrando.png" alt="Cajita" class="cajita-celebrando">
+        </div>
+    </div>
+
+    <script>
+    function toggleMundialWidget() {
+        const container = document.getElementById('mundial-promo-widget');
+        if (container.classList.contains('closed')) {
+            container.classList.add('hiding');
+            setTimeout(() => {
+                container.classList.remove('closed', 'hiding');
+                container.classList.add('open');
+            }, 250);
+        } else {
+            container.classList.add('hiding');
+            setTimeout(() => {
+                container.classList.remove('open', 'hiding');
+                container.classList.add('closed');
+            }, 250);
+        }
+    }
+    </script>
+
     <script src="assets/js/main.js"></script>
 </body>
 

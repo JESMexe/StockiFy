@@ -19,6 +19,25 @@ $input = json_decode(file_get_contents('php://input'), true);
         echo json_encode(['success'=>false, 'message'=>'Datos incompletos']); exit;
     }
 
+    $email = $input['email'] ?? null;
+    $categoryId = $input['category_id'] ?? null;
+
+    if ($email && $categoryId) {
+        $db = \App\core\Database::getInstance();
+        $stmtCheck = $db->prepare("
+            SELECT ic.role_id 
+            FROM inventory_collaborators ic
+            JOIN users u ON ic.user_id = u.id
+            WHERE ic.inventory_id = ? AND u.email = ? AND ic.status = 'active'
+            LIMIT 1
+        ");
+        $stmtCheck->execute([$inventoryId, $email]);
+        $collabRoleId = $stmtCheck->fetchColumn();
+        if ($collabRoleId && (int)$collabRoleId === 2) {
+            $categoryId = null; // Force null to prevent Admin category assignments
+        }
+    }
+
     $model = new EmployeeModel();
     $success = $model->updateEmployee(
         $input['id'],
@@ -26,9 +45,9 @@ $input = json_decode(file_get_contents('php://input'), true);
         $input['name'],
         $input['dni'] ?? null,
         $input['phone'] ?? null,
-        $input['email'] ?? null,
+        $email,
         $inventoryId,
-        $input['category_id'] ?? null,
+        $categoryId,
         $input['custom_data'] ?? null
     );
 

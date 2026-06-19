@@ -81,7 +81,7 @@ class PurchaseModel {
             try {
                 $providerName = 'Ninguno';
                 if ($providerId) {
-                    $stmtProv = $this->db->prepare("SELECT name FROM providers WHERE id = ?");
+                    $stmtProv = $this->db->prepare("SELECT full_name as name FROM providers WHERE id = ?");
                     $stmtProv->execute([$providerId]);
                     $pName = $stmtProv->fetchColumn();
                     if ($pName) $providerName = $pName;
@@ -190,7 +190,7 @@ class PurchaseModel {
                     // Get provider names
                     $oldProvName = 'Ninguno';
                     if (!empty($oldRow['provider_id'])) {
-                        $stmtP = $this->db->prepare("SELECT name FROM providers WHERE id = ?");
+                        $stmtP = $this->db->prepare("SELECT full_name as name FROM providers WHERE id = ?");
                         $stmtP->execute([$oldRow['provider_id']]);
                         $oldProvName = $stmtP->fetchColumn() ?: 'Ninguno';
                     }
@@ -198,7 +198,7 @@ class PurchaseModel {
                     $newProvId = !empty($data['provider_id']) ? $data['provider_id'] : null;
                     $newProvName = 'Ninguno';
                     if ($newProvId) {
-                        $stmtP = $this->db->prepare("SELECT name FROM providers WHERE id = ?");
+                        $stmtP = $this->db->prepare("SELECT full_name as name FROM providers WHERE id = ?");
                         $stmtP->execute([$newProvId]);
                         $newProvName = $stmtP->fetchColumn() ?: 'Ninguno';
                     }
@@ -269,7 +269,7 @@ class PurchaseModel {
 
             $providerName = 'Ninguno';
             if ($providerId) {
-                $stmtProv = $this->db->prepare("SELECT name FROM providers WHERE id = ?");
+                $stmtProv = $this->db->prepare("SELECT full_name as name FROM providers WHERE id = ?");
                 $stmtProv->execute([$providerId]);
                 $providerName = $stmtProv->fetchColumn() ?: 'Ninguno';
             }
@@ -336,7 +336,7 @@ class PurchaseModel {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
-            return false;
+            throw $e;
         }
     }
 

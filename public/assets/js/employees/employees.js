@@ -12,12 +12,14 @@ export class EmployeeModule {
         this.allEmployees = [];
         this.availableCategories = [];
         this.selectedCategory = null;
+        this.collaborators = [];
     }
 
     init() {
         if (this.isInitialized) {
             this.loadEmployees();
             this.loadCategories(); // Recargar por si acaso
+            this.loadCollaborators();
             return;
         }
         const container = document.getElementById(this.containerId);
@@ -26,6 +28,7 @@ export class EmployeeModule {
         container.innerHTML = this.renderBaseStructure();
         this.attachEvents();
         this.loadCategories();
+        this.loadCollaborators();
         this.loadEmployees();
         this.isInitialized = true;
     }
@@ -180,8 +183,14 @@ export class EmployeeModule {
             document.getElementById('submit-emp-btn').textContent = "Guardar";
             form.reset();
             document.getElementById('dynamic-fields-container').innerHTML = '';
+            this.updateCategorySelect(false);
+            this.checkCategoryDisability();
             modal.classList.remove('hidden');
             modal.style.display = 'flex';
+        });
+
+        document.getElementById('emp-email')?.addEventListener('input', () => {
+            this.checkCategoryDisability();
         });
 
         document.getElementById('close-emp-modal')?.addEventListener('click', closeModal);
@@ -266,6 +275,55 @@ export class EmployeeModule {
         }
     }
 
+    async loadCollaborators() {
+        try {
+            const response = await fetch('/api/users/list.php');
+            const result = await response.json();
+            if (result.success) {
+                this.collaborators = result.collaborators || [];
+            }
+        } catch (e) {
+            console.error("Error al cargar colaboradores:", e);
+            this.collaborators = [];
+        }
+    }
+
+    checkCategoryDisability() {
+        const emailInput = document.getElementById('emp-email');
+        const categorySelect = document.getElementById('emp-category');
+        if (!emailInput || !categorySelect) return;
+
+        const email = emailInput.value.trim().toLowerCase();
+        const isAdmin = this.collaborators.some(c => 
+            c.email && c.email.trim().toLowerCase() === email && 
+            c.status === 'active' && 
+            (c.role_name === 'Administrador' || c.role_name === 'Admin')
+        );
+
+        if (isAdmin) {
+            categorySelect.value = '';
+            categorySelect.disabled = true;
+            this.renderDynamicFields('');
+            
+            let msg = document.getElementById('emp-category-warning');
+            if (!msg) {
+                msg = document.createElement('small');
+                msg.id = 'emp-category-warning';
+                msg.style.color = 'var(--accent-red, #dc3545)';
+                msg.style.display = 'block';
+                msg.style.marginTop = '4px';
+                msg.textContent = 'Los colaboradores Administradores no pueden tener categorías asignadas.';
+                categorySelect.parentNode.appendChild(msg);
+            }
+        } else {
+            categorySelect.disabled = false;
+            const msg = document.getElementById('emp-category-warning');
+            if (msg) {
+                msg.remove();
+            }
+        }
+    }
+
     renderCategoryList() {
         const list = document.getElementById('cat-list');
         if (!list) return;
@@ -273,18 +331,30 @@ export class EmployeeModule {
             list.innerHTML = '<p style="color:#888; font-size:0.9rem; text-align:center;">No hay categorías creadas.</p>';
             return;
         }
-        list.innerHTML = this.availableCategories.map(c => `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
-                <div>
-                    <strong style="font-size:0.95rem;">${c.name}</strong>
-                    <div style="font-size:0.75rem; color:#666;">Campos: ${c.fields.join(', ') || 'Ninguno'}</div>
-                </div>
-                <div style="display:flex; gap:5px;">
+        list.innerHTML = this.availableCategories.map(c => {
+            const isRepartidor = c.name === 'Repartidor';
+            const buttonsHtml = isRepartidor 
+                ? `<span style="font-size:0.75rem; color:#888; font-style:italic; padding-right:5px;">Sistema</span>`
+                : `
                     <button class="btn-icon edit-cat" data-id="${c.id}"><i class="ph ph-pencil-simple"></i></button>
                     <button class="btn-icon delete-cat" data-id="${c.id}"><i class="ph ph-trash" style="color:var(--accent-red)"></i></button>
+                  `;
+            const descHtml = isRepartidor 
+                ? `<div style="font-size:0.8rem; color:var(--accent-color); font-weight:500; margin-top:2px; line-height:1.2;">Aquel trabajador asignado como Repartidor podrá ser seleccionado en el envío de un pedido.</div>`
+                : `<div style="font-size:0.75rem; color:#666;">Campos: ${c.fields.join(', ') || 'Ninguno'}</div>`;
+
+            return `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
+                <div style="flex:1; padding-right:10px;">
+                    <strong style="font-size:0.95rem;">${c.name}</strong>
+                    ${descHtml}
+                </div>
+                <div style="display:flex; gap:5px; align-items:center;">
+                    ${buttonsHtml}
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
         list.querySelectorAll('.edit-cat').forEach(btn => {
             btn.onclick = () => this.startEditCategory(btn.dataset.id);
@@ -294,12 +364,20 @@ export class EmployeeModule {
         });
     }
 
-    updateCategorySelect() {
+    updateCategorySelect(isCollaborator = false) {
         const select = document.getElementById('emp-category');
         if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="">Sin Categoría</option>' +
-            this.availableCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            this.availableCategories.map(c => {
+                let disabledStr = '';
+                let label = c.name;
+                if (c.name === 'Repartidor' && !isCollaborator) {
+                    disabledStr = ' disabled title="Solo los colaboradores invitados pueden ser repartidores"';
+                    label = c.name + ' (Solo Colaboradores)';
+                }
+                return `<option value="${c.id}"${disabledStr}>${label}</option>`;
+            }).join('');
         select.value = currentVal;
     }
 
@@ -349,6 +427,11 @@ export class EmployeeModule {
     }
 
     async deleteCategory(id) {
+        const cat = this.availableCategories.find(c => c.id == id);
+        if (cat && cat.name === 'Repartidor') {
+            pop_ups.error("La categoría 'Repartidor' es del sistema y no puede ser eliminada.");
+            return;
+        }
         const confirm = await pop_ups.confirm("Eliminar Categoría", "¿Estás seguro? Los empleados mantendrán sus datos pero ya no estarán asociados a esta categoría.");
         if (!confirm) return;
         try {
@@ -398,9 +481,13 @@ export class EmployeeModule {
         document.getElementById('emp-dni').value = emp.dni || '';
         document.getElementById('emp-phone').value = emp.phone || '';
         document.getElementById('emp-email').value = emp.email || '';
+        
+        this.updateCategorySelect(parseInt(emp.is_collaborator) === 1);
         document.getElementById('emp-category').value = emp.category_id || '';
 
-        this.renderDynamicFields(emp.category_id, emp.custom_data || {});
+        this.checkCategoryDisability();
+
+        this.renderDynamicFields(document.getElementById('emp-category').value, emp.custom_data || {});
 
         const modal = document.getElementById('create-employee-modal');
         modal.classList.remove('hidden');

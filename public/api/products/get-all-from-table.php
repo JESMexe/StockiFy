@@ -11,6 +11,12 @@ try {
     $pdo = Database::getInstance();
 
     $user = getCurrentUser();
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'No autorizado']);
+        exit;
+    }
+    requireSectionAccess('can_view_data');
 
     $inventoryID = $data;
 

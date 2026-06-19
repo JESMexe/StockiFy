@@ -192,6 +192,12 @@ export class SalesModule {
                                             </div>
                                             <div id="commission-display" style="text-align:right; font-size:0.75rem; color:#666; margin-top:5px; font-weight:600;">Comisión: $0,00</div>
                                         </div>
+                                        
+                                        <div class="form-section" style="margin-top: 15px; display: flex; align-items: center; gap: 8px; background: var(--accent-color-20); border: 1px solid var(--accent-color); padding: 6px 10px; border-radius: 6px; color: var(--accent-color);">
+                                            <input type="checkbox" id="sale-create-delivery-check" style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-color);">
+                                            <label for="sale-create-delivery-check" style="font-weight: 700; cursor: pointer; color: var(--accent-color); margin: 0; font-size: 0.9rem;">Crear Envío para este pedido</label>
+                                        </div>
+
                                         <div class="form-section" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;">
                                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                                                 <label class="form-section-title" style="padding-bottom: 0; bottom: 0; margin-bottom: 0">Información de Pago</label>
@@ -269,30 +275,29 @@ export class SalesModule {
                                     <button id="confirm-sale-btn" class="btn btn-primary w-full" disabled>Confirmar Venta</button>
                                 </div>
                             </div>
-                            
-                            <div id="mobile-checkout-bar" class="hidden-desktop" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:white; padding:15px; padding-bottom:calc(15px + env(safe-area-inset-bottom, 0px)); border-top:1px solid #ccc; box-shadow:0 -5px 15px rgba(0,0,0,0.1); z-index:99999;">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div>
-                                        <div id="mob-bar-count" style="font-size:0.8rem; color:#666;">0 Ítems</div>
-                                        <div id="mob-bar-total" style="font-size:1.4rem; font-weight:800; color:var(--accent-color);">$ 0,00</div>
-                                    </div>
-                                    <button id="btn-go-to-checkout" class="btn btn-primary" style="padding:10px 20px;">
-                                        Ir a Pagar <i class="ph-bold ph-arrow-right"></i>
-                                    </button>
+                        </div>
+                        
+                        <div id="mobile-checkout-bar" class="hidden-desktop" style="display:none; position:relative; width:100%; background:white; padding:15px; padding-bottom:calc(15px + env(safe-area-inset-bottom, 0px)); border-top:1px solid #ccc; box-shadow:0 -5px 15px rgba(0,0,0,0.1); z-index:99999; box-sizing:border-box;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div id="mob-bar-count" style="font-size:0.8rem; color:#666;">0 Ítems</div>
+                                    <div id="mob-bar-total" style="font-size:1.4rem; font-weight:800; color:var(--accent-color);">$ 0,00</div>
                                 </div>
+                                <button id="btn-go-to-checkout" class="btn btn-primary" style="padding:10px 20px;">
+                                    Ir a Pagar <i class="ph-bold ph-arrow-right"></i>
+                                </button>
                             </div>
-
                         </div>
                     </div>
                 </div>
 
                 <div id="detail-sale-modal" class="modal-overlay hidden" style="display:none; z-index:2000; padding: 20px; align-items: center; justify-content: center;" onclick="if(event.target === this) window.salesModuleInstance.closeModal('detail-sale-modal')">
-                    <div class="modal-content" style="width:400px; max-width: 100%; background:#fff; padding:0; overflow:hidden; display:flex; flex-direction:column; border-radius: 16px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                    <div class="modal-content" style="width:400px; max-width: 100%; background:#fff; padding:0; overflow:hidden; display:flex; flex-direction:column; border-radius: 0 !important; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
                         <div class="modal-header" style="padding:15px; border-bottom:1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
                             <h3 style="margin: 0; font-size: 1.2rem;">Ticket de Venta</h3>
                             <button class="modal-close-btn" id="close-detail-modal" onclick="window.salesModuleInstance.closeModal('detail-sale-modal')">&times;</button>
                         </div>
-                        <div id="detail-modal-content" style="padding:20px; overflow-y:auto; max-height: calc(100vh - 120px); background:#fff;"></div>
+                        <div id="detail-modal-content" class="ticket-scroll" style="padding:20px; overflow-y:auto; max-height: calc(100vh - 120px); background:#fff;"></div>
                     </div>
                 </div>
             </div>
@@ -960,6 +965,43 @@ export class SalesModule {
                 this.closeModal('create-sale-modal');
                 await this.loadHistory(this.currentSortOrder);
                 pop_ups.success("Venta Exitosa");
+
+                // Post-Sale Delivery Modal trigger
+                const checkDelivery = document.getElementById('sale-create-delivery-check');
+                if (checkDelivery && checkDelivery.checked && res.sale_id) {
+                    const custSelect = document.getElementById('sale-customer');
+                    const customerName = custSelect.options[custSelect.selectedIndex]?.text || '';
+                    
+                    let address = '';
+                    let customerPhone = '';
+                    let customerEmail = '';
+                    if (payload.customer_id) {
+                        try {
+                            const custDetailsRes = await fetch(`/api/customers/get-all.php?order=DESC`);
+                            const custData = await custDetailsRes.json();
+                            if (custData.success && custData.customers) {
+                                const customer = custData.customers.find(c => parseInt(c.id) === parseInt(payload.customer_id));
+                                if (customer) {
+                                    address = customer.address || '';
+                                    customerPhone = customer.phone || '';
+                                    customerEmail = customer.email || '';
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Error fetching customer address for delivery:", e);
+                        }
+                    }
+                    
+                    if (window.showDashboardView) {
+                        window.showDashboardView('deliveries');
+                    }
+                    if (window.deliveriesModuleInstance) {
+                        window.deliveriesModuleInstance.init();
+                        setTimeout(() => {
+                            window.deliveriesModuleInstance.openCreateModal(res.sale_id, address, customerName, payload.total, customerPhone, customerEmail);
+                        }, 300);
+                    }
+                }
 
                 if (res.alerts && res.alerts.length > 0) {
                     res.alerts.forEach(a => {

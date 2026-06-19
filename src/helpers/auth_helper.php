@@ -101,8 +101,26 @@ if (!function_exists('getActiveRolePermissions')) {
         // Owner: acceso total, no hay restricciones
         if ((int)$role['role_id'] === 1) return null;
 
-        // Admin/Employee: leer sus permisos desde la tabla
         $db   = \App\core\Database::getInstance();
+
+        // Si es Empleado (role_id = 3), verificar si tiene una categoría de empleado asignada y con permisos personalizados
+        if ((int)$role['role_id'] === 3) {
+            $stmtEmp = $db->prepare("
+                SELECT ec.permissions_json 
+                FROM employees e
+                JOIN employee_categories ec ON e.category_id = ec.id
+                WHERE e.email = (SELECT email FROM users WHERE id = ? LIMIT 1)
+                  AND e.inventory_id = ?
+                LIMIT 1
+            ");
+            $stmtEmp->execute([$userId, $inventoryId]);
+            $ecRow = $stmtEmp->fetch(\PDO::FETCH_ASSOC);
+            if ($ecRow && !empty($ecRow['permissions_json'])) {
+                return json_decode($ecRow['permissions_json'], true) ?? [];
+            }
+        }
+
+        // Admin/Employee: leer sus permisos desde la tabla general de roles
         $stmt = $db->prepare(
             "SELECT permissions_json FROM inventory_role_settings
              WHERE inventory_id = ? AND role_id = ? LIMIT 1"

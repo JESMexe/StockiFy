@@ -2,6 +2,7 @@ import { pop_ups } from '../notifications/pop-up.js?v=3.0';
 
 // Secciones configurables del dashboard por el Owner
 const CONFIGURABLE_SECTIONS = [
+    { key: 'can_view_data',          label: 'Ver Datos',            icon: 'ph-table' },
     { key: 'can_view_analytics',     label: 'Analíticas',           icon: 'ph-chart-line' },
     { key: 'can_view_history',       label: 'Historial',            icon: 'ph-clock-counter-clockwise' },
     { key: 'can_view_config',        label: 'Configurar Tabla',     icon: 'ph-gear' },
@@ -10,11 +11,13 @@ const CONFIGURABLE_SECTIONS = [
     { key: 'can_view_employees',     label: 'Trabajadores',         icon: 'ph-identification-badge' },
     { key: 'can_view_payments',      label: 'Métodos de Pago',      icon: 'ph-wallet' },
     { key: 'can_view_notifications', label: 'Notificaciones',       icon: 'ph-bell' },
+    { key: 'can_view_deliveries',    label: 'Envíos',               icon: 'ph-truck' },
 ];
 
 export const usersModuleInstance = {
     isOwner: false,
     currentSettings: {},
+    categoriesSettings: {}, // Para guardar permisos de categorías
 
     async init() {
         await this.detectRole();
@@ -25,6 +28,7 @@ export const usersModuleInstance = {
             this.showPermissionsPanel();
             this.loadPermissions();
             await this.loadQuota(); // Cargar y renderizar cupos del plan
+            await this.loadPendingDebts(); // Cargar y renderizar deudas pendientes
         }
     },
 
@@ -41,6 +45,7 @@ export const usersModuleInstance = {
      */
     applyRoleRestrictions(permissions) {
         const sectionMap = {
+            'can_view_data':          'view-db',
             'can_view_analytics':     'analysis',
             'can_view_history':       'history-log',
             'can_view_config':        'config-db',
@@ -49,6 +54,7 @@ export const usersModuleInstance = {
             'can_view_employees':     'employees',
             'can_view_payments':      'payments',
             'can_view_notifications': 'notifications',
+            'can_view_deliveries':    'deliveries',
         };
 
         Object.entries(sectionMap).forEach(([permKey, viewId]) => {
@@ -126,8 +132,47 @@ export const usersModuleInstance = {
 
             this.renderQuotaBadge(data);
             this.applyQuotaToInviteButton(data);
+
+            // Mostrar botón "Agregar Slots" solo para planes Profesional (2) y Vitalicio (4)
+            const addSlotsBtn = document.getElementById('add-slots-btn');
+            if (addSlotsBtn) {
+                if (parseInt(data.plan) === 2 || parseInt(data.plan) === 4) {
+                    addSlotsBtn.classList.remove('hidden');
+                } else {
+                    addSlotsBtn.classList.add('hidden');
+                }
+            }
         } catch (e) {
             console.warn('[Quota] No se pudo cargar la cuota de colaboradores:', e.message);
+        }
+    },
+
+    /**
+     * Carga las deudas pendientes de slots y muestra un banner de advertencia si las hay.
+     */
+    async loadPendingDebts() {
+        try {
+            const resp = await fetch('/api/collaborators/get-pending-debts.php');
+            if (!resp.ok) return;
+            const res = await resp.json();
+            
+            const banner = document.getElementById('debt-warning-banner');
+            if (res.success && res.debts && res.debts.length > 0) {
+                if (banner) {
+                    banner.style.display = 'flex';
+                    const amountSpan = document.getElementById('debt-warning-text');
+                    if (amountSpan) {
+                        const totalDebt = res.debts.reduce((sum, d) => sum + (parseFloat(d.price_per_slot) * parseInt(d.slots_added)), 0);
+                        amountSpan.innerText = `Tenés una deuda pendiente de $${totalDebt.toLocaleString('es-AR')} por slots agregados. Plazo restante para saldar: 48 horas o tus colaboradores serán eliminados.`;
+                    }
+                }
+            } else {
+                if (banner) {
+                    banner.style.display = 'none';
+                }
+            }
+        } catch (e) {
+            console.error("Error loading pending debts:", e);
         }
     },
 
@@ -350,6 +395,49 @@ export const usersModuleInstance = {
                 await this.submitInviteForm();
             };
         }
+
+        // --- Agregar event listeners para "Agregar Slots" ---
+        const addSlotsBtn = document.getElementById('add-slots-btn');
+        const addSlotsModal = document.getElementById('add-slots-modal');
+        const closeAddSlotsBtn = document.getElementById('close-add-slots-modal-btn');
+        const addSlotsForm = document.getElementById('add-slots-form');
+
+        if (addSlotsBtn && addSlotsModal && greyBg) {
+            addSlotsBtn.onclick = () => {
+                Array.from(greyBg.children).forEach(child => child.classList.add('hidden'));
+                addSlotsModal.classList.remove('hidden');
+                greyBg.classList.remove('hidden');
+                greyBg.style.display        = 'flex';
+                greyBg.style.justifyContent = 'center';
+                greyBg.style.alignItems     = 'center';
+                document.getElementById('slots-count-input')?.focus();
+            };
+        }
+
+        const slotsCountInput = document.getElementById('slots-count-input');
+        const slotsDebtSummary = document.getElementById('slots-debt-summary');
+        if (slotsCountInput && slotsDebtSummary) {
+            slotsCountInput.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value) || 0;
+                const total = val * 20000;
+                slotsDebtSummary.innerText = '$' + total.toLocaleString('es-AR');
+            });
+        }
+
+        if (closeAddSlotsBtn && addSlotsModal && greyBg) {
+            closeAddSlotsBtn.onclick = () => {
+                addSlotsModal.classList.add('hidden');
+                greyBg.classList.add('hidden');
+                greyBg.style.display = '';
+            };
+        }
+
+        if (addSlotsForm) {
+            addSlotsForm.onsubmit = async (e) => {
+                e.preventDefault();
+                await this.submitAddSlotsForm();
+            };
+        }
     },
 
     async submitInviteForm() {
@@ -394,6 +482,45 @@ export const usersModuleInstance = {
         }
     },
 
+    async submitAddSlotsForm() {
+        const slotsInput = document.getElementById('slots-count-input');
+        const submitBtn  = document.getElementById('add-slots-submit-btn');
+
+        const slotsCount = parseInt(slotsInput?.value);
+        if (!slotsCount || slotsCount < 1) return;
+
+        const originalContent = submitBtn.innerHTML;
+        submitBtn.disabled  = true;
+        submitBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Procesando...';
+
+        try {
+            const response = await fetch('/api/collaborators/add-slots.php', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ slots_count: slotsCount })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                pop_ups.success(result.message, "¡Éxito!");
+                document.getElementById('close-add-slots-modal-btn')?.click();
+                if (slotsInput) slotsInput.value = '';
+                // Recargar cuota y deudas pendientes
+                if (this.isOwner) {
+                    await this.loadQuota();
+                    await this.loadPendingDebts();
+                }
+            } else {
+                pop_ups.error(result.message);
+            }
+        } catch (e) {
+            pop_ups.error("Error de conexión al agregar slots.");
+        } finally {
+            submitBtn.disabled  = false;
+            submitBtn.innerHTML = originalContent;
+        }
+    },
+
     // ============================================================
     // PANEL DE PERMISOS — Solo visible para el Owner
     // ============================================================
@@ -409,65 +536,153 @@ export const usersModuleInstance = {
             const data = await res.json();
             if (data.success && data.mode === 'owner') {
                 this.currentSettings = data.settings;
-                this.renderPermissionsGrid(data.settings);
+                
+                this.categoriesSettings = {};
+                if (data.categories) {
+                    data.categories.forEach(cat => {
+                        this.categoriesSettings[cat.id] = {
+                            name: cat.name,
+                            permissions: cat.permissions
+                        };
+                    });
+                }
+                
+                this.renderPermissionsGrid(data.settings, this.categoriesSettings);
             }
         } catch (e) {
             console.error('Error cargando permisos:', e);
         }
     },
 
-    renderPermissionsGrid(settings) {
+    renderPermissionsGrid(settings, categories) {
         const grid = document.getElementById('permissions-grid');
         if (!grid) return;
 
-        // settings = { "2": { can_view_analytics: true, ... }, "3": { ... } }
-        const adminPerms    = settings[2] ?? {};
-        const employeePerms = settings[3] ?? {};
+        let tabsHtml = `
+            <div class="permissions-tabs-container" style="display: flex; gap: 10px; border-bottom: 2px solid #1b1b1b; padding-bottom: 10px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <button type="button" class="tab-btn active" data-target-tab="role-2" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: var(--accent-color); color: white; cursor: pointer; border-radius: 8px; box-shadow: 2px 2px 0 #1b1b1b; transition: all 0.1s;">
+                    <i class="ph ph-star"></i> Administrador
+                </button>
+                <button type="button" class="tab-btn" data-target-tab="role-3" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: white; color: #1b1b1b; cursor: pointer; border-radius: 8px; box-shadow: 2px 2px 0 #1b1b1b; transition: all 0.1s;">
+                    <i class="ph ph-user"></i> Empleado
+                </button>
+        `;
 
-        grid.innerHTML = `
-            <div>
-                <h4 style="margin: 0 0 1rem; display: flex; align-items: center; gap: 8px; color: var(--accent-color);">
-                    <i class="ph ph-star" style="font-size: 1.1rem; color: var(--accent-color);"></i> Administrador
-                </h4>
-                ${CONFIGURABLE_SECTIONS.map(s => this.renderCheckbox(s, 2, adminPerms[s.key] !== false)).join('')}
-            </div>
-            <div>
-                <h4 style="margin: 0 0 1rem; display: flex; align-items: center; gap: 8px; color: #888;">
-                    <i class="ph-fill ph-user" style="font-size: 1.1rem;"></i> Empleado
-                </h4>
-                ${CONFIGURABLE_SECTIONS.map(s => this.renderCheckbox(s, 3, employeePerms[s.key] !== false)).join('')}
+        Object.entries(categories).forEach(([catId, cat]) => {
+            tabsHtml += `
+                <button type="button" class="tab-btn" data-target-tab="cat-${catId}" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: white; color: #1b1b1b; cursor: pointer; border-radius: 8px; box-shadow: 2px 2px 0 #1b1b1b; transition: all 0.1s;">
+                    <i class="ph ph-identification-badge"></i> ${cat.name}
+                </button>
+            `;
+        });
+
+        tabsHtml += `</div>`;
+
+        let contentHtml = `<div class="permissions-tab-contents">`;
+
+        // 1. Panel Administrador (role 2)
+        const adminPerms = settings[2] ?? {};
+        contentHtml += `
+            <div class="tab-content-panel" id="tab-role-2">
+                <h4 style="margin: 0 0 1rem; color: var(--accent-color);"><i class="ph ph-star"></i> Permisos de Administrador</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+                    ${CONFIGURABLE_SECTIONS.map(s => this.renderCheckbox(s, 'role', 2, adminPerms[s.key] !== false)).join('')}
+                </div>
             </div>
         `;
 
-        // Guardar permisos al hacer click en checkboxes
+        // 2. Panel Empleado (role 3)
+        const employeePerms = settings[3] ?? {};
+        contentHtml += `
+            <div class="tab-content-panel hidden" id="tab-role-3">
+                <h4 style="margin: 0 0 1rem; color: #555;"><i class="ph ph-user"></i> Permisos de Empleado (General)</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+                    ${CONFIGURABLE_SECTIONS.map(s => this.renderCheckbox(s, 'role', 3, employeePerms[s.key] !== false)).join('')}
+                </div>
+            </div>
+        `;
+
+        // 3. Paneles de Categorías
+        Object.entries(categories).forEach(([catId, cat]) => {
+            const catPerms = cat.permissions ?? {};
+            contentHtml += `
+                <div class="tab-content-panel hidden" id="tab-cat-${catId}">
+                    <h4 style="margin: 0 0 1rem; color: var(--accent-violet);"><i class="ph ph-identification-badge"></i> Permisos de Categoría: ${cat.name}</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+                        ${CONFIGURABLE_SECTIONS.map(s => this.renderCheckbox(s, 'cat', catId, catPerms[s.key] !== false)).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        contentHtml += `</div>`;
+
+        grid.style.display = 'block';
+        grid.innerHTML = tabsHtml + contentHtml;
+
+        const tabBtns = grid.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.onclick = () => {
+                tabBtns.forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = 'white';
+                    b.style.color = '#1b1b1b';
+                });
+                btn.classList.add('active');
+                btn.style.background = 'var(--accent-color)';
+                btn.style.color = 'white';
+
+                const target = btn.dataset.targetTab;
+                grid.querySelectorAll('.tab-content-panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+                const activePanel = document.getElementById(`tab-${target}`);
+                if (activePanel) {
+                    activePanel.classList.remove('hidden');
+                }
+            };
+        });
+
         grid.querySelectorAll('input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', () => this.collectPermissions());
         });
     },
 
-    renderCheckbox(section, roleId, isChecked) {
+    renderCheckbox(section, type, targetId, isChecked) {
         return `
-            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; border: 2px solid #1b1b1b; border-radius: 8px; background: #fafafa; margin-bottom: 5px;">
                 <input type="checkbox" 
-                    data-role="${roleId}" 
+                    data-type="${type}" 
+                    data-target="${targetId}" 
                     data-key="${section.key}"
                     ${isChecked ? 'checked' : ''}
-                    style="width: 16px; height: 16px; accent-color: var(--accent-violet); cursor: pointer;">
-                <i class="ph ${section.icon}" style="color: #888; font-size: 1rem;"></i>
-                <span style="font-size: 0.9rem; color: #333;">${section.label}</span>
+                    style="width: 18px; height: 18px; accent-color: var(--accent-violet); cursor: pointer;">
+                <i class="ph ${section.icon}" style="color: #666; font-size: 1.1rem;"></i>
+                <span style="font-size: 0.9rem; color: #1b1b1b; font-weight: bold;">${section.label}</span>
             </label>
         `;
     },
 
     collectPermissions() {
-        // Actualizar currentSettings según el estado actual de checkboxes
         const checkboxes = document.querySelectorAll('#permissions-grid input[type="checkbox"]');
         this.currentSettings = { 2: {}, 3: {} };
+        this.categoriesSettingsToSave = {};
 
         checkboxes.forEach(cb => {
-            const roleId = parseInt(cb.dataset.role);
-            const key    = cb.dataset.key;
-            this.currentSettings[roleId][key] = cb.checked;
+            const type     = cb.dataset.type;
+            const targetId = cb.dataset.target;
+            const key      = cb.dataset.key;
+
+            if (type === 'role') {
+                const roleId = parseInt(targetId);
+                this.currentSettings[roleId][key] = cb.checked;
+            } else if (type === 'cat') {
+                const catId = parseInt(targetId);
+                if (!this.categoriesSettingsToSave[catId]) {
+                    this.categoriesSettingsToSave[catId] = {};
+                }
+                this.categoriesSettingsToSave[catId][key] = cb.checked;
+            }
         });
     },
 
@@ -483,7 +698,10 @@ export const usersModuleInstance = {
             const response = await fetch('/api/users/update_permissions.php', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ settings: this.currentSettings })
+                body:    JSON.stringify({ 
+                    settings: this.currentSettings,
+                    categories: this.categoriesSettingsToSave
+                })
             });
             const result = await response.json();
 
@@ -495,7 +713,6 @@ export const usersModuleInstance = {
         } catch (e) {
             pop_ups.error("Error de conexión.");
         } finally {
-            // Siempre restaurar al estado original con texto e ícono fijos
             if (saveBtn) {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar Configuración';

@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const randomColor = accentColors[Math.floor(Math.random() * accentColors.length)];
     document.documentElement.style.setProperty('--accent-color', randomColor);
+    document.documentElement.style.setProperty('--accent-color-20', randomColor + '33');
     const randomColorRgb = convertToRgb(randomColor);
     document.documentElement.style.setProperty('--accent-color-rgb', randomColorRgb);
 

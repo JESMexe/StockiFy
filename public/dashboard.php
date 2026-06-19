@@ -64,7 +64,7 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
     <link rel="stylesheet" href="assets/css/dashboard.css?v=1.6">
     <link rel="stylesheet" href="assets/css/notifications.css?v=2.0">
     <link rel="stylesheet" href="assets/css/employees.css?v=1.3">
-    <link rel="stylesheet" href="assets/css/purchases.css?v=2.0">
+    <link rel="stylesheet" href="assets/css/purchases.css?v=2.1">
     <link rel="stylesheet" href="assets/css/payments.css?v=1.2">
     <link rel="stylesheet" href="assets/css/tutorials.css?v=1.0">
 
@@ -81,7 +81,7 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <link rel="stylesheet" href="assets/css/analytics.css">
-    <link rel="stylesheet" href="assets/css/sales.css">
+    <link rel="stylesheet" href="assets/css/sales.css?v=2.1">
     <style>
         .notif-tab-btn {
             background: none !important;
@@ -104,28 +104,10 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
             border-bottom-color: var(--accent-color) !important;
         }
 
-        /* Botones de periodo en modal de Métricas */
+        /* Botones de periodo en modal de Métricas (heredan de .period-btn) */
         .metrics-period-btn {
-            flex: 1;
-            padding: 8px 4px;
-            font-size: 0.82rem;
-            font-weight: 700;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            background: #fff;
-            color: #888;
-            cursor: pointer;
-            transition: all 0.18s ease;
-            font-family: inherit;
-        }
-        .metrics-period-btn:hover {
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-        }
-        .metrics-period-btn.active {
-            background: #1b1b1b;
-            color: #fff;
-            border-color: #1b1b1b;
+            padding: 10px 4px !important;
+            font-size: 0.85rem !important;
         }
     </style>
 </head>
@@ -228,6 +210,36 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
             </form>
         </div>
 
+        <div id="add-slots-modal" class="hidden"
+            style="background: white; border: 2px solid #1b1b1b; border-radius: 12px; padding: 25px; max-width: 450px; width: 90%; text-align: left; position: relative;">
+            <button id="close-add-slots-modal-btn"
+                style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #1b1b1b;"><i
+                    class="ph-bold ph-x"></i></button>
+            <h3 style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #1b1b1b; font-size: 1.4rem;">
+                <i class="ph-bold ph-plus-circle" style="color: var(--accent-color);"></i> Agregar Slots Extra
+            </h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
+                Sumá slots para invitar a más colaboradores de forma inmediata.
+                Cada slot adicional tiene un costo de <strong>$20.000/mes</strong>. Se registrará una deuda que deberás saldar en un lapso de 48 horas.
+            </p>
+            <form id="add-slots-form">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="micro-label"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Cantidad de Slots</label>
+                    <input type="number" id="slots-count-input" class="rustic-input" value="1" min="1" step="1" required
+                        style="width: 100%; box-sizing: border-box;">
+                </div>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; font-size: 0.85rem;">
+                    <span style="color: #475569; display: block;">Resumen de Deuda:</span>
+                    <strong id="slots-debt-summary" style="font-size: 1.1rem; color: var(--accent-color);">$20.000</strong>
+                </div>
+                <button type="submit" class="btn btn-primary" id="add-slots-submit-btn"
+                    style="width: 100%; height: 48px; background: var(--accent-color); border-color: #1b1b1b; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px; color: white;">
+                    <i class="ph-bold ph-check"></i> Confirmar y Agregar Slots
+                </button>
+            </form>
+        </div>
+
     </div>
 
     <div class="desktop-app-view">
@@ -284,6 +296,7 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                                     Proveedores</button></li>
                             <li><button class="menu-btn" data-target-view="employees"><i
                                         class="ph ph-identification-badge"></i> Empleados</button></li>
+                            <li><button class="menu-btn" data-target-view="deliveries"><i class="ph ph-truck"></i> Envíos</button></li>
                             <?php
                         else: ?>
                             <div
@@ -300,6 +313,10 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                             <li style="opacity: 0.5;" title="Bloqueado en el Plan Básico"><button class="menu-btn"
                                     onclick="window.showLockedFeatureToast('Sección de Empleados');"><i
                                         class="ph ph-identification-badge"></i> Empleados <i class="ph-fill ph-lock-key"
+                                        style="margin-left: auto; color: var(--accent-red)"></i></button></li>
+                            <li style="opacity: 0.5;" title="Bloqueado en el Plan Básico"><button class="menu-btn"
+                                    onclick="window.showLockedFeatureToast('Sección de Envíos');"><i
+                                        class="ph ph-truck"></i> Envíos <i class="ph-fill ph-lock-key"
                                         style="margin-left: auto; color: var(--accent-red)"></i></button></li>
                             <?php
                         endif; ?>
@@ -422,6 +439,10 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
 
                 <div id="history-log" class="dashboard-view hidden">
                     <!-- El contenido se cargará dinámicamente vía HistoryModule.js -->
+                </div>
+
+                <div id="deliveries" class="dashboard-view hidden">
+                    <!-- El contenido se cargará dinámicamente vía deliveries.js -->
                 </div>
 
                 <div id="config-db" class="dashboard-view hidden">
@@ -767,10 +788,32 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">Invitá a otras personas a tu
                                 inventario y administrá sus permisos.</p>
                         </div>
-                        <button id="invite-collaborator-btn" class="btn btn-primary"
-                            style="margin:0; width:auto; white-space:nowrap;">
-                            <i class="ph ph-user-plus"></i> Nueva Invitación
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="add-slots-btn" class="btn btn-secondary hidden"
+                                style="margin:0; width:auto; white-space:nowrap; border-color: var(--accent-color); color: var(--accent-color);">
+                                <i class="ph-bold ph-plus-circle"></i> Agregar Slots
+                            </button>
+                            <button id="invite-collaborator-btn" class="btn btn-primary"
+                                style="margin:0; width:auto; white-space:nowrap;">
+                                <i class="ph ph-user-plus"></i> Nueva Invitación
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Banner de advertencia de deudas pendientes -->
+                    <div id="debt-warning-banner" class="hidden"
+                        style="background: #fffbeb; border: 2px solid #d97706; padding: 15px 20px; border-radius: 12px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="ph-bold ph-warning-amber" style="font-size: 1.8rem; color: #d97706;"></i>
+                            <div>
+                                <strong style="color: #92400e; font-size: 1rem; display: block;">Pago Pendiente de Colaboradores</strong>
+                                <span id="debt-warning-text" style="color: #b45309; font-size: 0.85rem;">Tenés una deuda pendiente de $20.000 por slots agregados. Plazo restante: 48 horas.</span>
+                            </div>
+                        </div>
+                        <a id="pay-debt-btn" href="#" target="_blank" class="btn btn-primary"
+                            style="margin: 0; background-color: #d97706; border-color: #b45309; color: #fff; width: auto; font-size: 0.85rem; padding: 8px 16px; font-weight: bold; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                            <i class="ph-bold ph-whatsapp-logo"></i> Saldar por WhatsApp
+                        </a>
                     </div>
 
                     <div id="collaborators-list-container"
@@ -954,6 +997,12 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                 </div>
                 <h3>Proveedores</h3>
                 <p>Ver listado</p>
+            </div>
+
+            <div class="mobile-card action-deliveries" onclick="if(window.showDashboardView) { window.showDashboardView('deliveries'); window.deliveriesModuleInstance.init(); document.getElementById('grey-background').classList.add('hidden'); }">
+                <div class="icon-circle"><i class="ph-bold ph-truck"></i></div>
+                <h3>Envíos</h3>
+                <p>Gestionar</p>
             </div>
 
             <div class="mobile-card action-customers" onclick="window.openMobileEntityList('customers')">
@@ -1260,7 +1309,18 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                 <p id="prompt-message" style="text-align: left;">Mensaje de ayuda.</p>
             </div>
             <form id="prompt-form">
-                <div class="modal-body">
+                <div class="modal-body" style="padding: 1.5rem 1.8rem;">
+                    <style>
+                        #prompt-input {
+                            width: 100% !important;
+                            box-sizing: border-box !important;
+                            padding: 10px 14px !important;
+                            border: 1.5px solid #1b1b1b !important;
+                            border-radius: 8px !important;
+                            font-size: 1rem !important;
+                            font-family: 'Satoshi', sans-serif !important;
+                        }
+                    </style>
                     <input type="text" id="prompt-input" placeholder="Escribí acá..." required>
                 </div>
                 <div class="modal-footer">
@@ -1570,18 +1630,17 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                 <button class="close-icon"
                     onclick="document.getElementById('mobile-metrics-modal').classList.add('hidden')">&times;</button>
             </div>
-            <!-- Selectores de Periodo -->
-            <div style="display: flex; gap: 6px; padding: 10px 15px; border-bottom: 2px solid #eee; background: #fafafa;">
-                <button id="metrics-btn-today" class="metrics-period-btn active" onclick="window.loadMobileMetricsData('today')">
+            <div class="period-selector" style="padding: 15px 20px 5px 20px; margin-bottom: 0; gap: 10px;">
+                <button id="metrics-btn-today" class="period-btn metrics-period-btn active" onclick="window.loadMobileMetricsData('today')">
                     Hoy
                 </button>
-                <button id="metrics-btn-month" class="metrics-period-btn" onclick="window.loadMobileMetricsData('month')">
+                <button id="metrics-btn-month" class="period-btn metrics-period-btn" onclick="window.loadMobileMetricsData('month')">
                     Mes
                 </button>
-                <button id="metrics-btn-year" class="metrics-period-btn" onclick="window.loadMobileMetricsData('year')">
+                <button id="metrics-btn-year" class="period-btn metrics-period-btn" onclick="window.loadMobileMetricsData('year')">
                     Año
                 </button>
-                <button id="metrics-btn-total" class="metrics-period-btn" onclick="window.loadMobileMetricsData('total')">
+                <button id="metrics-btn-total" class="period-btn metrics-period-btn" onclick="window.loadMobileMetricsData('total')">
                     Total
                 </button>
             </div>
@@ -1730,9 +1789,9 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
 
     <script type="module" src="assets/js/import.js?v=1.3"></script>
     <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
-    <script type="module" src="assets/js/dashboard.js?v=2.0"></script>
-    <script type="module" src="assets/js/sales/sales.js?v=2.1"></script>
-    <script type="module" src="assets/js/purchases/purchases.js?v=2.2"></script>
+    <script type="module" src="assets/js/dashboard.js?v=2.1"></script>
+    <script type="module" src="assets/js/sales/sales.js?v=2.2"></script>
+    <script type="module" src="assets/js/purchases/purchases.js?v=2.3"></script>
     <script type="module" src="assets/js/history/history.js?v=1.3"></script>
     <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>
     <script src="assets/js/tutorials.js?v=1.0"></script>

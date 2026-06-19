@@ -21,7 +21,7 @@ class EmployeeModel {
         return isset($_SESSION['active_inventory_id']) ? (int)$_SESSION['active_inventory_id'] : null;
     }
 
-    public function createEmployee($userId, $name, $dni = null, $phone = null, $email = null, $inventoryId = null, $categoryId = null, $customData = null): bool|string
+    public function createEmployee($userId, $name, $dni = null, $phone = null, $email = null, $inventoryId = null, $categoryId = null, $customData = null, $isCollaborator = 0): bool|string
     {
         try {
             $inv = $this->resolveInventoryId($inventoryId);
@@ -31,8 +31,8 @@ class EmployeeModel {
             $ownerId = getInventoryOwnerId((int)$inv) ?? $userId;
 
             $stmt = $this->db->prepare("
-                INSERT INTO employees (user_id, inventory_id, full_name, dni, phone, email, category_id, custom_data, created_at)
-                VALUES (:user, :inv, :name, :dni, :phone, :email, :cat, :data, NOW())
+                INSERT INTO employees (user_id, inventory_id, full_name, dni, phone, email, category_id, custom_data, is_collaborator, created_at)
+                VALUES (:user, :inv, :name, :dni, :phone, :email, :cat, :data, :is_collaborator, NOW())
             ");
             $success = $stmt->execute([
                 ':user' => $ownerId,
@@ -42,7 +42,8 @@ class EmployeeModel {
                 ':phone' => $phone,
                 ':email' => $email,
                 ':cat' => $categoryId,
-                ':data' => is_array($customData) ? json_encode($customData) : $customData
+                ':data' => is_array($customData) ? json_encode($customData) : $customData,
+                ':is_collaborator' => $isCollaborator
             ]);
 
             if ($success) {
@@ -237,6 +238,15 @@ class EmployeeModel {
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             return null;
+        }
+    }
+    public function updateIsCollaboratorStatus($id, $isCollaborator): bool
+    {
+        try {
+            $stmt = $this->db->prepare("UPDATE employees SET is_collaborator = :isc WHERE id = :id");
+            return $stmt->execute([':isc' => $isCollaborator, ':id' => $id]);
+        } catch (Exception $e) {
+            return false;
         }
     }
 }

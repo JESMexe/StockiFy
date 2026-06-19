@@ -29,6 +29,22 @@ $input = json_decode(file_get_contents('php://input'), true);
     $categoryId = $input['category_id'] ?? null;
     $customData = $input['custom_data'] ?? null;
 
+    if ($email && $categoryId) {
+        $db = \App\core\Database::getInstance();
+        $stmtCheck = $db->prepare("
+            SELECT ic.role_id 
+            FROM inventory_collaborators ic
+            JOIN users u ON ic.user_id = u.id
+            WHERE ic.inventory_id = ? AND u.email = ? AND ic.status = 'active'
+            LIMIT 1
+        ");
+        $stmtCheck->execute([$inventoryId, $email]);
+        $collabRoleId = $stmtCheck->fetchColumn();
+        if ($collabRoleId && (int)$collabRoleId === 2) {
+            $categoryId = null; // Force null to prevent Admin category assignments
+        }
+    }
+
     $model = new EmployeeModel();
     $id = $model->createEmployee($user['id'], $input['name'], $dni, $phone, $email, $inventoryId, $categoryId, $customData);
 

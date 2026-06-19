@@ -128,6 +128,31 @@ try {
     );
     $stmtInsert->execute([$inventoryId, $targetUser['id'], $roleId, $user['id']]);
 
+    // --- Sincronizar Empleado ---
+    require_once __DIR__ . '/../../../src/Models/EmployeeModel.php';
+    $empModel = new \App\Models\EmployeeModel();
+    
+    // Check if employee already exists by email
+    $stmtEmpCheck = $db->prepare("SELECT id FROM employees WHERE email = ? AND inventory_id = ? LIMIT 1");
+    $stmtEmpCheck->execute([$email, $inventoryId]);
+    $existingEmpId = $stmtEmpCheck->fetchColumn();
+    
+    if ($existingEmpId) {
+        $empModel->updateIsCollaboratorStatus($existingEmpId, 1);
+    } else {
+        $empModel->createEmployee(
+            $ownerId, 
+            $targetUser['full_name'] ?: $targetUser['username'] ?: $email, 
+            null, 
+            null, 
+            $email, 
+            $inventoryId, 
+            null, 
+            null, 
+            1
+        );
+    }
+
     // --- Guardar registro histórico de la invitación (auditoría) ---
     $token = $invModel->createInvitation($inventoryId, $email, $roleId, $user['id']);
 

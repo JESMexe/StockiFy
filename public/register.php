@@ -126,7 +126,7 @@
         </div>
         <div class="google-btn-container" style="margin-top: 20px; text-align: center;">
             <a href="./api/auth/google-login" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" alt="Google">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="20" alt="Google">
                 Continuar con Google
             </a>
             <div class="legal-links" style="display: flex; gap: 15px; justify-content: center; font-size: 0.8rem; opacity: 0.5; margin-top: 15px;">

@@ -274,7 +274,7 @@ tbody td {
     .purchase-modal-body {
         flex: 1 !important; display: flex !important; flex-direction: column !important;
         padding: 10px !important; gap: 20px !important; overflow-y: auto !important;
-        padding-bottom: 100px !important; /* Espacio para barra flotante */
+        padding-bottom: 20px !important;
     }
     .purchase-col {
         width: 100% !important; min-width: 0 !important; height: auto !important;

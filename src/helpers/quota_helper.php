@@ -41,9 +41,24 @@ if (!function_exists('getCollaboratorQuota')) {
     {
         $db = Database::getInstance();
 
-        // 1. Leer plan del Owner y slots personalizados (solo Empresarial)
+        // Ejecutar autocorrección on-demand para deudas expiradas
+        require_once __DIR__ . '/../Services/CollaboratorDebtService.php';
+        $debtSvc = new \App\Services\CollaboratorDebtService();
+        $debtSvc->processExpiredDebts();
+
+        // Calcular slots adicionales activos (del owner en todos sus inventarios)
+        $stmtExtra = $db->prepare(
+            "SELECT SUM(slots_added) 
+             FROM collaborator_slots_debts 
+             WHERE owner_id = ? 
+               AND (status = 'paid' OR (status = 'pending' AND created_at >= NOW() - INTERVAL 48 HOUR))"
+        );
+        $stmtExtra->execute([$ownerId]);
+        $extraSlots = (int)$stmtExtra->fetchColumn();
+
+        // 1. Leer plan del Owner
         $stmt = $db->prepare(
-            'SELECT subscription_active, collaborator_slots FROM users WHERE id = ? LIMIT 1'
+            'SELECT subscription_active FROM users WHERE id = ? LIMIT 1'
         );
         $stmt->execute([$ownerId]);
         $owner = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -54,14 +69,13 @@ if (!function_exists('getCollaboratorQuota')) {
         }
 
         $plan  = (int)$owner['subscription_active'];
-        $slots = $owner['collaborator_slots']; // null o int
 
         // 2. Determinar el tope máximo según el plan
         $max = match($plan) {
             1 => 0,                                                           // Básico: sin colaboradores
-            2 => 2,                                                           // Profesional: hasta 2
-            3 => ($slots !== null ? (int)$slots : 5),                        // Empresarial: configurado o default 5
-            4 => null,                                                        // Vitalicio: ilimitado
+            2 => 2 + $extraSlots,                                             // Profesional: hasta 2 + extras
+            3 => 5,                                                           // Empresarial: default 5
+            4 => 4 + $extraSlots,                                             // Vitalicio: hasta 4 + extras (5 cupos base including owner)
             default => 0,                                                     // Plan desconocido: bloqueado
         };
 

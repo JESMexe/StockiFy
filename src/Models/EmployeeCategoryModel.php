@@ -114,6 +114,10 @@ class EmployeeCategoryModel
             // Fetch old record for logging
             $oldRow = $this->getById($id, $userId, $inventoryId);
 
+            if ($oldRow && $oldRow['name'] === 'Repartidor') {
+                return false;
+            }
+
             $stmt = $this->db->prepare("DELETE FROM employee_categories WHERE id = :id AND user_id = :user AND inventory_id = :inv");
             $success = $stmt->execute([':id' => $id, ':user' => $ownerId, ':inv' => $inventoryId]);
 
@@ -145,6 +149,13 @@ class EmployeeCategoryModel
         try {
             require_once __DIR__ . '/../helpers/auth_helper.php';
             $ownerId = getInventoryOwnerId((int)$inventoryId) ?? $userId;
+
+            // Check if default category "Repartidor" exists
+            $checkStmt = $this->db->prepare("SELECT id FROM employee_categories WHERE user_id = :user AND inventory_id = :inv AND name = 'Repartidor'");
+            $checkStmt->execute([':user' => $ownerId, ':inv' => $inventoryId]);
+            if (!$checkStmt->fetch()) {
+                $this->createCategory($userId, $inventoryId, 'Repartidor', ['Vehículo', 'Licencia']);
+            }
 
             $stmt = $this->db->prepare("SELECT * FROM employee_categories WHERE user_id = :user AND inventory_id = :inv ORDER BY name ASC");
             $stmt->execute([':user' => $ownerId, ':inv' => $inventoryId]);

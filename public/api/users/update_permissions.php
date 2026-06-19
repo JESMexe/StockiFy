@@ -34,8 +34,9 @@ if (!$myRole || (int)$myRole['role_id'] !== 1) {
     exit;
 }
 
-$data     = json_decode(file_get_contents('php://input'), true);
-$settings = $data['settings'] ?? null;
+$data       = json_decode(file_get_contents('php://input'), true);
+$settings   = $data['settings'] ?? null;
+$categories = $data['categories'] ?? null;
 
 if (!is_array($settings)) {
     http_response_code(400);
@@ -60,6 +61,22 @@ foreach ($settings as $roleId => $permissions) {
 
     if (!$stmt->execute([$inventoryId, $roleId, json_encode($permissions)])) {
         $errors[] = "Error al guardar rol {$roleId}";
+    }
+}
+
+// Guardar permisos de las categorías de empleados
+if (is_array($categories)) {
+    $stmtCat = $db->prepare("
+        UPDATE employee_categories 
+        SET permissions_json = ? 
+        WHERE id = ? AND inventory_id = ?
+    ");
+    foreach ($categories as $catId => $permissions) {
+        $catId = (int)$catId;
+        if (!is_array($permissions)) continue;
+        if (!$stmtCat->execute([json_encode($permissions), $catId, $inventoryId])) {
+            $errors[] = "Error al guardar categoría {$catId}";
+        }
     }
 }
 
