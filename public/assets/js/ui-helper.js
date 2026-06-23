@@ -8,8 +8,7 @@ export const ui_helper = {
         userDropdown: (extraLinks = []) => {
             const defaultLinks = [
                 { label: 'Configuración', href: 'settings.php', icon: 'ph-gear' },
-                { label: 'Soporte', href: 'settings.php?tab=soporte', icon: 'ph-lifebuoy' },
-                { label: 'Colaboradores', href: '#', icon: 'ph-users-three', onclick: "if(window.showDashboardView) { window.showDashboardView('users-manage'); window.usersModuleInstance.init(); } document.getElementById('mi-cuenta-dropdown').classList.add('hidden'); event.preventDefault();" }
+                { label: 'Soporte', href: 'settings.php?tab=soporte', icon: 'ph-lifebuoy' }
             ];
             const allLinks = [...defaultLinks, ...extraLinks, { label: 'Cerrar Sesión', href: 'logout.php', icon: 'ph-sign-out' }];
 

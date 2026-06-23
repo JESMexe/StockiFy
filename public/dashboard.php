@@ -50,6 +50,23 @@ $currentUserRbac = ($activeInventoryId && $currentUser)
     ? getInventoryRole((int) $currentUser['id'], $activeInventoryId)
     : null;
 $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
+
+// El nivel de suscripción que rige las características de este inventario es el del Propietario (Owner)
+$inventorySubscriptionActive = 1; // Por defecto básico
+try {
+    if ($activeInventoryId) {
+        $ownerId = getInventoryOwnerId($activeInventoryId);
+        if ($ownerId) {
+            $stmtOwnerSub = $pdo->prepare("SELECT subscription_active FROM users WHERE id = ?");
+            $stmtOwnerSub->execute([$ownerId]);
+            $inventorySubscriptionActive = (int)$stmtOwnerSub->fetchColumn();
+        }
+    } else {
+        $inventorySubscriptionActive = (int)($currentUser['subscription_active'] ?? 1);
+    }
+} catch (Exception $e) {
+    $inventorySubscriptionActive = (int)($currentUser['subscription_active'] ?? 1);
+}
 ?>
 
 <!DOCTYPE html>
@@ -61,12 +78,13 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
     <title>Panel de Control - StockiFy</title>
 
     <link rel="stylesheet" href="assets/css/main.css?v=1.3">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=1.6">
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=1.7">
     <link rel="stylesheet" href="assets/css/notifications.css?v=2.0">
     <link rel="stylesheet" href="assets/css/employees.css?v=1.3">
     <link rel="stylesheet" href="assets/css/purchases.css?v=2.1">
     <link rel="stylesheet" href="assets/css/payments.css?v=1.2">
     <link rel="stylesheet" href="assets/css/tutorials.css?v=1.0">
+    <link rel="stylesheet" href="assets/css/mobile-sheets.css?v=1.0">
 
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
@@ -257,6 +275,7 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                         <li><a href="select-db" class="menu-link"><i class="ph ph-database"></i> Cambiar Inventario</a>
                         </li>
 
+                        <?php if ((int)$currentUser['subscription_active'] !== 5): ?>
                         <?php
                         $dbInstance = \App\core\Database::getInstance();
                         $stmtCount = $dbInstance->prepare("SELECT COUNT(*) FROM inventories WHERE user_id = ?");
@@ -277,6 +296,7 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                                         style="margin-left: auto; color: var(--accent-red)"></i></a></li>
                             <?php
                         endif; ?>
+                        <?php endif; ?>
                     </ul>
 
                     <h3>Transacciones</h3>
@@ -289,7 +309,7 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
 
                     <h3>Directorio</h3>
                     <ul>
-                        <?php if ($currentUser['subscription_active'] >= 2): ?>
+                        <?php if ($inventorySubscriptionActive >= 2): ?>
                             <li><button class="menu-btn" data-target-view="customers"><i class="ph ph-user-focus"></i>
                                     Clientes</button></li>
                             <li><button class="menu-btn" data-target-view="providers"><i class="ph ph-van"></i>
@@ -342,6 +362,8 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                     <ul>
                         <li><button class="menu-btn" data-target-view="tutorials"><i class="ph ph-book-open"></i>
                                 Tutoriales</button></li>
+                        <li><button class="menu-btn" onclick="window.location.href='settings.php?tab=soporte'"><i class="ph ph-lifebuoy"></i>
+                                Soporte</button></li>
                     </ul>
                 </nav>
             </aside>
@@ -781,14 +803,15 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                 </div>
 
                 <div id="users-manage" class="dashboard-view hidden">
-                    <div
+                    <div class="users-manage-header-row"
                         style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b1b1b; padding-bottom: 15px; margin-bottom: 1.5rem;">
-                        <div>
+                        <div class="desktop-only-header-text">
                             <h2 style="margin:0;"><i class="ph ph-users-three"></i> Gestión de Colaboradores</h2>
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">Invitá a otras personas a tu
                                 inventario y administrá sus permisos.</p>
                         </div>
-                        <div style="display: flex; gap: 10px;">
+                        <div id="collab-quota-placeholder-mobile" class="mobile-only-quota-row" style="display: none;"></div>
+                        <div class="collab-header-buttons" style="display: flex; gap: 10px;">
                             <button id="add-slots-btn" class="btn btn-secondary hidden"
                                 style="margin:0; width:auto; white-space:nowrap; border-color: var(--accent-color); color: var(--accent-color);">
                                 <i class="ph-bold ph-plus-circle"></i> Agregar Slots
@@ -999,7 +1022,7 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                 <p>Ver listado</p>
             </div>
 
-            <div class="mobile-card action-deliveries" onclick="if(window.showDashboardView) { window.showDashboardView('deliveries'); window.deliveriesModuleInstance.init(); document.getElementById('grey-background').classList.add('hidden'); }">
+            <div class="mobile-card action-deliveries" onclick="window.openMobileDeliveries()">
                 <div class="icon-circle"><i class="ph-bold ph-truck"></i></div>
                 <h3>Envíos</h3>
                 <p>Gestionar</p>
@@ -1016,6 +1039,14 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
                 <h3>Trabajadores</h3>
                 <p>Ver equipo</p>
             </div>
+
+            <?php if ($isOwner): ?>
+                <div class="mobile-card action-collaborators" onclick="window.openMobileCollaborators()">
+                    <div class="icon-circle"><i class="ph-bold ph-users-three"></i></div>
+                    <h3>Colaboradores</h3>
+                    <p>Gestionar equipo</p>
+                </div>
+            <?php endif; ?>
         </div>
 
         <div class="mobile-quick-stats">
@@ -1569,55 +1600,86 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
     </div>
 
     <div id="mobile-price-checker-modal" class="mobile-modal-overlay hidden">
-        <div class="mobile-modal-content" style="height: 80vh; display: flex; flex-direction: column;">
-            <div class="mobile-modal-header">
-                <h2>Consultar Precio</h2>
-                <button class="close-icon" onclick="window.closePriceChecker()">&times;</button>
+        <div class="m-checker-sheet">
+
+            <!-- DRAG HANDLE -->
+            <div class="m-checker-handle"></div>
+
+            <!-- HEADER -->
+            <div class="m-checker-header">
+                <div class="m-checker-header-left">
+                    <div class="m-checker-icon-wrap">
+                        <i class="ph-bold ph-barcode"></i>
+                    </div>
+                    <div>
+                        <h2 class="m-checker-title">Consultar Precio</h2>
+                        <div class="m-checker-subtitle">Precio y stock en tiempo real</div>
+                    </div>
+                </div>
+                <div class="m-checker-header-right">
+                    <button class="m-checker-close-btn" onclick="window.closePriceChecker()">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
             </div>
 
-            <div id="checker-body" class="checker-body" style="padding: 0 20px; border-bottom: 2px solid #1b1b1b; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <input type="text" id="checker-input" placeholder="Buscar producto o escanear..."
-                        style="width: 100%; padding: 15px; border: 2px solid #1b1b1b; border-radius: 12px; font-size: 1.1rem;">
-                    <button onclick="window.performPriceCheck()"
-                        style="background: var(--color-white); color: var(--color-black); border: 3px solid #1b1b1b; border-radius: 12px; width: 60px; font-size: 1.5rem;">
+            <!-- SEARCH BAR -->
+            <div class="m-checker-search-wrap">
+                <div class="m-checker-search-row">
+                    <div class="m-checker-search-box">
+                        <i class="ph ph-magnifying-glass m-checker-search-icon"></i>
+                        <input type="text" id="checker-input"
+                            class="m-checker-input"
+                            placeholder="Buscar producto o escanear código...">
+                    </div>
+                    <button onclick="window.performPriceCheck()" class="m-checker-search-btn">
                         <i class="ph-bold ph-magnifying-glass"></i>
                     </button>
                 </div>
+            </div>
 
-                <div id="checker-list-container" style="flex: 1; overflow-y: auto; display: none;"></div>
+            <!-- BODY -->
+            <div class="m-checker-body" id="checker-body">
 
-                <div id="checker-result" class="hidden"
-                    style="text-align: center; border: 2px dashed #ccc; padding: 20px; border-radius: 12px;">
-                    <h3 id="res-name" style="margin: 0 0 10px 0; font-size: 1.2rem; color: #666;">Nombre del
-                        Producto
-                    </h3>
-                    <small>Precio de Venta</small>
-                    <h1 id="res-price"
-                        style="margin: 10px 0; margin-top: 0; font-size: 2.5rem; color: var(--accent-green);">$0.00
-                    </h1>
+                <!-- LISTA DE RESULTADOS -->
+                <div id="checker-list-container" class="m-checker-list-container" style="display: none;"></div>
 
-                    <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
-                        <div style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
-                            <small>Stock</small>
-                            <div id="res-stock" style="font-weight: bold; font-size: 1.2rem;">0</div>
+                <!-- RESULTADO ÚNICO -->
+                <div id="checker-result" class="m-checker-result hidden">
+                    <div class="m-checker-result-name-wrap">
+                        <i class="ph ph-tag m-checker-result-tag-icon"></i>
+                        <h3 id="res-name" class="m-checker-result-name">Nombre del Producto</h3>
+                    </div>
+
+                    <div class="m-checker-price-card">
+                        <small class="m-checker-price-label">Precio de Venta</small>
+                        <h1 id="res-price" class="m-checker-price-value">$0.00</h1>
+                    </div>
+
+                    <div class="m-checker-stats-row">
+                        <div class="m-checker-stat-box">
+                            <i class="ph ph-stack"></i>
+                            <small>Stock disponible</small>
+                            <div id="res-stock" class="m-checker-stat-value">0</div>
                         </div>
-                        <div style="background: #f0f0f0; padding: 10px; border-radius: 8px;">
+                        <div class="m-checker-stat-box">
+                            <i class="ph ph-receipt"></i>
                             <small>Precio de Compra</small>
-                            <div id="res-cost" style="font-weight: bold; font-size: 1.2rem;">$0.00</div>
+                            <div id="res-cost" class="m-checker-stat-value">$0.00</div>
                         </div>
                     </div>
 
-                    <button id="checker-back-btn" onclick="window.checkerBackToList()"
-                        style="margin-top: 20px; background: transparent; border: 2px solid #1b1b1b; border-radius: 10px; padding: 10px 20px; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                    <button id="checker-back-btn" onclick="window.checkerBackToList()" class="m-checker-back-btn">
                         <i class="ph-bold ph-arrow-left"></i> Volver a la Lista
                     </button>
                 </div>
 
-                <div id="checker-error" class="hidden"
-                    style="text-align: center; color: var(--accent-red); margin-top: 20px; font-weight: bold;">
-                    Producto no encontrado.
+                <!-- ERROR -->
+                <div id="checker-error" class="m-checker-error hidden">
+                    <i class="ph ph-warning-circle"></i>
+                    <p>Producto no encontrado.</p>
                 </div>
+
             </div>
         </div>
     </div>
@@ -1726,14 +1788,46 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
 
     <!-- MODAL LISTADO DE ENTIDADES MÓVIL (Clientes, Proveedores, Trabajadores) -->
     <div id="mobile-entity-list-modal" class="mobile-modal-overlay hidden" style="z-index: 10001;">
-        <div class="mobile-modal-content" style="height: 80vh; border-top: 4px solid var(--accent-color);">
-            <div class="mobile-modal-header">
-                <h2 id="m-entity-title">Entidades</h2>
-                <button class="close-icon"
-                    onclick="document.getElementById('mobile-entity-list-modal').classList.add('hidden')">&times;</button>
+        <div class="m-entity-sheet">
+            <div class="m-entity-handle"></div>
+            <div class="m-entity-header">
+                <div class="m-entity-header-left">
+                    <div class="m-entity-icon-wrap"><i id="m-entity-icon" class="ph ph-identification-card"></i></div>
+                    <div>
+                        <div class="m-entity-title" id="m-entity-title">Trabajadores</div>
+                        <div class="m-entity-subtitle" id="m-entity-subtitle">Lista del equipo</div>
+                    </div>
+                </div>
+                <button class="m-entity-close-btn" onclick="window.closeMobileEntityList()" type="button">
+                    <i class="ph-bold ph-x"></i>
+                </button>
             </div>
-            <div class="mobile-modal-body" id="m-entity-body" style="padding: 15px; overflow-y: auto;">
+            <div class="m-entity-body" id="m-entity-body"></div>
+        </div>
+    </div>
+
+    <!-- DETALLE DE ENTIDAD MÓVIL -->
+    <div id="mobile-entity-detail-modal" class="mobile-modal-overlay hidden" style="z-index: 10002;">
+        <div class="m-entity-detail-sheet">
+            <div class="m-entity-handle"></div>
+            <div class="m-entity-header">
+                <button class="m-entity-back-btn" onclick="window.closeMobileEntityDetail()" type="button">
+                    <i class="ph-bold ph-arrow-left"></i>
+                </button>
+                <div class="m-entity-title" id="m-detail-title" style="flex:1; text-align:center; margin:0 8px;">Perfil</div>
+                <button class="m-entity-close-btn" onclick="window.closeMobileEntityDetail(true)" type="button">
+                    <i class="ph-bold ph-x"></i>
+                </button>
             </div>
+            <div class="m-entity-detail-hero">
+                <div class="m-entity-detail-avatar" id="m-detail-avatar">?</div>
+                <div style="flex:1; min-width:0;">
+                    <div class="m-entity-detail-name" id="m-detail-name">—</div>
+                    <div class="m-entity-detail-cat" id="m-detail-cat">Sin categoría</div>
+                </div>
+                <div id="m-detail-wa"></div>
+            </div>
+            <div class="m-entity-detail-body" id="m-entity-detail-body"></div>
         </div>
     </div>
 
@@ -1752,20 +1846,191 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
 
     <!-- MODAL HISTORIAL MÓVIL -->
     <div id="mobile-history-modal" class="mobile-modal-overlay hidden">
-        <div class="mobile-modal-content" style="height: 85vh;">
-            <div class="mobile-modal-header">
-                <h2><i class="ph ph-clock-counter-clockwise"></i> Historial</h2>
-                <button class="close-icon"
-                    onclick="document.getElementById('mobile-history-modal').classList.add('hidden')">&times;</button>
+        <div class="m-history-sheet">
+
+            <!-- DRAG HANDLE -->
+            <div class="m-history-handle"></div>
+
+            <!-- HEADER -->
+            <div class="m-history-header">
+                <div class="m-history-header-left">
+                    <div class="m-history-icon-wrap">
+                        <i class="ph-bold ph-clock-counter-clockwise"></i>
+                    </div>
+                    <div>
+                        <h2 class="m-history-title">Historial</h2>
+                        <div class="m-history-subtitle">Movimientos del inventario</div>
+                    </div>
+                </div>
+                <div class="m-history-header-right">
+                    <button class="m-history-refresh-btn" id="m-history-refresh-btn" onclick="window.openMobileHistory()">
+                        <i class="ph ph-arrows-clockwise"></i>
+                    </button>
+                    <button class="m-history-close-btn" onclick="document.getElementById('mobile-history-modal').classList.add('hidden')">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
             </div>
-            <div class="mobile-modal-body" id="mobile-history-body"
-                style="padding: 15px; overflow-y: auto; height: calc(100% - 60px);">
-                <div style="text-align: center; padding: 40px; color: #999;"><i class="ph ph-spinner ph-spin"></i>
-                    Cargando historial...</div>
+
+            <!-- FILTER TABS -->
+            <div class="m-history-tabs" id="m-history-tabs">
+                <button class="m-history-tab active" id="m-hist-tab-all" onclick="window.filterMobileHistory('all')">
+                    <i class="ph ph-squares-four"></i> Todo
+                </button>
+                <button class="m-history-tab" id="m-hist-tab-product" onclick="window.filterMobileHistory('product')">
+                    <i class="ph ph-package"></i> Productos
+                </button>
+                <button class="m-history-tab" id="m-hist-tab-sale" onclick="window.filterMobileHistory('sale')">
+                    <i class="ph ph-shopping-cart"></i> Ventas
+                </button>
+                <button class="m-history-tab" id="m-hist-tab-purchase" onclick="window.filterMobileHistory('purchase')">
+                    <i class="ph ph-truck"></i> Compras
+                </button>
+                <button class="m-history-tab" id="m-hist-tab-collaborator" onclick="window.filterMobileHistory('collaborator')">
+                    <i class="ph ph-users"></i> Equipo
+                </button>
+            </div>
+
+            <!-- BODY -->
+            <div class="m-history-body" id="mobile-history-body">
+                <div class="m-history-loading">
+                    <i class="ph ph-spinner ph-spin"></i>
+                    <span>Cargando historial...</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- MODAL COLABORADORES MÓVIL -->
+    <div id="mobile-collaborators-modal" class="mobile-modal-overlay hidden" style="z-index: 10001;">
+        <div class="m-collab-sheet">
+
+            <!-- DRAG HANDLE -->
+            <div class="m-collab-handle"></div>
+
+            <!-- HEADER -->
+            <div class="m-collab-header">
+                <div class="m-collab-header-left">
+                    <div class="m-collab-icon-wrap">
+                        <i class="ph-bold ph-users-three"></i>
+                    </div>
+                    <div>
+                        <h2 class="m-collab-title">Colaboradores</h2>
+                        <div id="m-collab-quota-badge" class="m-collab-quota-badge">
+                            <i class="ph ph-spinner ph-spin"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="m-collab-header-right">
+                    <button id="m-collab-invite-btn" class="m-collab-invite-btn" style="display:none;">
+                        <i class="ph-bold ph-user-plus"></i>
+                    </button>
+                    <button class="m-collab-close-btn" onclick="window.closeMobileCollaborators()">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- DEBT WARNING BANNER MÓVIL -->
+            <div id="m-collab-debt-banner" class="m-collab-debt-banner hidden">
+                <i class="ph-bold ph-warning-amber"></i>
+                <div>
+                    <strong>Pago Pendiente</strong>
+                    <span id="m-collab-debt-text">Tenés deuda pendiente por slots.</span>
+                </div>
+                <a id="m-collab-pay-btn" href="#" target="_blank" class="m-collab-pay-btn">
+                    <i class="ph-bold ph-whatsapp-logo"></i>
+                </a>
+            </div>
+
+            <!-- TABS -->
+            <div class="m-collab-tabs" id="m-collab-tabs">
+                <button class="m-collab-tab active" onclick="window.switchMobileCollabTabNative('list')" id="m-tab-list">
+                    <i class="ph ph-users"></i> Equipo
+                </button>
+                <button class="m-collab-tab" onclick="window.switchMobileCollabTabNative('permissions')" id="m-tab-permissions">
+                    <i class="ph ph-sliders"></i> Permisos
+                </button>
+            </div>
+
+            <!-- BODY -->
+            <div class="m-collab-body">
+
+                <!-- PANEL: LISTA DE EQUIPO -->
+                <div id="m-collab-list-panel" class="m-collab-panel">
+                    <div class="m-collab-loading">
+                        <i class="ph ph-spinner ph-spin"></i>
+                        <span>Cargando equipo...</span>
+                    </div>
+                </div>
+
+                <!-- PANEL: PERMISOS -->
+                <div id="m-collab-perms-panel" class="m-collab-panel hidden">
+                    <div class="m-collab-loading">
+                        <i class="ph ph-spinner ph-spin"></i>
+                        <span>Cargando permisos...</span>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
+
+    <!-- MODAL ENVÍOS MÓVIL -->
+    <div id="mobile-deliveries-modal" class="mobile-modal-overlay hidden" style="z-index: 10002;">
+        <div class="m-deliv-sheet">
+
+            <!-- DRAG HANDLE -->
+            <div class="m-deliv-handle"></div>
+
+            <!-- HEADER -->
+            <div class="m-deliv-header">
+                <div class="m-deliv-header-left">
+                    <div class="m-deliv-icon-wrap">
+                        <i class="ph-bold ph-truck"></i>
+                    </div>
+                    <div>
+                        <h2 class="m-deliv-title">Envíos</h2>
+                        <div id="m-deliv-count-badge" class="m-deliv-count-badge">
+                            <i class="ph ph-spinner ph-spin"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="m-deliv-header-right">
+                    <button id="m-deliv-refresh-btn" class="m-deliv-refresh-btn" onclick="window._loadMobileDeliveriesData()">
+                        <i class="ph ph-arrows-clockwise"></i>
+                    </button>
+                    <button class="m-deliv-close-btn" onclick="window.closeMobileDeliveries()">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABS (solo para admin/owner) -->
+            <div class="m-deliv-tabs" id="m-deliv-tabs">
+                <button class="m-deliv-tab active" onclick="window.switchMobileDelivTab('pending')" id="m-deliv-tab-pending">
+                    <i class="ph ph-clock"></i> Pendientes
+                </button>
+                <button class="m-deliv-tab" onclick="window.switchMobileDelivTab('completed')" id="m-deliv-tab-completed">
+                    <i class="ph ph-check-circle"></i> Finalizados
+                </button>
+            </div>
+
+            <!-- BODY -->
+            <div class="m-deliv-body">
+                <div id="m-deliv-list-panel" class="m-deliv-panel">
+                    <div class="m-deliv-loading">
+                        <i class="ph ph-spinner ph-spin"></i>
+                        <span>Cargando envíos...</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
 
     <!-- MODAL SELECTOR DE INVENTARIO MÓVIL -->
     <div id="mobile-inventory-selector-modal" class="mobile-modal-overlay hidden">
@@ -1785,11 +2050,11 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
-    <script type="module" src="assets/js/users/users.js?v=1.1"></script>
+    <script type="module" src="assets/js/users/users.js?v=1.2"></script>
 
     <script type="module" src="assets/js/import.js?v=1.3"></script>
     <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
-    <script type="module" src="assets/js/dashboard.js?v=2.1"></script>
+    <script type="module" src="assets/js/dashboard.js?v=2.2"></script>
     <script type="module" src="assets/js/sales/sales.js?v=2.2"></script>
     <script type="module" src="assets/js/purchases/purchases.js?v=2.3"></script>
     <script type="module" src="assets/js/history/history.js?v=1.3"></script>
@@ -1804,7 +2069,7 @@ $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
     </script>
 
     <script type="module">
-        import { initMobileApp } from './assets/js/mobile/mobile-app.js?v=2.4';
+        import { initMobileApp } from './assets/js/mobile/mobile-app.js?v=2.6';
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 initMobileApp();

@@ -618,8 +618,13 @@ export class EmployeeModule {
             // Renderizar el acceso al perfil completo en todas las tarjetas
             let customFieldsHtml = `<div class="emp-custom-field" style="text-align:center; color:#888; padding-top:15px;">Ver perfil y ventas</div>`;
 
+            const collabBadge = parseInt(e.is_collaborator) === 1 
+                ? '<div title="Empleado vinculado al inventario (Colaborador)" style="position: absolute; top: 12px; left: 12px; z-index: 5;"><i class="ph ph-users-three" style="color: var(--accent-color); font-size: 1.35rem;"></i></div>' 
+                : '';
+
             return `
             <div class="emp-card">
+                ${collabBadge}
                 <div class="emp-card-actions">
                     ${waButton}
                     <button class="btn-icon btn-edit-emp" data-employee="${empJson}" title="Editar"><i class="ph ph-pencil-simple"></i></button>

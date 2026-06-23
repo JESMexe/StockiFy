@@ -51,42 +51,85 @@ class CollaboratorDebtService
                 $stmtUpdate = $this->db->prepare("UPDATE collaborator_slots_debts SET status = 'expired' WHERE id = ?");
                 $stmtUpdate->execute([$debt['id']]);
 
-                // 3. Obtener los colaboradores más recientes de este inventario para eliminarlos
-                // Excluimos al owner (role_id = 1)
-                $slotsToRemove = (int)$debt['slots_added'];
-                $inventoryId = (int)$debt['inventory_id'];
+                // 3. Obtener la cantidad de colaboradores únicos y remover los excedentes en base a base_collaborator_count
+                $ownerId = (int)$debt['owner_id'];
+                $baseCount = (int)$debt['base_collaborator_count'];
 
-                $stmtCollabs = $this->db->prepare("
-                    SELECT ic.id, ic.user_id, u.username, u.email 
+                $stmtCount = $this->db->prepare("
+                    SELECT COUNT(DISTINCT ic.user_id) 
                     FROM inventory_collaborators ic
-                    JOIN users u ON ic.user_id = u.id
-                    WHERE ic.inventory_id = ? AND ic.role_id != 1
-                    ORDER BY ic.id DESC
-                    LIMIT :limit
+                    INNER JOIN inventories inv ON ic.inventory_id = inv.id
+                    WHERE inv.user_id = ? 
+                      AND ic.status = 'active'
+                      AND ic.user_id != ?
                 ");
-                // PDO needs bindValue for integer limit
-                $stmtCollabs->bindValue(':limit', $slotsToRemove, PDO::PARAM_INT);
-                $stmtCollabs->execute();
-                $collabsToRemove = $stmtCollabs->fetchAll(PDO::FETCH_ASSOC);
+                $stmtCount->execute([$ownerId, $ownerId]);
+                $currentCount = (int)$stmtCount->fetchColumn();
 
-                foreach ($collabsToRemove as $collab) {
-                    // Eliminar colaborador
-                    $stmtDelete = $this->db->prepare("DELETE FROM inventory_collaborators WHERE id = ?");
-                    $stmtDelete->execute([$collab['id']]);
+                $slotsToRemove = $currentCount - $baseCount;
 
-                    // Registrar actividad
-                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
-                    \App\helpers\ActivityLogger::log(
-                        'Colaboradores',
-                        'expire_removal',
-                        'collaborator',
-                        (string)$collab['user_id'],
-                        "Eliminado automáticamente por falta de pago de slots adicionales: " . ($collab['username'] ?: $collab['email']),
-                        "El Owner no saldó la deuda de slots adicionales en 48 horas.",
-                        $inventoryId,
-                        $debt['owner_id'],
-                        'System'
-                    );
+                if ($slotsToRemove > 0) {
+                    // Obtener los colaboradores únicos más recientes del Owner
+                    $stmtCollabs = $this->db->prepare("
+                        SELECT ic.user_id, MAX(u.username) as username, MAX(u.email) as email, MAX(ic.id) as max_ic_id
+                        FROM inventory_collaborators ic
+                        INNER JOIN users u ON ic.user_id = u.id
+                        INNER JOIN inventories inv ON ic.inventory_id = inv.id
+                        WHERE inv.user_id = :owner_id 
+                          AND ic.status = 'active'
+                          AND ic.user_id != :owner_id2
+                        GROUP BY ic.user_id
+                        ORDER BY max_ic_id DESC
+                        LIMIT :limit
+                    ");
+                    $stmtCollabs->bindValue(':owner_id', $ownerId, PDO::PARAM_INT);
+                    $stmtCollabs->bindValue(':owner_id2', $ownerId, PDO::PARAM_INT);
+                    $stmtCollabs->bindValue(':limit', $slotsToRemove, PDO::PARAM_INT);
+                    $stmtCollabs->execute();
+                    $collabsToRemove = $stmtCollabs->fetchAll(PDO::FETCH_ASSOC);
+
+                    foreach ($collabsToRemove as $collab) {
+                        // Obtener todos los inventarios de este Owner donde este colaborador tiene acceso activo
+                        $stmtCollabInvs = $this->db->prepare("
+                            SELECT ic.inventory_id 
+                            FROM inventory_collaborators ic
+                            INNER JOIN inventories inv ON ic.inventory_id = inv.id
+                            WHERE inv.user_id = ? AND ic.user_id = ? AND ic.status = 'active'
+                        ");
+                        $stmtCollabInvs->execute([$ownerId, $collab['user_id']]);
+                        $invs = $stmtCollabInvs->fetchAll(PDO::FETCH_COLUMN);
+
+                        foreach ($invs as $invId) {
+                            // Actualizar estado en la tabla de empleados
+                            $stmtEmp = $this->db->prepare("
+                                UPDATE employees 
+                                SET is_collaborator = 0 
+                                WHERE email = ? AND inventory_id = ?
+                            ");
+                            $stmtEmp->execute([$collab['email'], $invId]);
+
+                            // Eliminar colaborador
+                            $stmtDelete = $this->db->prepare("
+                                DELETE FROM inventory_collaborators 
+                                WHERE user_id = ? AND inventory_id = ?
+                            ");
+                            $stmtDelete->execute([$collab['user_id'], $invId]);
+
+                            // Registrar actividad
+                            require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                            \App\helpers\ActivityLogger::log(
+                                'Colaboradores',
+                                'expire_removal',
+                                'collaborator',
+                                (string)$collab['user_id'],
+                                "Eliminado automáticamente por falta de pago de slots adicionales: " . ($collab['username'] ?: $collab['email']),
+                                "El Owner no saldó la deuda de slots adicionales en 48 horas.",
+                                (int)$invId,
+                                $ownerId,
+                                'System'
+                            );
+                        }
+                    }
                 }
 
                 $this->db->commit();
@@ -96,6 +139,9 @@ class CollaboratorDebtService
                 $this->db->rollBack();
             }
             error_log("Error processing expired debts: " . $e->getMessage());
+            if (php_sapi_name() === 'cli') {
+                echo "ERROR in processExpiredDebts: " . $e->getMessage() . "\n";
+            }
         }
     }
 
@@ -121,6 +167,33 @@ class CollaboratorDebtService
     {
         if ($slotsCount <= 0) return false;
 
+        // 1. Validar deudas pendientes o expiradas
+        $stmtCheck = $this->db->prepare("
+            SELECT status FROM collaborator_slots_debts 
+            WHERE owner_id = ? AND status IN ('pending', 'expired')
+            LIMIT 1
+        ");
+        $stmtCheck->execute([$ownerId]);
+        $debtStatus = $stmtCheck->fetchColumn();
+
+        if ($debtStatus === 'expired') {
+            throw new \Exception("Tu deuda anterior de slots de colaboradores expiró sin pagarse. Tu cuenta se encuentra restringida. Contactate con soporte para habilitar esta opción.");
+        } elseif ($debtStatus === 'pending') {
+            throw new \Exception("Ya tenés una deuda de slots de colaboradores pendiente de pago. Por favor, saldala antes de agregar más slots.");
+        }
+
+        // 2. Calcular base_collaborator_count (colaboradores únicos activos)
+        $stmtUsed = $this->db->prepare("
+            SELECT COUNT(DISTINCT ic.user_id)
+            FROM inventory_collaborators ic
+            INNER JOIN inventories inv ON ic.inventory_id = inv.id
+            WHERE inv.user_id = ?
+              AND ic.status   = 'active'
+              AND ic.user_id != ?
+        ");
+        $stmtUsed->execute([$ownerId, $ownerId]);
+        $baseCollaboratorCount = (int)$stmtUsed->fetchColumn();
+
         $pricePerSlot = 20000.00;
         $totalAmount = $slotsCount * $pricePerSlot;
 
@@ -130,10 +203,10 @@ class CollaboratorDebtService
         $ownerEmail = $stmtEmail->fetchColumn();
 
         $stmt = $this->db->prepare("
-            INSERT INTO collaborator_slots_debts (owner_id, owner_email, inventory_id, slots_added, price_per_slot, total_amount, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())
+            INSERT INTO collaborator_slots_debts (owner_id, owner_email, inventory_id, slots_added, base_collaborator_count, price_per_slot, total_amount, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
         ");
-        $success = $stmt->execute([$ownerId, $ownerEmail, $inventoryId, $slotsCount, $pricePerSlot, $totalAmount]);
+        $success = $stmt->execute([$ownerId, $ownerEmail, $inventoryId, $slotsCount, $baseCollaboratorCount, $pricePerSlot, $totalAmount]);
 
         if ($success) {
             // Registrar actividad

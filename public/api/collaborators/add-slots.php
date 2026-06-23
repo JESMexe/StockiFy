@@ -48,16 +48,21 @@ try {
 
     // Agregar slots pendientes usando el servicio
     $debtSvc = new CollaboratorDebtService();
-    $ok = $debtSvc->addPendingSlots($user['id'], $inventoryId, $slotsCount);
+    try {
+        $ok = $debtSvc->addPendingSlots($user['id'], $inventoryId, $slotsCount);
 
-    if ($ok) {
-        echo json_encode([
-            'success' => true,
-            'message' => "¡Se agregaron {$slotsCount} slots de colaboradores con éxito! Acordate de saldar el pago dentro de las próximas 48 horas."
-        ]);
-    } else {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Error interno al registrar la adición de slots.']);
+        if ($ok) {
+            echo json_encode([
+                'success' => true,
+                'message' => "¡Se agregaron {$slotsCount} slots de colaboradores con éxito! Acordate de saldar el pago dentro de las próximas 48 horas."
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Error interno al registrar la adición de slots.']);
+        }
+    } catch (\Exception $e) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 
 } catch (Throwable $e) {

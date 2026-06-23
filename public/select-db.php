@@ -50,7 +50,7 @@
         </div>
     </main>
 
-    <script type="module" src="assets/js/database/select-db.js"></script>
+    <script type="module" src="assets/js/database/select-db.js?v=1.1"></script>
 </body>
 
 </html>

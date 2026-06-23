@@ -109,7 +109,7 @@ if (!function_exists('getActiveRolePermissions')) {
                 SELECT ec.permissions_json 
                 FROM employees e
                 JOIN employee_categories ec ON e.category_id = ec.id
-                WHERE e.email = (SELECT email FROM users WHERE id = ? LIMIT 1)
+                WHERE e.email COLLATE utf8mb4_unicode_ci = (SELECT email COLLATE utf8mb4_unicode_ci FROM users WHERE id = ? LIMIT 1)
                   AND e.inventory_id = ?
                 LIMIT 1
             ");

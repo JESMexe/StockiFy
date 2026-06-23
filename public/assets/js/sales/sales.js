@@ -159,22 +159,22 @@ export class SalesModule {
 
                                 <div class="purchase-col" style="flex: 1.1;">
                                     <h4>3. Cierre y Pagos</h4>
-                                    <div class="form-section" style="margin-bottom: 15px;">
-                                        <label class="form-section-title">Notas de Venta</label>
-                                        <textarea id="sale-notes" class="rustic-input" placeholder="Opcional..." style="height:40px; width:100%; resize:none;"></textarea>
-                                    </div>
-                                    <div class="form-section" style="margin-bottom: 15px; border: 1px dashed var(--accent-color); padding: 10px; border-radius: 8px; background: #fffdf5;">
-                                        <label class="form-section-title" style="color: var(--accent-color);"><i class="ph-bold ph-tag"></i> Descuento Manual</label>
-                                        <div style="display:flex; gap:8px; align-items:center;">
-                                            <input type="number" id="sale-discount-value" class="rustic-input" placeholder="0" min="0" style="flex:1;">
-                                            <select id="sale-discount-type" class="rustic-select" style="width:auto; min-width:100px;">
-                                                <option value="fixed">$ Monto</option>
-                                                <option value="percent">% Porcentaje</option>
-                                            </select>
-                                        </div>
-                                        <div id="discount-applied-display" style="text-align:right; font-size:0.8rem; color:var(--accent-color); margin-top:5px; font-weight:700;"></div>
-                                    </div>
                                     <div class="scrollable-list" style="padding-right: 5px; overflow-x: visible;">
+                                        <div class="form-section" style="margin-bottom: 15px;">
+                                            <label class="form-section-title">Notas de Venta</label>
+                                            <textarea id="sale-notes" class="rustic-input" placeholder="Opcional..." style="height:40px; width:100%; resize:none;"></textarea>
+                                        </div>
+                                        <div class="form-section" style="margin-bottom: 15px; border: 1px dashed var(--accent-color); padding: 10px; border-radius: 8px; background: #fffdf5;">
+                                            <label class="form-section-title" style="color: var(--accent-color);"><i class="ph-bold ph-tag"></i> Descuento Manual</label>
+                                            <div style="display:flex; gap:8px; align-items:center;">
+                                                <input type="number" id="sale-discount-value" class="rustic-input" placeholder="0" min="0" style="flex:1;">
+                                                <select id="sale-discount-type" class="rustic-select" style="width:auto; min-width:100px;">
+                                                    <option value="fixed">$ Monto</option>
+                                                    <option value="percent">% Porcentaje</option>
+                                                </select>
+                                            </div>
+                                            <div id="discount-applied-display" style="text-align:right; font-size:0.8rem; color:var(--accent-color); margin-top:5px; font-weight:700;"></div>
+                                        </div>
                                         <div class="form-section">
                                             <label class="form-section-title">Cliente</label>
                                             <select id="sale-customer" class="rustic-select"></select>
@@ -1008,9 +1008,9 @@ export class SalesModule {
                         if (a.type === 'low_stock') {
                             pop_ups.warning(`Stock mínimo alcanzado en ${a.product_name}. Actual: ${a.current_stock}. Min: ${a.min_stock}`, 'Bajo Stock');
                         } else if (a.type === 'out_of_stock') {
-                            pop_ups.error(`¡Producto Agotado! ${a.product_name} se quedó sin stock.`, 'Sin Stock');
+                            pop_ups.warning(`¡Producto Agotado! ${a.product_name} se quedó sin stock.`, 'Sin Stock');
                         } else if (a.type === 'negative_profit') {
-                            pop_ups.error(`¡Alerta de Rentabilidad en ${a.product_name}! Venta a $${a.sale_price}, Costo $${a.cost_price}`, 'Rentabilidad Crítica');
+                            pop_ups.warning(`¡Alerta de Rentabilidad en ${a.product_name}! Venta a $${a.sale_price}, Costo $${a.cost_price}`, 'Rentabilidad Crítica');
                         }
                     });
 

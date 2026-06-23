@@ -18,6 +18,7 @@ try {
         echo json_encode(['success' => false, 'message' => 'No autorizado']);
         exit;
     }
+    requireSectionAccess('can_view_sales');
 
     $input = json_decode(file_get_contents('php://input'), true);
 

@@ -215,6 +215,14 @@ export async function getUserProfile() {
     return userProfilePromise;
 }
 
+export async function becomeGuest() {
+    const response = await fetch('/api/user/become-guest.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    return handleResponse(response);
+}
+
 export async function checkUserAdmin(){
     const response = await fetch('/api/auth/check-admin', {
         method: 'POST',

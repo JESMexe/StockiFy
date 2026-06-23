@@ -15,6 +15,7 @@ try {
     if (!$user || !$activeInventoryId) {
         throw new Exception('No autorizado o sin inventario activo');
     }
+    requireSectionAccess('can_view_receipts');
 
     // RBAC: los datos pertenecen al owner del inventario activo
     $user_id = getInventoryOwnerId((int)$activeInventoryId);

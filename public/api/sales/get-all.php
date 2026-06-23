@@ -15,6 +15,7 @@ try {
         echo json_encode(['success' => false, 'message' => 'No autorizado']);
         exit;
     }
+    requireSectionAccess('can_view_sales');
 
     $activeInventoryId = $_SESSION['active_inventory_id'] ?? null;
     if (!$activeInventoryId) {

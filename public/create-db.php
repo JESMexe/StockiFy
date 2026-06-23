@@ -14,6 +14,11 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
     exit;
 }
 
+if ($currentUser['subscription_active'] == 5) {
+    header('Location: select-db');
+    exit;
+}
+
 if ($currentUser['subscription_active'] == 1) {
     $dbInstance = \App\core\Database::getInstance();
     $stmtCount = $dbInstance->prepare("SELECT COUNT(*) FROM inventories WHERE user_id = ?");

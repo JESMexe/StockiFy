@@ -774,8 +774,8 @@ function showDashboardView(viewId) {
 window.showDashboardView = showDashboardView;
 
 function setupMenuNavigation() {
-    // Mapa: viewId → permissionKey (debe coincidir con CONFIGURABLE_SECTIONS en users.js)
     const VIEW_PERMISSION_MAP = {
+        'view-db': 'can_view_data',
         'analysis': 'can_view_analytics',
         'history-log': 'can_view_history',
         'config-db': 'can_view_config',
@@ -784,6 +784,7 @@ function setupMenuNavigation() {
         'employees': 'can_view_employees',
         'payments': 'can_view_payments',
         'notifications': 'can_view_notifications',
+        'deliveries': 'can_view_deliveries',
     };
 
     // null = Owner (sin restricciones); objeto = permisos del colaborador
@@ -2348,6 +2349,7 @@ async function init() {
                     window.__rbacPermissions = rbacData.permissions ?? {};
                     // Ocultar secciones prohibidas en el sidebar
                     const SIDEBAR_MAP = {
+                        'can_view_data': 'view-db',
                         'can_view_analytics': 'analysis',
                         'can_view_history': 'history-log',
                         'can_view_config': 'config-db',
@@ -2356,6 +2358,9 @@ async function init() {
                         'can_view_employees': 'employees',
                         'can_view_payments': 'payments',
                         'can_view_notifications': 'notifications',
+                        'can_view_deliveries': 'deliveries',
+                        'can_view_sales': 'sales',
+                        'can_view_receipts': 'receipts',
                     };
                     Object.entries(SIDEBAR_MAP).forEach(([permKey, viewId]) => {
                         if (rbacData.permissions[permKey] === false) {
@@ -2380,24 +2385,60 @@ async function init() {
             const sidebarNav = document.getElementById('sidebar-main-nav');
             if (sidebarNav) sidebarNav.style.visibility = '';
 
-            // Ocultar el título "Negocio" si todos sus items están hidden
-            const negocioList = document.getElementById('sidebar-negocio-list');
-            const negocioTitle = document.getElementById('sidebar-negocio-title');
-            if (negocioList && negocioTitle) {
-                const visibleItems = negocioList.querySelectorAll('li:not(.hidden)');
+            // Ocultar encabezados de sección (h3) cuyos ul estén completamente ocultos
+            document.querySelectorAll('#sidebar-main-nav ul').forEach(ul => {
+                const visibleItems = ul.querySelectorAll('li:not(.hidden)');
                 if (visibleItems.length === 0) {
-                    negocioTitle.classList.add('hidden');
-                    negocioList.classList.add('hidden');
+                    ul.classList.add('hidden');
+                    let h3 = ul.previousElementSibling;
+                    while (h3 && h3.tagName !== 'H3') {
+                        h3 = h3.previousElementSibling;
+                    }
+                    if (h3) h3.classList.add('hidden');
+                } else {
+                    ul.classList.remove('hidden');
+                    let h3 = ul.previousElementSibling;
+                    while (h3 && h3.tagName !== 'H3') {
+                        h3 = h3.previousElementSibling;
+                    }
+                    if (h3) h3.classList.remove('hidden');
                 }
-            }
+            });
         }
 
         setupMenuNavigation();
         console.log("[INIT] Post setupMenuNavigation()...");
         setupAccordion();
         console.log("[INIT] Post setupAccordion()...");
-        showDashboardView('view-db');
-        console.log("[INIT] Post showDashboardView('view-db')...");
+
+        // Determinar primera vista permitida para el arranque
+        function getFirstAllowedView() {
+            const priority = [
+                'view-db',
+                'deliveries',
+                'analysis',
+                'history-log',
+                'config-db',
+                'customers',
+                'providers',
+                'employees',
+                'payments',
+                'notifications',
+                'sales',
+                'receipts'
+            ];
+            for (const viewId of priority) {
+                const btn = document.querySelector(`[data-target-view="${viewId}"]`);
+                if (btn && !btn.closest('li')?.classList.contains('hidden')) {
+                    return viewId;
+                }
+            }
+            return 'view-db'; // fallback
+        }
+
+        const startView = getFirstAllowedView();
+        showDashboardView(startView);
+        console.log(`[INIT] Post showDashboardView('${startView}')...`);
 
         setTimeout(() => {
             setupFeatures().catch(error => {

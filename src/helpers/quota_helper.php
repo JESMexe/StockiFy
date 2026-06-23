@@ -56,6 +56,19 @@ if (!function_exists('getCollaboratorQuota')) {
         $stmtExtra->execute([$ownerId]);
         $extraSlots = (int)$stmtExtra->fetchColumn();
 
+        // Consultar deudas pendientes y expiradas
+        $stmtDebtCheck = $db->prepare(
+            "SELECT 
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+                SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired_count
+             FROM collaborator_slots_debts
+             WHERE owner_id = ?"
+        );
+        $stmtDebtCheck->execute([$ownerId]);
+        $debtCounts = $stmtDebtCheck->fetch(PDO::FETCH_ASSOC);
+        $hasPendingDebt = ($debtCounts && (int)$debtCounts['pending_count'] > 0);
+        $hasExpiredDebt = ($debtCounts && (int)$debtCounts['expired_count'] > 0);
+
         // 1. Leer plan del Owner
         $stmt = $db->prepare(
             'SELECT subscription_active FROM users WHERE id = ? LIMIT 1'
@@ -100,27 +113,29 @@ if (!function_exists('getCollaboratorQuota')) {
         $stmtUsed->execute([$ownerId, $ownerId]);
         $used = (int)$stmtUsed->fetchColumn();
 
-        return _buildQuotaResult($plan, $planName, $max, $used);
+        return _buildQuotaResult($plan, $planName, $max, $used, $hasPendingDebt, $hasExpiredDebt);
     }
 
     /**
      * Construye el array de resultado de cuota de forma consistente.
      * @internal
      */
-    function _buildQuotaResult(int $plan, string $planName, ?int $max, int $used): array
+    function _buildQuotaResult(int $plan, string $planName, ?int $max, int $used, bool $hasPendingDebt = false, bool $hasExpiredDebt = false): array
     {
         $locked    = ($plan === 1 || ($plan === 0));
         $remaining = ($max === null) ? null : max(0, $max - $used);
         $allowed   = !$locked && ($max === null || $remaining > 0);
 
         return [
-            'plan'      => $plan,
-            'plan_name' => $planName,
-            'max'       => $max,       // null = ilimitado
-            'used'      => $used,
-            'remaining' => $remaining, // null = ilimitado, int = cupos restantes
-            'allowed'   => $allowed,
-            'locked'    => $locked,
+            'plan'             => $plan,
+            'plan_name'        => $planName,
+            'max'              => $max,       // null = ilimitado
+            'used'             => $used,
+            'remaining'        => $remaining, // null = ilimitado, int = cupos restantes
+            'allowed'          => $allowed,
+            'locked'           => $locked,
+            'has_pending_debt' => $hasPendingDebt,
+            'has_expired_debt' => $hasExpiredDebt,
         ];
     }
 

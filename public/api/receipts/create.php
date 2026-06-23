@@ -14,6 +14,11 @@ try {
 
     $pdo = Database::getInstance();
     $user = getCurrentUser();
+    if (!$user) {
+        echo json_encode(['success' => false, 'error' => 'No autorizado']);
+        exit;
+    }
+    requireSectionAccess('can_view_receipts');
     $user_id = $_SESSION['user_id'];
 
     $newReceipt = $pdo->prepare("INSERT INTO receipts (user_id, provider_id, total_amount) 

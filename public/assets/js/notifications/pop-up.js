@@ -154,9 +154,43 @@ function _showConfirm(title, message) {
     });
 }
 
+function _isUserError(message, title) {
+    const text = ((title || '') + ' ' + (message || '')).toLowerCase();
+    const userErrorKeywords = [
+        'límite de colaboradores',
+        'limite de colaboradores',
+        'alcanzaste el límite',
+        'alcanzaste el limite',
+        'sin stock',
+        'agotado',
+        'rentabilidad',
+        'no coincide',
+        'contraseña incorrecta',
+        'contrasena incorrecta',
+        'monto inválido',
+        'monto invalido',
+        'archivo incorrecto',
+        'csv',
+        'no autorizado',
+        'límite de',
+        'limite de',
+        'plan profesional',
+        'plan básico',
+        'plan basico',
+        'actualizá el plan',
+        'actualiza el plan'
+    ];
+    return userErrorKeywords.some(keyword => text.includes(keyword));
+}
+
 export const pop_ups = {
     success: (message, title = 'Éxito') => _showToast('success', title, message),
-    error: (message, title = 'Error') => _showToast('error', title, message),
+    error: (message, title = 'Error', statusCode = null) => {
+        if ((statusCode && statusCode >= 400 && statusCode < 500) || _isUserError(message, title)) {
+            return _showToast('warning', title === 'Error' ? 'Advertencia' : title, message);
+        }
+        return _showToast('error', title, message);
+    },
     warning: (message, title = 'Advertencia') => _showToast('warning', title, message),
     info: (message, title = 'Información') => _showToast('info', title, message),
     system: (message, title = 'Sistema') => _showToast('system', title, message),

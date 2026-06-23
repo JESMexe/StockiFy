@@ -83,20 +83,17 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                             </div>
                             <div class="rustic-block" style="grid-column: 1 / -1;">
                                 <label class="option-label">Teléfono / Celular</label>
-                                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: stretch;">
-                                    <select class="config-input" id="cell_country"
-                                        style="width: auto; text-align: center; cursor: pointer; box-sizing: border-box; margin: 0; padding: 0 1rem; height: 55px; border-radius: 6px;">
+                                <div class="phone-input-container">
+                                    <select class="config-input phone-select" id="cell_country">
                                         <option value="54" selected>+54 (AR)</option>
                                     </select>
-                                    <select class="config-input" id="cell_prefix"
-                                        style="width: auto; text-align: center; cursor: pointer; box-sizing: border-box; margin: 0; padding: 0 1rem; height: 55px; border-radius: 6px;">
+                                    <select class="config-input phone-select" id="cell_prefix">
                                         <option value="9" selected>9 (Móvil)</option>
                                     </select>
-                                    <input class="config-input" type="text" id="cell_number"
-                                        placeholder="(ej: 11 6768-4020)"
-                                        style="flex: 1; box-sizing: border-box; margin: 0; padding: 0 1rem; height: 55px;">
+                                    <input class="config-input phone-number-input" type="text" id="cell_number"
+                                        placeholder="(ej: 11 6768-4020)">
                                 </div>
-                                <span style="font-size: 0.8rem; color: #64748b; line-height: 1.4; display: block;">
+                                <span class="phone-hint">
                                     StockiFy tomará el registro del dato del teléfono para enviarle las notificaciones o
                                     alertas del sistema, en caso de no quererlas, ignorar este campo dejándolo vacío; en
                                     caso de sí querer, procure ingresar los datos correctamente.
@@ -161,7 +158,10 @@ if (!isset($currentUser['subscription_active']) || $currentUser['subscription_ac
                         <h3>Centro de Ayuda</h3>
                         <p style="color: #64748b; margin-bottom: 2rem;">¿Tenés algún problema? Estamos para ayudarte.
                         </p>
-                        <a href="mailto:soporte@stockify.com.ar" class="btn btn-primary">Contactar Soporte</a>
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
+                            <a href="mailto:soporte@stockify.com.ar" class="btn btn-primary" style="margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: auto; min-width: 200px;"><i class="ph ph-envelope-simple"></i> Vía Email</a>
+                            <a href="https://wa.me/5491163642040" target="_blank" class="btn" style="margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: auto; min-width: 200px; background-color: var(--accent-green); color: #000; border: 2px solid #000;"><i class="ph ph-whatsapp-logo" style="font-size: 1.2rem;"></i> Vía WhatsApp</a>
+                        </div>
                         <p style="color: #64748b90; margin-top: 2rem; font-size: 0.8rem;">Si deseas eliminar tu cuenta y
                             todos tus datos
                             por

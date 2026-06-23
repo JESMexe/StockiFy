@@ -290,23 +290,59 @@ body#page-configuration {
     margin-bottom: 1.5rem;
 }
 
+/* --- 8. TELÉFONO INPUTS --- */
+.phone-input-container {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    align-items: stretch;
+}
+
+.phone-select {
+    width: auto;
+    text-align: center;
+    cursor: pointer;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 1rem;
+    height: 55px;
+    border-radius: 6px;
+}
+
+.phone-number-input {
+    flex: 1;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 1rem;
+    height: 55px;
+}
+
+.phone-hint {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.4;
+    display: block;
+}
+
 /* =================================================================
    RESPONSIVE DESIGN (MÓVILES Y PANTALLAS PEQUEÑAS)
    ================================================================= */
 @media (max-width: 900px) {
     #page-configuration main {
-        padding: 1rem;
+        padding: 1rem 0.75rem 2rem 0.75rem;
     }
 
-    /* Romper "La Fortaleza" (Dimensiones Fijas) */
+    /* Romper "La Fortaleza" (Dimensiones Fijas) y ajustar ancho para sombra */
     .config-layout-wrapper {
-        width: 100%;
+        width: calc(100% - 6px);
         min-width: unset;
         max-width: 100%;
         height: auto;
         min-height: unset;
         max-height: unset;
         flex-direction: column;
+        margin: 0 6px 1.5rem 0;
+        box-shadow: 6px 6px 0px var(--accent-color);
     }
 
     /* Convertir barra lateral en Pestañas Superiores */
@@ -316,7 +352,8 @@ body#page-configuration {
         min-width: unset;
         height: auto;
         flex-direction: row;
-        padding: 1rem;
+        padding: 0.75rem;
+        gap: 0.75rem;
         border-right: none;
         border-bottom: 2px solid var(--color-black);
     }
@@ -324,20 +361,39 @@ body#page-configuration {
     #options-config-container .btn {
         flex: 1;
         justify-content: center;
-        padding: 0 1rem;
-        height: 55px;
+        padding: 1rem 0.75rem;
+        height: auto;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        box-shadow: 3px 3px 0px var(--color-black);
     }
 
-    /* Reducir padding excesivo para el contenedor de datos */
+    #options-config-container .btn p {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    #options-config-container .btn.btn-option-selected {
+        font-size: 0.95rem !important;
+        transform: translate(1px, 1px);
+        box-shadow: none;
+    }
+
+    /* Reducir padding excesivo para el contenedor de datos y quitar bordes laterales heredados */
     #config-container {
-        padding: 1.5rem;
+        padding: 1.25rem;
         border-radius: 0 0 10px 10px;
+        border: none !important;
         overflow-y: visible; /* Que el scroll lo maneje la ventana del móvil, no el contenedor interno */
     }
 
     /* Apilar grilla de datos de usuario */
     .config-grid {
         grid-template-columns: 1fr;
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
     }
 
     /* Inputs de ancho completo que antes ocupaban 2 columnas */
@@ -355,12 +411,30 @@ body#page-configuration {
     #btn-change-password {
         width: 100%;
         margin-top: 5px;
+        height: 50px;
     }
 }
 
-/* Teléfonos muy angostos (Pestañas apiladas verticalmente si no caben lado a lado) */
+/* Teléfonos muy angostos (Pestañas apiladas verticalmente si no caben lado a lado, y teléfono responsive) */
+@media (max-width: 600px) {
+    .phone-input-container {
+        flex-wrap: wrap;
+    }
+    .phone-select {
+        flex: 1;
+        min-width: 100px;
+    }
+    .phone-number-input {
+        flex: 1 0 100%;
+    }
+}
+
 @media (max-width: 480px) {
     #options-config-container {
         flex-direction: column;
+        gap: 0.5rem;
+    }
+    #options-config-container .btn {
+        width: 100%;
     }
 }

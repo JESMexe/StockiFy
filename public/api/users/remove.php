@@ -37,6 +37,12 @@ $collabInfo = $stmtCollab->fetch(PDO::FETCH_ASSOC);
 $stmt = $db->prepare("DELETE FROM inventory_collaborators WHERE id = ? AND inventory_id = ? AND role_id != 1");
 if ($stmt->execute([$collaboratorId, $inventoryId])) {
     if ($collabInfo) {
+        // Actualizar el estado del empleado vinculado para quitarle el ícono de colaborador
+        if (!empty($collabInfo['email'])) {
+            $stmtUpdateEmp = $db->prepare("UPDATE employees SET is_collaborator = 0 WHERE inventory_id = ? AND email = ?");
+            $stmtUpdateEmp->execute([$inventoryId, $collabInfo['email']]);
+        }
+
         try {
             require_once __DIR__ . '/../../../src/helpers/ActivityLogger.php';
             \App\helpers\ActivityLogger::log(

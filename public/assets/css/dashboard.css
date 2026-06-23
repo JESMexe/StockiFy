@@ -1,15 +1,14 @@
-/* public/assets/css/dashboard.css (VersiÃ³n Limpia y Ãšnica) */
 
 /* Layout General del Dashboard */
 .dashboard-container {
     display: flex;
     flex-grow: 1;
-    /* Ocupa el resto de la altura despuÃ©s del header */
+    /* Ocupa el resto de la altura despuÃƒÆ’Ã‚Â©s del header */
 }
 
 
 
-/* Sidebar (MenÃº Lateral) */
+/* Sidebar (MenÃƒÆ’Ã‚Âº Lateral) */
 .dashboard-sidebar {
     height: auto;
     width: 250px;
@@ -22,7 +21,7 @@
     /* Evita que se encoja y mantiene el ancho */
     min-height: calc(100vh - 62px);
     overflow-y: auto;
-    /* Scroll si el menÃº es muy largo */
+    /* Scroll si el menÃƒÆ’Ã‚Âº es muy largo */
     position: sticky;
     /* Ocultar scrollbar visualmente */
     scrollbar-width: none;
@@ -43,7 +42,7 @@
     height: calc(100vh - 62px);
     /* Ajusta altura (100% viewport - altura del header aprox) */
     overflow-y: auto;
-    /* Scroll si el menÃº es muy largo */
+    /* Scroll si el menÃƒÆ’Ã‚Âº es muy largo */
     position: fixed;
     top: 62px;
     /* Asume 62px de header */
@@ -64,7 +63,7 @@
     border: none;
     cursor: pointer;
     font-size: 1.2rem;
-    /* TamaÃ±o de los iconos */
+    /* TamaÃƒÆ’Ã‚Â±o de los iconos */
     padding: 4px 6px;
     border-radius: 4px;
     transition: all 0.2s ease;
@@ -138,7 +137,7 @@
     /* Blanco forzado */
     border: 2px solid #1b1b1b;
     border-radius: 8px;
-    /* Ajusta segÃºn tu variable si hace falta */
+    /* Ajusta segÃƒÆ’Ã‚Âºn tu variable si hace falta */
     padding: 2.5rem;
     box-shadow: 10px 10px 0px var(--accent-red) !important;
     display: flex;
@@ -152,7 +151,7 @@
     /* Borde Rojo */
     border: 2px solid var(--accent-red) !important;
 
-    /* Texto Rojo (Mientras escribÃ­s y despuÃ©s) */
+    /* Texto Rojo (Mientras escribÃƒÆ’Ã‚Â­s y despuÃƒÆ’Ã‚Â©s) */
     color: var(--accent-red) !important;
     font-weight: bold;
     font-size: 1.1rem;
@@ -225,7 +224,7 @@
     width: 100%;
     max-width: calc(100vh + 60rem);
     padding: 0;
-    /* Quitamos padding si no lo necesitamos directamente aquÃ­ */
+    /* Quitamos padding si no lo necesitamos directamente aquÃƒÆ’Ã‚Â­ */
     border: none;
     /* Quitamos bordes si no los necesitamos */
     box-shadow: none;
@@ -251,7 +250,7 @@
     margin-bottom: 0.75rem;
 }
 
-/* Botones y Enlaces del MenÃº */
+/* Botones y Enlaces del MenÃƒÆ’Ã‚Âº */
 .menu-btn,
 .menu-link {
     display: flex;
@@ -290,7 +289,7 @@
     background-color: #eee;
 }
 
-/* Iconos del menÃº */
+/* Iconos del menÃƒÆ’Ã‚Âº */
 .menu-btn i,
 .menu-link i {
     font-size: 1.2em;
@@ -355,17 +354,17 @@
     max-width: 250px;
 }
 
-/* --- BOTÃ“N AÃ‘ADIR --- */
+/* --- BOTÃƒÆ’Ã¢â‚¬Å“N AÃƒÆ’Ã¢â‚¬ËœADIR --- */
 #add-row-btn,
 .new-transaction-btn {
     width: auto;
     /* Hago que el ancho se ajuste al texto */
     padding: 8px 16px;
-    /* Uso el padding mÃ¡s chico, como los del header */
+    /* Uso el padding mÃƒÆ’Ã‚Â¡s chico, como los del header */
     margin-top: 0;
     /* Quito el margen superior */
     white-space: nowrap;
-    /* Evito que el texto se parta en dos lÃ­neas */
+    /* Evito que el texto se parta en dos lÃƒÆ’Ã‚Â­neas */
 }
 
 /* Wrapper y Tabla */
@@ -393,14 +392,14 @@
     /* Ancho relativo al contenedor (la tabla) */
     width: 100%;
     max-width: min(500px, 80vw);
-    /* LÃ­mite inteligente al viewport para pantallas chicas */
+    /* LÃƒÆ’Ã‚Â­mite inteligente al viewport para pantallas chicas */
     height: auto;
     opacity: 0.9;
     transition: width 0.3s ease;
     /* Suavidad si redimensionas la ventana */
 }
 
-/* Evitamos que la tabla fuerce el scroll cuando estÃ¡ vacÃ­a */
+/* Evitamos que la tabla fuerce el scroll cuando estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­a */
 #data-table:has(.empty-state) {
     width: 100% !important;
 }
@@ -409,7 +408,7 @@
     width: max-content !important;
     /* Se ensancha tanto como necesite */
     min-width: 100% !important;
-    /* MÃ­nimo el ancho de pantalla */
+    /* MÃƒÆ’Ã‚Â­nimo el ancho de pantalla */
     table-layout: auto !important;
     /* Las columnas se calculan solas */
     display: table !important;
@@ -418,7 +417,7 @@
 
 #data-table th,
 #data-table td {
-    /* CLAVE: Prohibido saltos de lÃ­nea. Todo en un renglÃ³n. */
+    /* CLAVE: Prohibido saltos de lÃƒÆ’Ã‚Â­nea. Todo en un renglÃƒÆ’Ã‚Â³n. */
     white-space: nowrap !important;
 
     padding: 12px 20px;
@@ -427,7 +426,7 @@
     font-size: 0.95rem;
     vertical-align: middle;
 
-    /* Quitamos cualquier lÃ­mite de ancho que tuvieras antes */
+    /* Quitamos cualquier lÃƒÆ’Ã‚Â­mite de ancho que tuvieras antes */
     max-width: none !important;
     width: auto !important;
 }
@@ -453,7 +452,7 @@
 
 #data-table thead th i:not(.ph-arrow-up):not(.ph-arrow-down) {
     vertical-align: text-bottom;
-    /* AlineaciÃ³n fina */
+    /* AlineaciÃƒÆ’Ã‚Â³n fina */
     margin-left: 8px;
     font-size: 1.15em;
     color: #666;
@@ -464,10 +463,10 @@
 #data-table thead th i.ph-arrow-down {
     position: absolute;
     right: 12px;
-    /* Pegado a la derecha (en el Ã¡rea del padding-right) */
+    /* Pegado a la derecha (en el ÃƒÆ’Ã‚Â¡rea del padding-right) */
     top: 50%;
     transform: translateY(-50%);
-    /* Centrado vertical perfecto matemÃ¡tico */
+    /* Centrado vertical perfecto matemÃƒÆ’Ã‚Â¡tico */
     font-size: 1.1em;
     color: var(--accent-color);
     font-weight: bold;
@@ -475,7 +474,7 @@
 
 #data-table thead th i {
     vertical-align: middle;
-    /* Alinea el Ã­cono con el texto */
+    /* Alinea el ÃƒÆ’Ã‚Â­cono con el texto */
     margin-left: 5px;
     /* Un poco de espacio */
     font-size: 1.1em;
@@ -504,15 +503,15 @@ th {
     z-index: 20;
 
 
-    /* Aseguramos que el fondo del header sea sÃ³lido y no transparente */
+    /* Aseguramos que el fondo del header sea sÃƒÆ’Ã‚Â³lido y no transparente */
     background-color: #f9f9f9;
 
     /* El resto de tus estilos de borde fuerte se mantienen */
     border-bottom: 2px solid #1b1b1b;
 }
 
-/* 4. ESTADO VACÃO CENTRADO (Para que el mensaje ocupe la altura fija) */
-/* Aplicamos altura forzada a la celda cuando estÃ¡ el mensaje de "Sin datos" */
+/* 4. ESTADO VACÃƒÆ’Ã‚ÂO CENTRADO (Para que el mensaje ocupe la altura fija) */
+/* Aplicamos altura forzada a la celda cuando estÃƒÆ’Ã‚Â¡ el mensaje de "Sin datos" */
 tbody tr:only-child td.empty-state {
     height: 500px;
     min-height: 500px;
@@ -557,25 +556,25 @@ table {
     box-shadow: 10px 10px 0px var(--accent-color);
 }
 
-/* --- ESTILOS PARA TABLA VACÃA --- */
+/* --- ESTILOS PARA TABLA VACÃƒÆ’Ã‚ÂA --- */
 .empty-table-message {
     text-align: center;
     padding: 3rem 1rem !important;
-    /* MÃ¡s padding vertical, !important para sobreescribir */
+    /* MÃƒÆ’Ã‚Â¡s padding vertical, !important para sobreescribir */
     color: var(--color-gray);
     font-size: 1.1rem;
 }
 
-/* BotÃ³n inline dentro del mensaje */
+/* BotÃƒÆ’Ã‚Â³n inline dentro del mensaje */
 .btn-inline {
     display: inline-block;
     /* Hacemos que sea inline */
     width: auto;
-    /* Ancho automÃ¡tico */
+    /* Ancho automÃƒÆ’Ã‚Â¡tico */
     margin-left: 1rem;
     /* Espacio a la izquierda */
     padding: 8px 16px;
-    /* MÃ¡s chico */
+    /* MÃƒÆ’Ã‚Â¡s chico */
     vertical-align: middle;
     /* Alineamos con el texto */
     box-shadow: none;
@@ -589,19 +588,19 @@ table {
 }
 
 .btn-inline:active {
-    /* Hereda la animaciÃ³n del .btn:active */
+    /* Hereda la animaciÃƒÆ’Ã‚Â³n del .btn:active */
 }
 
-/* --- ESTILOS PARA EDICIÃ“N DE STOCK EN TABLA --- */
+/* --- ESTILOS PARA EDICIÃƒÆ’Ã¢â‚¬Å“N DE STOCK EN TABLA --- */
 .stock-cell {
     display: flex;
-    /* Volvemos a 'center' para un centrado vertical mÃ¡s simple */
+    /* Volvemos a 'center' para un centrado vertical mÃƒÆ’Ã‚Â¡s simple */
     align-items: center;
     /* <-- CAMBIO CLAVE */
     gap: 0.5rem;
 }
 
-/* -------- ESTILOS DE ESTADÃSTICAS DIARIAS -------- */
+/* -------- ESTILOS DE ESTADÃƒÆ’Ã‚ÂSTICAS DIARIAS -------- */
 
 .daily-stats-wrapper {
     width: fit-content;
@@ -645,7 +644,7 @@ table {
     font-size: 1.2rem;
 }
 
-/* Selector de inventario en estadÃ­sticas */
+/* Selector de inventario en estadÃƒÆ’Ã‚Â­sticas */
 .select-inventory-btn {
     width: fit-content;
     height: fit-content;
@@ -789,7 +788,7 @@ table {
     font-size: 1rem;
     line-height: 1;
     min-width: 25px;
-    /* Ancho mÃ­nimo */
+    /* Ancho mÃƒÆ’Ã‚Â­nimo */
     border: var(--border-strong);
     border-radius: var(--border-radius);
     cursor: pointer;
@@ -872,14 +871,14 @@ table {
     flex-grow: 0;
     /* Ocupa el espacio restante */
     width: 60px;
-    /* Ancho base pequeÃ±o */
+    /* Ancho base pequeÃƒÆ’Ã‚Â±o */
     padding-top: 4px;
     padding-bottom: 4px;
     padding-left: 6px;
     padding-right: 6px;
     text-align: center;
     border: 1px solid #ccc;
-    /* Borde mÃ¡s suave para el input */
+    /* Borde mÃƒÆ’Ã‚Â¡s suave para el input */
     border-radius: var(--border-radius);
     font-size: 0.9rem;
     /* Quitar flechas por defecto del input number */
@@ -896,7 +895,7 @@ table {
 
 /* ... (todos tus estilos anteriores) ... */
 
-/* --- ESTILOS PARA LA FILA DE EDICIÃ“N --- */
+/* --- ESTILOS PARA LA FILA DE EDICIÃƒÆ’Ã¢â‚¬Å“N --- */
 .editing-row td {
     padding-top: 8px !important;
     padding-bottom: 8px !important;
@@ -904,7 +903,7 @@ table {
 
 .editing-row input[type="text"],
 .editing-row input[type="number"] {
-    /* Input general para la fila de ediciÃ³n */
+    /* Input general para la fila de ediciÃƒÆ’Ã‚Â³n */
     width: 50%;
     padding: 6px 8px;
     border: 1px solid var(--accent-color);
@@ -929,7 +928,7 @@ table {
     line-height: 1;
 }
 
-/* Estilo especÃ­fico para el botÃ³n de eliminar final */
+/* Estilo especÃƒÆ’Ã‚Â­fico para el botÃƒÆ’Ã‚Â³n de eliminar final */
 #confirm-delete-btn {
     background-color: #bf616a46;
     border-color: var(--accent-red);
@@ -942,13 +941,13 @@ table {
     color: var(--color-gray);
     cursor: not-allowed;
     box-shadow: none;
-    /* Quitamos sombra si estÃ¡ deshabilitado */
+    /* Quitamos sombra si estÃƒÆ’Ã‚Â¡ deshabilitado */
     transform: none;
 }
 
 #confirm-delete-btn:hover:not(:disabled) {
     filter: brightness(1.1);
-    /* Hacemos mÃ¡s brillante al pasar el mouse */
+    /* Hacemos mÃƒÆ’Ã‚Â¡s brillante al pasar el mouse */
     box-shadow: 4px 4px 0px var(--accent-red-20);
     /* Mantenemos el pop */
     transform: translate(-2px, -2px);
@@ -956,12 +955,12 @@ table {
 
 #confirm-delete-btn:active:not(:disabled) {
     filter: brightness(0.9);
-    /* Un poco mÃ¡s oscuro al hacer clic */
+    /* Un poco mÃƒÆ’Ã‚Â¡s oscuro al hacer clic */
     box-shadow: 1px 1px 0px var(--color-black);
     transform: translate(3px, 3px);
 }
 
-/* --- ESTILOS PARA EDICIÃ“N DE FILA --- */
+/* --- ESTILOS PARA EDICIÃƒÆ’Ã¢â‚¬Å“N DE FILA --- */
 
 /* Celda de Acciones */
 .action-cell {
@@ -978,9 +977,9 @@ table {
     line-height: 1;
 }
 
-/* Inputs dentro de una fila en modo ediciÃ³n */
+/* Inputs dentro de una fila en modo ediciÃƒÆ’Ã‚Â³n */
 .editing-row td {
-    /* Doy un padding mÃ¡s chico a las celdas en ediciÃ³n */
+    /* Doy un padding mÃƒÆ’Ã‚Â¡s chico a las celdas en ediciÃƒÆ’Ã‚Â³n */
     padding-top: 8px !important;
     padding-bottom: 8px !important;
 }
@@ -998,9 +997,9 @@ table {
     outline: none;
 }
 
-/* --- ESTILOS DE ACORDEÃ“N PARA CONFIGURACIÃ“N --- */
+/* --- ESTILOS DE ACORDEÃƒÆ’Ã¢â‚¬Å“N PARA CONFIGURACIÃƒÆ’Ã¢â‚¬Å“N --- */
 
-/* Contenedor principal del acordeÃ³n */
+/* Contenedor principal del acordeÃƒÆ’Ã‚Â³n */
 .accordion {
     width: 100%;
     /* Lo muevo un poco a la izquierda para que no se sienta "centrado" */
@@ -1016,7 +1015,7 @@ table {
     overflow: hidden;
 }
 
-/* Cabecera clickeable (Â¡la queja de "presencia"!) */
+/* Cabecera clickeable (Ãƒâ€šÃ‚Â¡la queja de "presencia"!) */
 .accordion-header {
     display: flex;
     justify-content: space-between;
@@ -1026,12 +1025,12 @@ table {
 
     background-color: var(--color-white);
     border: none;
-    /* Borde inferior por defecto (desaparece en el Ãºltimo item) */
+    /* Borde inferior por defecto (desaparece en el ÃƒÆ’Ã‚Âºltimo item) */
     border-bottom: var(--border-strong);
 
     font-family: var(--font-title);
     font-size: 1.3rem;
-    /* <-- MÃ¡s presencia */
+    /* <-- MÃƒÆ’Ã‚Â¡s presencia */
     font-weight: 700;
     color: var(--color-black);
     cursor: pointer;
@@ -1040,7 +1039,7 @@ table {
 }
 
 .accordion-item:last-child .accordion-header {
-    /* El Ãºltimo item no necesita borde inferior si estÃ¡ cerrado */
+    /* El ÃƒÆ’Ã‚Âºltimo item no necesita borde inferior si estÃƒÆ’Ã‚Â¡ cerrado */
     border-color: var(--accent-red);
     border-bottom: none;
 }
@@ -1062,13 +1061,13 @@ table {
     padding-right: 1.5rem;
     text-align: left;
 
-    /* Â¡LA MAGIA DE LA ANIMACIÃ“N! */
+    /* Ãƒâ€šÃ‚Â¡LA MAGIA DE LA ANIMACIÃƒÆ’Ã¢â‚¬Å“N! */
     max-height: 0;
     /* Por defecto, altura 0 */
     overflow: hidden;
     /* Oculta el contenido que se pasa */
     transition: max-height 0.3s ease-out;
-    /* La animaciÃ³n fluida */
+    /* La animaciÃƒÆ’Ã‚Â³n fluida */
 }
 
 .accordion-content.open {
@@ -1098,13 +1097,13 @@ table {
     background-color: #f5f5f5;
 }
 
-/* RotaciÃ³n de la flecha */
+/* RotaciÃƒÆ’Ã‚Â³n de la flecha */
 .accordion-header.active i {
     transform: rotate(180deg);
 }
 
 .accordion-item:last-child .accordion-header.active {
-    /* Si estÃ¡ activo, el Ãºltimo item no necesita borde */
+    /* Si estÃƒÆ’Ã‚Â¡ activo, el ÃƒÆ’Ã‚Âºltimo item no necesita borde */
     border-bottom: none;
 }
 
@@ -1113,7 +1112,7 @@ table {
 
 /* --- ARREGLOS DE BOTONES Y FORMULARIOS --- */
 
-/* BotÃ³n de peligro (para el de "Eliminar") */
+/* BotÃƒÆ’Ã‚Â³n de peligro (para el de "Eliminar") */
 .btn-danger {
     /*background-color: #ffdee1;  (puedes usar var(--accent-red) si existe) */
     background-color: #fff;
@@ -1135,7 +1134,7 @@ table {
     transform: translate(3px, 3px);
 }
 
-/* Hacemos que los botones DENTRO del acordeÃ³n sean de tamaÃ±o automÃ¡tico */
+/* Hacemos que los botones DENTRO del acordeÃƒÆ’Ã‚Â³n sean de tamaÃƒÆ’Ã‚Â±o automÃƒÆ’Ã‚Â¡tico */
 .accordion-content .btn {
     width: auto;
     /* <-- ARREGLA EL ANCHO */
@@ -1147,7 +1146,7 @@ table {
     /* Quitamos margen superior por defecto */
 }
 
-/* Hacemos que el form de aÃ±adir columna se vea bien */
+/* Hacemos que el form de aÃƒÆ’Ã‚Â±adir columna se vea bien */
 .accordion-content #add-column-form {
     display: flex;
     flex-wrap: wrap;
@@ -1184,7 +1183,7 @@ table {
 
     background-color: #fff;
     border: 2px solid #1b1b1b !important;
-    /* Borde externo Ãºnico */
+    /* Borde externo ÃƒÆ’Ã‚Âºnico */
     border-radius: 8px !important;
 
     box-shadow: none !important;
@@ -1193,12 +1192,12 @@ table {
     /* Prioridad sobre la tabla */
 }
 
-/* Ajustamos el input para que encaje con el botÃ³n */
+/* Ajustamos el input para que encaje con el botÃƒÆ’Ã‚Â³n */
 .table-controls .search-wrapper input {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
     border-right: none;
-    /* El botÃ³n pondrÃ¡ el borde */
+    /* El botÃƒÆ’Ã‚Â³n pondrÃƒÆ’Ã‚Â¡ el borde */
     background: transparent;
     padding: 8px;
     font-family: 'Satoshi', sans-serif;
@@ -1216,13 +1215,13 @@ table {
     /* Permite que se acomoden en pantallas chicas */
 }
 
-/* Estilo del botÃ³n de filtro */
+/* Estilo del botÃƒÆ’Ã‚Â³n de filtro */
 #search-column-btn {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     width: auto;
-    /* Ancho automÃ¡tico */
+    /* Ancho automÃƒÆ’Ã‚Â¡tico */
     margin-top: 0;
     font-size: 0.9rem;
     line-height: 1;
@@ -1258,7 +1257,7 @@ table {
     padding: 0.5rem;
 }
 
-/* El menÃº dropdown "flotante" */
+/* El menÃƒÆ’Ã‚Âº dropdown "flotante" */
 .search-dropdown {
     position: absolute;
     right: 0;
@@ -1267,7 +1266,7 @@ table {
     left: 0;
     width: 100%;
     margin-top: 4px;
-    /* Espacio pequeÃ±o */
+    /* Espacio pequeÃƒÆ’Ã‚Â±o */
     background: #fff;
     border: 2px solid #1b1b1b;
     border-radius: 8px;
@@ -1276,7 +1275,7 @@ table {
     overflow: hidden;
 }
 
-/* Ãtems dentro del dropdown */
+/* ÃƒÆ’Ã‚Âtems dentro del dropdown */
 .search-dropdown-item {
     display: flex;
     align-items: center;
@@ -1311,7 +1310,7 @@ table {
 
 .search-dropdown-item.active i {
     color: var(--accent-color);
-    /* Visible si estÃ¡ activo */
+    /* Visible si estÃƒÆ’Ã‚Â¡ activo */
 }
 
 /* =================================================================
@@ -1386,12 +1385,12 @@ table {
     margin-top: 0.25rem;
 }
 
-/* --- 2. Estilo para el Modal de "Crear TransacciÃ³n" --- */
+/* --- 2. Estilo para el Modal de "Crear TransacciÃƒÆ’Ã‚Â³n" --- */
 
-/* Hacemos el modal mÃ¡s grande y con scroll interno */
+/* Hacemos el modal mÃƒÆ’Ã‚Â¡s grande y con scroll interno */
 #new-transaction-container {
     width: 800px;
-    /* MÃ¡s ancho */
+    /* MÃƒÆ’Ã‚Â¡s ancho */
     max-width: 90vw;
     height: 85vh;
     /* Alto fijo */
@@ -1436,14 +1435,14 @@ table {
     flex-grow: 1;
     /* Ocupa todo el alto disponible */
     overflow-y: auto;
-    /* Â¡SCROLL AQUÃ! */
+    /* Ãƒâ€šÃ‚Â¡SCROLL AQUÃƒÆ’Ã‚Â! */
 }
 
 .transaction-body .flex-row {
     padding-bottom: 1rem;
 }
 
-/* El pie de pÃ¡gina fijo con el total y el botÃ³n */
+/* El pie de pÃƒÆ’Ã‚Â¡gina fijo con el total y el botÃƒÆ’Ã‚Â³n */
 .transaction-summary {
     flex-shrink: 0;
     /* Evita que se encoja */
@@ -1476,7 +1475,7 @@ table {
     font-weight: 500;
 }
 
-/* Placeholder para cuando la lista estÃ¡ vacÃ­a */
+/* Placeholder para cuando la lista estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­a */
 .empty-product-list {
     text-align: center;
     padding: 3rem 1rem;
@@ -1536,7 +1535,7 @@ table {
     width: 15%;
     text-align: right;
     font-feature-settings: "tnum";
-    /* NÃºmeros tabulares */
+    /* NÃƒÆ’Ã‚Âºmeros tabulares */
 }
 
 .transaction-product-table .col-quantity {
@@ -1576,7 +1575,7 @@ table {
     text-align: center;
 }
 
-/* BotÃ³n de eliminar (rojo) */
+/* BotÃƒÆ’Ã‚Â³n de eliminar (rojo) */
 .delete-product-btn {
     background: none;
     border: none;
@@ -1594,13 +1593,13 @@ table {
 }
 
 /* =================================================================
-   MEJORAS DE UI PARA EL MODAL DE SELECCIÃ“N (PRODUCTOS Y CLIENTES)
+   MEJORAS DE UI PARA EL MODAL DE SELECCIÃƒÆ’Ã¢â‚¬Å“N (PRODUCTOS Y CLIENTES)
    ================================================================= */
 
 /* --- 1. Contenedor General del Picker --- */
 #transaction-picker-modal {
     width: 600px;
-    /* MÃ¡s ancho que antes */
+    /* MÃƒÆ’Ã‚Â¡s ancho que antes */
     max-width: 90vw;
     height: 70vh;
     /* Alto fijo */
@@ -1612,7 +1611,7 @@ table {
     background-color: var(--background-color);
 }
 
-/* El 'header' donde estÃ¡ el dropdown de inventarios */
+/* El 'header' donde estÃƒÆ’Ã‚Â¡ el dropdown de inventarios */
 #transaction-picker-modal .flex-row {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
@@ -1635,7 +1634,7 @@ table {
     padding: 0.5rem 1.5rem;
 }
 
-/* --- 3. BotÃ³n de Confirmar (fijo abajo) --- */
+/* --- 3. BotÃƒÆ’Ã‚Â³n de Confirmar (fijo abajo) --- */
 .picker-confirm-btn {
     padding: 1rem;
     font-size: 1.1rem;
@@ -1644,7 +1643,7 @@ table {
     border-radius: 0;
     border-top: 1px solid var(--border-color);
     margin-top: auto;
-    /* Empuja el botÃ³n abajo */
+    /* Empuja el botÃƒÆ’Ã‚Â³n abajo */
     flex-shrink: 0;
 }
 
@@ -1765,7 +1764,7 @@ table {
 }
 
 /* =========================================
-   ESTILOS BOTONES DE ACCIÃ“N (TABLAS)
+   ESTILOS BOTONES DE ACCIÃƒÆ’Ã¢â‚¬Å“N (TABLAS)
    ========================================= */
 
 .action-btn {
@@ -1835,7 +1834,7 @@ tr.highlight-row {
     transition: background-color 0.3s ease;
 }
 
-/* Inputs en modo ediciÃ³n (para que no rompan la tabla) */
+/* Inputs en modo ediciÃƒÆ’Ã‚Â³n (para que no rompan la tabla) */
 .editing-input {
     width: 100%;
     padding: 4px 8px;
@@ -1846,7 +1845,7 @@ tr.highlight-row {
 }
 
 /* =========================================
-   ESTILO RÃšSTICO / GLITCH (StockiFy)
+   ESTILO RÃƒÆ’Ã…Â¡STICO / GLITCH (StockiFy)
    ========================================= */
 
 .config-list {
@@ -1856,11 +1855,11 @@ tr.highlight-row {
     margin-top: 1rem;
 }
 
-/* Bloque contenedor de cada opciÃ³n */
+/* Bloque contenedor de cada opciÃƒÆ’Ã‚Â³n */
 .rustic-block {
     background-color: #fff;
     border: 2px solid var(--color-black);
-    /* Borde negro sÃ³lido */
+    /* Borde negro sÃƒÆ’Ã‚Â³lido */
     border-radius: 12px;
     padding: 1rem 1.2rem;
     transition: all 0.2s ease;
@@ -1871,7 +1870,7 @@ tr.highlight-row {
 .rustic-block:hover {
     transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.1);
-    /* Sombra mÃ¡s marcada al hover */
+    /* Sombra mÃƒÆ’Ã‚Â¡s marcada al hover */
 }
 
 /* Headers y Labels */
@@ -1927,7 +1926,7 @@ tr.highlight-row {
     /* Sombra dura estilo 'neo-brutalism' */
     width: 100%;
     max-width: 600px;
-    /* Ancho mÃ¡ximo por defecto */
+    /* Ancho mÃƒÆ’Ã‚Â¡ximo por defecto */
     max-height: 90vh;
     overflow-y: auto;
     display: flex;
@@ -1964,7 +1963,7 @@ tr.highlight-row {
     border-radius: 0 0 18px 18px;
 }
 
-/* BotÃ³n de cerrar (X) */
+/* BotÃƒÆ’Ã‚Â³n de cerrar (X) */
 .modal-close-btn {
     position: absolute;
     top: 1rem;
@@ -1981,7 +1980,7 @@ tr.highlight-row {
     color: var(--accent-red, red);
 }
 
-/* AnimaciÃ³n de entrada */
+/* AnimaciÃƒÆ’Ã‚Â³n de entrada */
 @keyframes slideUp {
     from {
         transform: translateY(20px);
@@ -1994,7 +1993,7 @@ tr.highlight-row {
     }
 }
 
-/* Estilos especÃ­ficos del Drag & Drop (#drop-zone) */
+/* Estilos especÃƒÆ’Ã‚Â­ficos del Drag & Drop (#drop-zone) */
 .drop-zone {
     border: 2px dashed #ccc;
     border-radius: 8px;
@@ -2020,7 +2019,7 @@ tr.highlight-row {
     color: var(--color-black, #000);
 }
 
-/* Inputs RÃºsticos */
+/* Inputs RÃƒÆ’Ã‚Âºsticos */
 .rustic-input {
     width: 100%;
     padding: 10px 12px;
@@ -2036,7 +2035,7 @@ tr.highlight-row {
     display: none;
 }
 
-/* --- ESTILOS DEL MODAL DE IMPORTACIÃ“N --- */
+/* --- ESTILOS DEL MODAL DE IMPORTACIÃƒÆ’Ã¢â‚¬Å“N --- */
 /* Paso 2: La Grilla de Mapeo (Formulario generado por JS) */
 #mapping-form {
     display: grid;
@@ -2113,12 +2112,12 @@ tr.highlight-row {
     font-style: italic;
 }
 
-/* Sub-secciones (AutomatizaciÃ³n) */
+/* Sub-secciones (AutomatizaciÃƒÆ’Ã‚Â³n) */
 .nested-section {
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1.5px dashed #ccc;
-    /* Separador punteado rÃºstico */
+    /* Separador punteado rÃƒÆ’Ã‚Âºstico */
 }
 
 .sub-option span {
@@ -2134,7 +2133,7 @@ tr.highlight-row {
     margin-top: 1rem;
     padding-left: 0.5rem;
     border-left: 3px solid var(--accent-color);
-    /* LÃ­nea de color al lado */
+    /* LÃƒÆ’Ã‚Â­nea de color al lado */
 }
 
 .radio-inline {
@@ -2153,25 +2152,25 @@ tr.highlight-row {
 }
 
 /* =========================================
-   ANIMACIONES DE APARICIÃ“N (Inputs y Opciones)
+   ANIMACIONES DE APARICIÃƒÆ’Ã¢â‚¬Å“N (Inputs y Opciones)
    ========================================= */
 
-/* 2. Aplicar animaciÃ³n a los Inputs RÃºsticos */
+/* 2. Aplicar animaciÃƒÆ’Ã‚Â³n a los Inputs RÃƒÆ’Ã‚Âºsticos */
 .rustic-input.visible {
     display: block !important;
-    /* DuraciÃ³n: 0.3s | Curva: ease-out (frenado suave al final) */
+    /* DuraciÃƒÆ’Ã‚Â³n: 0.3s | Curva: ease-out (frenado suave al final) */
     animation: softSlideIn 0.3s ease-out forwards;
 }
 
-/* 3. Aplicar animaciÃ³n a los Grupos de Radio (Horizontales - Ganancia) */
+/* 3. Aplicar animaciÃƒÆ’Ã‚Â³n a los Grupos de Radio (Horizontales - Ganancia) */
 .radio-inline.visible {
     display: flex !important;
-    /* Forzamos flex para que no se rompa el diseÃ±o */
+    /* Forzamos flex para que no se rompa el diseÃƒÆ’Ã‚Â±o */
     gap: 1.5rem;
     animation: softSlideIn 0.3s ease-out forwards;
 }
 
-/* 4. Aplicar animaciÃ³n a los Grupos de Radio (Verticales - AutomatizaciÃ³n) */
+/* 4. Aplicar animaciÃƒÆ’Ã‚Â³n a los Grupos de Radio (Verticales - AutomatizaciÃƒÆ’Ã‚Â³n) */
 .radio-stack.visible {
     display: flex !important;
     flex-direction: column;
@@ -2180,7 +2179,7 @@ tr.highlight-row {
 }
 
 /* =========================================
-   ANIMACIÃ“N SUAVE DE EXPANSIÃ“N (Grid Trick)
+   ANIMACIÃƒÆ’Ã¢â‚¬Å“N SUAVE DE EXPANSIÃƒÆ’Ã¢â‚¬Å“N (Grid Trick)
    ========================================= */
 
 .reveal-wrapper {
@@ -2223,7 +2222,7 @@ tr.highlight-row {
 }
 
 /* =========================================
-   INPUT GROUP RÃšSTICO (Addon + Input)
+   INPUT GROUP RÃƒÆ’Ã…Â¡STICO (Addon + Input)
    ========================================= */
 
 .rustic-input-group {
@@ -2234,14 +2233,14 @@ tr.highlight-row {
     /* Espacio superior */
 }
 
-/* El cuadradito del sÃ­mbolo */
+/* El cuadradito del sÃƒÆ’Ã‚Â­mbolo */
 .input-addon {
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 1rem;
     background-color: #e0e0e0;
-    /* Gris rÃºstico */
+    /* Gris rÃƒÆ’Ã‚Âºstico */
     border: 1.5px solid #1b1b1b;
     border-right: none;
     /* Quitamos borde derecho para unir */
@@ -2254,10 +2253,10 @@ tr.highlight-row {
     flex: 0 0 48px;
     color: var(--color-black);
     min-width: 45px;
-    /* Ancho mÃ­nimo fijo */
+    /* Ancho mÃƒÆ’Ã‚Â­nimo fijo */
 }
 
-/* Ajuste del input cuando estÃ¡ dentro del grupo */
+/* Ajuste del input cuando estÃƒÆ’Ã‚Â¡ dentro del grupo */
 .rustic-input.grouped {
     border-radius: 0 8px 8px 0;
     /* Redondeado solo a la derecha */
@@ -2276,13 +2275,13 @@ tr.highlight-row {
    ESTILOS DE MAPPING Y VISIBILIDAD
    ========================================= */
 
-/* SecciÃ³n de Mapeo */
+/* SecciÃƒÆ’Ã‚Â³n de Mapeo */
 .mapping-section {
     margin-top: 1rem;
     padding: 0.8rem;
     background-color: #f0f0f0;
     border: 1.5px dashed #aaa;
-    /* Borde discontinuo para indicar acciÃ³n tÃ©cnica */
+    /* Borde discontinuo para indicar acciÃƒÆ’Ã‚Â³n tÃƒÆ’Ã‚Â©cnica */
     border-radius: 8px;
 }
 
@@ -2304,7 +2303,7 @@ tr.highlight-row {
     font-family: 'Satoshi', sans-serif;
     font-size: 0.9rem;
     cursor: pointer;
-    /* Flecha personalizada rÃºstica */
+    /* Flecha personalizada rÃƒÆ’Ã‚Âºstica */
     background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
     background-repeat: no-repeat;
     background-position: right .7em top 50%;
@@ -2323,7 +2322,7 @@ tr.highlight-row {
     margin-top: 0.5rem;
 }
 
-/* BotÃ³n de Ojo (Visibilidad) en Gestionar Columnas */
+/* BotÃƒÆ’Ã‚Â³n de Ojo (Visibilidad) en Gestionar Columnas */
 .visibility-btn {
     background: transparent;
     border: none;
@@ -2340,7 +2339,7 @@ tr.highlight-row {
 
 .visibility-btn.hidden-col {
     color: #ccc;
-    /* Gris muy claro si estÃ¡ oculto */
+    /* Gris muy claro si estÃƒÆ’Ã‚Â¡ oculto */
     text-decoration: line-through;
 }
 
@@ -2369,7 +2368,7 @@ tr.highlight-row {
 /* Estado Abierto */
 .reveal-wrapper.open {
     grid-template-rows: 1fr;
-    /* Estado final: Altura AutomÃ¡tica */
+    /* Estado final: Altura AutomÃƒÆ’Ã‚Â¡tica */
     opacity: 1;
     margin-top: 1rem;
     /* Espacio extra al abrirse */
@@ -2382,13 +2381,13 @@ tr.highlight-row {
     /* Importante para Firefox */
 }
 
-/* Ajuste para inputs dentro de la animaciÃ³n */
+/* Ajuste para inputs dentro de la animaciÃƒÆ’Ã‚Â³n */
 .rustic-input {
     display: block;
     width: 100%;
 }
 
-/* Ajuste para selects rÃºsticos */
+/* Ajuste para selects rÃƒÆ’Ã‚Âºsticos */
 .rustic-select {
     width: 100%;
     padding: 10px 12px;
@@ -2401,7 +2400,7 @@ tr.highlight-row {
     margin-top: 0.5rem;
 }
 
-/* Etiquetas pequeÃ±as para el mapping */
+/* Etiquetas pequeÃƒÆ’Ã‚Â±as para el mapping */
 .micro-label {
     font-size: 0.8rem;
     font-weight: 700;
@@ -2420,7 +2419,7 @@ tr.highlight-row {
 }
 
 /* =========================================
-   BOTÃ“N CANDADO (PROTECCIÃ“N DE DATOS)
+   BOTÃƒÆ’Ã¢â‚¬Å“N CANDADO (PROTECCIÃƒÆ’Ã¢â‚¬Å“N DE DATOS)
    ========================================= */
 
 /* Contenedor para input + candado */
@@ -2428,7 +2427,7 @@ tr.highlight-row {
     display: flex;
     align-items: stretch;
     gap: 8px;
-    /* SeparaciÃ³n entre input y candado */
+    /* SeparaciÃƒÆ’Ã‚Â³n entre input y candado */
     width: 100%;
 }
 
@@ -2573,8 +2572,8 @@ input[type="checkbox"].checkbox-danger:hover {
    LOCK SYSTEM & CORRECCIONES Z-INDEX
    ========================================= */
 
-/* CorrecciÃ³n 1: El Header de navegaciÃ³n debe estar siempre arriba */
-/* AsegÃºrate de que tu <header> o <nav id="header-nav"> tenga esto */
+/* CorrecciÃƒÆ’Ã‚Â³n 1: El Header de navegaciÃƒÆ’Ã‚Â³n debe estar siempre arriba */
+/* AsegÃƒÆ’Ã‚Âºrate de que tu <header> o <nav id="header-nav"> tenga esto */
 #header-nav,
 header {
     position: sticky;
@@ -2609,7 +2608,7 @@ header {
     padding-bottom: 0.5rem;
     /* Espacio visual */
     cursor: pointer;
-    /* Para indicar que es acordeÃ³n */
+    /* Para indicar que es acordeÃƒÆ’Ã‚Â³n */
 }
 
 /* WRAPPER DE CONTENIDO: Este es el que recibe el filtro y el overlay */
@@ -2627,7 +2626,7 @@ header {
     /* Ocupa el cuarto derecho */
     min-width: 140px;
     height: 100%;
-    /* Â¡Ahora sÃ­ cubre toda la altura, incluido header! */
+    /* Ãƒâ€šÃ‚Â¡Ahora sÃƒÆ’Ã‚Â­ cubre toda la altura, incluido header! */
     background-color: var(--accent-color);
     opacity: 0.95;
     z-index: 50;
@@ -2640,7 +2639,7 @@ header {
     align-items: center;
     gap: 1rem;
 
-    /* AnimaciÃ³n de entrada */
+    /* AnimaciÃƒÆ’Ã‚Â³n de entrada */
     transform: translateX(101%);
     transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     /* Suave */
@@ -2673,13 +2672,13 @@ header {
     transition: filter 0.4s ease, opacity 0.4s ease;
 }
 
-/* Efecto GrisÃ¡ceo en el contenido (pero NO en el header) */
+/* Efecto GrisÃƒÆ’Ã‚Â¡ceo en el contenido (pero NO en el header) */
 .rustic-block.locked .block-content-wrapper {
     pointer-events: none;
     /* Nadie puede tocar los inputs */
 }
 
-/* Deshabilitar clicks en los inputs, pero dejar libre el acordeÃ³n */
+/* Deshabilitar clicks en los inputs, pero dejar libre el acordeÃƒÆ’Ã‚Â³n */
 .rustic-block.locked .block-header {
     pointer-events: auto;
     /* Reactivamos clicks en el header */
@@ -2734,7 +2733,7 @@ header {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* --- ANIMACIÃ“N SHAKE/BITE --- */
+/* --- ANIMACIÃƒÆ’Ã¢â‚¬Å“N SHAKE/BITE --- */
 @keyframes shake-bite {
     0% {
         transform: scale(1) rotate(0deg);
@@ -2761,7 +2760,7 @@ header {
     }
 }
 
-/* Disparar animaciÃ³n cuando entra el panel */
+/* Disparar animaciÃƒÆ’Ã‚Â³n cuando entra el panel */
 .rustic-block.locked .big-lock-btn i {
     animation: shake-bite 0.6s ease-out forwards 0.4s;
     /* Delay ajustado */
@@ -2823,7 +2822,7 @@ header {
     color: var(--color-black);
 }
 
-/* BotÃ³n de Desvincular */
+/* BotÃƒÆ’Ã‚Â³n de Desvincular */
 .unlink-btn {
     background: transparent;
     border: 1.5px solid var(--accent-red);
@@ -2885,7 +2884,7 @@ header {
     transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* BotÃ³n Secundario (Importar) - Blanco y Negro */
+/* BotÃƒÆ’Ã‚Â³n Secundario (Importar) - Blanco y Negro */
 .btn-secondary {
     background-color: #fff;
     color: var(--color-black);
@@ -2926,21 +2925,21 @@ header {
     font-size: 0.95rem;
     color: #1b1b1b;
 
-    /* Redondeo izquierdo para no salirse de la cÃ¡psula */
+    /* Redondeo izquierdo para no salirse de la cÃƒÆ’Ã‚Â¡psula */
     line-height: 1.5;
     border-radius: 6px 0 0 6px;
 }
 
-/* BotÃ³n de Filtro "Todas" (Unido visualmente) */
+/* BotÃƒÆ’Ã‚Â³n de Filtro "Todas" (Unido visualmente) */
 #search-column-btn {
-    /* 2. FONDO TOTAL: Sin mÃ¡rgenes, altura completa */
+    /* 2. FONDO TOTAL: Sin mÃƒÆ’Ã‚Â¡rgenes, altura completa */
     height: 100%;
     margin: 0;
     background-color: #f4f4f4 !important;
     margin-right: -1px !important;
 
     border: none !important;
-    /* 3. LÃNEA DIVISORIA: Toca bordes arriba y abajo */
+    /* 3. LÃƒÆ’Ã‚ÂNEA DIVISORIA: Toca bordes arriba y abajo */
     border-left: 2px solid #1b1b1b !important;
 
     /* Redondeo manual derecho para encajar en el borde padre */
@@ -2973,7 +2972,7 @@ header {
     top: calc(100% + 6px);
     right: 0;
     max-height: 300px;
-    /* Altura mÃ¡xima fija */
+    /* Altura mÃƒÆ’Ã‚Â¡xima fija */
     overflow-y: auto;
     /* Scroll si hay muchas columnas */
     border: 2px solid #1b1b1b;
@@ -2984,7 +2983,7 @@ header {
     background-color: #fff;
 }
 
-/* --- BOTONES RÃšSTICOS (Estilo "Cerrar SesiÃ³n") --- */
+/* --- BOTONES RÃƒÆ’Ã…Â¡STICOS (Estilo "Cerrar SesiÃƒÆ’Ã‚Â³n") --- */
 .table-controls .btn {
     height: 100%;
     /* 48px heredados */
@@ -2993,7 +2992,7 @@ header {
     /* Centrado vertical */
     justify-content: center;
     margin: 0;
-    /* Elimina mÃ¡rgenes extraÃ±os */
+    /* Elimina mÃƒÆ’Ã‚Â¡rgenes extraÃƒÆ’Ã‚Â±os */
 
     font-weight: 700;
     font-size: 0.95rem;
@@ -3018,7 +3017,7 @@ header {
     transform: translate(-3px, -3px);
     /* Pop up */
     box-shadow: 4px 4px 0px #1b1b1b;
-    /* Sombra sÃ³lida negra */
+    /* Sombra sÃƒÆ’Ã‚Â³lida negra */
 }
 
 /* ESTADO CLICK */
@@ -3027,7 +3026,7 @@ header {
     box-shadow: none;
 }
 
-/* 1. BotÃ³n IMPORTAR (Transparente -> Blanco) */
+/* 1. BotÃƒÆ’Ã‚Â³n IMPORTAR (Transparente -> Blanco) */
 #open-import-modal-btn {
     background-color: transparent;
     color: #1b1b1b;
@@ -3037,21 +3036,21 @@ header {
     background-color: #fff;
 }
 
-/* 2. BotÃ³n AÃ‘ADIR FILA (Color Acento -> Acento) */
+/* 2. BotÃƒÆ’Ã‚Â³n AÃƒÆ’Ã¢â‚¬ËœADIR FILA (Color Acento -> Acento) */
 #add-row-btn {
     background-color: var(--accent-color);
-    /* Tu verde/azul dinÃ¡mico */
+    /* Tu verde/azul dinÃƒÆ’Ã‚Â¡mico */
     color: #fff;
     border-color: #1b1b1b;
     /* Mantenemos el borde negro para consistencia */
 }
 
 #add-row-btn:hover {
-    /* Mismo color, solo cambia la posiciÃ³n y sombra */
+    /* Mismo color, solo cambia la posiciÃƒÆ’Ã‚Â³n y sombra */
     filter: brightness(0.95);
 }
 
-/* Botones de CÃ¡lculo RÃ¡pido (IVA) */
+/* Botones de CÃƒÆ’Ã‚Â¡lculo RÃƒÆ’Ã‚Â¡pido (IVA) */
 .btn-calc {
     flex: 1;
     padding: 6px;
@@ -3186,7 +3185,7 @@ header {
 }
 
 /* =========================================
-   MODAL SELECCIÃ“N DE PRODUCTOS (NUEVO)
+   MODAL SELECCIÃƒÆ’Ã¢â‚¬Å“N DE PRODUCTOS (NUEVO)
    ========================================= */
 
 .product-picker-list {
@@ -3221,7 +3220,7 @@ header {
     background-color: rgba(var(--accent-color-rgb), 0.08);
     border-color: var(--accent-color);
     border-width: 2px;
-    /* MÃ¡s grueso */
+    /* MÃƒÆ’Ã‚Â¡s grueso */
 }
 
 /* Info Izquierda */
@@ -3284,7 +3283,7 @@ header {
 }
 
 /* =========================================
-   MODAL SELECCIÃ“N DE PRODUCTOS (FIXED)
+   MODAL SELECCIÃƒÆ’Ã¢â‚¬Å“N DE PRODUCTOS (FIXED)
    ========================================= */
 
 /* Contenedor de la lista con SCROLL */
@@ -3360,11 +3359,11 @@ header {
 body.no-scroll {
     overflow: hidden !important;
     height: 100vh;
-    /* Fija la altura para evitar saltos en mÃ³viles */
+    /* Fija la altura para evitar saltos en mÃƒÆ’Ã‚Â³viles */
 }
 
 /* =========================================
-   FIX FINAL: HOVER + ACCIONES DINÃMICO
+   FIX FINAL: HOVER + ACCIONES DINÃƒÆ’Ã‚ÂMICO
    ========================================= */
 
 /* 1. RESTAURAR HOVER (Alta prioridad) */
@@ -3376,21 +3375,21 @@ body.no-scroll {
 }
 
 /* =========================================
-   LÃ“GICA COLUMNA ACCIONES (SHRINK TO FIT)
+   LÃƒÆ’Ã¢â‚¬Å“GICA COLUMNA ACCIONES (SHRINK TO FIT)
    ========================================= */
 
 /* ESTADO NORMAL Y COLAPSADO (Reglas Base) */
 #data-table thead th.actions-header,
 #data-table tbody td.actions-cell {
     /* TRUCO: width: 1% en tablas obliga a la columna a
-       contraerse al ancho mÃ­nimo de su contenido. */
+       contraerse al ancho mÃƒÆ’Ã‚Â­nimo de su contenido. */
     width: 1% !important;
     white-space: nowrap !important;
     text-align: center !important;
     box-sizing: border-box;
 }
 
-/* AJUSTES ESPECÃFICOS: ESTADO NORMAL (Texto "Acciones") */
+/* AJUSTES ESPECÃƒÆ’Ã‚ÂFICOS: ESTADO NORMAL (Texto "Acciones") */
 #data-table thead th.actions-header {
     padding-left: 15px !important;
     padding-right: 15px !important;
@@ -3402,7 +3401,7 @@ body.no-scroll {
     /* Feedback visual suave */
 }
 
-/* AJUSTES ESPECÃFICOS: ESTADO COLAPSADO (Tuerca) */
+/* AJUSTES ESPECÃƒÆ’Ã‚ÂFICOS: ESTADO COLAPSADO (Tuerca) */
 #data-table thead th.actions-header.collapsed {
     padding-left: 8px !important;
     padding-right: 8px !important;
@@ -3430,23 +3429,23 @@ body.no-scroll {
     gap: 8px !important;
 }
 
-/* Gap Colapsado (MÃ¡s apretado) */
+/* Gap Colapsado (MÃƒÆ’Ã‚Â¡s apretado) */
 #data-table tbody td.actions-cell.collapsed .flex-row {
     gap: 4px !important;
 }
 
-/* TamaÃ±o de botones fijo y pequeÃ±o */
+/* TamaÃƒÆ’Ã‚Â±o de botones fijo y pequeÃƒÆ’Ã‚Â±o */
 #data-table tbody td.actions-cell .btn-icon {
     width: 28px !important;
     height: 28px !important;
     padding: 0 !important;
     font-size: 1.1rem !important;
     flex-shrink: 0;
-    /* ProhÃ­be que se aplasten */
+    /* ProhÃƒÆ’Ã‚Â­be que se aplasten */
 }
 
 /* =========================================
-   PESTAÃ‘A FLOTANTE (RESTAURAR ACCIONES)
+   PESTAÃƒÆ’Ã¢â‚¬ËœA FLOTANTE (RESTAURAR ACCIONES)
    ========================================= */
 
 .restore-tab {
@@ -3463,7 +3462,7 @@ body.no-scroll {
     color: #fff;
 
     padding: 12px 8px 12px 12px;
-    /* Un poco mÃ¡s de padding a la izquierda */
+    /* Un poco mÃƒÆ’Ã‚Â¡s de padding a la izquierda */
     border-radius: 8px 0 0 8px;
     /* Redondeado solo a la izquierda */
 
@@ -3481,12 +3480,12 @@ body.no-scroll {
 .restore-tab:hover {
     background-color: var(--accent-color);
     transform: translateY(-50%) translateX(-30px);
-    /* PequeÃ±o movimiento al hover */
+    /* PequeÃƒÆ’Ã‚Â±o movimiento al hover */
 }
 
 .restore-tab i {
     margin-bottom: 8px;
-    /* SeparaciÃ³n del Ã­cono (que ahora estÃ¡ arriba por ser vertical) */
+    /* SeparaciÃƒÆ’Ã‚Â³n del ÃƒÆ’Ã‚Â­cono (que ahora estÃƒÆ’Ã‚Â¡ arriba por ser vertical) */
     font-size: 1.1rem;
 }
 
@@ -3496,7 +3495,7 @@ body.no-scroll {
 }
 
 /* =========================================
-   SECCIÃ“N DE MAPEO (IDENTIFICACIÃ“N DE COLUMNAS)
+   SECCIÃƒÆ’Ã¢â‚¬Å“N DE MAPEO (IDENTIFICACIÃƒÆ’Ã¢â‚¬Å“N DE COLUMNAS)
    ========================================= */
 
 /* Contenedor Grid Principal */
@@ -3561,7 +3560,7 @@ body.no-scroll {
     font-size: 1.2rem;
 }
 
-/* --- 3. SELECT RÃšSTICO (Lado Derecho) --- */
+/* --- 3. SELECT RÃƒÆ’Ã…Â¡STICO (Lado Derecho) --- */
 .rustic-select {
     width: 100%;
     padding: 10px 12px;
@@ -3571,7 +3570,7 @@ body.no-scroll {
     border: 2px solid #1b1b1b;
     border-radius: 6px;
 
-    /* TipografÃ­a */
+    /* TipografÃƒÆ’Ã‚Â­a */
     font-family: 'Satoshi', sans-serif;
     font-weight: 600;
     font-size: 0.95rem;
@@ -3611,7 +3610,7 @@ body.no-scroll {
 
 /* 1. Ajuste del SELECT (Izquierda) */
 #import-min-stock-source {
-    /* Forzamos altura exacta igual al botÃ³n */
+    /* Forzamos altura exacta igual al botÃƒÆ’Ã‚Â³n */
     height: 40px !important;
     line-height: 1.5 !important;
 
@@ -3620,17 +3619,17 @@ body.no-scroll {
     border-bottom-right-radius: 0 !important;
     border-right: none !important;
 
-    /* Quitamos mÃ¡rgenes y sombras individuales */
+    /* Quitamos mÃƒÆ’Ã‚Â¡rgenes y sombras individuales */
     margin: 0 !important;
     box-shadow: none !important;
 
-    /* Aseguramos que el texto estÃ© centrado verticalmente */
+    /* Aseguramos que el texto estÃƒÆ’Ã‚Â© centrado verticalmente */
     padding: 0 10px !important;
     display: flex;
     align-items: center;
 }
 
-/* 2. Ajuste del BOTÃ“N (Derecha) */
+/* 2. Ajuste del BOTÃƒÆ’Ã¢â‚¬Å“N (Derecha) */
 #btn-import-min-stock {
     /* Misma altura exacta */
     height: 40px !important;
@@ -3639,13 +3638,13 @@ body.no-scroll {
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
 
-    /* El botÃ³n pone el borde que le quitamos al select */
+    /* El botÃƒÆ’Ã‚Â³n pone el borde que le quitamos al select */
     border-left: 2px solid #1b1b1b !important;
 
     margin: 0 !important;
     box-shadow: none !important;
 
-    /* Centrado flex para el texto del botÃ³n */
+    /* Centrado flex para el texto del botÃƒÆ’Ã‚Â³n */
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -3715,7 +3714,7 @@ body.no-scroll {
     /* Evita seleccionar texto al arrastrar */
 }
 
-/* Hover: Se pone un poco mÃ¡s oscura y sube */
+/* Hover: Se pone un poco mÃƒÆ’Ã‚Â¡s oscura y sube */
 .sortable-item:hover {
     border-color: #1b1b1b;
     transform: translateY(-2px);
@@ -3762,7 +3761,7 @@ body.no-scroll {
     color: #374151;
 }
 
-/* 6. Estilo cuando estÃ¡s arrastrando (SortableJS Ghost) */
+/* 6. Estilo cuando estÃƒÆ’Ã‚Â¡s arrastrando (SortableJS Ghost) */
 .sortable-ghost {
     background-color: #f0f9ff;
     border: 2px dashed var(--accent-color);
@@ -3774,7 +3773,7 @@ body.no-scroll {
    STOCKIFY MOBILE (COMPANION MODE)
    ========================================= */
 
-/* Por defecto (Escritorio): Ocultamos la vista mÃ³vil */
+/* Por defecto (Escritorio): Ocultamos la vista mÃƒÆ’Ã‚Â³vil */
 .mobile-app-view {
     display: none !important;
 }
@@ -3807,17 +3806,17 @@ body {
         display: none !important;
     }
 
-    /* 2. MOSTRAR LA VISTA MÃ“VIL */
+    /* 2. MOSTRAR LA VISTA MÃƒÆ’Ã¢â‚¬Å“VIL */
     .mobile-app-view.hidden {
         display: block !important;
-        /* Forzamos visualizaciÃ³n */
+        /* Forzamos visualizaciÃƒÆ’Ã‚Â³n */
         display: flex !important;
         flex-direction: column;
         height: 100%;
         padding: 20px;
     }
 
-    /* Header MÃ³vil */
+    /* Header MÃƒÆ’Ã‚Â³vil */
     .mobile-header {
         display: flex;
         justify-content: space-between;
@@ -3840,7 +3839,7 @@ body {
         /* Ocupa el espacio disponible */
     }
 
-    /* Tarjetas de AcciÃ³n */
+    /* Tarjetas de AcciÃƒÆ’Ã‚Â³n */
     .mobile-card {
         background-color: #fff;
         border: 2px solid #1b1b1b;
@@ -3853,7 +3852,7 @@ body {
         text-align: center;
         cursor: pointer;
         box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
-        /* Estilo RÃºstico */
+        /* Estilo RÃƒÆ’Ã‚Âºstico */
         transition: transform 0.1s;
     }
 
@@ -3863,7 +3862,7 @@ body {
         opacity: 0.85;
     }
 
-    /* Feedback active para botones en mÃ³viles */
+    /* Feedback active para botones en mÃƒÆ’Ã‚Â³viles */
     .btn:active,
     button:active,
     .btn-ticket-push:active,
@@ -3899,7 +3898,7 @@ body {
         color: #666;
     }
 
-    /* Colores EspecÃ­ficos */
+    /* Colores EspecÃƒÆ’Ã‚Â­ficos */
     .action-sale .icon-circle {
         background-color: var(--accent-green-20);
         color: var(--accent-green);
@@ -3968,7 +3967,7 @@ body {
         border-color: var(--accent-red);
     }
 
-    /* 3. MODALES EN MÃ“VIL (AdaptaciÃ³n) */
+    /* 3. MODALES EN MÃƒÆ’Ã¢â‚¬Å“VIL (AdaptaciÃƒÆ’Ã‚Â³n) */
     /* Hacemos que tus modales existentes ocupen el 100% */
     #new-transaction-container,
     #transaction-picker-modal {
@@ -3987,12 +3986,12 @@ body {
     .transaction-body,
     .picker-list {
         padding-bottom: 80px;
-        /* Espacio para el botÃ³n fijo abajo */
+        /* Espacio para el botÃƒÆ’Ã‚Â³n fijo abajo */
     }
 
-    /* --- ESTILOS ADICIONALES PARA MÃ“VIL --- */
+    /* --- ESTILOS ADICIONALES PARA MÃƒÆ’Ã¢â‚¬Å“VIL --- */
 
-    /* BotÃ³n de Perfil/Logout Header */
+    /* BotÃƒÆ’Ã‚Â³n de Perfil/Logout Header */
     .mobile-icon-btn {
         font-size: 1.8rem;
         color: #1b1b1b;
@@ -4006,7 +4005,7 @@ body {
         color: var(--accent-violet);
     }
 
-    /* --- MODAL DE CAJA (Full Screen en MÃ³vil) --- */
+    /* --- MODAL DE CAJA (Full Screen en MÃƒÆ’Ã‚Â³vil) --- */
     .mobile-modal-overlay {
         position: fixed;
         top: 0;
@@ -4064,7 +4063,7 @@ body {
         font-size: 2rem;
     }
 
-    /* Selector de PerÃ­odo */
+    /* Selector de PerÃƒÆ’Ã‚Â­odo */
     .period-selector {
         display: flex;
         gap: 10px;
@@ -4184,7 +4183,7 @@ body {
    PEGAR AL FINAL de dashboard.css
    ========================================================= */
 
-/* 1) Modal de ImportaciÃ³n: ancho real y layout limpio */
+/* 1) Modal de ImportaciÃƒÆ’Ã‚Â³n: ancho real y layout limpio */
 #import-modal .modal-content.import-modal {
     width: min(1100px, 94vw) !important;
     max-width: min(1100px, 94vw) !important;
@@ -4247,7 +4246,7 @@ body {
     }
 }
 
-/* 4) Cada â€œcampoâ€ que genere el JS: estilo tarjeta (funciona aunque cambien clases) */
+/* 4) Cada ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œcampoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â que genere el JS: estilo tarjeta (funciona aunque cambien clases) */
 #import-modal #mapping-form>* {
     min-width: 0;
     /* evita overflow raro */
@@ -4278,7 +4277,7 @@ body {
     letter-spacing: 0.3px;
 }
 
-/* 5) Matar el â€œverdeâ€ y unificar selects SOLO dentro del import */
+/* 5) Matar el ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œverdeÃƒÂ¢Ã¢â€šÂ¬Ã‚Â y unificar selects SOLO dentro del import */
 #import-modal select,
 #import-modal .mapping-select,
 #import-modal .rustic-select {
@@ -4449,7 +4448,7 @@ body {
         color: #64748b;
     }
 
-    /* Selector de PerÃ­odo */
+    /* Selector de PerÃƒÆ’Ã‚Â­odo */
     .period-selector {
         display: flex;
         gap: 10px;
@@ -4562,13 +4561,13 @@ body {
 }
 
 /* =========================
-   BotÃ³n Cierre Caja - esquina (FIX)
+   BotÃƒÆ’Ã‚Â³n Cierre Caja - esquina (FIX)
 ========================= */
 #analysis {
     position: relative;
 }
 
-/* Si tu botÃ³n ademÃ¡s tiene .btn / .btn-secondary, esto lo pisa igual */
+/* Si tu botÃƒÆ’Ã‚Â³n ademÃƒÆ’Ã‚Â¡s tiene .btn / .btn-secondary, esto lo pisa igual */
 #analysis .cash-corner-btn {
     position: absolute;
     top: 12px;
@@ -4618,7 +4617,7 @@ body {
     width: 100%;
     max-width: 900px;
     margin: 8px auto 22px auto;
-    /* <-- separa del tÃ­tulo */
+    /* <-- separa del tÃƒÆ’Ã‚Â­tulo */
 }
 
 .import-overwrite-box {
@@ -4639,7 +4638,7 @@ body {
     width: 18px;
     height: 18px;
     margin: 0;
-    /* <-- saca â€œdesalineosâ€ por default */
+    /* <-- saca ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œdesalineosÃƒÂ¢Ã¢â€šÂ¬Ã‚Â por default */
     flex: 0 0 auto;
     accent-color: var(--accent-color);
 }
@@ -4674,7 +4673,7 @@ body {
     line-height: 1.25rem;
 }
 
-/* MÃ¡s aire entre esta caja y el tÃ­tulo del mapeo */
+/* MÃƒÆ’Ã‚Â¡s aire entre esta caja y el tÃƒÆ’Ã‚Â­tulo del mapeo */
 #import-step-2>h3 {
     margin-top: 0;
 }
@@ -4706,7 +4705,7 @@ table thead th:last-of-type,
     border-bottom-right-radius: 0 !important;
 }
 
-/* Pestañas de Envíos y botones estéticos del Repartidor */
+/* PestaÃƒÂ±as de EnvÃƒÂ­os y botones estÃƒÂ©ticos del Repartidor */
 .deliveries-tabs {
     display: flex;
     gap: 8px;
@@ -4742,13 +4741,28 @@ table thead th:last-of-type,
     transform: translate(3px, 3px) !important;
 }
 
-/* Vista Responsiva de Envíos del Administrador */
+/* Vista Responsiva de EnvÃƒÂ­os del Administrador */
 @media (max-width: 768px) {
     .admin-desktop-view {
         display: none !important;
     }
     .admin-mobile-view {
         display: block !important;
+    }
+    .collaborators-desktop-view {
+        display: none !important;
+    }
+    .collaborators-mobile-view {
+        display: flex !important;
+    }
+    #permissions-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+        padding: 12px !important;
+    }
+    .action-collaborators .icon-circle {
+        background-color: var(--accent-violet-20);
+        color: var(--accent-violet);
     }
 }
 @media (min-width: 769px) {
@@ -4758,4 +4772,1099 @@ table thead th:last-of-type,
     .admin-mobile-view {
         display: none !important;
     }
+    .collaborators-desktop-view {
+        display: block !important;
+    }
+    .collaborators-mobile-view {
+        display: none !important;
+    }
 }
+
+/* =====================================================
+   MODAL NATIVO MÃƒâ€œVIL Ã¢â‚¬â€ COLABORADORES
+   ===================================================== */
+
+/* Sheet (bottom sheet) */
+.m-collab-sheet {
+    background: #fff;
+    width: 100%;
+    height: 90vh;
+    border-radius: 24px 24px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-top: 4px solid var(--accent-color);
+    animation: slideUpMobile 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Drag handle */
+.m-collab-handle {
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 99px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+}
+
+/* ---- HEADER ---- */
+.m-collab-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 12px;
+    border-bottom: 2px solid #f0f0f0;
+    flex-shrink: 0;
+    gap: 12px;
+}
+
+.m-collab-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.m-collab-icon-wrap {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--accent-color-quat-opacity, rgba(var(--accent-color-rgb), 0.1));
+    border: 2px solid var(--accent-color);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.m-collab-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #1b1b1b;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.m-collab-quota-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    background: var(--accent-color-quat-opacity, rgba(var(--accent-color-rgb), 0.1));
+    border: 1px solid var(--accent-color);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 4px;
+    white-space: nowrap;
+}
+
+.m-collab-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.m-collab-invite-btn {
+    background: var(--accent-color);
+    color: #fff;
+    border: 2px solid #1b1b1b;
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 3px 3px 0 #1b1b1b;
+}
+
+.m-collab-invite-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.m-collab-close-btn {
+    background: #f5f5f5;
+    border: 2px solid #1b1b1b;
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #1b1b1b;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 2px 2px 0 #1b1b1b;
+}
+
+.m-collab-close-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+/* ---- DEBT BANNER ---- */
+.m-collab-debt-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent-yellow-20, #EBCB8B33);
+    border-bottom: 2px solid var(--accent-yellow, #EBCB8B);
+    padding: 10px 18px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.m-collab-debt-banner > i {
+    font-size: 1.5rem;
+    color: #c9a660;
+    flex-shrink: 0;
+}
+
+.m-collab-debt-banner > div {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.m-collab-debt-banner strong {
+    display: block;
+    color: #7a621a;
+    font-size: 0.85rem;
+}
+
+.m-collab-debt-banner span {
+    color: #a3832a;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+.m-collab-pay-btn {
+    background: var(--accent-yellow, #EBCB8B);
+    color: #7a621a;
+    border: 2px solid #1b1b1b;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    text-decoration: none;
+    flex-shrink: 0;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #1b1b1b;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.m-collab-pay-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+/* ---- TABS ---- */
+.m-collab-tabs {
+    display: flex;
+    padding: 10px 18px 0;
+    gap: 8px;
+    flex-shrink: 0;
+    border-bottom: 2px solid #eeeeee;
+}
+
+.m-collab-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #888;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.m-collab-tab.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+}
+
+/* ---- BODY / PANELS ---- */
+.m-collab-body {
+    flex-grow: 1;
+    overflow: hidden;
+    position: relative;
+    min-height: 0;
+}
+
+.m-collab-panel {
+    height: 100%;
+    overflow-y: auto;
+    padding: 14px 18px 24px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.m-collab-panel::-webkit-scrollbar {
+    display: none;
+}
+
+.m-collab-panel.hidden {
+    display: none !important;
+}
+
+/* Loading state */
+.m-collab-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 50px 20px;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.m-collab-loading i {
+    font-size: 1.8rem;
+}
+
+/* ---- CARDS DE COLABORADORES ---- */
+.m-collab-card {
+    background: #fff;
+    border: 2px solid #1b1b1b;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.08);
+    transition: transform 0.15s;
+}
+
+.m-collab-card:active {
+    transform: scale(0.98);
+}
+
+.m-collab-card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.m-collab-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--accent-color-quat-opacity, #f0f0f0);
+    color: var(--accent-color);
+    border: 2px solid var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 900;
+    flex-shrink: 0;
+}
+
+.m-collab-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.m-collab-name {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #1b1b1b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.m-collab-email {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.m-collab-role-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.m-collab-role-badge.owner {
+    background: var(--accent-green-20, #e6f9f0);
+    color: var(--accent-green, #22c55e);
+}
+
+.m-collab-role-badge.admin {
+    background: var(--accent-color-quat-opacity, #eef0ff);
+    color: var(--accent-color);
+}
+
+.m-collab-role-badge.employee {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.m-collab-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px dashed #eee;
+}
+
+.m-collab-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.m-collab-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.m-collab-status-dot.active {
+    background: var(--accent-green, #22c55e);
+}
+
+.m-collab-status-dot.pending {
+    background: #aaa;
+}
+
+.m-collab-delete-btn {
+    background: #fff;
+    border: 2px solid var(--accent-red, #BF616A);
+    color: var(--accent-red, #BF616A);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 2px 2px 0 var(--accent-red, #BF616A);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.m-collab-delete-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+/* ---- EMPTY STATE COLABORADORES ---- */
+.m-collab-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    padding: 40px 20px;
+    color: #aaa;
+}
+
+.m-collab-empty i {
+    font-size: 2.5rem;
+    color: #ccc;
+}
+
+.m-collab-empty p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* ---- PERMISOS MÃƒâ€œVIL ---- */
+.m-perms-role-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+}
+
+.m-perms-role-selector::-webkit-scrollbar { display: none; }
+
+.m-perms-role-btn {
+    padding: 8px 16px;
+    border: 2px solid #1b1b1b;
+    border-radius: 8px;
+    background: #fff;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #1b1b1b;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 #1b1b1b;
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.m-perms-role-btn.active {
+    background: var(--accent-color);
+    color: #fff;
+    box-shadow: none;
+    transform: translate(2px, 2px);
+}
+
+.m-perms-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.m-perms-check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.m-perms-check-item:has(input:checked) {
+    border-color: var(--accent-color);
+    background: var(--accent-color-quat-opacity, #eef0ff);
+}
+
+.m-perms-check-item input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.m-perms-check-item i {
+    font-size: 1rem;
+    color: #888;
+    flex-shrink: 0;
+}
+
+.m-perms-check-item span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1b1b1b;
+    line-height: 1.2;
+}
+
+.m-perms-save-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent-color);
+    color: #fff;
+    border: 2px solid #1b1b1b;
+    border-radius: 12px;
+    font-family: inherit;
+    font-weight: 900;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 4px 4px 0 #1b1b1b;
+    transition: transform 0.1s, box-shadow 0.1s;
+    margin-top: 8px;
+}
+
+.m-perms-save-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 #1b1b1b;
+}
+
+/* Colores de acci\u00f3n en colaboradores m\u00f3viles */
+.action-collaborators .icon-circle {
+    background-color: var(--accent-violet-20);
+    color: var(--accent-violet);
+}
+
+/* ==========================================================
+   RESPONSIVE OVERRIDES Ã¢â‚¬â€ Sheet Colaboradores
+   ========================================================== */
+
+/* En celulares pequeÃƒÂ±os (< 768px): full-width, bottom sheet */
+@media (max-width: 768px) {
+    #mobile-collaborators-modal {
+        align-items: flex-end;
+    }
+
+    .m-collab-sheet {
+        border-radius: 24px 24px 0 0;
+        height: 90vh;
+        max-height: 90vh;
+    }
+}
+
+/* En tablets y desktop (Ã¢â€°Â¥ 769px): centrado, ancho limitado */
+@media (min-width: 769px) {
+    #mobile-collaborators-modal {
+        align-items: center;
+        justify-content: center;
+    }
+
+    .m-collab-sheet {
+        width: min(480px, 96vw);
+        height: min(90vh, 700px);
+        max-height: 90vh;
+        border-radius: 20px;
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    /* Drag handle no tiene sentido en desktop */
+    .m-collab-handle {
+        display: none;
+    }
+}
+
+/* =====================================================
+   MODAL NATIVO M\u00d3VIL \u2014 ENV\u00cdOS
+   ===================================================== */
+
+.m-deliv-sheet {
+    background: #fff;
+    width: 100%;
+    height: 90vh;
+    border-radius: 24px 24px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-top: 4px solid var(--accent-color);
+    animation: slideUpMobile 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.m-deliv-handle {
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 99px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+}
+
+/* ---- HEADER ---- */
+.m-deliv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 12px;
+    border-bottom: 2px solid #f0f0f0;
+    flex-shrink: 0;
+    gap: 12px;
+}
+
+.m-deliv-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.m-deliv-icon-wrap {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--accent-color-quat-opacity, rgba(var(--accent-color-rgb), 0.1));
+    border: 2px solid var(--accent-color);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.m-deliv-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #1b1b1b;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.m-deliv-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    background: var(--accent-color-quat-opacity, rgba(var(--accent-color-rgb), 0.1));
+    border: 1px solid var(--accent-color);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 4px;
+    white-space: nowrap;
+}
+
+.m-deliv-count-badge.zero {
+    color: #888;
+    border-color: #e0e0e0;
+    background: #f5f5f5;
+}
+
+.m-deliv-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.m-deliv-refresh-btn {
+    background: #f5f5f5;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #666;
+    transition: background 0.15s, transform 0.2s;
+}
+
+.m-deliv-refresh-btn:active {
+    background: #e8e8e8;
+    transform: rotate(180deg);
+}
+
+.m-deliv-close-btn {
+    background: #f5f5f5;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #666;
+    transition: background 0.15s;
+}
+
+.m-deliv-close-btn:active {
+    background: #e8e8e8;
+}
+
+/* ---- TABS ---- */
+.m-deliv-tabs {
+    display: flex;
+    padding: 10px 18px 0;
+    gap: 8px;
+    flex-shrink: 0;
+    border-bottom: 2px solid #eeeeee;
+}
+
+.m-deliv-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #888;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.m-deliv-tab.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+}
+
+.m-deliv-tab-count {
+    background: var(--accent-red, #ef4444);
+    color: #fff;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 1px 6px;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* ---- BODY / PANEL ---- */
+.m-deliv-body {
+    flex-grow: 1;
+    overflow: hidden;
+    position: relative;
+    min-height: 0;
+}
+
+.m-deliv-panel {
+    height: 100%;
+    overflow-y: auto;
+    padding: 14px 18px 80px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.m-deliv-panel::-webkit-scrollbar {
+    display: none;
+}
+
+.m-deliv-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 50px 20px;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.m-deliv-loading i {
+    font-size: 1.8rem;
+}
+
+/* ---- EMPTY STATE ---- */
+.m-deliv-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    padding: 40px 20px;
+    color: #aaa;
+    border: 2px dashed #ddd;
+    border-radius: 16px;
+    margin-top: 10px;
+}
+
+.m-deliv-empty i {
+    font-size: 2.8rem;
+    color: #ccc;
+}
+
+.m-deliv-empty p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ---- DELIVERY CARD ---- */
+.m-deliv-card {
+    background: #fff;
+    border: 2px solid #1b1b1b;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.08);
+}
+
+.m-deliv-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    border-bottom: 1.5px solid #eee;
+    background: #fafafa;
+}
+
+.m-deliv-card-code {
+    font-weight: 900;
+    font-size: 1rem;
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.m-deliv-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.m-deliv-status-pill.pending {
+    background: var(--accent-red-20, #fee2e2);
+    color: var(--accent-red, #ef4444);
+}
+
+.m-deliv-status-pill.completed {
+    background: var(--accent-green-20, #dcfce7);
+    color: var(--accent-green, #22c55e);
+}
+
+.m-deliv-card-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.m-deliv-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #1b1b1b;
+    line-height: 1.4;
+}
+
+.m-deliv-row i {
+    font-size: 1rem;
+    color: #888;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.m-deliv-row strong {
+    font-weight: 700;
+    color: #555;
+    white-space: nowrap;
+}
+
+.m-deliv-row span {
+    flex-grow: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+/* Payment indicator */
+.m-deliv-payment {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+.m-deliv-payment.paid {
+    background: var(--accent-green-20, #dcfce7);
+    color: var(--accent-green, #22c55e);
+}
+
+.m-deliv-payment.unpaid {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+}
+
+/* ---- CARD ACTIONS ---- */
+.m-deliv-card-actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1.5px solid #eee;
+    background: #fafafa;
+    flex-wrap: wrap;
+}
+
+/* Repartidor: big action buttons */
+.m-deliv-action-maps {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 10px;
+    border: 2px solid #1b1b1b;
+    border-radius: 10px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1b1b1b;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #1b1b1b;
+    text-decoration: none;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.m-deliv-action-maps:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.m-deliv-action-done {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 10px;
+    border: 2px solid #1b1b1b;
+    border-radius: 10px;
+    background: var(--accent-green, #22c55e);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #1b1b1b;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.m-deliv-action-done:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+/* Admin: icon buttons */
+.m-deliv-icon-btn {
+    width: 36px;
+    height: 36px;
+    border: 2px solid #1b1b1b;
+    border-radius: 8px;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #1b1b1b;
+    transition: transform 0.1s, box-shadow 0.1s;
+    flex-shrink: 0;
+    color: #1b1b1b;
+    text-decoration: none;
+}
+
+.m-deliv-icon-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.m-deliv-icon-btn.complete { color: var(--accent-green); }
+.m-deliv-icon-btn.delete   { color: var(--accent-red); }
+
+.m-deliv-delivered-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent-green);
+    flex: 1;
+}
+
+/* ---- TIME INFO ---- */
+.m-deliv-time-info {
+    font-size: 0.75rem;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+/* ---- SEPARATOR LABEL ---- */
+.m-deliv-section-label {
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #bbb;
+    margin: 16px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.m-deliv-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #eee;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 768px) {
+    #mobile-deliveries-modal {
+        align-items: flex-end;
+    }
+
+    .m-deliv-sheet {
+        border-radius: 24px 24px 0 0;
+        height: 92vh;
+        max-height: 92vh;
+    }
+}
+
+@media (min-width: 769px) {
+    #mobile-deliveries-modal {
+        align-items: center;
+        justify-content: center;
+    }
+
+    .m-deliv-sheet {
+        width: min(500px, 96vw);
+        height: min(90vh, 750px);
+        max-height: 90vh;
+        border-radius: 20px;
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .m-deliv-handle {
+        display: none;
+    }
+}
+
+/* Color de acci\u00f3n Env\u00edos */
+.action-deliveries .icon-circle {
+    background-color: var(--accent-color-quat-opacity);
+    color: var(--accent-color);
+}
+
+
+
+

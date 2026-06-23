@@ -36,6 +36,7 @@ class UserController
                 'id'    => (int)$user['id'],
                 'name'  => $displayName,
                 'email' => $user['email'] ?? null,
+                'plan'  => (int)($user['subscription_active'] ?? 0),
             ],
             'databases'       => $inventories,
             'hasAnyDatabase'  => $hasAnyDatabase,

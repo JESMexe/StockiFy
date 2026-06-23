@@ -12,6 +12,8 @@ const CONFIGURABLE_SECTIONS = [
     { key: 'can_view_payments',      label: 'Métodos de Pago',      icon: 'ph-wallet' },
     { key: 'can_view_notifications', label: 'Notificaciones',       icon: 'ph-bell' },
     { key: 'can_view_deliveries',    label: 'Envíos',               icon: 'ph-truck' },
+    { key: 'can_view_sales',         label: 'Registrar Ingreso',    icon: 'ph-money' },
+    { key: 'can_view_receipts',      label: 'Registrar Egreso',     icon: 'ph-stack' },
 ];
 
 export const usersModuleInstance = {
@@ -55,6 +57,8 @@ export const usersModuleInstance = {
             'can_view_payments':      'payments',
             'can_view_notifications': 'notifications',
             'can_view_deliveries':    'deliveries',
+            'can_view_sales':         'sales',
+            'can_view_receipts':      'receipts',
         };
 
         Object.entries(sectionMap).forEach(([permKey, viewId]) => {
@@ -136,8 +140,24 @@ export const usersModuleInstance = {
             // Mostrar botón "Agregar Slots" solo para planes Profesional (2) y Vitalicio (4)
             const addSlotsBtn = document.getElementById('add-slots-btn');
             if (addSlotsBtn) {
-                if (parseInt(data.plan) === 2 || parseInt(data.plan) === 4) {
+                const planInt = parseInt(data.plan);
+                if (planInt === 2 || planInt === 4) {
                     addSlotsBtn.classList.remove('hidden');
+                    if (data.has_pending_debt || data.has_expired_debt) {
+                        addSlotsBtn.disabled = true;
+                        addSlotsBtn.style.opacity = '0.5';
+                        addSlotsBtn.style.cursor = 'not-allowed';
+                        if (data.has_expired_debt) {
+                            addSlotsBtn.title = "Tu deuda anterior expiró sin saldarse. Contactá a soporte para habilitar esta opción.";
+                        } else {
+                            addSlotsBtn.title = "Tenés una deuda de slots pendiente. Saldala para poder agregar más.";
+                        }
+                    } else {
+                        addSlotsBtn.disabled = false;
+                        addSlotsBtn.style.opacity = '';
+                        addSlotsBtn.style.cursor = '';
+                        addSlotsBtn.title = "Agregar slots de colaboradores adicionales";
+                    }
                 } else {
                     addSlotsBtn.classList.add('hidden');
                 }
@@ -147,9 +167,6 @@ export const usersModuleInstance = {
         }
     },
 
-    /**
-     * Carga las deudas pendientes de slots y muestra un banner de advertencia si las hay.
-     */
     async loadPendingDebts() {
         try {
             const resp = await fetch('/api/collaborators/get-pending-debts.php');
@@ -159,7 +176,14 @@ export const usersModuleInstance = {
             const banner = document.getElementById('debt-warning-banner');
             if (res.success && res.debts && res.debts.length > 0) {
                 if (banner) {
-                    banner.style.display = 'flex';
+                    banner.dataset.hasDebt = 'true';
+                    const activeTab = document.querySelector('.mobile-collab-tab-btn.active')?.getAttribute('onclick') || '';
+                    const isMobile = window.innerWidth <= 768;
+                    if (isMobile && activeTab.includes('permissions')) {
+                        banner.classList.add('hidden');
+                    } else {
+                        banner.classList.remove('hidden');
+                    }
                     const amountSpan = document.getElementById('debt-warning-text');
                     if (amountSpan) {
                         const totalDebt = res.debts.reduce((sum, d) => sum + (parseFloat(d.price_per_slot) * parseInt(d.slots_added)), 0);
@@ -168,7 +192,8 @@ export const usersModuleInstance = {
                 }
             } else {
                 if (banner) {
-                    banner.style.display = 'none';
+                    banner.dataset.hasDebt = 'false';
+                    banner.classList.add('hidden');
                 }
             }
         } catch (e) {
@@ -177,14 +202,17 @@ export const usersModuleInstance = {
     },
 
     /**
-     * Renderiza el badge de cupos junto al título de la sección.
-     * Se inserta en el contenedor del título del panel de colaboradores.
+     * Renderiza el badge de cupos junto al título de la sección o el placeholder móvil.
      */
     renderQuotaBadge(quota) {
         // Limpiar badge anterior si existe
         document.getElementById('collab-quota-badge')?.remove();
 
-        const titleEl = document.querySelector('#users-manage h2');
+        const isMobile = window.innerWidth <= 768;
+        let titleEl = isMobile ? document.getElementById('collab-quota-placeholder-mobile') : null;
+        if (!titleEl) {
+            titleEl = document.querySelector('#users-manage h2');
+        }
         if (!titleEl) return;
 
         let badgeHtml;
@@ -195,9 +223,9 @@ export const usersModuleInstance = {
                 <span id="collab-quota-badge" style="
                     display: inline-flex; align-items: center; gap: 5px;
                     background: #f1f5f9; color: #94a3b8;
-                    padding: 3px 10px; border-radius: 20px;
-                    font-size: 0.75rem; font-weight: 600;
-                    border: 1px solid #e2e8f0; margin-left: 10px;
+                    padding: 6px 12px; border-radius: 20px;
+                    font-size: 0.8rem; font-weight: 600;
+                    border: 1px solid #e2e8f0; margin-left: ${isMobile ? '0' : '10px'};
                 ">
                     <i class="ph ph-lock"></i> Solo uso personal — Plan ${quota.plan_name}
                 </span>`;
@@ -208,10 +236,10 @@ export const usersModuleInstance = {
                     display: inline-flex; align-items: center; gap: 5px;
                     background: color-mix(in srgb, var(--accent-color) 12%, transparent);
                     color: var(--accent-color);
-                    padding: 3px 10px; border-radius: 20px;
-                    font-size: 0.75rem; font-weight: 600;
+                    padding: 6px 12px; border-radius: 20px;
+                    font-size: 0.8rem; font-weight: 600;
                     border: 1px solid color-mix(in srgb, var(--accent-color) 30%, transparent);
-                    margin-left: 10px;
+                    margin-left: ${isMobile ? '0' : '10px'};
                 ">
                     <i class="ph ph-infinity"></i> Ilimitado — Plan ${quota.plan_name}
                 </span>`;
@@ -230,16 +258,21 @@ export const usersModuleInstance = {
                 <span id="collab-quota-badge" style="
                     display: inline-flex; align-items: center; gap: 5px;
                     background: ${bgColor}; color: ${color};
-                    padding: 3px 10px; border-radius: 20px;
-                    font-size: 0.75rem; font-weight: 600;
-                    border: 1px solid ${borderColor}; margin-left: 10px;
+                    padding: 6px 12px; border-radius: 20px;
+                    font-size: 0.8rem; font-weight: 600;
+                    border: 1px solid ${borderColor}; margin-left: ${isMobile ? '0' : '10px'};
                 ">
                     <i class="ph ph-users"></i>
                     ${quota.used}/${quota.max} colaboradores — Plan ${quota.plan_name}
                 </span>`;
         }
 
-        titleEl.insertAdjacentHTML('beforeend', badgeHtml);
+        if (isMobile) {
+            titleEl.style.display = 'flex';
+            titleEl.innerHTML = badgeHtml;
+        } else {
+            titleEl.insertAdjacentHTML('beforeend', badgeHtml);
+        }
     },
 
     /**
@@ -284,35 +317,46 @@ export const usersModuleInstance = {
             return;
         }
 
-        let html = `
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #eee; background: #fafafa;">
-                        <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Usuario</th>
-                        <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Email</th>
-                        <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Rol</th>
-                        <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Estado</th>
-                        ${this.isOwner ? '<th style="text-align: center; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Acciones</th>' : ''}
-                    </tr>
-                </thead>
-                <tbody>
+        // --- VISTA DESKTOP ---
+        let desktopHtml = `
+            <div class="collaborators-desktop-view">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #eee; background: #fafafa;">
+                            <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Usuario</th>
+                            <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Email</th>
+                            <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Rol</th>
+                            <th style="text-align: left; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Estado</th>
+                            ${this.isOwner ? '<th style="text-align: center; padding: 16px 20px; font-size: 0.8rem; text-transform: uppercase; color: #888;">Acciones</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        // --- VISTA MOBILE ---
+        let mobileHtml = `
+            <div class="collaborators-mobile-view" style="display: none; flex-direction: column; gap: 12px; padding: 10px 0;">
         `;
 
         collaborators.forEach(c => {
             let roleBadge;
+            let roleBadgeMobile;
             if (c.role_name === 'Owner') {
                 roleBadge = `<span style="background: var(--accent-green-20); color: var(--accent-green); padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Propietario</span>`;
+                roleBadgeMobile = `<span style="background: var(--accent-green-20); color: var(--accent-green); padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; text-transform: uppercase;">Propietario</span>`;
             } else if (c.role_name === 'Admin') {
                 roleBadge = `<span style="background: color-mix(in srgb, var(--accent-color) 15%, transparent); color: var(--accent-color); padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Administrador</span>`;
+                roleBadgeMobile = `<span style="background: color-mix(in srgb, var(--accent-color) 15%, transparent); color: var(--accent-color); padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; text-transform: uppercase;">Admin</span>`;
             } else {
                 roleBadge = `<span style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;">Empleado</span>`;
+                roleBadgeMobile = `<span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; text-transform: uppercase;">Empleado</span>`;
             }
 
             const isActive = c.status === 'active';
-            // Solo el Owner puede eliminar colaboradores (y no puede eliminarse a sí mismo)
             const canDelete = this.isOwner && c.role_name !== 'Owner';
 
-            html += `
+            // Desktop Row
+            desktopHtml += `
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding: 16px 20px;"><strong>${c.full_name || c.username}</strong></td>
                     <td style="padding: 16px 20px; font-size: 0.9rem; color: #555;">${c.email}</td>
@@ -332,10 +376,45 @@ export const usersModuleInstance = {
                     </td>` : ''}
                 </tr>
             `;
+
+            // Mobile Card
+            mobileHtml += `
+                <div style="border: 2px solid #1b1b1b; border-radius: 12px; padding: 14px; background: white; box-shadow: 3px 3px 0 #1b1b1b; display: flex; flex-direction: column; gap: 8px; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                        <div style="min-width: 0;">
+                            <div style="font-weight: bold; font-size: 1rem; color: #1b1b1b; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <i class="ph ph-user-circle" style="font-size: 1.25rem; color: var(--accent-color); flex-shrink: 0;"></i>
+                                <span style="overflow: hidden; text-overflow: ellipsis;">${c.full_name || c.username}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: #666; margin-top: 4px; display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <i class="ph ph-envelope" style="flex-shrink: 0;"></i>
+                                <span style="overflow: hidden; text-overflow: ellipsis;">${c.email}</span>
+                            </div>
+                        </div>
+                        <div style="flex-shrink: 0;">
+                            ${roleBadgeMobile}
+                        </div>
+                    </div>
+                    
+                    <div style="border-top: 1px dashed #eee; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                        <span style="font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; ${isActive ? 'color: var(--accent-green);' : 'color: #888;'}">
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${isActive ? 'var(--accent-green)' : '#888'};"></span>
+                            ${isActive ? 'Activo' : 'Pendiente'}
+                        </span>
+                        ${this.isOwner && canDelete ? `
+                            <button class="btn btn-secondary" style="color: var(--accent-red); border-color: var(--accent-red); padding: 4px 8px; font-size: 0.75rem; width: auto; margin: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="window.usersModuleInstance.removeCollaborator(${c.collaborator_id})">
+                                <i class="ph ph-trash"></i> Eliminar
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
         });
 
-        html += `</tbody></table>`;
-        container.innerHTML = html;
+        desktopHtml += `</tbody></table></div>`;
+        mobileHtml += `</div>`;
+
+        container.innerHTML = desktopHtml + mobileHtml;
     },
 
     async removeCollaborator(id) {
@@ -404,6 +483,7 @@ export const usersModuleInstance = {
 
         if (addSlotsBtn && addSlotsModal && greyBg) {
             addSlotsBtn.onclick = () => {
+                if (addSlotsBtn.disabled) return;
                 Array.from(greyBg.children).forEach(child => child.classList.add('hidden'));
                 addSlotsModal.classList.remove('hidden');
                 greyBg.classList.remove('hidden');
@@ -452,7 +532,10 @@ export const usersModuleInstance = {
 
         const originalContent = submitBtn.innerHTML;
         submitBtn.disabled  = true;
-        submitBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Enviando...';
+        if (!document.getElementById('ph-spin-style')) {
+            document.head.insertAdjacentHTML('beforeend', '<style id="ph-spin-style">@keyframes phSpin { 100% { transform: rotate(360deg); } } .ph-spin { animation: phSpin 1s linear infinite; display: inline-block; }</style>');
+        }
+        submitBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Invitando...';
 
         try {
             const response = await fetch('/api/invitations/send.php', {
@@ -472,7 +555,7 @@ export const usersModuleInstance = {
                 // Condición esperada (usuario no registrado, ya colaborador, etc.)
                 pop_ups.warning(result.message);
             } else {
-                pop_ups.error(result.message);
+                pop_ups.error(result.message, 'Error', response.status);
             }
         } catch (e) {
             pop_ups.error("Error de conexión al enviar la invitación.");
@@ -560,17 +643,17 @@ export const usersModuleInstance = {
 
         let tabsHtml = `
             <div class="permissions-tabs-container" style="display: flex; gap: 10px; border-bottom: 2px solid #1b1b1b; padding-bottom: 10px; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                <button type="button" class="tab-btn active" data-target-tab="role-2" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: var(--accent-color); color: white; cursor: pointer; border-radius: 8px; box-shadow: 2px 2px 0 #1b1b1b; transition: all 0.1s;">
+                <button type="button" class="tab-btn active" data-target-tab="role-2" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: var(--accent-color); color: white; cursor: pointer; border-radius: 8px; box-shadow: none; transform: translate(2px, 2px); transition: all 0.1s;">
                     <i class="ph ph-star"></i> Administrador
                 </button>
-                <button type="button" class="tab-btn" data-target-tab="role-3" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: white; color: #1b1b1b; cursor: pointer; border-radius: 8px; box-shadow: 2px 2px 0 #1b1b1b; transition: all 0.1s;">
+                <button type="button" class="tab-btn" data-target-tab="role-3" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: white; color: #1b1b1b; cursor: pointer; border-radius: 8px; box-shadow: 2px 2px 0 #1b1b1b; transform: translate(0px, 0px); transition: all 0.1s;">
                     <i class="ph ph-user"></i> Empleado
                 </button>
         `;
 
         Object.entries(categories).forEach(([catId, cat]) => {
             tabsHtml += `
-                <button type="button" class="tab-btn" data-target-tab="cat-${catId}" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: white; color: #1b1b1b; cursor: pointer; border-radius: 8px; box-shadow: 2px 2px 0 #1b1b1b; transition: all 0.1s;">
+                <button type="button" class="tab-btn" data-target-tab="cat-${catId}" style="font-family: inherit; font-weight: bold; padding: 8px 16px; border: 2px solid #1b1b1b; background: white; color: #1b1b1b; cursor: pointer; border-radius: 8px; box-shadow: 2px 2px 0 #1b1b1b; transform: translate(0px, 0px); transition: all 0.1s;">
                     <i class="ph ph-identification-badge"></i> ${cat.name}
                 </button>
             `;
@@ -607,7 +690,7 @@ export const usersModuleInstance = {
             const catPerms = cat.permissions ?? {};
             contentHtml += `
                 <div class="tab-content-panel hidden" id="tab-cat-${catId}">
-                    <h4 style="margin: 0 0 1rem; color: var(--accent-violet);"><i class="ph ph-identification-badge"></i> Permisos de Categoría: ${cat.name}</h4>
+                    <h4 style="margin: 0 0 1rem; color: #1b1b1b;"><i class="ph ph-identification-badge"></i> Permisos de Categoría: ${cat.name}</h4>
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
                         ${CONFIGURABLE_SECTIONS.map(s => this.renderCheckbox(s, 'cat', catId, catPerms[s.key] !== false)).join('')}
                     </div>
@@ -627,10 +710,14 @@ export const usersModuleInstance = {
                     b.classList.remove('active');
                     b.style.background = 'white';
                     b.style.color = '#1b1b1b';
+                    b.style.boxShadow = '2px 2px 0 #1b1b1b';
+                    b.style.transform = 'translate(0px, 0px)';
                 });
                 btn.classList.add('active');
                 btn.style.background = 'var(--accent-color)';
                 btn.style.color = 'white';
+                btn.style.boxShadow = 'none';
+                btn.style.transform = 'translate(2px, 2px)';
 
                 const target = btn.dataset.targetTab;
                 grid.querySelectorAll('.tab-content-panel').forEach(panel => {
