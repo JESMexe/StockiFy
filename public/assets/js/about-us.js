@@ -142,7 +142,7 @@ function initFeatureSelector() {
         },
         vinculos: {
             title: 'Conectividad Meta',
-            desc: 'Integración fluida con el ecosistema de Meta. Enviá comprobantes por WhatsApp, gestioná contactos y sincronizá tus ventas de forma nativa. StockiFy habla el idioma de las plataformas que tus clientes ya usan.',
+            desc: 'Integración fluida con el ecosistema de Meta. Recibí cierres de caja y alertas de stock cero directamente en tu WhatsApp de forma automatizada. StockiFy habla el idioma de las plataformas que vos ya usás.',
             icon: ''
         },
         mirar: {

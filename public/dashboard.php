@@ -1866,7 +1866,7 @@ try {
                     <button class="m-history-refresh-btn" id="m-history-refresh-btn" onclick="window.openMobileHistory()">
                         <i class="ph ph-arrows-clockwise"></i>
                     </button>
-                    <button class="m-history-close-btn" onclick="document.getElementById('mobile-history-modal').classList.add('hidden')">
+                    <button class="m-history-close-btn" onclick="window.closeMobileHistory()">
                         <i class="ph ph-x"></i>
                     </button>
                 </div>
@@ -1884,10 +1884,22 @@ try {
                     <i class="ph ph-shopping-cart"></i> Ventas
                 </button>
                 <button class="m-history-tab" id="m-hist-tab-purchase" onclick="window.filterMobileHistory('purchase')">
-                    <i class="ph ph-truck"></i> Compras
+                    <i class="ph ph-truck"></i> Compras / Gastos
                 </button>
                 <button class="m-history-tab" id="m-hist-tab-collaborator" onclick="window.filterMobileHistory('collaborator')">
-                    <i class="ph ph-users"></i> Equipo
+                    <i class="ph ph-users-three"></i> Equipo
+                </button>
+                <button class="m-history-tab" id="m-hist-tab-customer" onclick="window.filterMobileHistory('customer')">
+                    <i class="ph ph-user"></i> Clientes
+                </button>
+                <button class="m-history-tab" id="m-hist-tab-provider" onclick="window.filterMobileHistory('provider')">
+                    <i class="ph ph-factory"></i> Proveedores
+                </button>
+                <button class="m-history-tab" id="m-hist-tab-employee" onclick="window.filterMobileHistory('employee')">
+                    <i class="ph ph-identification-card"></i> Empleados
+                </button>
+                <button class="m-history-tab" id="m-hist-tab-payment_method" onclick="window.filterMobileHistory('payment_method')">
+                    <i class="ph ph-credit-card"></i> Métodos Pago
                 </button>
             </div>
 

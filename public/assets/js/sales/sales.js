@@ -36,6 +36,7 @@ export class SalesModule {
         this.paymentMode = 'none'; // 'none', 'single', 'multi'
         this.rates = { USD: 1, USDT: 1 };
         this.showingCartInUSD = false;
+        this.isCashierMode = false;
     }
 
     init() {
@@ -76,6 +77,7 @@ export class SalesModule {
                     <div class="table-controls">
                         <button id="sales-renumber-btn" class="btn btn-secondary hidden" title="Renumerar IDs"><i class="ph ph-list-numbers"></i></button>
                         <button id="sales-sort-btn" class="btn btn-secondary" title="Ordenar por Fecha/ID"><i class="ph ph-sort-ascending" id="sales-sort-icon"></i></button>
+                        <button id="sales-cashier-mode-btn" class="btn btn-secondary" title="Atender en modo Caja (Pantalla Completa)"><i class="ph-bold ph-storefront" style="margin-right: 8px;"></i>En Caja</button>
                         <button id="sales-create-btn" class="btn btn-primary">+ Nueva Venta</button>
                     </div>
                 </div>
@@ -193,7 +195,7 @@ export class SalesModule {
                                             <div id="commission-display" style="text-align:right; font-size:0.75rem; color:#666; margin-top:5px; font-weight:600;">Comisión: $0,00</div>
                                         </div>
                                         
-                                        <div class="form-section" style="margin-top: 15px; display: flex; align-items: center; gap: 8px; background: var(--accent-color-20); border: 1px solid var(--accent-color); padding: 6px 10px; border-radius: 6px; color: var(--accent-color);">
+                                        <div id="sale-delivery-section" class="form-section" style="margin-top: 15px; display: flex; align-items: center; gap: 8px; background: var(--accent-color-20); border: 1px solid var(--accent-color); padding: 6px 10px; border-radius: 6px; color: var(--accent-color);">
                                             <input type="checkbox" id="sale-create-delivery-check" style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-color);">
                                             <label for="sale-create-delivery-check" style="font-weight: 700; cursor: pointer; color: var(--accent-color); margin: 0; font-size: 0.9rem;">Crear Envío para este pedido</label>
                                         </div>
@@ -370,6 +372,7 @@ export class SalesModule {
             }
         });
 
+        document.getElementById('sales-cashier-mode-btn')?.addEventListener('click', () => this.enterCashierMode());
         document.getElementById('sales-create-btn')?.addEventListener('click', () => this.openCreateModal());
         document.getElementById('close-sale-modal')?.addEventListener('click', () => this.closeModal('create-sale-modal'));
         document.getElementById('close-detail-modal')?.addEventListener('click', () => this.closeModal('detail-sale-modal'));
@@ -435,9 +438,20 @@ export class SalesModule {
                 }
             });
         }
+
+        // Listen for browser fullscreen change (e.g. Esc key)
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement && this.isCashierMode) {
+                this.exitCashierMode();
+            }
+        });
     }
 
     closeModal(id) {
+        if (id === 'create-sale-modal' && this.isCashierMode) {
+            this.exitCashierMode();
+            return;
+        }
         const el = document.getElementById(id);
         if (el) {
             el.classList.add('hidden');
@@ -466,6 +480,11 @@ export class SalesModule {
     }
 
     async openCreateModal() {
+        if (!this.isCashierMode) {
+            this.isCashierMode = false;
+            document.body.classList.remove('cashier-mode-active');
+        }
+
         try {
             const rateData = await getExchangeRate();
             let baseRate = 1200;
@@ -493,31 +512,109 @@ export class SalesModule {
             document.getElementById('sale-modal-body').style.display = 'flex';
         }
 
-        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total: 0, exchange_rate: this.rates.USD };
-        this.activePaymentTabSingle = 'ARS';
-        this.activePaymentTabMulti = 'ARS';
-        this.showingCartInUSD = false;
-        this.setPaymentMode('none');
-
-        document.getElementById('sale-notes').value = '';
-        const discInput = document.getElementById('sale-discount-value'); if (discInput) discInput.value = '';
-        const discType = document.getElementById('sale-discount-type'); if (discType) discType.value = 'fixed';
-        const discDisplay = document.getElementById('discount-applied-display'); if (discDisplay) discDisplay.textContent = '';
-        this.switchPaymentTab('ARS', 'single');
-        this.switchPaymentTab('ARS', 'multi');
-        this.renderProducts(this.resources.products);
-        this.fillSelect('sale-customer', this.resources.customers, 'id', 'full_name', 'Cliente General');
-        this.fillSelect('sale-seller', this.resources.employees, 'id', 'full_name', 'Sin Vendedor');
-
-        this.updateCartUI();
-        this.recalcSale();
+        this.resetSaleForm();
 
         const modal = document.getElementById('create-sale-modal');
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
 
         if (window.innerWidth > 768) {
-            setTimeout(() => document.getElementById('sale-search-product').focus(), 100);
+            setTimeout(() => {
+                const searchInput = document.getElementById('sale-search-product');
+                if (searchInput) searchInput.focus();
+            }, 100);
+        }
+    }
+
+    resetSaleForm() {
+        this.currentSale = { items: [], payments: [], subtotal_items: 0, total_surcharges: 0, discount_amount: 0, total: 0, exchange_rate: this.rates.USD || 1 };
+        this.activePaymentTabSingle = 'ARS';
+        this.activePaymentTabMulti = 'ARS';
+        this.showingCartInUSD = false;
+        this.setPaymentMode('none');
+
+        const notesEl = document.getElementById('sale-notes'); if (notesEl) notesEl.value = '';
+        const discInput = document.getElementById('sale-discount-value'); if (discInput) discInput.value = '';
+        const discType = document.getElementById('sale-discount-type'); if (discType) discType.value = 'fixed';
+        const discDisplay = document.getElementById('discount-applied-display'); if (discDisplay) discDisplay.textContent = '';
+        const singleCalcInput = document.getElementById('single-calc-input'); if (singleCalcInput) singleCalcInput.value = '';
+        const singleCalcResult = document.getElementById('single-calc-result'); if (singleCalcResult) singleCalcResult.textContent = '';
+
+        this.switchPaymentTab('ARS', 'single');
+        this.switchPaymentTab('ARS', 'multi');
+        this.renderProducts(this.resources.products);
+        this.fillSelect('sale-customer', this.resources.customers, 'id', 'full_name', 'Cliente General');
+        this.fillSelect('sale-seller', this.resources.employees, 'id', 'full_name', 'Sin Vendedor');
+
+        const checkDelivery = document.getElementById('sale-create-delivery-check');
+        if (checkDelivery) checkDelivery.checked = false;
+
+        this.updateCartUI();
+        this.recalcSale();
+
+        const searchInput = document.getElementById('sale-search-product');
+        if (searchInput) {
+            searchInput.value = '';
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    }
+
+    async enterCashierMode() {
+        this.isCashierMode = true;
+        document.body.classList.add('cashier-mode-active');
+
+        try {
+            const docEl = document.documentElement;
+            if (docEl.requestFullscreen) {
+                await docEl.requestFullscreen();
+            } else if (docEl.webkitRequestFullscreen) {
+                await docEl.webkitRequestFullscreen();
+            } else if (docEl.mozRequestFullScreen) {
+                await docEl.mozRequestFullScreen();
+            } else if (docEl.msRequestFullscreen) {
+                await docEl.msRequestFullscreen();
+            }
+        } catch (err) {
+            console.warn("Fullscreen request failed:", err);
+        }
+
+        await this.openCreateModal();
+
+        const closeBtn = document.getElementById('close-sale-modal');
+        if (closeBtn) {
+            closeBtn.title = "Salir del modo En Caja";
+        }
+    }
+
+    async exitCashierMode() {
+        this.isCashierMode = false;
+        document.body.classList.remove('cashier-mode-active');
+
+        if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+            try {
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    await document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    await document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    await document.msExitFullscreen();
+                }
+            } catch (err) {
+                console.warn("Fullscreen exit failed:", err);
+            }
+        }
+
+        const closeBtn = document.getElementById('close-sale-modal');
+        if (closeBtn) {
+            closeBtn.title = "";
+        }
+
+        const el = document.getElementById('create-sale-modal');
+        if (el) {
+            el.classList.add('hidden');
+            el.style.display = 'none';
         }
     }
 
@@ -962,9 +1059,15 @@ export class SalesModule {
         try {
             const res = await createSale(payload);
             if (res.success) {
-                this.closeModal('create-sale-modal');
-                await this.loadHistory(this.currentSortOrder);
-                pop_ups.success("Venta Exitosa");
+                if (this.isCashierMode) {
+                    await this.loadHistory(this.currentSortOrder);
+                    pop_ups.success("Venta Exitosa");
+                    this.resetSaleForm();
+                } else {
+                    this.closeModal('create-sale-modal');
+                    await this.loadHistory(this.currentSortOrder);
+                    pop_ups.success("Venta Exitosa");
+                }
 
                 // Post-Sale Delivery Modal trigger
                 const checkDelivery = document.getElementById('sale-create-delivery-check');

@@ -381,9 +381,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-top: 4px solid var(--accent-color, #5c5cff);
-    animation: mSheetUp 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-top: 4px solid var(--accent-color, #1b1b1b);
+    animation: mSheetUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
     position: relative;
+}
+
+.m-history-sheet.closing {
+    animation: mSheetDown 0.25s cubic-bezier(0.55, 0, 1, 0.45) both;
 }
 
 .m-history-handle {
@@ -417,9 +421,9 @@
     width: 42px;
     height: 42px;
     border-radius: 12px;
-    background: rgba(92,92,255,0.1);
-    border: 2px solid var(--accent-color, #5c5cff);
-    color: var(--accent-color, #5c5cff);
+    background: var(--accent-color-20, rgba(94, 129, 172, 0.2));
+    border: 2px solid #1b1b1b;
+    color: var(--accent-color, #1b1b1b);
     display: flex;
     align-items: center;
     justify-content: center;

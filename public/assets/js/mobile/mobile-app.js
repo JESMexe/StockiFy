@@ -785,10 +785,30 @@ window.viewTransactionDetail = function(id, type) {
     }
 };
 
+window.closeMobileHistory = function() {
+    const modal = document.getElementById('mobile-history-modal');
+    if (!modal) return;
+    const sheet = modal.querySelector('.m-history-sheet');
+    if (sheet) {
+        sheet.classList.add('closing');
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            modal.classList.add('hidden');
+            sheet.classList.remove('closing');
+            document.body.style.overflow = '';
+        };
+        sheet.addEventListener('animationend', finish, { once: true });
+        setTimeout(finish, 350);
+    } else {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+};
+
 window.openMobileHistory = async function() {
     const modal = document.getElementById('mobile-history-modal');
-    const body  = document.getElementById('mobile-history-body');
-    const refreshBtn = document.getElementById('m-history-refresh-btn');
     if (!modal) return;
     modal.classList.remove('hidden');
 
@@ -798,20 +818,41 @@ window.openMobileHistory = async function() {
     if (allTab) allTab.classList.add('active');
     window._mHistCurrentFilter = 'all';
 
+    await window.loadMobileHistoryData('all');
+};
+
+window.filterMobileHistory = async function(filter) {
+    window._mHistCurrentFilter = filter;
+
+    // Update tabs
+    document.querySelectorAll('.m-history-tab').forEach(t => t.classList.remove('active'));
+    const tab = document.getElementById(`m-hist-tab-${filter}`);
+    if (tab) tab.classList.add('active');
+
+    await window.loadMobileHistoryData(filter);
+};
+
+window.loadMobileHistoryData = async function(filter) {
+    const body  = document.getElementById('mobile-history-body');
+    const refreshBtn = document.getElementById('m-history-refresh-btn');
+    if (!body) return;
+
     // Loading state
     body.innerHTML = `<div class="m-history-loading"><i class="ph ph-spinner ph-spin"></i><span>Cargando movimientos...</span></div>`;
     if (refreshBtn) refreshBtn.querySelector('i')?.classList.add('ph-spin');
 
     try {
-        const response = await fetch('/api/history/get.php');
+        const params = new URLSearchParams();
+        if (filter !== 'all') {
+            params.set('type', filter);
+        }
+        const response = await fetch(`/api/history/get.php?${params}`);
         const res = await response.json();
 
         if (refreshBtn) refreshBtn.querySelector('i')?.classList.remove('ph-spin');
 
         if (res.success) {
-            // Cache ALL logs (no limit)
-            window._mHistAllLogs = res.logs || [];
-            window._renderMobileHistory(window._mHistAllLogs);
+            window._renderMobileHistory(res.logs || []);
         } else {
             body.innerHTML = `<div class="m-history-error"><i class="ph ph-warning-circle"></i><p>${res.message || 'Error al obtener el historial.'}</p></div>`;
         }
@@ -820,22 +861,6 @@ window.openMobileHistory = async function() {
         if (refreshBtn) refreshBtn.querySelector('i')?.classList.remove('ph-spin');
         body.innerHTML = `<div class="m-history-error"><i class="ph ph-warning-circle"></i><p>Error al cargar datos.</p></div>`;
     }
-};
-
-window.filterMobileHistory = function(filter) {
-    window._mHistCurrentFilter = filter;
-
-    // Update tabs
-    document.querySelectorAll('.m-history-tab').forEach(t => t.classList.remove('active'));
-    const tab = document.getElementById(`m-hist-tab-${filter}`);
-    if (tab) tab.classList.add('active');
-
-    const all = window._mHistAllLogs || [];
-    const filtered = filter === 'all'
-        ? all
-        : all.filter(item => (item.entity_type || '').toLowerCase() === filter);
-
-    window._renderMobileHistory(filtered);
 };
 
 window._renderMobileHistory = function(logs) {
@@ -856,13 +881,24 @@ window._renderMobileHistory = function(logs) {
     const entityLabels = {
         product:      'Productos',
         sale:         'Ventas',
-        purchase:     'Compras',
-        collaborator: 'Equipo',
+        purchase:     'Compras / Gastos',
+        collaborator: 'Colaboradores',
         expense:      'Gastos',
         config:       'Configuración',
         delivery:     'Envíos',
         client:       'Clientes',
         supplier:     'Proveedores',
+        customer:     'Clientes',
+        provider:     'Proveedores',
+        employee:     'Empleados',
+        payment_method: 'Métodos Pago',
+        table_preference: 'Configuración',
+        column:       'Columna',
+        analytic:     'Analíticas',
+        role_permissions: 'Permisos',
+        role_settings: 'Permisos',
+        inventory:    'Inventario',
+        collaborator_debt: 'Deuda Colabs.'
     };
     const entityIcons = {
         product:      'ph-package',
@@ -874,12 +910,23 @@ window._renderMobileHistory = function(logs) {
         delivery:     'ph-package',
         client:       'ph-user',
         supplier:     'ph-factory',
+        customer:     'ph-user',
+        provider:     'ph-factory',
+        employee:     'ph-identification-card',
+        payment_method: 'ph-credit-card',
+        table_preference: 'ph-gear',
+        column:       'ph-columns',
+        analytic:     'ph-chart-line',
+        role_permissions: 'ph-shield-check',
+        role_settings: 'ph-shield-check',
+        inventory:    'ph-database',
+        collaborator_debt: 'ph-credit-card'
     };
     const actionColors = {
-        create: { bg: 'var(--accent-green-20, #dcfce7)',   border: 'var(--accent-green, #22c55e)',   icon: 'var(--accent-green, #22c55e)',   iconBg: 'var(--accent-green-20, #dcfce7)'   },
-        update: { bg: '#fffbeb',                           border: '#f59e0b',                        icon: '#f59e0b',                        iconBg: '#fef3c7'                           },
-        delete: { bg: 'var(--accent-red-20, #fee2e2)',     border: 'var(--accent-red, #ef4444)',     icon: 'var(--accent-red, #ef4444)',     iconBg: 'var(--accent-red-20, #fee2e2)'     },
-        login:  { bg: 'var(--accent-color-quat-opacity)',  border: 'var(--accent-color)',             icon: 'var(--accent-color)',             iconBg: 'var(--accent-color-quat-opacity)'  },
+        create: { bg: 'var(--accent-green-20, #dcfce7)',   border: '#1b1b1b',   icon: 'var(--accent-green, #22c55e)',   iconBg: 'var(--accent-green-20, #dcfce7)'   },
+        update: { bg: 'var(--accent-yellow-20, #EBCB8B33)', border: '#1b1b1b',   icon: 'var(--accent-yellow, #EBCB8B)',  iconBg: 'var(--accent-yellow-20, #EBCB8B33)' },
+        delete: { bg: 'var(--accent-red-20, #fee2e2)',     border: '#1b1b1b',   icon: 'var(--accent-red, #ef4444)',     iconBg: 'var(--accent-red-20, #fee2e2)'     },
+        login:  { bg: 'var(--accent-color-quat-opacity)',  border: '#1b1b1b',   icon: 'var(--accent-color)',             iconBg: 'var(--accent-color-quat-opacity)'  },
     };
     const actionIcons = {
         create: 'ph-plus-circle',
@@ -908,15 +955,15 @@ window._renderMobileHistory = function(logs) {
         const message = desc ? desc : `por ${actor}`;
 
         return `
-            <div class="m-history-card" style="border-color: ${colors.border};">
+            <div class="m-history-card" style="border: 2px solid #1b1b1b;">
                 <div class="m-history-card-left">
-                    <div class="m-history-action-icon" style="background:${colors.iconBg}; color:${colors.icon}; border-color:${colors.border};">
+                    <div class="m-history-action-icon" style="background:${colors.iconBg}; color:${colors.icon}; border: 2px solid #1b1b1b;">
                         <i class="ph ${actionIcon}"></i>
                     </div>
                 </div>
                 <div class="m-history-card-right">
                     <div class="m-history-card-top">
-                        <span class="m-history-module-badge" style="background:${colors.iconBg}; color:${colors.icon}; border-color:${colors.border};">
+                        <span class="m-history-module-badge" style="background:${colors.iconBg}; color:${colors.icon}; border: 1.5px solid #1b1b1b;">
                             <i class="ph ${moduleIcon}"></i> ${entityName}
                         </span>
                         <span class="m-history-date">${day} ${time}</span>

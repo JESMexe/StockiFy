@@ -1332,6 +1332,7 @@ header {
     .about-hero h1 {
         font-size: 2.8rem;
         letter-spacing: -1px;
+        min-height: 2.3em;
     }
 
     .hero-logo {
