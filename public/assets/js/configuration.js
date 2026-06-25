@@ -1,11 +1,16 @@
 import { pop_ups } from './notifications/pop-up.js?v=3.0';
 
+// Shared logo state (accessible by both customizer panel and form submit)
+let _sharedCatalogLogoFile    = null;
+let _sharedCatalogLogoDeleted = false;
+
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initGeneralProfile();
     initSecurityHandlers();
     initRemitoHandlers();
     initCatalogHandlers();
+    initCatalogCustomizerPanel();
 
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
@@ -586,46 +591,8 @@ function initCatalogHandlers() {
         }
     });
 
-    // --- Logo Upload ---
-    const catalogLogoInput = document.getElementById('catalog_logo_input');
-    const catalogLogoPreview = document.getElementById('catalog-logo-preview');
-    const catalogLogoPlaceholder = document.getElementById('catalog-logo-placeholder');
-    const btnDeleteCatalogLogo = document.getElementById('btn-delete-catalog-logo');
+    // --- Logo Upload --- (handled by initCatalogCustomizerPanel, shares _sharedCatalogLogoFile)
     const catalogLogoUrlInput = document.getElementById('catalog_logo_url');
-
-    let catalogLogoFile = null;
-    let catalogLogoDeleted = false;
-
-    catalogLogoInput?.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (catalogLogoPreview) {
-                    catalogLogoPreview.src = e.target.result;
-                    catalogLogoPreview.style.display = 'block';
-                }
-                if (catalogLogoPlaceholder) catalogLogoPlaceholder.style.display = 'none';
-                if (btnDeleteCatalogLogo) btnDeleteCatalogLogo.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-            catalogLogoFile = file;
-            catalogLogoDeleted = false;
-        }
-    });
-
-    btnDeleteCatalogLogo?.addEventListener('click', () => {
-        if (catalogLogoInput) catalogLogoInput.value = '';
-        if (catalogLogoPreview) {
-            catalogLogoPreview.src = '';
-            catalogLogoPreview.style.display = 'none';
-        }
-        if (catalogLogoPlaceholder) catalogLogoPlaceholder.style.display = 'block';
-        if (btnDeleteCatalogLogo) btnDeleteCatalogLogo.style.display = 'none';
-        if (catalogLogoUrlInput) catalogLogoUrlInput.value = '';
-        catalogLogoFile = null;
-        catalogLogoDeleted = true;
-    });
 
     // --- Form Submit ---
     form.addEventListener('submit', async (e) => {
@@ -650,9 +617,9 @@ function initCatalogHandlers() {
         let finalLogoUrl = catalogLogoUrlInput?.value || '';
 
         // If there's a new logo file, upload it first
-        if (catalogLogoFile) {
+        if (_sharedCatalogLogoFile) {
             const formData = new FormData();
-            formData.append('image', catalogLogoFile);
+            formData.append('image', _sharedCatalogLogoFile);
             formData.append('inventory_id', inventoryId);
             try {
                 const uploadRes = await fetch('/api/catalog/upload-image.php', {
@@ -672,7 +639,7 @@ function initCatalogHandlers() {
                 btnGuardar.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar Configuración del Catálogo';
                 return;
             }
-        } else if (catalogLogoDeleted) {
+        } else if (_sharedCatalogLogoDeleted) {
             finalLogoUrl = '';
         }
 
@@ -732,4 +699,205 @@ function initCatalogHandlers() {
             btnGuardar.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar Configuración del Catálogo';
         }
     });
+}
+
+// ============================================================
+// PANEL CUSTOMIZADOR DEL CATÁLOGO
+// ============================================================
+
+function initCatalogCustomizerPanel() {
+    const openBtn  = document.getElementById('btn-open-catalog-customizer');
+    const closeBtn = document.getElementById('btn-close-catalog-customizer');
+    const panel    = document.getElementById('catalog-customizer-panel');
+
+    if (!openBtn || !panel) return;
+
+    openBtn.addEventListener('click', () => {
+        panel.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        updateMockupPreview();
+    });
+
+    closeBtn?.addEventListener('click', closeCustPanel);
+
+    panel.addEventListener('click', (e) => {
+        if (e.target === panel) closeCustPanel();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !panel.classList.contains('hidden')) closeCustPanel();
+    });
+
+    function closeCustPanel() {
+        panel.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    // Logo en el customizer
+    const logoInput       = document.getElementById('catalog_logo_input');
+    const logoPreview     = document.getElementById('catalog-logo-preview');
+    const logoPlaceholder = document.getElementById('catalog-logo-placeholder');
+    const deleteLogoBtn   = document.getElementById('btn-delete-catalog-logo');
+    const logoUrlInput    = document.getElementById('catalog_logo_url');
+
+    logoInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            if (logoPreview)     { logoPreview.src = ev.target.result; logoPreview.style.display = 'block'; }
+            if (logoPlaceholder)   logoPlaceholder.style.display = 'none';
+            if (deleteLogoBtn)     deleteLogoBtn.style.display = 'block';
+            updateMockupLogo(ev.target.result);
+        };
+        reader.readAsDataURL(file);
+        _sharedCatalogLogoFile = file;
+        _sharedCatalogLogoDeleted = false;
+    });
+
+    deleteLogoBtn?.addEventListener('click', () => {
+        if (logoInput)       logoInput.value = '';
+        if (logoPreview)   { logoPreview.src = ''; logoPreview.style.display = 'none'; }
+        if (logoPlaceholder) logoPlaceholder.style.display = 'block';
+        if (deleteLogoBtn)   deleteLogoBtn.style.display = 'none';
+        if (logoUrlInput)    logoUrlInput.value = '';
+        _sharedCatalogLogoFile = null;
+        _sharedCatalogLogoDeleted = true;
+        updateMockupLogo(null);
+    });
+
+    // Escuchar cambios en todos los controles
+    [
+        'catalog_theme_color', 'catalog_theme_pattern',
+        'catalog_button_color', 'catalog_button_text', 'catalog_button_icon',
+        'catalog_show_action_button', 'catalog_show_price',
+        'catalog_whatsapp', 'catalog_instagram', 'catalog_address'
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('change', updateMockupPreview);
+        el.addEventListener('input',  updateMockupPreview);
+    });
+}
+
+const _THEME_COLOR_HEX = {
+    'accent-color':  null,
+    'accent-green':  '#4ade80',
+    'accent-blue':   '#3b82f6',
+    'accent-red':    '#ef4444',
+    'accent-yellow': '#facc15',
+    'accent-violet': '#a855f7',
+};
+
+const _BTN_BG = {
+    'whatsapp-green':  '#25D366',
+    'instagram-pink':  'linear-gradient(135deg,#f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)',
+    'facebook-blue':   '#1877F2',
+    'accent-green':    '#4ade80',
+    'accent-red':      '#ef4444',
+    'accent-blue':     '#3b82f6',
+    'accent-yellow':   '#facc15',
+    'accent-violet':   '#a855f7',
+    'accent-color':    null,
+    'color-black':     '#1b1b1b',
+};
+
+const _BTN_TXT = {
+    'whatsapp-green':  '#fff',
+    'instagram-pink':  '#fff',
+    'facebook-blue':   '#fff',
+    'accent-green':    '#000',
+    'accent-red':      '#fff',
+    'accent-blue':     '#fff',
+    'accent-yellow':   '#000',
+    'accent-violet':   '#fff',
+    'accent-color':    '#fff',
+    'color-black':     '#fff',
+};
+
+function updateMockupPreview() {
+    const g = (id) => document.getElementById(id);
+
+    const themeColor   = g('catalog_theme_color')?.value   ?? 'accent-color';
+    const themePattern = g('catalog_theme_pattern')?.value ?? 'dots';
+    const btnColor     = g('catalog_button_color')?.value  ?? 'whatsapp-green';
+    const btnText      = g('catalog_button_text')?.value   ?? 'Consultar';
+    const btnIcon      = g('catalog_button_icon')?.value   ?? 'ph-whatsapp-logo';
+    const showBtn      = g('catalog_show_action_button')?.checked ?? true;
+    const showPrice    = g('catalog_show_price')?.checked  ?? true;
+    const whatsapp     = g('catalog_whatsapp')?.value.trim()  ?? '';
+    const instagram    = g('catalog_instagram')?.value.trim() ?? '';
+    const address      = g('catalog_address')?.value.trim()   ?? '';
+
+    const accentHex = _THEME_COLOR_HEX[themeColor];
+    const accentVal = accentHex ?? getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() ?? '#3b82f6';
+
+    const catTag   = document.querySelector('.mockup-category-tag');
+    const priceEl  = g('mockup-product-price');
+    const circleEl = g('mockup-logo-circle');
+
+    if (catTag)   catTag.style.color = accentVal;
+    if (circleEl) circleEl.style.backgroundColor = accentVal;
+    if (priceEl) {
+        priceEl.style.display = showPrice ? '' : 'none';
+        priceEl.style.color   = accentVal;
+    }
+
+    const mockupBg = g('mockup-bg');
+    if (mockupBg) {
+        let bgImg = 'none';
+        if (themePattern === 'dots')
+            bgImg = 'radial-gradient(rgba(0,0,0,0.08) 1.5px, transparent 1.5px)';
+        else if (themePattern === 'grid')
+            bgImg = 'linear-gradient(rgba(0,0,0,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.05) 1px,transparent 1px)';
+        else if (themePattern === 'lines')
+            bgImg = 'repeating-linear-gradient(45deg,rgba(0,0,0,0.03) 0,rgba(0,0,0,0.03) 2px,transparent 2px,transparent 12px)';
+        mockupBg.style.backgroundImage = bgImg;
+    }
+
+    const actionBtn = g('mockup-action-btn');
+    if (actionBtn) {
+        actionBtn.style.display = showBtn ? '' : 'none';
+        const bg  = _BTN_BG[btnColor]  ?? accentVal;
+        const col = _BTN_TXT[btnColor] ?? '#fff';
+        actionBtn.style.background = bg;
+        actionBtn.style.color      = col;
+
+        const iconEl = g('mockup-btn-icon');
+        const textEl = g('mockup-btn-text');
+        if (iconEl) iconEl.className = 'ph ' + btnIcon;
+        if (textEl) textEl.textContent = btnText || 'Consultar';
+    }
+
+    const mapEl = g('mockup-contact-map');
+    const igEl  = g('mockup-contact-ig');
+    const waEl  = g('mockup-contact-wa');
+    if (mapEl) mapEl.style.display = address   ? 'flex' : 'none';
+    if (igEl)  igEl.style.display  = instagram ? 'flex' : 'none';
+    if (waEl)  waEl.style.display  = whatsapp  ? 'flex' : 'none';
+
+    // Update mockup logo circle content
+    let currentLogoSrc = null;
+    if (!_sharedCatalogLogoDeleted) {
+        if (_sharedCatalogLogoFile) {
+            const logoPreview = g('catalog-logo-preview');
+            if (logoPreview && logoPreview.style.display !== 'none') {
+                currentLogoSrc = logoPreview.src;
+            }
+        } else {
+            currentLogoSrc = g('catalog_logo_url')?.value || '';
+        }
+    }
+    updateMockupLogo(currentLogoSrc);
+}
+
+function updateMockupLogo(src) {
+    const circle = document.getElementById('mockup-logo-circle');
+    if (!circle) return;
+    if (src) {
+        circle.innerHTML = `<img src="${src}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+        const businessName = document.getElementById('mockup-business-name')?.textContent.trim() || 'M';
+        circle.innerHTML = businessName.charAt(0).toUpperCase();
+    }
 }

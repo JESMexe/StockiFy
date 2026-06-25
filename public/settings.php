@@ -47,6 +47,7 @@ $canConfigRemito = $activeInventoryId && in_array($activeInventoryRole, ['Owner'
 $remitoLogo = '';
 $remitoDescription = '';
 $remitoUrl = '';
+$inventoryName = '';
 
 // Catalog data
 $catalogActive = 0;
@@ -55,10 +56,11 @@ $catalogSettings = [];
 
 if ($canConfigRemito) {
     $dbInstance = \App\core\Database::getInstance();
-    $stmtInv = $dbInstance->prepare("SELECT remito_logo_path, remito_description, remito_url, catalog_active, catalog_slug, catalog_settings FROM inventories WHERE id = ?");
+    $stmtInv = $dbInstance->prepare("SELECT name, remito_logo_path, remito_description, remito_url, catalog_active, catalog_slug, catalog_settings FROM inventories WHERE id = ?");
     $stmtInv->execute([$activeInventoryId]);
     $invSettings = $stmtInv->fetch(PDO::FETCH_ASSOC);
     if ($invSettings) {
+        $inventoryName = $invSettings['name'] ?? '';
         $remitoLogo = $invSettings['remito_logo_path'] ?? '';
         $remitoDescription = $invSettings['remito_description'] ?? '';
         $remitoUrl = $invSettings['remito_url'] ?? '';
@@ -292,155 +294,13 @@ if ($canConfigRemito) {
                                 </div>
                             </div>
 
-                            <!-- Logo del Catálogo -->
-                            <div class="rustic-block" style="display: flex; flex-direction: column; gap: 10px;">
-                                <label class="option-label">Logo del Catálogo <span class="helper-tag">Imagen opcional</span></label>
-                                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-                                    <div id="catalog-logo-preview-container" style="width: 100px; height: 100px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 50%; overflow: hidden; position: relative;">
-                                        <img id="catalog-logo-preview" src="<?php echo htmlspecialchars($catalogSettings['logo_url'] ?? ''); ?>" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover; display: <?php echo !empty($catalogSettings['logo_url']) ? 'block' : 'none'; ?>;">
-                                        <span id="catalog-logo-placeholder" style="color: #aaa; font-size: 0.8rem; text-align: center; padding: 5px; display: <?php echo empty($catalogSettings['logo_url']) ? 'block' : 'none'; ?>;">Sin Imagen</span>
-                                    </div>
-                                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                                        <input type="file" id="catalog_logo_input" accept="image/*" style="display: none;">
-                                        <input type="hidden" id="catalog_logo_url" value="<?php echo htmlspecialchars($catalogSettings['logo_url'] ?? ''); ?>">
-                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('catalog_logo_input').click();" style="margin:0; width: auto; font-size: 0.85rem; padding: 8px 16px;">Seleccionar Imagen</button>
-                                        <button type="button" class="btn btn-secondary" id="btn-delete-catalog-logo" style="margin:0; width: auto; font-size: 0.85rem; padding: 8px 16px; color: var(--accent-red); border-color: var(--accent-red); display: <?php echo !empty($catalogSettings['logo_url']) ? 'block' : 'none'; ?>;">Eliminar Imagen</button>
-                                    </div>
-                                </div>
-                                <p style="font-size: 0.75rem; color: #666; margin: 0;">Si no subes una imagen, se mostrará la inicial del inventario. Formatos recomendados: PNG, JPG, JPEG, WEBP.</p>
-                            </div>
-
-                            <!-- Información de Contacto -->
-                            <h3 class="config-section-title" style="margin-top:2rem;">Información de Contacto Pública</h3>
-                            <p style="color:#64748b; font-size:0.85rem; margin-bottom:1rem;">Estos datos aparecerán en tu catálogo público para que los clientes puedan contactarte.</p>
-
-                            <div class="config-grid">
-                                <div class="rustic-block">
-                                    <label class="option-label" for="catalog_whatsapp"><i class="ph ph-whatsapp-logo"></i> WhatsApp</label>
-                                    <input class="config-input" type="text" id="catalog_whatsapp"
-                                        value="<?php echo htmlspecialchars($catalogSettings['whatsapp'] ?? ''); ?>"
-                                        placeholder="5491123456789 (con código de país)">
-                                </div>
-                                <div class="rustic-block">
-                                    <label class="option-label" for="catalog_instagram"><i class="ph ph-instagram-logo"></i> Instagram</label>
-                                    <input class="config-input" type="text" id="catalog_instagram"
-                                        value="<?php echo htmlspecialchars($catalogSettings['instagram'] ?? ''); ?>"
-                                        placeholder="@minegocio">
-                                </div>
-                                <div class="rustic-block" style="grid-column: 1 / -1;">
-                                    <label class="option-label" for="catalog_address"><i class="ph ph-map-pin"></i> Dirección Física</label>
-                                    <input class="config-input" type="text" id="catalog_address"
-                                        value="<?php echo htmlspecialchars($catalogSettings['address'] ?? ''); ?>"
-                                        placeholder="Av. Corrientes 1234, CABA">
-                                </div>
-                            </div>
-
-                            <!-- Opciones de visualización -->
-                            <h3 class="config-section-title" style="margin-top:2rem;">Opciones de Visualización</h3>
-
-                            <div class="config-grid">
-                                <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
-                                    <div>
-                                        <label class="option-label" style="margin:0;">Mostrar precio de venta</label>
-                                        <p style="font-size:0.75rem; color:#64748b; margin:2px 0 0;">Los clientes verán el precio en cada producto.</p>
-                                    </div>
-                                    <label class="catalog-toggle" for="catalog_show_price">
-                                        <input type="checkbox" id="catalog_show_price" <?php echo ($catalogSettings['show_price'] ?? true) ? 'checked' : ''; ?>>
-                                        <span class="catalog-toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
-                                    <div>
-                                        <label class="option-label" style="margin:0;">Mostrar stock exacto</label>
-                                        <p style="font-size:0.75rem; color:#64748b; margin:2px 0 0;">Si desactivás, muestra "Disponible" o "Sin Stock".</p>
-                                    </div>
-                                    <label class="catalog-toggle" for="catalog_show_stock">
-                                        <input type="checkbox" id="catalog_show_stock" <?php echo ($catalogSettings['show_exact_stock'] ?? true) ? 'checked' : ''; ?>>
-                                        <span class="catalog-toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Apariencia General -->
-                            <h3 class="config-section-title" style="margin-top:2rem;">Apariencia del Catálogo</h3>
-                            <p style="color:#64748b; font-size:0.85rem; margin-bottom:1rem;">Personalizá los colores y el fondo de tu catálogo web.</p>
-                            
-                            <div class="config-grid">
-                                <div class="rustic-block">
-                                    <label class="option-label" for="catalog_theme_color">Color Principal</label>
-                                    <select class="config-input" id="catalog_theme_color">
-                                        <option value="accent-color" <?php echo ($catalogSettings['theme_color'] ?? 'accent-color') === 'accent-color' ? 'selected' : ''; ?>>Aleatorio StockiFy</option>
-                                        <option value="accent-green" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-green' ? 'selected' : ''; ?>>Verde StockiFy</option>
-                                        <option value="accent-blue" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-blue' ? 'selected' : ''; ?>>Azul StockiFy</option>
-                                        <option value="accent-red" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-red' ? 'selected' : ''; ?>>Rojo StockiFy</option>
-                                        <option value="accent-yellow" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-yellow' ? 'selected' : ''; ?>>Amarillo StockiFy</option>
-                                        <option value="accent-violet" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-violet' ? 'selected' : ''; ?>>Violeta StockiFy</option>
-                                    </select>
-                                </div>
-                                <div class="rustic-block">
-                                    <label class="option-label" for="catalog_theme_pattern">Patrón de Fondo</label>
-                                    <select class="config-input" id="catalog_theme_pattern">
-                                        <option value="dots" <?php echo ($catalogSettings['theme_pattern'] ?? 'dots') === 'dots' ? 'selected' : ''; ?>>Puntos</option>
-                                        <option value="grid" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'grid' ? 'selected' : ''; ?>>Cuadrícula</option>
-                                        <option value="lines" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'lines' ? 'selected' : ''; ?>>Líneas</option>
-                                        <option value="none" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'none' ? 'selected' : ''; ?>>Liso</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Opciones del Botón Consultar -->
-                            <h3 class="config-section-title" style="margin-top:2rem;">Botón de Acción (Consultar)</h3>
-                            <p style="color:#64748b; font-size:0.85rem; margin-bottom:1rem;">Personalizá el botón que aparece en cada producto.</p>
-
-                            <div class="config-grid">
-                                <div class="rustic-block">
-                                    <label class="option-label" for="catalog_button_text">Texto del Botón</label>
-                                    <input class="config-input" type="text" id="catalog_button_text"
-                                        value="<?php echo htmlspecialchars($catalogSettings['button_text'] ?? 'Consultar'); ?>"
-                                        placeholder="Ej: Consultar por WhatsApp">
-                                </div>
-                                <div class="rustic-block" style="grid-column: 1 / -1;">
-                                    <label class="option-label" for="catalog_button_link">Enlace (URL)</label>
-                                    <input class="config-input" type="text" id="catalog_button_link"
-                                        value="<?php echo htmlspecialchars($catalogSettings['button_link'] ?? ''); ?>"
-                                        placeholder="Ej: https://wa.me/5491123456789?text=Hola, info de [PRODUCTO]">
-                                    <p style="font-size:0.8rem; color:#64748b; margin-top:4px;">Dejá vacío para usar la configuración por defecto de WhatsApp. Podés usar <b>[PRODUCTO]</b> para incluir el nombre.</p>
-                                </div>
-                                <div class="rustic-block">
-                                    <label class="option-label" for="catalog_button_icon">Ícono</label>
-                                    <select class="config-input" id="catalog_button_icon">
-                                        <option value="ph-whatsapp-logo" <?php echo ($catalogSettings['button_icon'] ?? 'ph-whatsapp-logo') === 'ph-whatsapp-logo' ? 'selected' : ''; ?>>WhatsApp</option>
-                                        <option value="ph-instagram-logo" <?php echo ($catalogSettings['button_icon'] ?? '') === 'ph-instagram-logo' ? 'selected' : ''; ?>>Instagram</option>
-                                        <option value="ph-link" <?php echo ($catalogSettings['button_icon'] ?? '') === 'ph-link' ? 'selected' : ''; ?>>Enlace</option>
-                                        <option value="ph-envelope" <?php echo ($catalogSettings['button_icon'] ?? '') === 'ph-envelope' ? 'selected' : ''; ?>>Mail</option>
-                                        <option value="ph-shopping-cart" <?php echo ($catalogSettings['button_icon'] ?? '') === 'ph-shopping-cart' ? 'selected' : ''; ?>>Carrito</option>
-                                    </select>
-                                </div>
-                                <div class="rustic-block">
-                                    <label class="option-label" for="catalog_button_color">Color del Botón</label>
-                                    <select class="config-input" id="catalog_button_color">
-                                        <option value="whatsapp-green" <?php echo ($catalogSettings['button_color'] ?? 'whatsapp-green') === 'whatsapp-green' ? 'selected' : ''; ?>>Verde WhatsApp</option>
-                                        <option value="instagram-pink" <?php echo ($catalogSettings['button_color'] ?? '') === 'instagram-pink' ? 'selected' : ''; ?>>Rosa Instagram</option>
-                                        <option value="facebook-blue" <?php echo ($catalogSettings['button_color'] ?? '') === 'facebook-blue' ? 'selected' : ''; ?>>Azul Facebook</option>
-                                        <option value="accent-green" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-green' ? 'selected' : ''; ?>>Verde StockiFy</option>
-                                        <option value="accent-red" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-red' ? 'selected' : ''; ?>>Rojo StockiFy</option>
-                                        <option value="accent-blue" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-blue' ? 'selected' : ''; ?>>Azul StockiFy</option>
-                                        <option value="accent-yellow" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-yellow' ? 'selected' : ''; ?>>Amarillo StockiFy</option>
-                                        <option value="accent-violet" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-violet' ? 'selected' : ''; ?>>Violeta StockiFy</option>
-                                        <option value="accent-color" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-color' ? 'selected' : ''; ?>>Aleatorio StockiFy</option>
-                                        <option value="color-black" <?php echo ($catalogSettings['button_color'] ?? '') === 'color-black' ? 'selected' : ''; ?>>Negro</option>
-                                    </select>
-                                </div>
-                                <div class="rustic-block" style="grid-column: 1 / -1; display:flex; align-items:center; justify-content:space-between; gap:1rem;">
-                                    <div>
-                                        <label class="option-label" style="margin:0;">Habilitar Botón de Acción</label>
-                                        <p style="font-size:0.75rem; color:#64748b; margin:2px 0 0;">Si lo desactivás, no aparecerá ningún botón de acción (como Consultar/WhatsApp) en las tarjetas ni en el detalle de productos.</p>
-                                    </div>
-                                    <label class="catalog-toggle" for="catalog_show_action_button">
-                                        <input type="checkbox" id="catalog_show_action_button" <?php echo ($catalogSettings['show_action_button'] ?? true) ? 'checked' : ''; ?>>
-                                        <span class="catalog-toggle-slider"></span>
-                                    </label>
-                                </div>
+                            <!-- Botón para abrir el panel de personalización -->
+                            <div style="margin-top: 1.5rem;">
+                                <button type="button" id="btn-open-catalog-customizer" class="btn-catalog-customizer-trigger">
+                                    <i class="ph ph-paint-brush"></i>
+                                    <span>Personalizar Catálogo</span>
+                                    <i class="ph ph-arrow-right" style="margin-left:auto;"></i>
+                                </button>
                             </div>
 
                         </div><!-- /catalog-settings-body -->
@@ -473,6 +333,243 @@ if ($canConfigRemito) {
 
             </div>
         </div>
+
+        <!-- ============================================================
+             PANEL DE PERSONALIZACIÓN DEL CATÁLOGO (Full-screen overlay)
+             ============================================================ -->
+        <?php if ($canConfigRemito): ?>
+        <div id="catalog-customizer-panel" class="catalog-customizer-overlay hidden">
+            <div class="catalog-customizer-inner">
+
+                <!-- HEADER DEL PANEL -->
+                <div class="customizer-panel-header">
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <i class="ph ph-paint-brush" style="font-size:1.4rem;"></i>
+                        <h2 style="margin:0; font-size:1.2rem; font-weight:900;">Personalizar Catálogo</h2>
+                    </div>
+                    <button type="button" id="btn-close-catalog-customizer" class="customizer-close-btn">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
+
+                <!-- CUERPO DEL PANEL: izquierda = opciones, derecha = mockup -->
+                <div class="customizer-panel-body">
+
+                    <!-- ===== COLUMNA IZQUIERDA: OPCIONES ===== -->
+                    <div class="customizer-controls">
+
+                        <!-- Logo del Catálogo -->
+                        <div class="customizer-section">
+                            <h4 class="customizer-section-title"><i class="ph ph-image"></i> Logo del Negocio</h4>
+                            <div class="rustic-block" style="display: flex; flex-direction: column; gap: 10px;">
+                                <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                                    <div id="catalog-logo-preview-container" style="width: 80px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 50%; overflow: hidden; flex-shrink:0;">
+                                        <img id="catalog-logo-preview" src="<?php echo htmlspecialchars($catalogSettings['logo_url'] ?? ''); ?>" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover; display: <?php echo !empty($catalogSettings['logo_url']) ? 'block' : 'none'; ?>;">
+                                        <span id="catalog-logo-placeholder" style="color: #aaa; font-size: 0.7rem; text-align: center; padding: 4px; display: <?php echo empty($catalogSettings['logo_url']) ? 'block' : 'none'; ?>;">Sin logo</span>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        <input type="file" id="catalog_logo_input" accept="image/*" style="display: none;">
+                                        <input type="hidden" id="catalog_logo_url" value="<?php echo htmlspecialchars($catalogSettings['logo_url'] ?? ''); ?>">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('catalog_logo_input').click();" style="margin:0; width: auto; font-size: 0.8rem; padding: 6px 14px;">Seleccionar Imagen</button>
+                                        <button type="button" class="btn btn-secondary" id="btn-delete-catalog-logo" style="margin:0; width: auto; font-size: 0.8rem; padding: 6px 14px; color: var(--accent-red); border-color: var(--accent-red); display: <?php echo !empty($catalogSettings['logo_url']) ? 'block' : 'none'; ?>;">Eliminar</button>
+                                    </div>
+                                </div>
+                                <p style="font-size: 0.72rem; color: #666; margin: 0;">PNG, JPG, WEBP. Si no subís imagen, se mostrará la inicial del negocio.</p>
+                            </div>
+                        </div>
+
+                        <!-- Información de Contacto -->
+                        <div class="customizer-section">
+                            <h4 class="customizer-section-title"><i class="ph ph-address-book"></i> Contacto Público</h4>
+                            <div class="config-grid" style="grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0;">
+                                <div class="rustic-block">
+                                    <label class="option-label" for="catalog_whatsapp"><i class="ph ph-whatsapp-logo"></i> WhatsApp</label>
+                                    <input class="config-input" type="text" id="catalog_whatsapp"
+                                        value="<?php echo htmlspecialchars($catalogSettings['whatsapp'] ?? ''); ?>"
+                                        placeholder="5491123456789" style="margin-bottom:0;">
+                                </div>
+                                <div class="rustic-block">
+                                    <label class="option-label" for="catalog_instagram"><i class="ph ph-instagram-logo"></i> Instagram</label>
+                                    <input class="config-input" type="text" id="catalog_instagram"
+                                        value="<?php echo htmlspecialchars($catalogSettings['instagram'] ?? ''); ?>"
+                                        placeholder="@minegocio" style="margin-bottom:0;">
+                                </div>
+                                <div class="rustic-block" style="grid-column: 1 / -1;">
+                                    <label class="option-label" for="catalog_address"><i class="ph ph-map-pin"></i> Dirección</label>
+                                    <input class="config-input" type="text" id="catalog_address"
+                                        value="<?php echo htmlspecialchars($catalogSettings['address'] ?? ''); ?>"
+                                        placeholder="Av. Corrientes 1234, CABA" style="margin-bottom:0;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opciones de Visualización -->
+                        <div class="customizer-section">
+                            <h4 class="customizer-section-title"><i class="ph ph-eye"></i> Visualización</h4>
+                            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                                <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.75rem 1rem;">
+                                    <div>
+                                        <label class="option-label" style="margin:0;">Mostrar precio</label>
+                                        <p style="font-size:0.72rem; color:#64748b; margin:2px 0 0;">Precio visible en cada producto.</p>
+                                    </div>
+                                    <label class="catalog-toggle" for="catalog_show_price">
+                                        <input type="checkbox" id="catalog_show_price" <?php echo ($catalogSettings['show_price'] ?? true) ? 'checked' : ''; ?>>
+                                        <span class="catalog-toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.75rem 1rem;">
+                                    <div>
+                                        <label class="option-label" style="margin:0;">Mostrar stock exacto</label>
+                                        <p style="font-size:0.72rem; color:#64748b; margin:2px 0 0;">Si no, muestra "Disponible" o "Sin Stock".</p>
+                                    </div>
+                                    <label class="catalog-toggle" for="catalog_show_stock">
+                                        <input type="checkbox" id="catalog_show_stock" <?php echo ($catalogSettings['show_exact_stock'] ?? true) ? 'checked' : ''; ?>>
+                                        <span class="catalog-toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Apariencia -->
+                        <div class="customizer-section">
+                            <h4 class="customizer-section-title"><i class="ph ph-palette"></i> Apariencia</h4>
+                            <div class="config-grid" style="grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0;">
+                                <div class="rustic-block">
+                                    <label class="option-label" for="catalog_theme_color">Color Principal</label>
+                                    <select class="config-input" id="catalog_theme_color" style="margin-bottom:0;">
+                                        <option value="accent-color" <?php echo ($catalogSettings['theme_color'] ?? 'accent-color') === 'accent-color' ? 'selected' : ''; ?>>Aleatorio StockiFy</option>
+                                        <option value="accent-green" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-green' ? 'selected' : ''; ?>>Verde</option>
+                                        <option value="accent-blue" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-blue' ? 'selected' : ''; ?>>Azul</option>
+                                        <option value="accent-red" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-red' ? 'selected' : ''; ?>>Rojo</option>
+                                        <option value="accent-yellow" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-yellow' ? 'selected' : ''; ?>>Amarillo</option>
+                                        <option value="accent-violet" <?php echo ($catalogSettings['theme_color'] ?? '') === 'accent-violet' ? 'selected' : ''; ?>>Violeta</option>
+                                    </select>
+                                </div>
+                                <div class="rustic-block">
+                                    <label class="option-label" for="catalog_theme_pattern">Patrón de Fondo</label>
+                                    <select class="config-input" id="catalog_theme_pattern" style="margin-bottom:0;">
+                                        <option value="dots" <?php echo ($catalogSettings['theme_pattern'] ?? 'dots') === 'dots' ? 'selected' : ''; ?>>Puntos</option>
+                                        <option value="grid" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'grid' ? 'selected' : ''; ?>>Cuadrícula</option>
+                                        <option value="lines" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'lines' ? 'selected' : ''; ?>>Líneas</option>
+                                        <option value="none" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'none' ? 'selected' : ''; ?>>Liso</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botón de Acción -->
+                        <div class="customizer-section">
+                            <h4 class="customizer-section-title"><i class="ph ph-cursor-click"></i> Botón de Acción</h4>
+                            <div class="config-grid" style="grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0;">
+                                <div class="rustic-block">
+                                    <label class="option-label" for="catalog_button_text">Texto</label>
+                                    <input class="config-input" type="text" id="catalog_button_text"
+                                        value="<?php echo htmlspecialchars($catalogSettings['button_text'] ?? 'Consultar'); ?>"
+                                        placeholder="Consultar" style="margin-bottom:0;">
+                                </div>
+                                <div class="rustic-block">
+                                    <label class="option-label" for="catalog_button_icon">Ícono</label>
+                                    <select class="config-input" id="catalog_button_icon" style="margin-bottom:0;">
+                                        <option value="ph-whatsapp-logo" <?php echo ($catalogSettings['button_icon'] ?? 'ph-whatsapp-logo') === 'ph-whatsapp-logo' ? 'selected' : ''; ?>>WhatsApp</option>
+                                        <option value="ph-instagram-logo" <?php echo ($catalogSettings['button_icon'] ?? '') === 'ph-instagram-logo' ? 'selected' : ''; ?>>Instagram</option>
+                                        <option value="ph-link" <?php echo ($catalogSettings['button_icon'] ?? '') === 'ph-link' ? 'selected' : ''; ?>>Enlace</option>
+                                        <option value="ph-envelope" <?php echo ($catalogSettings['button_icon'] ?? '') === 'ph-envelope' ? 'selected' : ''; ?>>Mail</option>
+                                        <option value="ph-shopping-cart" <?php echo ($catalogSettings['button_icon'] ?? '') === 'ph-shopping-cart' ? 'selected' : ''; ?>>Carrito</option>
+                                    </select>
+                                </div>
+                                <div class="rustic-block">
+                                    <label class="option-label" for="catalog_button_color">Color</label>
+                                    <select class="config-input" id="catalog_button_color" style="margin-bottom:0;">
+                                        <option value="whatsapp-green" <?php echo ($catalogSettings['button_color'] ?? 'whatsapp-green') === 'whatsapp-green' ? 'selected' : ''; ?>>Verde WhatsApp</option>
+                                        <option value="instagram-pink" <?php echo ($catalogSettings['button_color'] ?? '') === 'instagram-pink' ? 'selected' : ''; ?>>Rosa Instagram</option>
+                                        <option value="facebook-blue" <?php echo ($catalogSettings['button_color'] ?? '') === 'facebook-blue' ? 'selected' : ''; ?>>Azul Facebook</option>
+                                        <option value="accent-green" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-green' ? 'selected' : ''; ?>>Verde StockiFy</option>
+                                        <option value="accent-red" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-red' ? 'selected' : ''; ?>>Rojo StockiFy</option>
+                                        <option value="accent-blue" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-blue' ? 'selected' : ''; ?>>Azul StockiFy</option>
+                                        <option value="accent-yellow" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-yellow' ? 'selected' : ''; ?>>Amarillo StockiFy</option>
+                                        <option value="accent-violet" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-violet' ? 'selected' : ''; ?>>Violeta StockiFy</option>
+                                        <option value="accent-color" <?php echo ($catalogSettings['button_color'] ?? '') === 'accent-color' ? 'selected' : ''; ?>>Aleatorio StockiFy</option>
+                                        <option value="color-black" <?php echo ($catalogSettings['button_color'] ?? '') === 'color-black' ? 'selected' : ''; ?>>Negro</option>
+                                    </select>
+                                </div>
+                                <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.75rem 1rem;">
+                                    <div>
+                                        <label class="option-label" style="margin:0;">Habilitar botón</label>
+                                        <p style="font-size:0.72rem; color:#64748b; margin:2px 0 0;">Mostrar en cada producto.</p>
+                                    </div>
+                                    <label class="catalog-toggle" for="catalog_show_action_button">
+                                        <input type="checkbox" id="catalog_show_action_button" <?php echo ($catalogSettings['show_action_button'] ?? true) ? 'checked' : ''; ?>>
+                                        <span class="catalog-toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="rustic-block" style="grid-column: 1 / -1;">
+                                    <label class="option-label" for="catalog_button_link">Enlace personalizado (opcional)</label>
+                                    <input class="config-input" type="text" id="catalog_button_link"
+                                        value="<?php echo htmlspecialchars($catalogSettings['button_link'] ?? ''); ?>"
+                                        placeholder="https://wa.me/... (dejá vacío para el default)" style="margin-bottom:0;">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /customizer-controls -->
+
+                    <!-- ===== COLUMNA DERECHA: MOCKUP / PREVIEW ===== -->
+                    <div class="customizer-preview">
+                        <div class="customizer-preview-label">
+                            <i class="ph ph-device-mobile"></i> Vista previa del catálogo
+                        </div>
+
+                        <!-- Mockup del catálogo -->
+                        <div class="catalog-mockup" id="catalog-mockup">
+
+                            <!-- Nav falso del catálogo -->
+                            <div class="mockup-nav" id="mockup-nav">
+                                <div class="mockup-nav-logo" id="mockup-nav-logo">
+                                    <div class="mockup-logo-circle" id="mockup-logo-circle"><?php echo htmlspecialchars(!empty($inventoryName) ? mb_strtoupper(mb_substr($inventoryName, 0, 1)) : 'M'); ?></div>
+                                    <span class="mockup-business-name" id="mockup-business-name"><?php echo htmlspecialchars(!empty($inventoryName) ? $inventoryName : 'Mi Negocio'); ?></span>
+                                </div>
+                                <div class="mockup-nav-contacts" id="mockup-nav-contacts">
+                                    <div class="mockup-contact-btn mockup-map" id="mockup-contact-map" style="display:none;"><i class="ph ph-map-pin"></i></div>
+                                    <div class="mockup-contact-btn mockup-ig" id="mockup-contact-ig" style="display:none;"><i class="ph ph-instagram-logo"></i></div>
+                                    <div class="mockup-contact-btn mockup-wa" id="mockup-contact-wa" style="display:none;"><i class="ph ph-whatsapp-logo"></i></div>
+                                </div>
+                            </div>
+
+                            <!-- Fondo con patrón -->
+                            <div class="mockup-bg" id="mockup-bg">
+
+                                <!-- Buscador falso -->
+                                <div class="mockup-search">
+                                    <i class="ph ph-magnifying-glass"></i>
+                                    <span>Buscar productos...</span>
+                                </div>
+
+                                <!-- Tarjeta de producto falsa -->
+                                <div class="mockup-product-card">
+                                    <div class="mockup-product-img">
+                                        <i class="ph ph-image" style="font-size:1.5rem; color:#ccc;"></i>
+                                    </div>
+                                    <div class="mockup-product-body">
+                                        <p class="mockup-category-tag">Categoría</p>
+                                        <p class="mockup-product-name">Producto de Ejemplo</p>
+                                        <p class="mockup-product-price" id="mockup-product-price">$1.500</p>
+                                        <p class="mockup-stock-tag">Disponible</p>
+                                        <button class="mockup-action-btn" id="mockup-action-btn">
+                                            <i class="ph ph-whatsapp-logo" id="mockup-btn-icon"></i>
+                                            <span id="mockup-btn-text">Consultar</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div><!-- /mockup-bg -->
+                        </div><!-- /catalog-mockup -->
+                    </div><!-- /customizer-preview -->
+
+                </div><!-- /customizer-panel-body -->
+
+            </div><!-- /catalog-customizer-inner -->
+        </div><!-- /catalog-customizer-panel -->
+        <?php endif; ?>
 
         <div class="view-container flex-column justify-left align-center hidden" id="modif-form-container"
             style="z-index: 1001;">
