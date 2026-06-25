@@ -64,6 +64,12 @@ export class SalesModule {
 
         this.attachEvents();
 
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && this.isCashierMode) {
+                this.exitCashierMode();
+            }
+        });
+
         if (container) this.loadHistory(this.currentSortOrder);
 
         this.isInitialized = true;
@@ -77,7 +83,7 @@ export class SalesModule {
                     <div class="table-controls">
                         <button id="sales-renumber-btn" class="btn btn-secondary hidden" title="Renumerar IDs"><i class="ph ph-list-numbers"></i></button>
                         <button id="sales-sort-btn" class="btn btn-secondary" title="Ordenar por Fecha/ID"><i class="ph ph-sort-ascending" id="sales-sort-icon"></i></button>
-                        <button id="sales-cashier-mode-btn" class="btn btn-secondary" title="Atender en modo Caja (Pantalla Completa)"><i class="ph-bold ph-storefront" style="margin-right: 8px;"></i>En Caja</button>
+                        <button id="sales-cashier-mode-btn" class="btn btn-secondary cashier-mode-btn" title="Atender en modo Caja (Pantalla Completa)" style="display:inline-flex; align-items:center; gap:8px;"><i class="ph-bold ph-desktop"></i>En Caja</button>
                         <button id="sales-create-btn" class="btn btn-primary">+ Nueva Venta</button>
                     </div>
                 </div>

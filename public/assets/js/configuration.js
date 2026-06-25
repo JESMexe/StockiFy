@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initGeneralProfile();
     initSecurityHandlers();
+    initRemitoHandlers();
+    initCatalogHandlers();
 
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
@@ -11,25 +13,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tab === 'soporte') {
         const btnSoporte = document.getElementById('btn-config-soporte');
         btnSoporte?.click();
+    } else if (tab === 'remito') {
+        const btnRemito = document.getElementById('btn-config-remito');
+        btnRemito?.click();
+    } else if (tab === 'catalogo') {
+        const btnCatalogo = document.getElementById('btn-config-catalogo');
+        btnCatalogo?.click();
     }
 });
 
 function initTabs() {
-    const btnCuenta = document.getElementById('btn-config-cuenta');
-    const btnSoporte = document.getElementById('btn-config-soporte');
-    const containerCuenta = document.getElementById('config-container-cuenta');
-    const containerSoporte = document.getElementById('soporte-container');
+    const tabs = [
+        { btn: document.getElementById('btn-config-cuenta'), container: document.getElementById('config-container-cuenta') },
+        { btn: document.getElementById('btn-config-remito'), container: document.getElementById('remito-container') },
+        { btn: document.getElementById('btn-config-catalogo'), container: document.getElementById('catalogo-container') },
+        { btn: document.getElementById('btn-config-soporte'), container: document.getElementById('soporte-container') }
+    ];
 
-    const switchTab = (activeBtn, inactiveBtn, showContainer, hideContainer) => {
-        activeBtn.classList.add('btn-option-selected');
-        inactiveBtn.classList.remove('btn-option-selected');
-
-        showContainer.classList.remove('hidden');
-        hideContainer.classList.add('hidden');
-    };
-
-    btnCuenta?.addEventListener('click', () => switchTab(btnCuenta, btnSoporte, containerCuenta, containerSoporte));
-    btnSoporte?.addEventListener('click', () => switchTab(btnSoporte, btnCuenta, containerSoporte, containerCuenta));
+    tabs.forEach(tab => {
+        if (!tab.btn) return;
+        tab.btn.addEventListener('click', () => {
+            tabs.forEach(t => {
+                if (t.btn) t.btn.classList.remove('btn-option-selected');
+                if (t.container) t.container.classList.add('hidden');
+            });
+            tab.btn.classList.add('btn-option-selected');
+            tab.container?.classList.remove('hidden');
+        });
+    });
 }
 
 function initSecurityHandlers() {
@@ -308,3 +319,417 @@ function initGeneralProfile() {
     });
 }
 
+function initRemitoHandlers() {
+    const form = document.getElementById('form-remito');
+    if (!form) return;
+
+    const descInput = document.getElementById('remito_description');
+    const urlInput = document.getElementById('remito_url');
+    const fileInput = document.getElementById('remito_logo_input');
+    const previewImg = document.getElementById('remito-logo-preview');
+    const placeholder = document.getElementById('remito-logo-placeholder');
+    const btnDeleteLogo = document.getElementById('btn-delete-logo');
+    const btnGuardar = document.getElementById('btn-guardar-remito');
+
+    const original = window.inventoryData || {};
+
+    let logoChanged = false;
+    let logoFile = null;
+    let logoDeleted = false;
+
+    // Load initial values
+    if (descInput) descInput.value = original.remito_description || '';
+    if (urlInput) urlInput.value = original.remito_url || '';
+    if (original.remito_logo && previewImg && placeholder && btnDeleteLogo) {
+        previewImg.src = original.remito_logo;
+        previewImg.style.display = 'block';
+        placeholder.style.display = 'none';
+        btnDeleteLogo.style.display = 'block';
+    }
+
+    const checkChanges = () => {
+        let hasChanges = false;
+
+        const descVal = descInput ? descInput.value.trim() : '';
+        const urlVal = urlInput ? urlInput.value.trim() : '';
+
+        const descChanged = descVal !== (original.remito_description || '');
+        const urlChanged = urlVal !== (original.remito_url || '');
+
+        if (descChanged || urlChanged || logoChanged) {
+            hasChanges = true;
+        }
+
+        // Toggle hints
+        if (descInput) {
+            const hint = descInput.closest('.rustic-block')?.querySelector('.unsaved-hint');
+            if (hint) {
+                if (descChanged) hint.classList.remove('hidden');
+                else hint.classList.add('hidden');
+            }
+        }
+        if (urlInput) {
+            const hint = urlInput.closest('.rustic-block')?.querySelector('.unsaved-hint');
+            if (hint) {
+                if (urlChanged) hint.classList.remove('hidden');
+                else hint.classList.add('hidden');
+            }
+        }
+
+        if (btnGuardar) {
+            btnGuardar.disabled = !hasChanges;
+            btnGuardar.textContent = hasChanges ? "Guardar Configuración de Remito" : "Sin cambios pendientes";
+        }
+    };
+
+    // File Input Selection
+    fileInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (previewImg) {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                }
+                if (placeholder) placeholder.style.display = 'none';
+                if (btnDeleteLogo) btnDeleteLogo.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            logoFile = file;
+            logoDeleted = false;
+            logoChanged = true;
+            checkChanges();
+        }
+    });
+
+    // Delete Logo button
+    btnDeleteLogo?.addEventListener('click', () => {
+        if (fileInput) fileInput.value = '';
+        if (previewImg) {
+            previewImg.src = '';
+            previewImg.style.display = 'none';
+        }
+        if (placeholder) placeholder.style.display = 'block';
+        if (btnDeleteLogo) btnDeleteLogo.style.display = 'none';
+
+        logoFile = null;
+        logoDeleted = true;
+        logoChanged = true;
+        checkChanges();
+    });
+
+    descInput?.addEventListener('input', checkChanges);
+    urlInput?.addEventListener('input', checkChanges);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!btnGuardar) return;
+
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Guardando...';
+
+        const formData = new FormData();
+        formData.append('remito_description', descInput ? descInput.value.trim() : '');
+        formData.append('remito_url', urlInput ? urlInput.value.trim() : '');
+        if (logoFile) {
+            formData.append('remito_logo', logoFile);
+        }
+        if (logoDeleted) {
+            formData.append('delete_logo', 1);
+        }
+
+        try {
+            const response = await fetch('/api/inventory/update-remito-settings.php', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                Swal.fire({
+                    title: '¡Guardado!',
+                    text: 'La configuración de tu remito se actualizó correctamente.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                // Update original state references
+                window.inventoryData = {
+                    remito_logo: result.remito_logo_path || '',
+                    remito_description: result.remito_description || '',
+                    remito_url: result.remito_url || ''
+                };
+
+                original.remito_logo = result.remito_logo_path || '';
+                original.remito_description = result.remito_description || '';
+                original.remito_url = result.remito_url || '';
+
+                logoChanged = false;
+                logoFile = null;
+                logoDeleted = false;
+
+                checkChanges();
+            } else {
+                throw new Error(result.message || 'Error desconocido.');
+            }
+        } catch (error) {
+            pop_ups.error(error.message, "Error al guardar");
+            btnGuardar.disabled = false;
+            btnGuardar.textContent = "Guardar Configuración de Remito";
+        }
+    });
+}
+
+
+function initCatalogHandlers() {
+    const form = document.getElementById('form-catalogo');
+    if (!form) return;
+
+    const catalogData = window.catalogData || {};
+    const inventoryId = catalogData.inventory_id;
+
+    const activeSwitch = document.getElementById('catalog_active_switch');
+    const settingsBody = document.getElementById('catalog-settings-body');
+    const slugInput    = document.getElementById('catalog_slug');
+    const slugIcon     = document.getElementById('slug-status-icon');
+    const slugFeedback = document.getElementById('slug-feedback');
+    const urlPreview   = document.getElementById('catalog-url-preview');
+    const urlLink      = document.getElementById('catalog-url-link');
+    const copyBtn      = document.getElementById('btn-copy-catalog-url');
+    const btnGuardar   = document.getElementById('btn-guardar-catalogo');
+
+    // Toggle active/inactive visual state
+    activeSwitch?.addEventListener('change', () => {
+        if (settingsBody) {
+            settingsBody.style.opacity = activeSwitch.checked ? '1' : '0.5';
+            settingsBody.style.pointerEvents = activeSwitch.checked ? 'auto' : 'none';
+        }
+    });
+
+    // --- Slug validation with debounce ---
+    let slugTimeout = null;
+    let slugValid   = true;
+
+    const validateSlug = async (value) => {
+        const slug = value.toLowerCase().trim();
+        slugInput.value = slug;
+
+        if (!slug) {
+            slugIcon.textContent = '';
+            slugFeedback.textContent = '';
+            urlPreview.style.display = 'none';
+            return;
+        }
+
+        if (!/^[a-z0-9][a-z0-9\-]*[a-z0-9]$/.test(slug) && !/^[a-z0-9]{1,2}$/.test(slug)) {
+            slugIcon.textContent = '✗';
+            slugIcon.style.color = '#ef4444';
+            slugFeedback.style.color = '#ef4444';
+            slugFeedback.textContent = 'Solo letras minúsculas, números y guiones. No puede empezar ni terminar con guión.';
+            slugValid = false;
+            urlPreview.style.display = 'none';
+            return;
+        }
+
+        slugIcon.textContent = '⏳';
+        slugFeedback.style.color = '#64748b';
+        slugFeedback.textContent = 'Verificando disponibilidad...';
+
+        try {
+            const res = await fetch(`/api/catalog/check-slug.php?slug=${encodeURIComponent(slug)}&inventory_id=${inventoryId}`);
+            const data = await res.json();
+
+            if (data.available) {
+                slugIcon.textContent = '✓';
+                slugIcon.style.color = '#16a34a';
+                slugFeedback.style.color = '#16a34a';
+                slugFeedback.textContent = '¡Disponible!';
+                slugValid = true;
+
+                // Update URL preview
+                const fullUrl = `stockify.com.ar/catalogo/${slug}`;
+                if (urlLink) { urlLink.href = `/catalogo/${slug}`; urlLink.textContent = fullUrl; }
+                if (urlPreview) urlPreview.style.display = 'flex';
+            } else {
+                slugIcon.textContent = '✗';
+                slugIcon.style.color = '#ef4444';
+                slugFeedback.style.color = '#ef4444';
+                slugFeedback.textContent = data.error || 'Este slug ya está en uso. Elegí otro.';
+                slugValid = false;
+                urlPreview.style.display = 'none';
+            }
+        } catch {
+            slugIcon.textContent = '';
+            slugFeedback.textContent = '';
+            slugValid = true; // Allow save attempt
+        }
+    };
+
+    slugInput?.addEventListener('input', (e) => {
+        clearTimeout(slugTimeout);
+        slugTimeout = setTimeout(() => validateSlug(e.target.value), 500);
+    });
+
+    // Copy URL button
+    copyBtn?.addEventListener('click', async () => {
+        const url = urlLink?.href || '';
+        if (!url) return;
+        try {
+            await navigator.clipboard.writeText(window.location.origin + `/catalogo/${slugInput.value.trim()}`);
+            copyBtn.innerHTML = '<i class="ph ph-check"></i> Copiado';
+            setTimeout(() => { copyBtn.innerHTML = '<i class="ph ph-copy"></i> Copiar'; }, 2000);
+        } catch {
+            copyBtn.textContent = 'Error';
+        }
+    });
+
+    // --- Logo Upload ---
+    const catalogLogoInput = document.getElementById('catalog_logo_input');
+    const catalogLogoPreview = document.getElementById('catalog-logo-preview');
+    const catalogLogoPlaceholder = document.getElementById('catalog-logo-placeholder');
+    const btnDeleteCatalogLogo = document.getElementById('btn-delete-catalog-logo');
+    const catalogLogoUrlInput = document.getElementById('catalog_logo_url');
+
+    let catalogLogoFile = null;
+    let catalogLogoDeleted = false;
+
+    catalogLogoInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (catalogLogoPreview) {
+                    catalogLogoPreview.src = e.target.result;
+                    catalogLogoPreview.style.display = 'block';
+                }
+                if (catalogLogoPlaceholder) catalogLogoPlaceholder.style.display = 'none';
+                if (btnDeleteCatalogLogo) btnDeleteCatalogLogo.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            catalogLogoFile = file;
+            catalogLogoDeleted = false;
+        }
+    });
+
+    btnDeleteCatalogLogo?.addEventListener('click', () => {
+        if (catalogLogoInput) catalogLogoInput.value = '';
+        if (catalogLogoPreview) {
+            catalogLogoPreview.src = '';
+            catalogLogoPreview.style.display = 'none';
+        }
+        if (catalogLogoPlaceholder) catalogLogoPlaceholder.style.display = 'block';
+        if (btnDeleteCatalogLogo) btnDeleteCatalogLogo.style.display = 'none';
+        if (catalogLogoUrlInput) catalogLogoUrlInput.value = '';
+        catalogLogoFile = null;
+        catalogLogoDeleted = true;
+    });
+
+    // --- Form Submit ---
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const isActive = activeSwitch?.checked ?? false;
+        const slug     = slugInput?.value.trim() ?? '';
+
+        if (isActive && !slug) {
+            Swal.fire('Campo requerido', 'Ingresá un slug para poder activar el catálogo.', 'warning');
+            return;
+        }
+
+        if (isActive && !slugValid) {
+            Swal.fire('Slug inválido', 'Revisá el slug antes de guardar.', 'warning');
+            return;
+        }
+
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Guardando...';
+
+        let finalLogoUrl = catalogLogoUrlInput?.value || '';
+
+        // If there's a new logo file, upload it first
+        if (catalogLogoFile) {
+            const formData = new FormData();
+            formData.append('image', catalogLogoFile);
+            formData.append('inventory_id', inventoryId);
+            try {
+                const uploadRes = await fetch('/api/catalog/upload-image.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const uploadData = await uploadRes.json();
+                if (uploadData.success) {
+                    finalLogoUrl = uploadData.url;
+                    if (catalogLogoUrlInput) catalogLogoUrlInput.value = finalLogoUrl;
+                } else {
+                    throw new Error(uploadData.error || 'Error al subir la imagen del logo.');
+                }
+            } catch (err) {
+                pop_ups.error(err.message, 'Error al subir logo');
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar Configuración del Catálogo';
+                return;
+            }
+        } else if (catalogLogoDeleted) {
+            finalLogoUrl = '';
+        }
+
+        const payload = {
+            inventory_id:     inventoryId,
+            catalog_active:   isActive,
+            catalog_slug:     slug,
+            whatsapp:         document.getElementById('catalog_whatsapp')?.value.trim()  ?? '',
+            instagram:        document.getElementById('catalog_instagram')?.value.trim() ?? '',
+            address:          document.getElementById('catalog_address')?.value.trim()   ?? '',
+            logo_url:         finalLogoUrl,
+            show_price:       document.getElementById('catalog_show_price')?.checked     ?? true,
+            show_exact_stock: document.getElementById('catalog_show_stock')?.checked     ?? true,
+            show_action_button: document.getElementById('catalog_show_action_button')?.checked ?? true,
+            button_text:      document.getElementById('catalog_button_text')?.value.trim() ?? '',
+            button_link:      document.getElementById('catalog_button_link')?.value.trim() ?? '',
+            button_icon:      document.getElementById('catalog_button_icon')?.value ?? 'ph-whatsapp-logo',
+            button_color:     document.getElementById('catalog_button_color')?.value ?? 'whatsapp-green',
+            theme_color:      document.getElementById('catalog_theme_color')?.value ?? 'accent-color',
+            theme_pattern:    document.getElementById('catalog_theme_pattern')?.value ?? 'dots',
+        };
+
+        try {
+            const res  = await fetch('/api/catalog/save-catalog-settings.php', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                let confirmHtml = '¡Configuración guardada correctamente!';
+                if (data.public_url) {
+                    confirmHtml += `<br><br><a href="/catalogo/${encodeURIComponent(slug)}" target="_blank"
+                        style="color:var(--accent-color); font-weight:600;">Ver mi catálogo →</a>`;
+                }
+                Swal.fire({
+                    title:             isActive ? '¡Catálogo activo!' : '¡Guardado!',
+                    html:              confirmHtml,
+                    icon:              'success',
+                    confirmButtonText: 'Aceptar',
+                });
+                // Update URL preview with saved slug
+                if (slug && urlLink && urlPreview) {
+                    const fullUrl = `stockify.com.ar/catalogo/${slug}`;
+                    urlLink.href        = `/catalogo/${slug}`;
+                    urlLink.textContent = fullUrl;
+                    urlPreview.style.display = 'flex';
+                }
+            } else {
+                throw new Error(data.error || 'Error desconocido.');
+            }
+        } catch (err) {
+            pop_ups.error(err.message, 'Error al guardar');
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar Configuración del Catálogo';
+        }
+    });
+}

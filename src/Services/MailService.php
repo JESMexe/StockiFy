@@ -23,6 +23,7 @@ class MailService
         $mail->SMTPSecure = SMTP_SECURE;
         $mail->Port = SMTP_PORT;
         $mail->CharSet = 'UTF-8';
+        $mail->Timeout = 10; // Limitar el tiempo de espera de conexión a 10 segundos
 
         // Evitar el error de certificado de Ferozo (*.ferozo.com vs mail.stockify.com.ar)
         $mail->SMTPOptions = [

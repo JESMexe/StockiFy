@@ -147,6 +147,7 @@ class InventoryModel
                 `receipt_price` DECIMAL(10,2) DEFAULT {$receiptPriceDefault},
                 `hard_gain` DECIMAL(10,2) DEFAULT {$gainDefault},
                 `percentage_gain` DECIMAL(10,2) DEFAULT {$gainDefault},
+                `public_visible` TINYINT(1) NOT NULL DEFAULT 0,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
 
             // Solo agregamos las columnas extra (stock, nombre, etc) que NO son reservadas

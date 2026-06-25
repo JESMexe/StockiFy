@@ -59,13 +59,13 @@ try {
         if ($ownerId) {
             $stmtOwnerSub = $pdo->prepare("SELECT subscription_active FROM users WHERE id = ?");
             $stmtOwnerSub->execute([$ownerId]);
-            $inventorySubscriptionActive = (int)$stmtOwnerSub->fetchColumn();
+            $inventorySubscriptionActive = (int) $stmtOwnerSub->fetchColumn();
         }
     } else {
-        $inventorySubscriptionActive = (int)($currentUser['subscription_active'] ?? 1);
+        $inventorySubscriptionActive = (int) ($currentUser['subscription_active'] ?? 1);
     }
 } catch (Exception $e) {
-    $inventorySubscriptionActive = (int)($currentUser['subscription_active'] ?? 1);
+    $inventorySubscriptionActive = (int) ($currentUser['subscription_active'] ?? 1);
 }
 ?>
 
@@ -78,7 +78,7 @@ try {
     <title>Panel de Control - StockiFy</title>
 
     <link rel="stylesheet" href="assets/css/main.css?v=1.3">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=1.7">
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=2.1">
     <link rel="stylesheet" href="assets/css/notifications.css?v=2.0">
     <link rel="stylesheet" href="assets/css/employees.css?v=1.3">
     <link rel="stylesheet" href="assets/css/purchases.css?v=2.1">
@@ -95,8 +95,17 @@ try {
 
     <script src="assets/js/theme.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.css"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="assets/js/sweetalert2.all.min.js?v=11.0"></script>
+    <script>
+        if (typeof Swal === 'undefined') {
+            console.warn("SweetAlert2 local no pudo cargarse. Cargando fallback desde CDN...");
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+            document.head.appendChild(script);
+        }
+    </script>
 
     <link rel="stylesheet" href="assets/css/analytics.css">
     <link rel="stylesheet" href="assets/css/sales.css?v=2.1">
@@ -132,6 +141,9 @@ try {
 
 <body>
     <header>
+        <button id="toggle-sidebar-btn" class="btn btn-secondary" style="display: none; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; margin-right: 15px; border-radius: 8px;" title="Mostrar/Ocultar Menú">
+            <i class="ph ph-list" style="font-size: 1.5rem; font-weight: bold;"></i>
+        </button>
         <a href="/" id="header-logo">
             <img src="assets/img/LogoE.png" alt="StockiFy Logo">
         </a>
@@ -233,23 +245,28 @@ try {
             <button id="close-add-slots-modal-btn"
                 style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #1b1b1b;"><i
                     class="ph-bold ph-x"></i></button>
-            <h3 style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #1b1b1b; font-size: 1.4rem;">
+            <h3
+                style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #1b1b1b; font-size: 1.4rem;">
                 <i class="ph-bold ph-plus-circle" style="color: var(--accent-color);"></i> Agregar Slots Extra
             </h3>
             <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
                 Sumá slots para invitar a más colaboradores de forma inmediata.
-                Cada slot adicional tiene un costo de <strong>$20.000/mes</strong>. Se registrará una deuda que deberás saldar en un lapso de 48 horas.
+                Cada slot adicional tiene un costo de <strong>$20.000/mes</strong>. Se registrará una deuda que deberás
+                saldar en un lapso de 48 horas.
             </p>
             <form id="add-slots-form">
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label class="micro-label"
-                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Cantidad de Slots</label>
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #1b1b1b;">Cantidad de
+                        Slots</label>
                     <input type="number" id="slots-count-input" class="rustic-input" value="1" min="1" step="1" required
                         style="width: 100%; box-sizing: border-box;">
                 </div>
-                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; font-size: 0.85rem;">
+                <div
+                    style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; font-size: 0.85rem;">
                     <span style="color: #475569; display: block;">Resumen de Deuda:</span>
-                    <strong id="slots-debt-summary" style="font-size: 1.1rem; color: var(--accent-color);">$20.000</strong>
+                    <strong id="slots-debt-summary"
+                        style="font-size: 1.1rem; color: var(--accent-color);">$20.000</strong>
                 </div>
                 <button type="submit" class="btn btn-primary" id="add-slots-submit-btn"
                     style="width: 100%; height: 48px; background: var(--accent-color); border-color: #1b1b1b; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px; color: white;">
@@ -275,27 +292,27 @@ try {
                         <li><a href="select-db" class="menu-link"><i class="ph ph-database"></i> Cambiar Inventario</a>
                         </li>
 
-                        <?php if ((int)$currentUser['subscription_active'] !== 5): ?>
-                        <?php
-                        $dbInstance = \App\core\Database::getInstance();
-                        $stmtCount = $dbInstance->prepare("SELECT COUNT(*) FROM inventories WHERE user_id = ?");
-                        $stmtCount->execute([$currentUser['id']]);
-                        $invCount = $stmtCount->fetchColumn();
-                        $canCreateDb = ($currentUser['subscription_active'] >= 2) || ($currentUser['subscription_active'] == 1 && $invCount == 0);
-                        ?>
+                        <?php if ((int) $currentUser['subscription_active'] !== 5): ?>
+                            <?php
+                            $dbInstance = \App\core\Database::getInstance();
+                            $stmtCount = $dbInstance->prepare("SELECT COUNT(*) FROM inventories WHERE user_id = ?");
+                            $stmtCount->execute([$currentUser['id']]);
+                            $invCount = $stmtCount->fetchColumn();
+                            $canCreateDb = ($currentUser['subscription_active'] >= 2) || ($currentUser['subscription_active'] == 1 && $invCount == 0);
+                            ?>
 
-                        <?php if ($canCreateDb): ?>
-                            <li><a href="create-db" class="menu-link"><i class="ph ph-plus-circle"></i> Crear Inventario</a>
-                            </li>
-                            <?php
-                        else: ?>
-                            <li style="opacity: 0.5;" title="Límite del Plan Básico alcanzado."><a href="#"
-                                    onclick="window.showLockedFeatureToast('Múltiples Inventarios'); return false;"
-                                    class="menu-link"><i class="ph ph-plus-circle"></i> Crear Inventario <i
-                                        class="ph-fill ph-lock-key"
-                                        style="margin-left: auto; color: var(--accent-red)"></i></a></li>
-                            <?php
-                        endif; ?>
+                            <?php if ($canCreateDb): ?>
+                                <li><a href="create-db" class="menu-link"><i class="ph ph-plus-circle"></i> Crear Inventario</a>
+                                </li>
+                                <?php
+                            else: ?>
+                                <li style="opacity: 0.5;" title="Límite del Plan Básico alcanzado."><a href="#"
+                                        onclick="window.showLockedFeatureToast('Múltiples Inventarios'); return false;"
+                                        class="menu-link"><i class="ph ph-plus-circle"></i> Crear Inventario <i
+                                            class="ph-fill ph-lock-key"
+                                            style="margin-left: auto; color: var(--accent-red)"></i></a></li>
+                                <?php
+                            endif; ?>
                         <?php endif; ?>
                     </ul>
 
@@ -316,7 +333,8 @@ try {
                                     Proveedores</button></li>
                             <li><button class="menu-btn" data-target-view="employees"><i
                                         class="ph ph-identification-badge"></i> Empleados</button></li>
-                            <li><button class="menu-btn" data-target-view="deliveries"><i class="ph ph-truck"></i> Envíos</button></li>
+                            <li><button class="menu-btn" data-target-view="deliveries"><i class="ph ph-truck"></i>
+                                    Envíos</button></li>
                             <?php
                         else: ?>
                             <div
@@ -362,7 +380,8 @@ try {
                     <ul>
                         <li><button class="menu-btn" data-target-view="tutorials"><i class="ph ph-book-open"></i>
                                 Tutoriales</button></li>
-                        <li><button class="menu-btn" onclick="window.location.href='settings.php?tab=soporte'"><i class="ph ph-lifebuoy"></i>
+                        <li><button class="menu-btn" onclick="window.location.href='settings.php?tab=soporte'"><i
+                                    class="ph ph-lifebuoy"></i>
                                 Soporte</button></li>
                     </ul>
                 </nav>
@@ -373,7 +392,7 @@ try {
                 <div id="view-db" class="dashboard-view">
                     <div class="table-container">
                         <div class="table-header">
-                            <div style="display: flex; align-items: center; gap: 10px; height: 100%; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
                                 <h2 id="table-title"
                                     style="margin: 0; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     Cargando...
@@ -420,28 +439,51 @@ try {
                                     </div>
                                 </div>
 
-                                <button id="manage-columns-btn" class="btn btn-secondary"
-                                    title="Ocultar o mostrar columnas" onclick="window.openColumnManager()">
-                                    <i class="ph ph-eye" style="font-size: 1.2rem; font-weight: bold;"></i>
-                                </button>
+                                <div class="actions-dropdown-wrapper">
+                                    <button type="button" id="actions-dropdown-btn" class="btn btn-secondary" style="display: none; align-items: center; gap: 8px;">
+                                        <i class="ph ph-dots-three-vertical" style="font-size: 1.2rem;"></i> Acciones
+                                    </button>
+                                    <div class="actions-list-container">
+                                        <button id="manage-columns-btn" class="btn btn-secondary"
+                                            title="Ocultar o mostrar columnas" onclick="window.openColumnManager()">
+                                            <i class="ph ph-eye" style="font-size: 1.2rem; font-weight: bold;"></i>
+                                            <span class="btn-text">Columnas</span>
+                                        </button>
 
+                                        <button id="open-export-modal-btn" class="btn btn-secondary"
+                                            style="display: flex; align-items: center; gap: 8px;" title="Exportar a Excel"
+                                            onclick="window.openExportModal()">
+                                            <i class="ph ph-export"></i> Exportar
+                                        </button>
 
+                                        <button id="open-import-modal-btn" class="btn btn-secondary"
+                                            style="display: flex; align-items: center; gap: 8px;">
+                                            <i class="ph ph-download-simple"></i> Importar
+                                        </button>
 
-                                <button id="open-export-modal-btn" class="btn btn-secondary"
-                                    style="display: flex; align-items: center; gap: 8px;" title="Exportar a Excel"
-                                    onclick="window.openExportModal()">
-                                    <i class="ph ph-export"></i> Exportar
-                                </button>
+                                        <!-- Catálogo Dropdown -->
+                                        <div class="catalog-dropdown-wrapper" style="position: relative; display: inline-block;">
+                                            <button type="button" id="catalog-actions-btn" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px;" title="Acciones del catálogo público">
+                                                <i class="ph ph-storefront" style="font-size: 1.2rem;"></i> Catálogo
+                                            </button>
+                                            <div id="catalog-dropdown-menu" class="hidden" style="position: absolute; top: 100%; right: 0; background: white; border: 2px solid #1b1b1b; border-radius: 4px; box-shadow: 4px 4px 0px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; display: flex; flex-direction: column; gap: 4px; padding: 8px;">
+                                                <button class="btn btn-secondary" onclick="window.bulkToggleCatalogVisibility(true)" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
+                                                    <i class="ph-fill ph-eye" style="color: var(--accent-green);"></i> Publicar Todo
+                                                </button>
+                                                <button class="btn btn-secondary" onclick="window.bulkToggleCatalogVisibility(false)" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
+                                                    <i class="ph ph-eye-slash" style="color: var(--accent-red);"></i> Ocultar Todo
+                                                </button>
+                                                <div style="height: 1px; background: #ddd; margin: 4px 0;"></div>
+                                                <button class="btn btn-secondary" onclick="window.viewMyPublicCatalog()" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
+                                                    <i class="ph ph-arrow-square-out"></i> Ver Catálogo
+                                                </button>
+                                            </div>
+                                        </div>
 
-                                <button id="open-import-modal-btn" class="btn btn-secondary"
-                                    style="display: flex; align-items: center; gap: 8px;">
-                                    <i class="ph ph-download-simple"></i> Importar Datos
-                                </button>
-
-
-
-                                <button id="add-row-btn" class="btn btn-primary" style="width: auto; margin-top: 0;">+
-                                    Añadir Fila</button>
+                                        <button id="add-row-btn" class="btn btn-primary" style="width: auto; margin-top: 0;">+
+                                            Añadir Fila</button>
+                                    </div>
+                                </div>
                             </div>
 
                         </div>
@@ -604,6 +646,22 @@ try {
                                                             <span>Dinero ($)</span>
                                                         </label>
                                                     </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="rustic-block" style="margin-bottom: 1.5rem;">
+                                            <div class="block-header"
+                                                style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem;">
+                                                <input type="checkbox" id="feature-image" style="margin: 0;">
+                                                <span class="option-label"
+                                                    style="font-weight: bold; font-size: 1.1rem; color: var(--accent-color);">Columna de Imagen en Catálogo</span>
+                                            </div>
+                                            <div class="reveal-wrapper" id="wrap-image">
+                                                <div class="reveal-inner" style="padding-left: 25px;">
+                                                    <p
+                                                        style="font-size: 0.9rem; color: #666; margin-top: 0; margin-bottom: 1rem; line-height: 1.4;">
+                                                        Habilita una columna <b>"imagen_url"</b> en tu tabla para ingresar los enlaces (links) de las fotos. Se mostrarán automáticamente en tu catálogo público.
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -810,7 +868,8 @@ try {
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">Invitá a otras personas a tu
                                 inventario y administrá sus permisos.</p>
                         </div>
-                        <div id="collab-quota-placeholder-mobile" class="mobile-only-quota-row" style="display: none;"></div>
+                        <div id="collab-quota-placeholder-mobile" class="mobile-only-quota-row" style="display: none;">
+                        </div>
                         <div class="collab-header-buttons" style="display: flex; gap: 10px;">
                             <button id="add-slots-btn" class="btn btn-secondary hidden"
                                 style="margin:0; width:auto; white-space:nowrap; border-color: var(--accent-color); color: var(--accent-color);">
@@ -829,8 +888,10 @@ try {
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <i class="ph-bold ph-warning-amber" style="font-size: 1.8rem; color: #d97706;"></i>
                             <div>
-                                <strong style="color: #92400e; font-size: 1rem; display: block;">Pago Pendiente de Colaboradores</strong>
-                                <span id="debt-warning-text" style="color: #b45309; font-size: 0.85rem;">Tenés una deuda pendiente de $20.000 por slots agregados. Plazo restante: 48 horas.</span>
+                                <strong style="color: #92400e; font-size: 1rem; display: block;">Pago Pendiente de
+                                    Colaboradores</strong>
+                                <span id="debt-warning-text" style="color: #b45309; font-size: 0.85rem;">Tenés una deuda
+                                    pendiente de $20.000 por slots agregados. Plazo restante: 48 horas.</span>
                             </div>
                         </div>
                         <a id="pay-debt-btn" href="#" target="_blank" class="btn btn-primary"
@@ -1628,8 +1689,7 @@ try {
                 <div class="m-checker-search-row">
                     <div class="m-checker-search-box">
                         <i class="ph ph-magnifying-glass m-checker-search-icon"></i>
-                        <input type="text" id="checker-input"
-                            class="m-checker-input"
+                        <input type="text" id="checker-input" class="m-checker-input"
                             placeholder="Buscar producto o escanear código...">
                     </div>
                     <button onclick="window.performPriceCheck()" class="m-checker-search-btn">
@@ -1693,16 +1753,20 @@ try {
                     onclick="document.getElementById('mobile-metrics-modal').classList.add('hidden')">&times;</button>
             </div>
             <div class="period-selector" style="padding: 15px 20px 5px 20px; margin-bottom: 0; gap: 10px;">
-                <button id="metrics-btn-today" class="period-btn metrics-period-btn active" onclick="window.loadMobileMetricsData('today')">
+                <button id="metrics-btn-today" class="period-btn metrics-period-btn active"
+                    onclick="window.loadMobileMetricsData('today')">
                     Hoy
                 </button>
-                <button id="metrics-btn-month" class="period-btn metrics-period-btn" onclick="window.loadMobileMetricsData('month')">
+                <button id="metrics-btn-month" class="period-btn metrics-period-btn"
+                    onclick="window.loadMobileMetricsData('month')">
                     Mes
                 </button>
-                <button id="metrics-btn-year" class="period-btn metrics-period-btn" onclick="window.loadMobileMetricsData('year')">
+                <button id="metrics-btn-year" class="period-btn metrics-period-btn"
+                    onclick="window.loadMobileMetricsData('year')">
                     Año
                 </button>
-                <button id="metrics-btn-total" class="period-btn metrics-period-btn" onclick="window.loadMobileMetricsData('total')">
+                <button id="metrics-btn-total" class="period-btn metrics-period-btn"
+                    onclick="window.loadMobileMetricsData('total')">
                     Total
                 </button>
             </div>
@@ -1735,7 +1799,8 @@ try {
                     <div class="metric-card-mobile"
                         style="background: #fff; color: #1b1b1b; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 2px solid #1b1b1b; display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <small style="color: #888;">Balance Neto (<span id="mobile-m-period-label">Hoy</span>)</small>
+                            <small style="color: #888;">Balance Neto (<span
+                                    id="mobile-m-period-label">Hoy</span>)</small>
                             <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
                                 <span id="mobile-m-balance">$0.00</span>
                                 <span id="mobile-m-balance-arrow"></span>
@@ -1814,7 +1879,8 @@ try {
                 <button class="m-entity-back-btn" onclick="window.closeMobileEntityDetail()" type="button">
                     <i class="ph-bold ph-arrow-left"></i>
                 </button>
-                <div class="m-entity-title" id="m-detail-title" style="flex:1; text-align:center; margin:0 8px;">Perfil</div>
+                <div class="m-entity-title" id="m-detail-title" style="flex:1; text-align:center; margin:0 8px;">Perfil
+                </div>
                 <button class="m-entity-close-btn" onclick="window.closeMobileEntityDetail(true)" type="button">
                     <i class="ph-bold ph-x"></i>
                 </button>
@@ -1863,7 +1929,8 @@ try {
                     </div>
                 </div>
                 <div class="m-history-header-right">
-                    <button class="m-history-refresh-btn" id="m-history-refresh-btn" onclick="window.openMobileHistory()">
+                    <button class="m-history-refresh-btn" id="m-history-refresh-btn"
+                        onclick="window.openMobileHistory()">
                         <i class="ph ph-arrows-clockwise"></i>
                     </button>
                     <button class="m-history-close-btn" onclick="window.closeMobileHistory()">
@@ -1886,7 +1953,8 @@ try {
                 <button class="m-history-tab" id="m-hist-tab-purchase" onclick="window.filterMobileHistory('purchase')">
                     <i class="ph ph-truck"></i> Compras / Gastos
                 </button>
-                <button class="m-history-tab" id="m-hist-tab-collaborator" onclick="window.filterMobileHistory('collaborator')">
+                <button class="m-history-tab" id="m-hist-tab-collaborator"
+                    onclick="window.filterMobileHistory('collaborator')">
                     <i class="ph ph-users-three"></i> Equipo
                 </button>
                 <button class="m-history-tab" id="m-hist-tab-customer" onclick="window.filterMobileHistory('customer')">
@@ -1898,7 +1966,8 @@ try {
                 <button class="m-history-tab" id="m-hist-tab-employee" onclick="window.filterMobileHistory('employee')">
                     <i class="ph ph-identification-card"></i> Empleados
                 </button>
-                <button class="m-history-tab" id="m-hist-tab-payment_method" onclick="window.filterMobileHistory('payment_method')">
+                <button class="m-history-tab" id="m-hist-tab-payment_method"
+                    onclick="window.filterMobileHistory('payment_method')">
                     <i class="ph ph-credit-card"></i> Métodos Pago
                 </button>
             </div>
@@ -1959,10 +2028,12 @@ try {
 
             <!-- TABS -->
             <div class="m-collab-tabs" id="m-collab-tabs">
-                <button class="m-collab-tab active" onclick="window.switchMobileCollabTabNative('list')" id="m-tab-list">
+                <button class="m-collab-tab active" onclick="window.switchMobileCollabTabNative('list')"
+                    id="m-tab-list">
                     <i class="ph ph-users"></i> Equipo
                 </button>
-                <button class="m-collab-tab" onclick="window.switchMobileCollabTabNative('permissions')" id="m-tab-permissions">
+                <button class="m-collab-tab" onclick="window.switchMobileCollabTabNative('permissions')"
+                    id="m-tab-permissions">
                     <i class="ph ph-sliders"></i> Permisos
                 </button>
             </div>
@@ -2012,7 +2083,8 @@ try {
                     </div>
                 </div>
                 <div class="m-deliv-header-right">
-                    <button id="m-deliv-refresh-btn" class="m-deliv-refresh-btn" onclick="window._loadMobileDeliveriesData()">
+                    <button id="m-deliv-refresh-btn" class="m-deliv-refresh-btn"
+                        onclick="window._loadMobileDeliveriesData()">
                         <i class="ph ph-arrows-clockwise"></i>
                     </button>
                     <button class="m-deliv-close-btn" onclick="window.closeMobileDeliveries()">
@@ -2023,10 +2095,12 @@ try {
 
             <!-- TABS (solo para admin/owner) -->
             <div class="m-deliv-tabs" id="m-deliv-tabs">
-                <button class="m-deliv-tab active" onclick="window.switchMobileDelivTab('pending')" id="m-deliv-tab-pending">
+                <button class="m-deliv-tab active" onclick="window.switchMobileDelivTab('pending')"
+                    id="m-deliv-tab-pending">
                     <i class="ph ph-clock"></i> Pendientes
                 </button>
-                <button class="m-deliv-tab" onclick="window.switchMobileDelivTab('completed')" id="m-deliv-tab-completed">
+                <button class="m-deliv-tab" onclick="window.switchMobileDelivTab('completed')"
+                    id="m-deliv-tab-completed">
                     <i class="ph ph-check-circle"></i> Finalizados
                 </button>
             </div>
@@ -2066,7 +2140,7 @@ try {
 
     <script type="module" src="assets/js/import.js?v=1.3"></script>
     <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
-    <script type="module" src="assets/js/dashboard.js?v=2.2"></script>
+    <script type="module" src="assets/js/dashboard.js?v=2.7"></script>
     <script type="module" src="assets/js/sales/sales.js?v=2.2"></script>
     <script type="module" src="assets/js/purchases/purchases.js?v=2.3"></script>
     <script type="module" src="assets/js/history/history.js?v=1.3"></script>

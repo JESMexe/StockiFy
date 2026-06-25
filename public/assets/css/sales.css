@@ -1331,10 +1331,59 @@ body.cashier-mode-active #sale-delivery-section {
     border: 2px solid var(--accent-color) !important;
     color: var(--accent-color) !important;
     font-weight: bold !important;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    /* Added transform and box-shadow to transition for smooth active/hover animation */
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 #sales-cashier-mode-btn:hover {
     background-color: var(--accent-color-quat-opacity) !important;
     color: var(--accent-color) !important;
+}
+
+/* Added active state for smooth clicking animation */
+#sales-cashier-mode-btn:active {
+    transform: scale(0.95) !important;
+    background-color: var(--accent-color-medium-opacity) !important;
+}
+
+/* Layout for Cashier Mode */
+body.cashier-mode-active {
+    overflow: hidden !important;
+}
+
+body.cashier-mode-active #create-sale-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--bg-color, #f4f5f7);
+    z-index: 99999;
+    backdrop-filter: none !important;
+}
+
+body.cashier-mode-active #create-sale-modal .modal-content {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+}
+
+body.cashier-mode-active #sale-modal-body {
+    flex: 1;
+    height: calc(100vh - 70px) !important; 
+    overflow: hidden;
+}
+
+body.cashier-mode-active #sale-modal-body .purchase-col {
+    height: 100% !important;
+    overflow-y: auto;
 }

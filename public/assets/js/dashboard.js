@@ -371,9 +371,34 @@ async function renderTable(columns, data) {
                             </div>
                         </td>`;
                     }
+                    if (isImageCol) {
+                        const trimmedUrl = (row[col] ?? '').trim();
+                        const isLocalPath = trimmedUrl.includes('assets/img/');
+                        const displayVal = isLocalPath ? 'Imagen subida' : trimmedUrl;
+                        return `
+                        <td${tdStyle}>
+                            <div class="image-upload-wrapper" style="display: flex; gap: 4px; align-items: center; border: 1px solid #1b1b1b; padding: 2px; border-radius: 4px; background: #fff;" ondragover="event.preventDefault(); this.style.borderColor='var(--accent-color)';" ondragleave="this.style.borderColor='#1b1b1b';" ondrop="window.handleCellImageDrop(event, this)">
+                                <input type="text" class="editing-input form-control image-url-input" data-col="${col}" data-real-url="${trimmedUrl}" value="${displayVal}" placeholder="URL" autocomplete="off" data-lpignore="true" style="flex-grow: 1; border: none; outline: none; height: 34px; padding: 0 5px; box-shadow: none;" oninput="this.dataset.realUrl = this.value">
+                                <button type="button" class="btn btn-secondary btn-upload-image" title="Subir Imagen" style="padding: 0 8px; height: 34px; margin: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #1b1b1b; cursor: pointer; border-radius: 4px;" onclick="window.triggerCellImageUpload(this)">
+                                    <i class="ph ph-camera" style="font-size: 1.1rem; color: var(--accent-color);"></i>
+                                </button>
+                                <input type="file" class="cell-image-file-input" accept="image/*" style="display: none;" onchange="window.handleCellImageUpload(this)">
+                            </div>
+                        </td>`;
+                    }
                     return `<td${tdStyle}><input type="text" class="editing-input form-control" data-col="${col}" value="${row[col] ?? ''}" autocomplete="off" data-lpignore="true" style="width:100%"></td>`;
                 }
-                return `<td class="${cellClass}"${tdStyle}>${value}</td>`;
+
+                let cellValue = value;
+                const isImageCol = (col.toLowerCase() === columnMapping.image?.toLowerCase() || col.toLowerCase() === 'imagen_url');
+                if (isImageCol && typeof value === 'string' && value.trim().length > 0) {
+                    const trimmed = value.trim();
+                    const isLocalPath = trimmed.includes('assets/img/');
+                    const displayLabel = isLocalPath ? 'Imagen' : (trimmed.length > 20 ? trimmed.substring(0, 15) + '...' : trimmed);
+                    cellValue = `<span title="${trimmed}" style="display: inline-flex; align-items: center; gap: 4px; cursor: help; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;"><i class="ph ph-image"></i> ${displayLabel}</span>`;
+                }
+
+                return `<td class="${cellClass}"${tdStyle}>${cellValue}</td>`;
             }).join('');
 
             let gainHTML = '';
@@ -449,9 +474,16 @@ async function renderTable(columns, data) {
                         </div>
                     </td>`;
                 } else {
+                    const isPublicVisible = (row.public_visible == 1);
+                    const eyeIcon = isPublicVisible ? 'ph-fill ph-eye' : 'ph ph-eye-slash';
+                    const eyeColor = isPublicVisible ? 'color: var(--accent-green);' : 'color: var(--color-gray);';
+                    const eyeTitle = isPublicVisible ? 'Público: Visible en el catálogo' : 'Privado: Oculto del catálogo';
                     actionsHTML = `
                     <td class="actions-cell">
                         <div class="flex-row">
+                            <button class="btn-icon action-catalog-toggle" title="${eyeTitle}" onclick="window.toggleProductVisibility('${rowId}', this)" style="border: none; background: transparent; cursor: pointer; padding: 4px;">
+                                <i class="${eyeIcon}" style="${eyeColor} font-size: 1.25rem;"></i>
+                            </button>
                             <button class="btn-icon action-edit" title="Editar Fila" onclick="window.enableEditRow(this, '${rowId}')"><i class="ph ph-pencil-simple"></i></button>
                             <button class="btn-icon action-history" title="Ver Fecha Creación" onclick="window.showRowHistory('${row.created_at}', '${rowId}')"><i class="ph ph-clock"></i></button>
                             <button class="btn-icon action-delete" title="Eliminar Fila" onclick="window.confirmDeleteRow('${rowId}')"><i class="ph ph-trash" style="color: var(--accent-red);"></i></button>
@@ -632,7 +664,11 @@ window.saveRowChanges = async (btn, id) => {
 
     inputs.forEach(input => {
         const colName = input.dataset.column || input.dataset.col;
-        const val = input.value;
+        
+        let val = input.value;
+        if (input.classList.contains('image-url-input') && val === 'Imagen subida') {
+            val = input.dataset.realUrl || val;
+        }
 
         if (!colName || colName === 'undefined' || colName === 'null') {
             console.warn("Input ignorado por falta de nombre de columna:", input);
@@ -4249,6 +4285,7 @@ async function setupRecomendedColumns() {
     if (featForm) {
         const chkMin = document.getElementById('feature-min-stock');
         const chkGain = document.getElementById('feature-gain');
+        const chkImage = document.getElementById('feature-image');
         const radiosGain = document.getElementsByName('gain-type');
 
         const radiosExchange = document.getElementsByName('exchange-type');
@@ -4309,6 +4346,7 @@ async function setupRecomendedColumns() {
         if (prefs.features) {
             if (chkMin) chkMin.checked = !!prefs.features.min_stock;
             if (chkGain) chkGain.checked = !!prefs.features.gain;
+            if (chkImage) chkImage.checked = !!prefs.features.image;
             radiosGain.forEach(r => { if (r.value === prefs.features.gain_type) r.checked = true; });
         }
 
@@ -4374,11 +4412,32 @@ async function setupRecomendedColumns() {
 
         featForm.onsubmit = async (e) => {
             e.preventDefault();
+
+            // Si el checkbox de imagen está activo, verificar/crear la columna física
+            if (chkImage && chkImage.checked) {
+                const hasImageCol = currentTableColumns.some(col => col.toLowerCase() === 'imagen_url');
+                if (!hasImageCol) {
+                    pop_ups.info("Creando columna de imágenes...", "Espera");
+                    try {
+                        const colRes = await api.manageTableColumn('add_column', { columnName: 'imagen_url' });
+                        if (!colRes.success) {
+                            pop_ups.error("Error al crear columna física de imágenes: " + colRes.message);
+                            return;
+                        }
+                        currentTableColumns.push('imagen_url');
+                    } catch (err) {
+                        pop_ups.error("Error al conectar para crear columna.");
+                        return;
+                    }
+                }
+            }
+
             const newFeat = {
                 min_stock: chkMin ? chkMin.checked : false,
                 min_stock_val: 0,
                 gain: chkGain ? chkGain.checked : false,
-                gain_type: document.querySelector('input[name="gain-type"]:checked')?.value || 'fixed'
+                gain_type: document.querySelector('input[name="gain-type"]:checked')?.value || 'fixed',
+                image: chkImage ? chkImage.checked : false
             };
 
             const exType = document.querySelector('input[name="exchange-type"]:checked')?.value || 'api';
@@ -4391,14 +4450,26 @@ async function setupRecomendedColumns() {
             const chkReport = document.getElementById('feature-daily-report');
             const reportEnabled = chkReport ? chkReport.checked : true;
 
+            // Actualizar mapeo de columnas si cambia la feature de imagen
+            const updatedMapping = { ...columnMapping };
+            if (chkImage && chkImage.checked) {
+                updatedMapping.image = 'imagen_url';
+                updatedMapping.images = 'imagen_url';
+            } else {
+                updatedMapping.image = '';
+                updatedMapping.images = '';
+            }
+
             const res = await api.setCurrentInventoryPreferences({
                 features: newFeat,
                 exchange_config: newExchangeConfig,
-                report_enabled: reportEnabled
+                report_enabled: reportEnabled,
+                mapping: updatedMapping
             });
             if (res.success) {
                 activeFeatures = newFeat;
                 prefs.exchange_config = newExchangeConfig;
+                columnMapping = updatedMapping;
                 pop_ups.success("Configuración aplicada.");
 
                 setTimeout(() => toggleExchangeViews(), 100);
@@ -4421,6 +4492,7 @@ async function setupRecomendedColumns() {
         };
         setupToggle(chkMin, 'wrap-min-stock');
         setupToggle(chkGain, 'wrap-gain');
+        setupToggle(chkImage, 'wrap-image');
     }
 
     const currencyForm = document.getElementById('currency-conversion-form');
@@ -5097,6 +5169,42 @@ export async function loadTableData() {
 }
 
 function setupEventListeners() {
+    // Toggle sidebar for short screens (tablet landscape)
+    const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+    const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+    const container = document.querySelector('.dashboard-container');
+    if (toggleSidebarBtn) {
+        toggleSidebarBtn.addEventListener('click', () => {
+            if (container) {
+                container.classList.toggle('sidebar-collapsed');
+            }
+        });
+    }
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', () => {
+            if (container) {
+                container.classList.add('sidebar-collapsed');
+            }
+        });
+    }
+
+    // Actions dropdown menu toggle for short screens
+    const actionsDropdownBtn = document.getElementById('actions-dropdown-btn');
+    const actionsListContainer = document.querySelector('.actions-list-container');
+    if (actionsDropdownBtn && actionsListContainer) {
+        actionsDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            actionsListContainer.classList.toggle('show');
+        });
+        
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!actionsDropdownBtn.contains(e.target) && !actionsListContainer.contains(e.target)) {
+                actionsListContainer.classList.remove('show');
+            }
+        });
+    }
+
     const searchInput = document.getElementById('main-table-search');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -5164,6 +5272,78 @@ function setupEventListeners() {
 
 
 window.loadTableData = loadTableData;
+
+window.triggerCellImageUpload = (btn) => {
+    const wrapper = btn.closest('.image-upload-wrapper');
+    const fileInput = wrapper.querySelector('.cell-image-file-input');
+    if (fileInput) fileInput.click();
+};
+
+window.handleCellImageUpload = async (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    await window.uploadImageFile(file, input.closest('.image-upload-wrapper'));
+};
+
+window.handleCellImageDrop = async (e, wrapper) => {
+    e.preventDefault();
+    wrapper.style.borderColor = '#1b1b1b';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        await window.uploadImageFile(file, wrapper);
+    } else {
+        pop_ups.warning("Solo se permiten archivos de imagen.");
+    }
+};
+
+window.uploadImageFile = async (file, wrapper) => {
+    const inventoryId = window.activeInventoryId;
+    if (!inventoryId) {
+        pop_ups.error("No hay un inventario activo seleccionado.");
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        pop_ups.error("La imagen no debe superar los 5MB.");
+        return;
+    }
+
+    const textInput = wrapper.querySelector('.image-url-input');
+    const btn = wrapper.querySelector('.btn-upload-image');
+    const originalBtnHTML = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner ph-spin" style="font-size: 1.1rem; color: var(--accent-color);"></i>';
+
+    try {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('inventory_id', inventoryId);
+
+        const response = await fetch('/api/catalog/upload-image.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            if (textInput) {
+                textInput.dataset.realUrl = data.url;
+                textInput.value = "Imagen subida";
+                textInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            pop_ups.success("Imagen subida correctamente.");
+        } else {
+            pop_ups.error(data.error || "Error al subir la imagen.");
+        }
+    } catch (err) {
+        console.error("Upload error:", err);
+        pop_ups.error("Error de conexión al subir la imagen.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHTML;
+    }
+};
 
 if (document.getElementById('data-table')) {
     document.addEventListener('DOMContentLoaded', init);
@@ -5470,3 +5650,185 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// ============================================================
+// Lógica del Catálogo Público e Interacciones de Visibilidad
+// ============================================================
+
+// Alternar visibilidad de un único producto
+window.toggleProductVisibility = async (productId, btn) => {
+    const inventoryId = window.activeInventoryId;
+    if (!inventoryId) {
+        pop_ups.error('No hay un inventario activo seleccionado.');
+        return;
+    }
+
+    const icon = btn.querySelector('i');
+    const isCurrentlyVisible = icon.classList.contains('ph-fill');
+    const newVisibility = !isCurrentlyVisible;
+
+    // Feedback visual inmediato
+    btn.disabled = true;
+    icon.className = 'ph ph-spinner-gap';
+    icon.style.animation = 'spin 1.2s infinite linear';
+
+    try {
+        const response = await fetch('/api/catalog/toggle-product-visibility.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                product_id: productId,
+                inventory_id: inventoryId,
+                visible: newVisibility
+            })
+        });
+
+        const data = await response.json();
+        btn.disabled = false;
+        icon.style.animation = '';
+
+        if (data.success) {
+            if (newVisibility) {
+                icon.className = 'ph-fill ph-eye';
+                icon.style.color = 'var(--accent-green)';
+                btn.title = 'Público: Visible en el catálogo';
+            } else {
+                icon.className = 'ph ph-eye-slash';
+                icon.style.color = 'var(--color-gray)';
+                btn.title = 'Privado: Oculto del catálogo';
+            }
+
+            // Actualizar estado en local cache allData si existe para no perder el estado
+            if (window.allData) {
+                const item = window.allData.find(p => (p.id || p.Id || p.ID) == productId);
+                if (item) item.public_visible = newVisibility ? 1 : 0;
+            }
+
+            pop_ups.success(data.message);
+        } else {
+            pop_ups.error(data.error || 'Error al cambiar visibilidad.');
+            // Restaurar estado visual
+            icon.className = isCurrentlyVisible ? 'ph-fill ph-eye' : 'ph ph-eye-slash';
+            icon.style.color = isCurrentlyVisible ? 'var(--accent-green)' : 'var(--color-gray)';
+        }
+    } catch (e) {
+        btn.disabled = false;
+        icon.style.animation = '';
+        icon.className = isCurrentlyVisible ? 'ph-fill ph-eye' : 'ph ph-eye-slash';
+        icon.style.color = isCurrentlyVisible ? 'var(--accent-green)' : 'var(--color-gray)';
+        console.error(e);
+        pop_ups.error('Error de conexión con el servidor.');
+    }
+};
+
+// Cambio masivo de visibilidad
+window.bulkToggleCatalogVisibility = async (visible) => {
+    const inventoryId = window.activeInventoryId;
+    if (!inventoryId) {
+        pop_ups.error('No hay un inventario activo seleccionado.');
+        return;
+    }
+
+    const actionText = visible ? 'publicar todos los productos en el catálogo público' : 'ocultar todos los productos del catálogo público';
+    const confirmed = await pop_ups.confirm('¿Confirmar acción masiva?', `¿Estás seguro de que querés ${actionText}?`);
+    if (!confirmed) return;
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Procesando...',
+            text: 'Actualizando visibilidad del inventario.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+    } else {
+        pop_ups.info('Actualizando visibilidad del inventario...', 'Procesando...');
+    }
+
+    try {
+        const response = await fetch('/api/catalog/bulk-toggle-visibility.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                inventory_id: inventoryId,
+                visible: visible
+            })
+        });
+
+        const data = await response.json();
+        if (typeof Swal !== 'undefined') {
+            Swal.close();
+        }
+
+        if (data.success) {
+            pop_ups.success(data.message, 'Acción masiva exitosa');
+            // Recargar datos y renderizar tabla
+            if (typeof window.loadTableData === 'function') {
+                window.loadTableData();
+            }
+        } else {
+            pop_ups.error(data.error || 'Error al cambiar visibilidad masiva.');
+        }
+    } catch (e) {
+        if (typeof Swal !== 'undefined') {
+            Swal.close();
+        }
+        console.error(e);
+        pop_ups.error('Error de conexión con el servidor.');
+    }
+};
+
+// Ver catálogo online público
+window.viewMyPublicCatalog = async () => {
+    const inventoryId = window.activeInventoryId;
+    if (!inventoryId) {
+        pop_ups.error('No hay un inventario activo seleccionado.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/catalog/get-catalog-slug.php?inventory_id=${inventoryId}`);
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.catalog_active && data.catalog_slug) {
+                const url = `/catalogo/${data.catalog_slug}`;
+                window.open(url, '_blank');
+            } else {
+                const goToSettings = await pop_ups.confirm('Catálogo Inactivo', 'El catálogo de este inventario está inactivo o no tiene un slug asignado. ¿Querés ir a Ajustes para habilitarlo?');
+                if (goToSettings) {
+                    window.location.href = 'settings.php?tab=catalogo';
+                }
+            }
+        } else {
+            pop_ups.error(data.error || 'No se pudo obtener el estado del catálogo.');
+        }
+    } catch (e) {
+        console.error(e);
+        pop_ups.error('Error de conexión con el servidor.');
+    }
+};
+
+// Inicializar el comportamiento del dropdown de Catálogo
+document.addEventListener('click', (e) => {
+    const catalogActionsBtn = document.getElementById('catalog-actions-btn');
+    const catalogDropdownMenu = document.getElementById('catalog-dropdown-menu');
+
+    if (!catalogActionsBtn || !catalogDropdownMenu) return;
+
+    if (catalogActionsBtn.contains(e.target)) {
+        e.stopPropagation();
+        catalogDropdownMenu.classList.toggle('hidden');
+    } else if (!catalogDropdownMenu.contains(e.target)) {
+        catalogDropdownMenu.classList.add('hidden');
+    }
+});
+
+// Estilos de rotación de spin para el cargador de ojo
+const style = document.createElement('style');
+style.innerHTML = `
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+`;
+document.head.appendChild(style);

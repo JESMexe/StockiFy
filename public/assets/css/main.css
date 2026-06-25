@@ -101,7 +101,8 @@ header {
     padding: 1rem 2rem;
     border-bottom: var(--border-strong);
     background-color: var(--color-white);
-    position: relative; /* Se sobrescribe en index.css a fixed */
+    position: relative;
+    /* Se sobrescribe en index.css a fixed */
     z-index: 1000;
     transition: transform 0.3s ease-in-out;
 }
@@ -1529,6 +1530,7 @@ body.tour-active {
     transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
     -webkit-tap-highlight-color: transparent;
 }
+
 .btn-ticket-push:active {
     transform: translate(2px, 2px) !important;
     box-shadow: 0px 0px 0px var(--color-black, #1b1b1b) !important;
@@ -1538,7 +1540,8 @@ body.tour-active {
    FREE TRIAL CARD - PRICING SECTION
    ========================================================= */
 .pricing-trial-card {
-    background: var(--color-white); /* Sin violeta de fondo, fondo blanco puro */
+    background: var(--color-white);
+    /* Sin violeta de fondo, fondo blanco puro */
     border: 2px solid var(--color-black);
     border-radius: 12px;
     padding: 2.2rem 2rem;
@@ -1561,7 +1564,8 @@ body.tour-active {
     position: absolute;
     top: -12px;
     left: 2rem;
-    background: var(--accent-color); /* Reemplazado por var(--accent-color) */
+    background: var(--accent-color);
+    /* Reemplazado por var(--accent-color) */
     color: var(--color-white);
     padding: 4px 14px;
     border-radius: 20px;
@@ -1620,7 +1624,8 @@ body.tour-active {
 }
 
 .pricing-trial-card .trial-card-features li i {
-    color: var(--accent-color); /* Reemplazado por var(--accent-color) */
+    color: var(--accent-color);
+    /* Reemplazado por var(--accent-color) */
     margin-right: 8px;
     font-size: 1.2rem;
     flex-shrink: 0;
@@ -1643,7 +1648,8 @@ body.tour-active {
 .pricing-trial-card .trial-card-price .price {
     font-size: 3rem;
     font-weight: 900;
-    color: var(--accent-color); /* Reemplazado por var(--accent-color) */
+    color: var(--accent-color);
+    /* Reemplazado por var(--accent-color) */
     line-height: 1;
 }
 
@@ -1655,28 +1661,37 @@ body.tour-active {
 
 .pricing-trial-card .btn-pricing {
     margin-top: 0.5rem !important;
-    background: var(--color-white) !important; /* Fondo blanco en estado normal */
-    color: var(--color-black) !important; /* Texto negro */
-    border-color: var(--color-black) !important; /* Borde negro */
+    background: var(--color-white) !important;
+    /* Fondo blanco en estado normal */
+    color: var(--color-black) !important;
+    /* Texto negro */
+    border-color: var(--color-black) !important;
+    /* Borde negro */
     width: 100%;
-    transform: translate(0, 0); /* Sin transformaciones iniciales */
-    box-shadow: none; /* Sin sombras iniciales */
+    transform: translate(0, 0);
+    /* Sin transformaciones iniciales */
+    box-shadow: none;
+    /* Sin sombras iniciales */
 }
 
 .pricing-trial-card .btn-pricing:hover {
-    background: var(--color-white) !important; 
+    background: var(--color-white) !important;
     color: var(--color-black) !important;
     border-color: var(--color-black) !important;
-    transform: translate(-5px, -5px) !important; /* Desplazamiento en hover */
-    box-shadow: 5px 5px 0px var(--color-black) !important; /* Sombra en hover */
+    transform: translate(-5px, -5px) !important;
+    /* Desplazamiento en hover */
+    box-shadow: 5px 5px 0px var(--color-black) !important;
+    /* Sombra en hover */
 }
 
 .pricing-trial-card .btn-pricing:active {
     background: var(--color-white) !important;
     color: var(--color-black) !important;
     border-color: var(--color-black) !important;
-    transform: translate(2px, 2px) !important; /* Desplazamiento en active */
-    box-shadow: 1px 1px 0px var(--color-black) !important; /* Sombra en active */
+    transform: translate(2px, 2px) !important;
+    /* Desplazamiento en active */
+    box-shadow: 1px 1px 0px var(--color-black) !important;
+    /* Sombra en active */
 }
 
 /* Margen extra para la tarjeta de prueba en about-us */
@@ -1691,13 +1706,13 @@ body.tour-active {
         margin: 1.5rem 1rem;
         max-width: calc(100% - 2rem);
     }
-    
+
     .pricing-trial-card .trial-card-content {
         flex-direction: column;
         align-items: stretch;
         gap: 1.5rem;
     }
-    
+
     .pricing-trial-card .trial-card-action {
         align-items: center;
         border-top: 2px dashed rgba(0, 0, 0, 0.1);
@@ -1705,16 +1720,16 @@ body.tour-active {
         width: 100%;
         min-width: 0;
     }
-    
+
     .pricing-trial-card .trial-card-features {
         flex-direction: column;
         gap: 0.6rem;
     }
-    
+
     .pricing-trial-card .trial-card-price {
         text-align: center;
     }
-    
+
     .pricing-trial-card .trial-card-info h3 {
         font-size: 1.5rem;
     }

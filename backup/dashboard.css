@@ -356,38 +356,17 @@
     max-width: 250px;
 }
 
-/* --- BOTÓN AÑADIR --- */
+/* --- BOTÃƒÆ’Ã¢â‚¬Å“N AÃƒÆ’Ã¢â‚¬ËœADIR --- */
 #add-row-btn,
 .new-transaction-btn {
     width: auto;
-    /* Ancho ajustado al texto */
+    /* Hago que el ancho se ajuste al texto */
+    padding: 8px 16px;
+    /* Uso el padding mÃƒÆ’Ã‚Â¡s chico, como los del header */
     margin-top: 0;
+    /* Quito el margen superior */
     white-space: nowrap;
-    /* Mismo alto que la barra de búsqueda (~48px) */
-    height: 48px;
-    padding: 0 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Uniform height for ALL action buttons in the table header (PC view) */
-#open-export-modal-btn,
-#open-import-modal-btn,
-#manage-columns-btn,
-#critical-filter-btn,
-#actions-dropdown-btn {
-    height: 48px;
-    padding: 0 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 0;
-}
-
-/* Icon-only manage-columns button: square */
-#manage-columns-btn {
-    padding: 0 12px;
+    /* Evito que el texto se parta en dos lÃƒÆ’Ã‚Â­neas */
 }
 
 /* Wrapper y Tabla */
@@ -5891,147 +5870,3 @@ table thead th:last-of-type,
 
 
 
-/* Default behavior for table actions dropdown (desktop view) */
-.actions-dropdown-wrapper {
-    display: flex;
-    align-items: center;
-}
-.actions-list-container {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-#actions-dropdown-btn {
-    display: none !important;
-}
-#manage-columns-btn .btn-text {
-    display: none;
-}
-#open-export-modal-btn .btn-text,
-#open-import-modal-btn .btn-text,
-#add-row-btn .btn-text {
-    display: inline;
-}
-/* ---- TABLET LANDSCAPE COMPACT MODE ---- */
-/* Targets tablets in landscape (e.g. Galaxy Tab A7 ~800px tall, Galaxy Tab S7 ~526px).
-   orientation:landscape + max-width:1400px excludes desktop monitors. */
-@media screen and (orientation: landscape) and (min-width: 768px) and (max-width: 1400px) and (max-height: 900px) {
-    
-    /* 1. Sidebar toggle logic & adjustments */
-    #toggle-sidebar-btn {
-        display: flex !important;
-    }
-    .dashboard-container.sidebar-collapsed .dashboard-sidebar {
-        display: none !important;
-    }
-    .dashboard-container.sidebar-collapsed .main-menu {
-        display: none !important;
-    }
-
-    .dashboard-sidebar, .main-menu {
-        padding: 1rem;
-    }
-    .main-menu h3 {
-        margin-top: 10px;
-        margin-bottom: 5px;
-        font-size: 1.1rem;
-    }
-    .main-menu li {
-        margin-bottom: 0.25rem;
-    }
-    .menu-btn, .menu-link {
-        padding: 8px 12px;
-        font-size: 0.95rem;
-    }
-
-    /* 2. Main content and view paddings */
-    .dashboard-main {
-        padding: 0.75rem;
-    }
-    .dashboard-view:not(#view-db):not(#config-db):not(#notifications):not(#providers):not(#customers):not(#receipts):not(#sales):not(#analysis):not(#users-manage):not(#history-log):not(#deliveries):not(#employees) {
-        padding: 1rem;
-    }
-    #config-db, #notifications, #providers, #customers, #receipts, #sales, #analysis, #employees, #deliveries, #users-manage {
-        padding: 1rem;
-    }
-
-    /* 3. Headers & Controls */
-    .table-header {
-        padding: 0.8rem 1rem !important; /* Margen superior/inferior interior incrementado */
-    }
-    .table-header h2 {
-        font-size: 1.25rem;
-    }
-
-    /* Make search wrapper wider so input is spacious */
-    .table-controls .search-wrapper {
-        min-width: 200px !important;
-        max-width: 350px !important;
-        flex: 1 1 auto !important;
-    }
-    #search-column-btn span {
-        display: none !important;
-    }
-    #search-column-btn i {
-        margin: 0 !important;
-    }
-
-    /* Shrink critical filter button to be narrower */
-    #critical-filter-btn {
-        width: 48px !important;
-        min-width: 48px !important;
-        padding: 0 !important;
-        margin-right: 0 !important;
-    }
-
-    /* Table actions dropdown activation */
-    #actions-dropdown-btn {
-        display: flex !important;
-    }
-    .actions-dropdown-wrapper {
-        position: relative;
-    }
-    .actions-list-container {
-        display: none;
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: var(--color-white);
-        border: var(--border-strong);
-        border-radius: var(--border-radius);
-        box-shadow: 6px 6px 0px var(--color-black);
-        z-index: 1000;
-        flex-direction: column;
-        padding: 12px;
-        gap: 12px;
-        min-width: 210px;
-        margin-top: 5px;
-    }
-    .actions-list-container.show {
-        display: flex !important;
-    }
-    .actions-list-container button,
-    .actions-list-container .btn {
-        width: 100% !important;
-        height: 48px !important; /* Preserves the original button height */
-        justify-content: flex-start !important;
-        margin: 0 !important;
-        box-sizing: border-box;
-        display: inline-flex !important;
-        align-items: center;
-        gap: 8px;
-    }
-    #manage-columns-btn .btn-text {
-        display: inline !important;
-    }
-
-    /* 4. Table contents */
-    #data-table th, #data-table td {
-        padding: 8px 12px;
-        font-size: 0.9rem;
-    }
-    
-    .empty-table-message {
-        padding: 1.5rem 1rem !important;
-    }
-}

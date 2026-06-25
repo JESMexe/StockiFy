@@ -176,6 +176,9 @@ export class DeliveriesModule {
                     <button class="btn btn-secondary" onclick="window.deliveriesModuleInstance.loadDeliveries()" title="Recargar Envíos" style="margin:0; padding:8px 12px; font-weight:800; width: auto; display: inline-flex; align-items: center; justify-content: center; height: 38px;">
                         <i class="ph-bold ph-arrows-clockwise" style="margin:0;"></i>
                     </button>
+                    <button class="btn btn-secondary" onclick="window.location.href='settings.php?tab=remito'" title="Configurar Remito" style="margin:0; padding:8px 12px; font-weight:800; width: auto; display: inline-flex; align-items: center; justify-content: center; height: 38px; gap: 6px;">
+                        <i class="ph-bold ph-receipt" style="margin:0;"></i> Configurar Remito
+                    </button>
                     <div class="deliveries-tabs" style="margin:0; display:flex; gap:10px;">
                         <button class="tab-btn ${this.currentFilter === 'pending' ? 'active' : ''}" 
                                 id="filter-pending-btn" style="height:38px; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
@@ -982,12 +985,11 @@ export class DeliveriesModule {
                             
                             <div class="header">
                                 <div class="header-left">
-                                    <img src="/assets/img/LogoE2.png" alt="StockiFy Logo" class="logo-img" onerror="this.style.display='none'; document.getElementById('alt-logo').style.display='block';">
-                                    <div id="alt-logo" style="display:none; font-size:24px; font-weight:900; color:#2dd4bf; margin-bottom:15px;">StockiFy</div>
+                                    ${d.remito_logo_path ? `<img src="${d.remito_logo_path}" alt="Logo" class="logo-img">` : ''}
                                     <div class="company-info">
                                         <b>Comprobante no válido como factura.</b><br><br>
-                                        Sistema de Gestión StockiFy<br>
-                                        www.stockify.com.ar
+                                        ${d.remito_description ? `${d.remito_description}<br>` : ''}
+                                        ${d.remito_url ? `${d.remito_url}` : ''}
                                     </div>
                                 </div>
                                 <div class="header-middle">

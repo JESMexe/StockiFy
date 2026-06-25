@@ -251,11 +251,15 @@ class DeliveryModel {
                        s.sale_date AS sale_date,
                        c.full_name AS customer_name,
                        IFNULL(d.phone, c.phone) AS customer_phone,
-                       IFNULL(d.email, c.email) AS customer_email
+                       IFNULL(d.email, c.email) AS customer_email,
+                       i.remito_logo_path,
+                       i.remito_description,
+                       i.remito_url
                 FROM deliveries d
                 LEFT JOIN employees e ON d.collaborator_id = e.id
                 LEFT JOIN sales s ON d.sale_id = s.id
                 LEFT JOIN customers c ON s.customer_id = c.id
+                LEFT JOIN inventories i ON d.inventory_id = i.id
                 WHERE d.inventory_id = :inv
             ";
 
@@ -291,11 +295,15 @@ class DeliveryModel {
                        s.total_amount AS sale_total,
                        c.full_name AS customer_name,
                        IFNULL(d.phone, c.phone) AS customer_phone,
-                       IFNULL(d.email, c.email) AS customer_email
+                       IFNULL(d.email, c.email) AS customer_email,
+                       i.remito_logo_path,
+                       i.remito_description,
+                       i.remito_url
                 FROM deliveries d
                 LEFT JOIN employees e ON d.collaborator_id = e.id
                 LEFT JOIN sales s ON d.sale_id = s.id
                 LEFT JOIN customers c ON s.customer_id = c.id
+                LEFT JOIN inventories i ON d.inventory_id = i.id
                 WHERE d.id = :id AND d.inventory_id = :inv
             ";
 
