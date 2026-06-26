@@ -306,10 +306,10 @@ class MailService
         $safe = htmlspecialchars($userName, ENT_QUOTES, 'UTF-8');
         $si = htmlspecialchars($inventoryName, ENT_QUOTES, 'UTF-8');
         $count = count($productsList);
-        
+
         $limit = 30;
         $itemsToShow = array_slice($productsList, 0, $limit);
-        
+
         $rows = '';
         foreach ($itemsToShow as $p) {
             $n = htmlspecialchars($p['name'] ?? 'Producto Desconocido', ENT_QUOTES, 'UTF-8');
@@ -317,7 +317,7 @@ class MailService
             $fal = htmlspecialchars((string) ($p['faltante'] ?? 0), ENT_QUOTES, 'UTF-8');
             $rows .= "<tr><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#2d1a2d;'>{$n}</td><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#7a6478;text-align:center;'>{$cur}</td><td style='font-family:Outfit,Arial,sans-serif;padding:10px 14px;border-bottom:1px solid #f0e4ef;color:#BF616A;text-align:center;font-weight:700;'>{$fal}</td></tr>\n";
         }
-        
+
         $extraMessage = '';
         if ($count > $limit) {
             $remaining = $count - $limit;
@@ -334,7 +334,7 @@ class MailService
         $safeInv = htmlspecialchars($inventoryName, ENT_QUOTES, 'UTF-8');
         $safeSender = htmlspecialchars($senderName, ENT_QUOTES, 'UTF-8');
         $safeRole = htmlspecialchars($roleName, ENT_QUOTES, 'UTF-8');
-        
+
         $x = "<h2 style='font-family:Outfit,Arial,sans-serif;color:{$c};margin:0 0 4px;font-size:26px;font-weight:700;'>Invitaci&oacute;n de Colaboraci&oacute;n</h2><p style='font-family:Outfit,Arial,sans-serif;color:#999;font-size:12px;text-transform:uppercase;margin:0 0 24px;'>Sistema de Usuarios &mdash; StockiFy</p><p style='font-family:Outfit,Arial,sans-serif;color:#333;font-size:15px;line-height:1.7;margin:0 0 12px;'>Hola,</p><p style='font-family:Outfit,Arial,sans-serif;color:#555;font-size:15px;line-height:1.7;margin:0 0 24px;'><strong>{$safeSender}</strong> te ha invitado a unirte al inventario <strong style='color:{$c};'>{$safeInv}</strong> en StockiFy con el rol de <strong>{$safeRole}</strong>.</p><table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin:0 0 20px;'><tr><td align='center'><a href='{$inviteLink}' style='display:inline-block;background:{$c};color:#fff;font-family:Outfit,Arial,sans-serif;font-size:16px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:8px;'>Aceptar Invitaci&oacute;n</a></td></tr></table><table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0'><tr><td style='background:{$c}18;border-left:4px solid {$c};border-radius:0 6px 6px 0;padding:12px 16px;'><p style='font-family:Outfit,Arial,sans-serif;margin:0;font-size:14px;color:#5c3a56;line-height:1.6;'>Si no esperabas esta invitaci&oacute;n o no conoces al remitente, puedes ignorar este correo de forma segura.</p></td></tr></table>";
         return str_replace('{{content}}', $x, $this->getBaseTemplate($c));
     }
@@ -357,7 +357,7 @@ class MailService
             $mail->isHTML(true);
             $mail->Subject = "¡Fuiste invitado a colaborar en StockiFy!";
             $mail->AltBody = "{$senderName} te agregó al inventario \"{$inventoryName}\" como {$roleName}. Ingresá a: {$dashboardLink}";
-            $mail->Body    = $this->generateInvitationEmailHtml($inventoryName, $roleName, $dashboardLink, $senderName);
+            $mail->Body = $this->generateInvitationEmailHtml($inventoryName, $roleName, $dashboardLink, $senderName);
             return $mail->send();
         } catch (\Exception $e) {
             error_log("MailService::sendInvitationEmail error: " . $e->getMessage());

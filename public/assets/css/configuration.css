@@ -743,7 +743,7 @@ select.config-input {
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem 1rem;
-    border-bottom: 1.5px solid rgba(0,0,0,0.08);
+    border-bottom: var(--border-strong);
     background: #fff;
     transition: background-color 0.3s ease;
 }
@@ -767,6 +767,8 @@ select.config-input {
     justify-content: center;
     overflow: hidden;
     flex-shrink: 0;
+    border: var(--border-soft);
+    box-shadow: 2px 2px 0px var(--color-black);
     transition: background-color 0.3s ease;
 }
 .mockup-logo-circle img {
@@ -777,8 +779,9 @@ select.config-input {
 
 .mockup-business-name {
     font-size: 0.85rem;
-    font-weight: 800;
-    color: #1e293b;
+    font-weight: 900;
+    color: var(--color-black);
+    text-transform: uppercase;
 }
 
 .mockup-nav-contacts {
@@ -788,19 +791,23 @@ select.config-input {
 }
 
 .mockup-contact-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: var(--border-soft);
+    box-shadow: 2px 2px 0px var(--color-black);
+    background-color: var(--color-white);
+    color: var(--color-black);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: default;
     transition: all 0.2s ease;
 }
-.mockup-map  { background: #f1f5f9; color: #64748b; }
-.mockup-ig   { background: #fdf2f8; color: #ec4899; }
-.mockup-wa   { background: #f0fdf4; color: #16a34a; }
+.mockup-map  { background: #fff; color: var(--color-black); }
+.mockup-ig   { background: #fff; color: #E1306C; }
+.mockup-wa   { background: #fff; color: #25D366; }
 
 /* --- Fondo con patrón --- */
 .mockup-bg {
@@ -819,31 +826,84 @@ select.config-input {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: #fff;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
+    background: var(--color-white);
+    border: var(--border-soft);
+    border-radius: 4px;
     padding: 0.45rem 0.75rem;
     font-size: 0.75rem;
-    color: #94a3b8;
+    font-weight: 700;
+    color: var(--color-black);
     pointer-events: none;
+}
+
+/* --- Filtro de Categorías falso --- */
+.mockup-categories {
+    display: flex;
+    gap: 6px;
+    overflow: hidden;
+    padding-bottom: 2px;
+}
+
+.mockup-category-pill {
+    padding: 4px 10px;
+    background-color: var(--color-white);
+    border: var(--border-soft);
+    border-radius: 4px;
+    color: var(--color-black);
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    box-shadow: 1px 1px 0px var(--color-black);
+    white-space: nowrap;
+}
+
+.mockup-category-pill.active {
+    background-color: var(--accent-color, #3b82f6);
+    color: #fff;
+    box-shadow: 1px 1px 0px var(--color-black);
+    transition: background-color 0.3s ease;
 }
 
 /* --- Tarjeta de producto falsa --- */
 .mockup-product-card {
-    background: #fff;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
+    background: var(--color-white);
+    border: var(--border-strong);
+    border-radius: 4px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    transition: border-color 0.3s ease;
+    box-shadow: 4px 4px 0 var(--color-black);
+    transition: all 0.2s ease;
 }
 
 .mockup-product-img {
     height: 120px;
-    background: #f1f5f9;
+    background: var(--bg-color, #F4F4F6);
+    border-bottom: var(--border-soft);
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+}
+
+.mockup-product-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    z-index: 2;
+    border: var(--border-soft);
+    box-shadow: 1.5px 1.5px 0px var(--color-black);
+}
+.mockup-product-badge.badge-stock {
+    background-color: var(--accent-green, #A3BE8C);
+    color: var(--color-black);
+}
+.mockup-product-badge.badge-out-of-stock {
+    background-color: var(--accent-red, #BF616A);
+    color: #fff;
 }
 
 .mockup-product-body {
@@ -855,39 +915,25 @@ select.config-input {
 
 .mockup-category-tag {
     font-size: 0.65rem;
-    font-weight: 700;
+    font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--accent-color, #3b82f6);
+    color: var(--color-gray, #8A8A8A);
     margin: 0;
-    transition: color 0.3s ease;
 }
 
 .mockup-product-name {
     font-size: 0.85rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--color-black);
     margin: 0;
 }
 
 .mockup-product-price {
     font-size: 1.05rem;
     font-weight: 900;
-    color: var(--accent-color, #3b82f6);
+    color: var(--color-black);
     margin: 0;
-    transition: color 0.3s ease;
-}
-
-.mockup-stock-tag {
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: #16a34a;
-    background: #f0fdf4;
-    padding: 2px 8px;
-    border-radius: 20px;
-    display: inline-block;
-    margin: 0 0 0.4rem 0;
-    width: fit-content;
 }
 
 /* --- Botón de acción del mockup --- */
@@ -898,14 +944,15 @@ select.config-input {
     gap: 0.4rem;
     width: 100%;
     padding: 0.55rem 0;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 700;
+    border: var(--border-soft);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
     cursor: default;
     pointer-events: none;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    /* Default: whatsapp green */
+    box-shadow: 2px 2px 0px var(--color-black);
+    transition: all 0.2s ease;
     background-color: #25D366;
     color: #fff;
 }

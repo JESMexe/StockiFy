@@ -770,7 +770,7 @@ function initCatalogCustomizerPanel() {
     [
         'catalog_theme_color', 'catalog_theme_pattern',
         'catalog_button_color', 'catalog_button_text', 'catalog_button_icon',
-        'catalog_show_action_button', 'catalog_show_price',
+        'catalog_show_action_button', 'catalog_show_price', 'catalog_show_stock',
         'catalog_whatsapp', 'catalog_instagram', 'catalog_address'
     ].forEach(id => {
         const el = document.getElementById(id);
@@ -825,6 +825,7 @@ function updateMockupPreview() {
     const btnIcon      = g('catalog_button_icon')?.value   ?? 'ph-whatsapp-logo';
     const showBtn      = g('catalog_show_action_button')?.checked ?? true;
     const showPrice    = g('catalog_show_price')?.checked  ?? true;
+    const showStock    = g('catalog_show_stock')?.checked  ?? true;
     const whatsapp     = g('catalog_whatsapp')?.value.trim()  ?? '';
     const instagram    = g('catalog_instagram')?.value.trim() ?? '';
     const address      = g('catalog_address')?.value.trim()   ?? '';
@@ -832,15 +833,23 @@ function updateMockupPreview() {
     const accentHex = _THEME_COLOR_HEX[themeColor];
     const accentVal = accentHex ?? getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() ?? '#3b82f6';
 
-    const catTag   = document.querySelector('.mockup-category-tag');
-    const priceEl  = g('mockup-product-price');
-    const circleEl = g('mockup-logo-circle');
+    const catTag    = document.querySelector('.mockup-category-tag');
+    const priceEl   = g('mockup-product-price');
+    const circleEl  = g('mockup-logo-circle');
+    const stockBadge = g('mockup-stock-badge');
+    const activePill = document.querySelector('.mockup-category-pill.active');
 
-    if (catTag)   catTag.style.color = accentVal;
+    if (catTag)   catTag.style.color = '';
     if (circleEl) circleEl.style.backgroundColor = accentVal;
+    if (activePill) activePill.style.backgroundColor = accentVal;
+
     if (priceEl) {
         priceEl.style.display = showPrice ? '' : 'none';
-        priceEl.style.color   = accentVal;
+        priceEl.style.color   = '';
+    }
+
+    if (stockBadge) {
+        stockBadge.textContent = showStock ? 'Stock: 12 u.' : 'Disponible';
     }
 
     const mockupBg = g('mockup-bg');

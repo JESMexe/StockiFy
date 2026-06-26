@@ -544,16 +544,23 @@ if ($canConfigRemito) {
                                     <span>Buscar productos...</span>
                                 </div>
 
+                                <!-- Filtro de Categorías falso -->
+                                <div class="mockup-categories">
+                                    <span class="mockup-category-pill active">Todos</span>
+                                    <span class="mockup-category-pill">Bebidas</span>
+                                    <span class="mockup-category-pill">Snacks</span>
+                                </div>
+
                                 <!-- Tarjeta de producto falsa -->
                                 <div class="mockup-product-card">
                                     <div class="mockup-product-img">
+                                        <span class="mockup-product-badge badge-stock" id="mockup-stock-badge">Disponible</span>
                                         <i class="ph ph-image" style="font-size:1.5rem; color:#ccc;"></i>
                                     </div>
                                     <div class="mockup-product-body">
                                         <p class="mockup-category-tag">Categoría</p>
                                         <p class="mockup-product-name">Producto de Ejemplo</p>
                                         <p class="mockup-product-price" id="mockup-product-price">$1.500</p>
-                                        <p class="mockup-stock-tag">Disponible</p>
                                         <button class="mockup-action-btn" id="mockup-action-btn">
                                             <i class="ph ph-whatsapp-logo" id="mockup-btn-icon"></i>
                                             <span id="mockup-btn-text">Consultar</span>
