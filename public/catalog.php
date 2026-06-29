@@ -50,7 +50,27 @@ try {
     
     $themeColor = htmlspecialchars($catalogSettings['theme_color'] ?? 'accent-color', ENT_QUOTES, 'UTF-8');
     $themePattern = htmlspecialchars($catalogSettings['theme_pattern'] ?? 'dots', ENT_QUOTES, 'UTF-8');
-    
+
+    // Colorimetría
+    $colorBg      = htmlspecialchars($catalogSettings['color_bg']      ?? '#F4F4F6', ENT_QUOTES, 'UTF-8');
+    $colorPattern = htmlspecialchars($catalogSettings['color_pattern'] ?? 'rgba(0,0,0,0.08)', ENT_QUOTES, 'UTF-8');
+    $colorCard    = htmlspecialchars($catalogSettings['color_card']    ?? '#FFFFFF', ENT_QUOTES, 'UTF-8');
+    $colorAccent  = $catalogSettings['color_accent'] ?? 'theme'; // 'theme' means use --accent-color
+    $colorLabel   = htmlspecialchars($catalogSettings['color_label']   ?? '#8A8A8A', ENT_QUOTES, 'UTF-8');
+    $colorTitle   = htmlspecialchars($catalogSettings['color_title']   ?? '#1A1A1A', ENT_QUOTES, 'UTF-8');
+    $colorPrice   = htmlspecialchars($catalogSettings['color_price']   ?? '#1A1A1A', ENT_QUOTES, 'UTF-8');
+    $colorHeaderBg = htmlspecialchars($catalogSettings['color_header_bg'] ?? '#FFFFFF', ENT_QUOTES, 'UTF-8');
+    $colorSocialBg = htmlspecialchars($catalogSettings['color_social_bg'] ?? '#FFFFFF', ENT_QUOTES, 'UTF-8');
+    $colorBadgeBg  = htmlspecialchars($catalogSettings['color_badge_bg']  ?? '#A3BE8C', ENT_QUOTES, 'UTF-8');
+
+    // Shadows
+    $shadowFilter = $catalogSettings['shadow_filter_section'] ?? true;
+    $shadowPill   = $catalogSettings['shadow_category_pill']  ?? true;
+    $shadowCard   = $catalogSettings['shadow_product_card']   ?? true;
+    $shadowModal  = $catalogSettings['shadow_modal']          ?? true;
+
+    // Font
+    $fontFamily   = htmlspecialchars($catalogSettings['font_family']   ?? 'Outfit', ENT_QUOTES, 'UTF-8');
 } catch (Exception $e) {
     error_log("catalog.php error: " . $e->getMessage());
     http_response_code(500);
@@ -66,22 +86,29 @@ function render404() {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>404 - Catálogo No Encontrado | StockiFy</title>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css" />
+        <script src="/assets/js/theme.js"></script>
         <style>
             :root {
-                --bg: #0B0F19;
-                --text: #F3F4F6;
-                --text-muted: #9CA3AF;
-                --accent: #3B82F6;
-                --accent-hover: #2563EB;
-                --card-bg: rgba(255, 255, 255, 0.03);
-                --card-border: rgba(255, 255, 255, 0.08);
+                --bg: #F4F4F6;
+                --text: #1A1A1A;
+                --text-muted: #5A5A5A;
+                --accent: #EBCB8B; /* Yellow */
+                --accent-blue: #88C0D0; /* Blue */
+                --border-strong: 3px solid #1A1A1A;
+                --border-soft: 2px solid #1A1A1A;
+                --shadow: 8px 8px 0px #1A1A1A;
+                --shadow-hover: 10px 10px 0px #1A1A1A;
+                --shadow-btn: 4px 4px 0px #1A1A1A;
             }
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
                 font-family: 'Outfit', sans-serif;
                 background-color: var(--bg);
+                background-image: radial-gradient(rgba(26,26,26,0.08) 1.5px, transparent 1.5px);
+                background-size: 24px 24px;
                 color: var(--text);
                 display: flex;
                 align-items: center;
@@ -91,47 +118,79 @@ function render404() {
                 text-align: center;
             }
             .container {
-                max-width: 500px;
-                padding: 40px;
-                background: var(--card-bg);
-                border: 1px solid var(--card-border);
-                border-radius: 24px;
-                backdrop-filter: blur(12px);
-                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                max-width: 480px;
+                width: 100%;
+                padding: 40px 30px;
+                background: #FFFFFF;
+                border: var(--border-strong);
+                border-radius: 16px;
+                box-shadow: var(--shadow);
+                position: relative;
             }
-            .icon {
-                font-size: 64px;
-                color: #EF4444;
-                margin-bottom: 20px;
-                animation: pulse 2s infinite;
+            .icon-badge {
+                width: 72px;
+                height: 72px;
+                background: #BF616A; /* Red Accent */
+                color: #FFFFFF;
+                border: var(--border-strong);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 40px;
+                margin: 0 auto 24px;
+                box-shadow: 4px 4px 0px #1A1A1A;
+                transform: rotate(-3deg);
             }
-            h1 { font-size: 28px; font-weight: 800; margin-bottom: 12px; }
-            p { color: var(--text-muted); font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
+            h1 {
+                font-size: 28px;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: -0.5px;
+                margin-bottom: 12px;
+                line-height: 1.1;
+            }
+            p {
+                color: var(--text-muted);
+                font-size: 15px;
+                font-weight: 600;
+                line-height: 1.5;
+                margin-bottom: 30px;
+            }
             .btn {
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-                padding: 12px 24px;
-                background-color: var(--accent);
-                color: white;
+                justify-content: center;
+                gap: 10px;
+                padding: 14px 28px;
+                background-color: var(--accent-color, #88C0D0);
+                color: var(--text);
                 text-decoration: none;
                 font-weight: 600;
-                border-radius: 12px;
-                transition: all 0.2s ease;
+                font-size: 15px;
+                text-transform: uppercase;
+                border: var(--border-strong);
+                border-radius: 8px;
+                box-shadow: none;
+                transition: transform 0.1s ease, box-shadow 0.1s ease;
+                cursor: pointer;
             }
-            .btn:hover { background-color: var(--accent-hover); transform: translateY(-2px); }
-            @keyframes pulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.05); }
+            .btn:hover {
+                transform: translate(-3px, -3px);
+                box-shadow: 4px 4px 0px #1A1A1A;
+            }
+            .btn:active {
+                transform: translate(1px, 1px);
+                box-shadow: 1px 1px 0px #1A1A1A;
             }
         </style>
     </head>
     <body>
         <div class="container">
-            <div class="icon"><i class="ph ph-warning-circle"></i></div>
+            <div class="icon-badge"><i class="ph-bold ph-warning-octagon"></i></div>
             <h1>Catálogo No Encontrado</h1>
             <p>El catálogo que estás intentando abrir no existe, ha sido desactivado o la dirección es incorrecta.</p>
-            <a href="https://stockify.com.ar" class="btn"><i class="ph ph-house"></i> Volver a StockiFy</a>
+            <a href="https://stockify.com.ar" class="btn"><i class="ph-bold ph-house"></i> Volver a StockiFy</a>
         </div>
     </body>
     </html>
@@ -155,27 +214,93 @@ function render404() {
     <meta property="og:type" content="website">
 
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <?php
+    $fontMap = [
+        'Outfit' => 'Outfit:wght@300;400;500;600;700;800',
+        'Inter' => 'Inter:wght@300;400;500;600;700;800',
+        'Lexend' => 'Lexend:wght@300;400;500;600;700;800',
+        'Space Grotesk' => 'Space+Grotesk:wght@400;500;600;700',
+        'Syne' => 'Syne:wght@400;600;800',
+        'Poppins' => 'Poppins:wght@300;400;500;600;700;800',
+        'Montserrat' => 'Montserrat:wght@300;400;500;600;700;800',
+        'Playfair Display' => 'Playfair+Display:ital,wght@0,400;0,700;1,400',
+        'Courier Prime' => 'Courier+Prime:wght@400;700'
+    ];
+    $googleFontQuery = $fontMap[$fontFamily] ?? 'Outfit:wght@300;400;500;600;700;800';
+    ?>
+    <link href="https://fonts.googleapis.com/css2?family=<?= $googleFontQuery ?>&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
     <link rel="stylesheet" href="/assets/css/catalog.css?v=<?= time() ?>">
+    <?php
+    // Build colorimetry CSS vars inline
+    $accentVarVal = ($colorAccent !== 'theme') ? htmlspecialchars($colorAccent, ENT_QUOTES, 'UTF-8') : null;
+    ?>
+    <style>
+        :root {
+            --catalog-bg-color:    <?= $colorBg ?>;
+            --catalog-card-bg:     <?= $colorCard ?>;
+            --catalog-label-color: <?= $colorLabel ?>;
+            --catalog-title-color: <?= $colorTitle ?>;
+            --catalog-price-color: <?= $colorPrice ?>;
+            --catalog-header-bg:   <?= $colorHeaderBg ?>;
+            --catalog-social-bg:   <?= $colorSocialBg ?>;
+            --catalog-badge-bg:    <?= $colorBadgeBg ?>;
+            --font-family:         '<?= $fontFamily ?>', sans-serif;
+            <?php if ($accentVarVal): ?>
+            --catalog-accent:      <?= $accentVarVal ?>;
+            <?php endif; ?>
+        }
+
+        .business-header { background-color: var(--catalog-header-bg); }
+        .contact-btn { background-color: var(--catalog-social-bg); }
+        .badge-stock { background-color: var(--catalog-badge-bg); }
+
+        <?php if (!$shadowPill): ?>
+        .category-pill, .btn-load-more { box-shadow: none !important; transform: none !important; }
+        .category-pill:hover, .btn-load-more:hover { box-shadow: none !important; transform: none !important; }
+        <?php endif; ?>
+
+        <?php if (!$shadowCard): ?>
+        .product-card { box-shadow: none !important; }
+        .product-card:hover { transform: none !important; }
+        <?php endif; ?>
+
+        <?php if (!$shadowModal): ?>
+        .modal-content, .modal-close-btn { box-shadow: none !important; }
+        .modal-close-btn:hover { transform: none !important; }
+        <?php endif; ?>
+
+        <?php if (!$shadowFilter): ?>
+        .filter-section { box-shadow: none !important; }
+        <?php endif; ?>
+    </style>
     <script src="/assets/js/theme.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const pattern = '<?= $themePattern ?>';
+            const patternColor = '<?= $colorPattern ?>';
             let bgImage = 'none';
-            if (pattern === 'dots') bgImage = 'radial-gradient(rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px)';
-            else if (pattern === 'grid') bgImage = 'linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px)';
-            else if (pattern === 'lines') bgImage = 'repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0, rgba(0,0,0,0.03) 2px, transparent 2px, transparent 12px)';
+            if (pattern === 'dots') bgImage = `radial-gradient(${patternColor} 1.5px, transparent 1.5px)`;
+            else if (pattern === 'grid') bgImage = `linear-gradient(${patternColor} 1px, transparent 1px), linear-gradient(90deg, ${patternColor} 1px, transparent 1px)`;
+            else if (pattern === 'lines') bgImage = `repeating-linear-gradient(45deg, ${patternColor} 0, ${patternColor} 2px, transparent 2px, transparent 12px)`;
             
             document.body.style.backgroundImage = bgImage;
-            if (pattern === 'grid') document.body.style.backgroundSize = '24px 24px';
+            if (pattern === 'grid' || pattern === 'dots') {
+                document.body.style.backgroundSize = '24px 24px';
+            } else {
+                document.body.style.backgroundSize = 'auto';
+            }
             
             const selectedThemeColor = '<?= $themeColor ?>';
             if (selectedThemeColor !== 'accent-color') {
                 const colorValue = getComputedStyle(document.documentElement).getPropertyValue('--' + selectedThemeColor).trim();
                 if (colorValue) {
                     document.documentElement.style.setProperty('--accent-color', colorValue);
+                    <?php if ($colorAccent === 'theme'): ?>
+                    // If accent is 'theme', it follows --accent-color
+                    document.documentElement.style.setProperty('--catalog-accent', colorValue);
+                    <?php endif; ?>
                 }
             }
         });

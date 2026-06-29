@@ -318,6 +318,7 @@ async function renderTable(columns, data) {
 
                 const isSale = (col.toLowerCase() === columnMapping.sale_price?.toLowerCase());
                 const isBuy = (col.toLowerCase() === columnMapping.buy_price?.toLowerCase());
+                const isImageCol = (col.toLowerCase() === columnMapping.image?.toLowerCase() || col.toLowerCase() === 'imagen_url');
 
                 if (col === columnMapping.stock && activeFeatures.min_stock) {
                     const min = parseFloat(row['min_stock']) || 0;
@@ -390,7 +391,6 @@ async function renderTable(columns, data) {
                 }
 
                 let cellValue = value;
-                const isImageCol = (col.toLowerCase() === columnMapping.image?.toLowerCase() || col.toLowerCase() === 'imagen_url');
                 if (isImageCol && typeof value === 'string' && value.trim().length > 0) {
                     const trimmed = value.trim();
                     const isLocalPath = trimmed.includes('assets/img/');

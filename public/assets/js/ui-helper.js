@@ -7,10 +7,12 @@ export const ui_helper = {
 
         userDropdown: (extraLinks = []) => {
             const defaultLinks = [
-                { label: 'Configuración', href: 'settings.php', icon: 'ph-gear' },
-                { label: 'Soporte', href: 'settings.php?tab=soporte', icon: 'ph-lifebuoy' }
+                { label: 'Configuración', href: '/settings.php', icon: 'ph-gear' },
+                { label: 'Mi Remito', href: '/settings.php?tab=remito', icon: 'ph-receipt' },
+                { label: 'Mi Catálogo', href: '/settings.php?tab=catalogo', icon: 'ph-storefront' },
+                { label: 'Soporte', href: '/settings.php?tab=soporte', icon: 'ph-lifebuoy' }
             ];
-            const allLinks = [...defaultLinks, ...extraLinks, { label: 'Cerrar Sesión', href: 'logout.php', icon: 'ph-sign-out' }];
+            const allLinks = [...defaultLinks, ...extraLinks, { label: 'Cerrar Sesión', href: '/logout.php', icon: 'ph-sign-out' }];
 
             return `
             <div id="dropdown-container">

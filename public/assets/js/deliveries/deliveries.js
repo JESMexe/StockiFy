@@ -176,7 +176,7 @@ export class DeliveriesModule {
                     <button class="btn btn-secondary" onclick="window.deliveriesModuleInstance.loadDeliveries()" title="Recargar Envíos" style="margin:0; padding:8px 12px; font-weight:800; width: auto; display: inline-flex; align-items: center; justify-content: center; height: 38px;">
                         <i class="ph-bold ph-arrows-clockwise" style="margin:0;"></i>
                     </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='settings.php?tab=remito'" title="Configurar Remito" style="margin:0; padding:8px 12px; font-weight:800; width: auto; display: inline-flex; align-items: center; justify-content: center; height: 38px; gap: 6px;">
+                    <button class="btn btn-secondary" onclick="window.location.href='settings.php?tab=remito'" title="Configurar Remito" style="margin:0; padding:8px 12px; font-weight:600; width: auto; display: inline-flex; align-items: center; justify-content: center; height: 38px; gap: 6px;">
                         <i class="ph-bold ph-receipt" style="margin:0;"></i> Configurar Remito
                     </button>
                     <div class="deliveries-tabs" style="margin:0; display:flex; gap:10px;">

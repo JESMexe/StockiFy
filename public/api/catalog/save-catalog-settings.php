@@ -89,6 +89,14 @@ $catalogSettings = [
     'button_color'     => trim($body['button_color'] ?? ''),
     'theme_color'      => trim($body['theme_color'] ?? 'accent-color'),
     'theme_pattern'    => trim($body['theme_pattern'] ?? 'dots'),
+    // Colorimetría
+    'color_bg'         => trim($body['color_bg']      ?? '#F4F4F6'),
+    'color_pattern'    => trim($body['color_pattern'] ?? 'rgba(0,0,0,0.08)'),
+    'color_card'       => trim($body['color_card']    ?? '#FFFFFF'),
+    'color_accent'     => trim($body['color_accent']  ?? 'theme'),
+    'color_label'      => trim($body['color_label']   ?? '#8A8A8A'),
+    'color_title'      => trim($body['color_title']   ?? '#1A1A1A'),
+    'color_price'      => trim($body['color_price']   ?? '#1A1A1A'),
 ];
 
 try {

@@ -653,8 +653,9 @@ select.config-input {
 
 /* --- Columna izquierda: controles --- */
 .customizer-controls {
-    flex: 0 0 460px;
-    width: 460px;
+    flex: 1 1 520px;
+    max-width: 650px;
+    min-width: 450px;
     overflow-y: auto;
     padding: 1.5rem;
     border-right: 2px solid var(--color-black);
@@ -673,8 +674,15 @@ select.config-input {
 }
 
 .customizer-section {
+    width: 100%;
     margin-bottom: 1.5rem;
     animation: sectionFadeIn 0.2s ease;
+    box-sizing: border-box;
+}
+
+.customizer-controls > * {
+    width: 100%;
+    box-sizing: border-box;
 }
 
 @keyframes sectionFadeIn {
@@ -698,7 +706,7 @@ select.config-input {
 
 /* --- Columna derecha: preview mockup --- */
 .customizer-preview {
-    flex: 1;
+    flex: 1.2 1 500px;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -706,7 +714,7 @@ select.config-input {
     justify-content: flex-start;
     padding: 1.5rem;
     gap: 1rem;
-    overflow-y: auto;
+    overflow: auto;
     background: #f0f2f5;
 }
 
@@ -727,14 +735,22 @@ select.config-input {
    ================================================================= */
 .catalog-mockup {
     width: 100%;
-    max-width: 420px;
-    border: 2px solid var(--color-black);
+    max-width: 480px;
+    border: 3px solid var(--color-black);
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 6px 6px 0 var(--color-black);
     background: #fff;
     transition: box-shadow 0.2s ease;
     font-family: 'Outfit', 'Segoe UI', sans-serif;
+    /* Neobrutalist style tokens same as catalog.css */
+    --border-strong: 3px solid var(--color-black);
+    --border-soft: 2px solid var(--color-black);
+    --border-radius: 4px;
+    --color-white: #FFFFFF;
+    --color-black: #1A1A1A;
+    --color-gray: #8A8A8A;
+    --bg-color: #F4F4F6;
 }
 
 /* --- Nav falso --- */
@@ -755,13 +771,13 @@ select.config-input {
 }
 
 .mockup-logo-circle {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: var(--accent-color, #3b82f6);
     color: #fff;
     font-weight: 900;
-    font-size: 1rem;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -778,7 +794,7 @@ select.config-input {
 }
 
 .mockup-business-name {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 900;
     color: var(--color-black);
     text-transform: uppercase;
@@ -811,9 +827,9 @@ select.config-input {
 
 /* --- Fondo con patrón --- */
 .mockup-bg {
-    padding: 1rem;
-    min-height: 360px;
-    background-color: #f8fafc;
+    padding: 0.75rem;
+    min-height: 440px;
+    background-color: var(--mockup-bg-color, var(--bg-color, #F4F4F6));
     background-size: 20px 20px;
     transition: background-image 0.3s ease, background-color 0.3s ease;
     display: flex;
@@ -821,19 +837,43 @@ select.config-input {
     gap: 0.75rem;
 }
 
+/* --- Buscador y Filtros falsos --- */
+.mockup-filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: var(--mockup-card-bg, var(--color-white));
+    padding: 12px;
+    border-radius: var(--border-radius);
+    border: var(--border-strong);
+    box-shadow: 4px 4px 0px var(--color-black);
+    margin-bottom: 4px;
+    max-width: 360px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* --- Buscador falso --- */
 .mockup-search {
+    position: relative;
+    width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
     background: var(--color-white);
     border: var(--border-soft);
-    border-radius: 4px;
-    padding: 0.45rem 0.75rem;
-    font-size: 0.75rem;
+    border-radius: var(--border-radius);
+    padding: 8px 10px 8px 32px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--color-black);
     pointer-events: none;
+}
+.mockup-search i {
+    position: absolute;
+    left: 10px;
+    font-size: 11px;
+    color: var(--color-black);
 }
 
 /* --- Filtro de Categorías falso --- */
@@ -845,52 +885,95 @@ select.config-input {
 }
 
 .mockup-category-pill {
-    padding: 4px 10px;
+    padding: 5px 9px;
     background-color: var(--color-white);
     border: var(--border-soft);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     color: var(--color-black);
-    font-size: 0.65rem;
+    font-size: 8px;
     font-weight: 900;
     text-transform: uppercase;
-    box-shadow: 1px 1px 0px var(--color-black);
+    box-shadow: 1.5px 1.5px 0px var(--color-black);
     white-space: nowrap;
 }
 
 .mockup-category-pill.active {
-    background-color: var(--accent-color, #3b82f6);
+    background-color: var(--mockup-accent-color, var(--accent-color, #88C0D0));
     color: #fff;
-    box-shadow: 1px 1px 0px var(--color-black);
+    box-shadow: 1.5px 1.5px 0px var(--color-black);
     transition: background-color 0.3s ease;
+}
+
+/* --- Grilla de productos falsos --- */
+.mockup-products-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+/* Una sola tarjeta centrada, más ancha */
+.mockup-products-grid.mockup-single {
+    grid-template-columns: 1fr;
+    max-width: 220px;
+    margin: 0 auto;
 }
 
 /* --- Tarjeta de producto falsa --- */
 .mockup-product-card {
-    background: var(--color-white);
+    background: var(--mockup-card-bg, var(--color-white));
     border: var(--border-strong);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
     box-shadow: 4px 4px 0 var(--color-black);
     transition: all 0.2s ease;
 }
 
-.mockup-product-img {
-    height: 120px;
-    background: var(--bg-color, #F4F4F6);
+.mockup-product-image-container {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    background-color: var(--bg-color);
     border-bottom: var(--border-soft);
+    overflow: hidden;
+}
+
+.mockup-product-image-placeholder {
+    width: 100%;
+    height: 100%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    position: relative;
+    color: var(--color-gray);
+    font-size: 20px;
+    gap: 4px;
+}
+
+/* Imagen real en la tarjeta del mockup */
+.mockup-product-img-real {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.mockup-product-image-placeholder span {
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-black);
 }
 
 .mockup-product-badge {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: 6px;
+    left: 6px;
     padding: 3px 6px;
-    border-radius: 4px;
-    font-size: 0.6rem;
+    border-radius: var(--border-radius);
+    font-size: 8px;
     font-weight: 900;
     text-transform: uppercase;
     z-index: 2;
@@ -906,34 +989,50 @@ select.config-input {
     color: #fff;
 }
 
-.mockup-product-body {
-    padding: 0.75rem;
+.mockup-product-details {
+    padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    flex-grow: 1;
+    gap: 6px;
+    text-align: left;
 }
 
-.mockup-category-tag {
-    font-size: 0.65rem;
+.mockup-product-category {
+    font-size: 8px;
+    color: var(--mockup-label-color, var(--color-gray));
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--color-gray, #8A8A8A);
-    margin: 0;
+    letter-spacing: 0.5px;
 }
 
-.mockup-product-name {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--color-black);
+.mockup-product-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--mockup-title-color, var(--color-black));
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 24px;
     margin: 0;
+    text-align: left;
+}
+
+.mockup-product-footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .mockup-product-price {
-    font-size: 1.05rem;
+    font-size: 11px;
     font-weight: 900;
-    color: var(--color-black);
+    color: var(--mockup-price-color, var(--color-black));
     margin: 0;
+    text-align: left;
 }
 
 /* --- Botón de acción del mockup --- */
@@ -943,10 +1042,10 @@ select.config-input {
     justify-content: center;
     gap: 0.4rem;
     width: 100%;
-    padding: 0.55rem 0;
+    padding: 5px 0;
     border: var(--border-soft);
-    border-radius: 4px;
-    font-size: 0.75rem;
+    border-radius: var(--border-radius);
+    font-size: 8px;
     font-weight: 900;
     text-transform: uppercase;
     cursor: default;
@@ -960,13 +1059,67 @@ select.config-input {
 /* Colores del botón del mockup según selección */
 .mockup-action-btn.btn-color-instagram-pink  { background: linear-gradient(135deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); color:#fff; }
 .mockup-action-btn.btn-color-facebook-blue   { background: #1877F2; color: #fff; }
-.mockup-action-btn.btn-color-accent-green    { background: var(--accent-green, #4ade80); color: #000; }
-.mockup-action-btn.btn-color-accent-red      { background: var(--accent-red, #ef4444); color: #fff; }
-.mockup-action-btn.btn-color-accent-blue     { background: var(--accent-blue, #3b82f6); color: #fff; }
-.mockup-action-btn.btn-color-accent-yellow   { background: var(--accent-yellow, #facc15); color: #000; }
-.mockup-action-btn.btn-color-accent-violet   { background: var(--accent-violet, #a855f7); color: #fff; }
+.mockup-action-btn.btn-color-accent-green    { background: var(--accent-green, #A3BE8C); color: #000; }
+.mockup-action-btn.btn-color-accent-red      { background: var(--accent-red, #BF616A); color: #fff; }
+.mockup-action-btn.btn-color-accent-blue     { background: var(--accent-blue, #88C0D0); color: #fff; }
+.mockup-action-btn.btn-color-accent-yellow   { background: var(--accent-yellow, #EBCB8B); color: #000; }
+.mockup-action-btn.btn-color-accent-violet   { background: var(--accent-violet, #B48EAD); color: #fff; }
 .mockup-action-btn.btn-color-accent-color    { background: var(--accent-color); color: #fff; }
 .mockup-action-btn.btn-color-color-black     { background: #1b1b1b; color: #fff; }
+
+/* =================================================================
+   ZOOM CONTROLS DEL MOCKUP
+   ================================================================= */
+.mockup-zoom-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+}
+
+.mockup-zoom-btn {
+    width: 30px;
+    height: 30px;
+    background: var(--color-white);
+    border: var(--border-strong);
+    border-radius: var(--border-radius);
+    box-shadow: 2px 2px 0 var(--color-black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 900;
+    transition: all 0.15s ease;
+    color: var(--color-black);
+}
+.mockup-zoom-btn:hover {
+    box-shadow: 1px 1px 0 var(--color-black);
+    transform: translate(1px, 1px);
+}
+
+.mockup-zoom-label {
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: var(--color-black);
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Wrapper para el transform de zoom sin romper el layout */
+.mockup-zoom-wrapper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow: visible;
+    transition: width 0.2s ease, height 0.2s ease;
+}
+.mockup-zoom-wrapper .catalog-mockup {
+    transform-origin: top center;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
 
 /* =================================================================
    CATÁLOGO — RESPONSIVE DEL PANEL CUSTOMIZADOR
@@ -1005,4 +1158,197 @@ select.config-input {
         font-size: 0.9rem;
         padding: 0.9rem 1rem;
     }
+}
+
+/* Color pickers animados para la selección de color personalizado */
+.custom-color-picker {
+    width: 0;
+    height: 32px;
+    opacity: 0;
+    pointer-events: none;
+    border: 2px solid var(--color-black);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px;
+    transform: scale(0);
+    transition: width 0.3s ease, opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+.custom-color-picker.show {
+    width: 32px;
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+    margin-left: 4px;
+}
+
+/* Neobrutalist Row Block (StockiFy Style) */
+.catalog-row-block {
+    background: var(--color-white);
+    border: 2px solid var(--color-black);
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0.75rem;
+}
+
+.catalog-row-block .option-label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--color-black);
+    margin: 0 !important;
+    letter-spacing: 0.03em;
+}
+
+.catalog-row-block p {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin: 3px 0 0 !important;
+    font-weight: 400;
+    line-height: 1.3;
+}
+
+/* Neobrutalist Toggle Switch */
+.catalog-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.catalog-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.catalog-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-white);
+    border: 2px solid var(--color-black);
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+    box-shadow: 2px 2px 0px var(--color-black);
+}
+
+.catalog-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--color-black);
+    border: 1px solid var(--color-black);
+    border-radius: 2px;
+    transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.catalog-toggle input:checked + .catalog-toggle-slider {
+    background-color: var(--accent-green, #A3BE8C);
+}
+
+.catalog-toggle input:checked + .catalog-toggle-slider:before {
+    transform: translateX(20px);
+    background-color: var(--color-black);
+}
+
+/* Unified Slug Input Wrapper */
+.slug-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: var(--color-white);
+    border: 2px solid var(--color-black);
+    border-radius: 8px;
+    height: 46px;
+    overflow: hidden;
+    transition: box-shadow 0.15s ease;
+    width: 100%;
+}
+
+.slug-input-wrapper:focus-within {
+    box-shadow: 4px 4px 0px var(--color-black);
+}
+
+.slug-prefix {
+    background: #fafafa;
+    color: #64748b;
+    font-size: 0.9rem;
+    padding: 0 0.75rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-right: 2px solid var(--color-black);
+    user-select: none;
+    font-weight: 500;
+}
+
+.slug-input-wrapper input {
+    flex: 1;
+    border: none !important;
+    outline: none !important;
+    height: 100%;
+    padding: 0 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-black);
+    background: transparent;
+}
+
+/* Catalog URL Preview Card */
+.catalog-url-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-white);
+    border: 2px solid var(--color-black);
+    border-radius: 8px;
+    box-shadow: 4px 4px 0px var(--color-black);
+    flex-wrap: wrap;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.catalog-url-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px var(--color-black);
+}
+
+.catalog-url-card i {
+    color: var(--accent-color, #3b82f6);
+    font-size: 1.2rem;
+}
+
+.catalog-url-card a {
+    color: var(--color-black);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: underline;
+    word-break: break-all;
+    flex: 1;
+}
+
+.catalog-url-card a:hover {
+    color: var(--accent-color, #3b82f6);
+}
+
+/* Force mockup elements to inherit custom font */
+#catalog-mockup * {
+    font-family: inherit !important;
 }

@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración | StockiFy</title>
 
-    <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/configuration.css">
-    <link rel="stylesheet" href="assets/css/sweetalert.css">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/configuration.css">
+    <link rel="stylesheet" href="/assets/css/sweetalert.css">
 
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="assets/js/sweetalert2.all.min.js?v=11.0"></script>
+    <script src="/assets/js/sweetalert2.all.min.js?v=11.0"></script>
     <script>
         if (typeof Swal === 'undefined') {
             console.warn("SweetAlert2 local no pudo cargarse. Cargando fallback desde CDN...");
@@ -20,8 +20,8 @@
             document.head.appendChild(script);
         }
     </script>
-    <script src="assets/js/theme.js"></script>
-    <script type="module" src="./assets/js/configuration.js"></script>
+    <script src="/assets/js/theme.js"></script>
+    <script type="module" src="/assets/js/configuration.js"></script>
 </head>
 
 <?php
@@ -253,10 +253,10 @@ if ($canConfigRemito) {
                     <form class="flex-column" id="form-catalogo">
 
                         <!-- Switch Activar/Desactivar -->
-                        <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+                        <div class="catalog-row-block">
                             <div>
-                                <label class="option-label" style="margin:0;">Activar Catálogo Público</label>
-                                <p style="font-size:0.8rem; color:#64748b; margin:4px 0 0;">Cuando está activo, cualquier persona con el link puede ver tus productos publicados.</p>
+                                <label class="option-label">Activar Catálogo Público</label>
+                                <p>Cuando está activo, cualquier persona con el link puede ver tus productos publicados.</p>
                             </div>
                             <label class="catalog-toggle" for="catalog_active_switch">
                                 <input type="checkbox" id="catalog_active_switch" <?php echo $catalogActive ? 'checked' : ''; ?>>
@@ -269,10 +269,10 @@ if ($canConfigRemito) {
                             <!-- Slug / URL -->
                             <div class="rustic-block" style="margin-top:1.5rem;">
                                 <label class="option-label" for="catalog_slug">URL del Catálogo <span class="helper-tag">Identificador único</span></label>
-                                <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-                                    <span style="font-size:0.85rem; color:#64748b; white-space:nowrap;">stockify.com.ar/catalogo/</span>
-                                    <div style="flex:1; position:relative;">
-                                        <input class="config-input" type="text" id="catalog_slug"
+                                <div class="slug-input-wrapper">
+                                    <span class="slug-prefix">stockify.com.ar/catalogo/</span>
+                                    <div style="flex:1; position:relative; height:100%;">
+                                        <input type="text" id="catalog_slug"
                                             value="<?php echo htmlspecialchars($catalogSlug); ?>"
                                             placeholder="mi-negocio"
                                             autocomplete="off"
@@ -281,14 +281,13 @@ if ($canConfigRemito) {
                                         <span id="slug-status-icon" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:1.1rem;"></span>
                                     </div>
                                 </div>
-                                <p id="slug-feedback" style="font-size:0.8rem; margin-top:4px; min-height:1em;"></p>
-                                <div id="catalog-url-preview" style="display:<?php echo $catalogSlug ? 'flex' : 'none'; ?>; align-items:center; gap:0.5rem; margin-top:0.75rem; padding:0.6rem 1rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; flex-wrap:wrap;">
-                                    <i class="ph ph-link" style="color:#16a34a;"></i>
-                                    <a id="catalog-url-link" href="/catalogo/<?php echo htmlspecialchars($catalogSlug); ?>" target="_blank"
-                                        style="color:#16a34a; font-size:0.85rem; text-decoration:none; word-break:break-all;">
+                                <p id="slug-feedback" style="font-size:0.8rem; margin-top:4px; min-height:1em; margin-bottom:0;"></p>
+                                <div id="catalog-url-preview" class="catalog-url-card" style="display:<?php echo $catalogSlug ? 'flex' : 'none'; ?>;">
+                                    <i class="ph ph-link"></i>
+                                    <a id="catalog-url-link" href="/catalogo/<?php echo htmlspecialchars($catalogSlug); ?>" target="_blank">
                                         stockify.com.ar/catalogo/<?php echo htmlspecialchars($catalogSlug); ?>
                                     </a>
-                                    <button type="button" id="btn-copy-catalog-url" class="btn btn-secondary" style="margin:0; padding:4px 12px; font-size:0.75rem; height:auto;">
+                                    <button type="button" id="btn-copy-catalog-url" class="btn btn-secondary" style="margin:0; padding:6px 16px; font-size:0.75rem; height:auto;">
                                         <i class="ph ph-copy"></i> Copiar
                                     </button>
                                 </div>
@@ -407,20 +406,20 @@ if ($canConfigRemito) {
                         <div class="customizer-section">
                             <h4 class="customizer-section-title"><i class="ph ph-eye"></i> Visualización</h4>
                             <div style="display:flex; flex-direction:column; gap:0.75rem;">
-                                <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.75rem 1rem;">
+                                <div class="catalog-row-block">
                                     <div>
-                                        <label class="option-label" style="margin:0;">Mostrar precio</label>
-                                        <p style="font-size:0.72rem; color:#64748b; margin:2px 0 0;">Precio visible en cada producto.</p>
+                                        <label class="option-label">Mostrar precio</label>
+                                        <p>Precio visible en cada producto.</p>
                                     </div>
                                     <label class="catalog-toggle" for="catalog_show_price">
                                         <input type="checkbox" id="catalog_show_price" <?php echo ($catalogSettings['show_price'] ?? true) ? 'checked' : ''; ?>>
                                         <span class="catalog-toggle-slider"></span>
                                     </label>
                                 </div>
-                                <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.75rem 1rem;">
+                                <div class="catalog-row-block">
                                     <div>
-                                        <label class="option-label" style="margin:0;">Mostrar stock exacto</label>
-                                        <p style="font-size:0.72rem; color:#64748b; margin:2px 0 0;">Si no, muestra "Disponible" o "Sin Stock".</p>
+                                        <label class="option-label">Mostrar stock exacto</label>
+                                        <p>Si no, muestra "Disponible" o "Sin Stock".</p>
                                     </div>
                                     <label class="catalog-toggle" for="catalog_show_stock">
                                         <input type="checkbox" id="catalog_show_stock" <?php echo ($catalogSettings['show_exact_stock'] ?? true) ? 'checked' : ''; ?>>
@@ -452,6 +451,20 @@ if ($canConfigRemito) {
                                         <option value="grid" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'grid' ? 'selected' : ''; ?>>Cuadrícula</option>
                                         <option value="lines" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'lines' ? 'selected' : ''; ?>>Líneas</option>
                                         <option value="none" <?php echo ($catalogSettings['theme_pattern'] ?? '') === 'none' ? 'selected' : ''; ?>>Liso</option>
+                                    </select>
+                                </div>
+                                <div class="rustic-block" style="grid-column: 1 / -1; margin-top: 0.5rem;">
+                                    <label class="option-label" for="catalog_font_family"><i class="ph ph-text-t"></i> Tipografía General</label>
+                                    <select class="config-input" id="catalog_font_family" style="margin-bottom:0;">
+                                        <option value="Outfit" <?php echo ($catalogSettings['font_family'] ?? 'Outfit') === 'Outfit' ? 'selected' : ''; ?>>Outfit (Moderna, geométrica)</option>
+                                        <option value="Inter" <?php echo ($catalogSettings['font_family'] ?? '') === 'Inter' ? 'selected' : ''; ?>>Inter (Limpia, corporativa)</option>
+                                        <option value="Lexend" <?php echo ($catalogSettings['font_family'] ?? '') === 'Lexend' ? 'selected' : ''; ?>>Lexend (Altamente legible)</option>
+                                        <option value="Space Grotesk" <?php echo ($catalogSettings['font_family'] ?? '') === 'Space Grotesk' ? 'selected' : ''; ?>>Space Grotesk (Tech, neobrutalista)</option>
+                                        <option value="Syne" <?php echo ($catalogSettings['font_family'] ?? '') === 'Syne' ? 'selected' : ''; ?>>Syne (Artística, expresiva)</option>
+                                        <option value="Poppins" <?php echo ($catalogSettings['font_family'] ?? '') === 'Poppins' ? 'selected' : ''; ?>>Poppins (Redondeada, amigable)</option>
+                                        <option value="Montserrat" <?php echo ($catalogSettings['font_family'] ?? '') === 'Montserrat' ? 'selected' : ''; ?>>Montserrat (Llamativa, clásica)</option>
+                                        <option value="Playfair Display" <?php echo ($catalogSettings['font_family'] ?? '') === 'Playfair Display' ? 'selected' : ''; ?>>Playfair Display (Elegante, luxury)</option>
+                                        <option value="Courier Prime" <?php echo ($catalogSettings['font_family'] ?? '') === 'Courier Prime' ? 'selected' : ''; ?>>Courier Prime (Monospace, retro)</option>
                                     </select>
                                 </div>
                             </div>
@@ -492,10 +505,10 @@ if ($canConfigRemito) {
                                         <option value="color-black" <?php echo ($catalogSettings['button_color'] ?? '') === 'color-black' ? 'selected' : ''; ?>>Negro</option>
                                     </select>
                                 </div>
-                                <div class="rustic-block" style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.75rem 1rem;">
+                                <div class="catalog-row-block">
                                     <div>
-                                        <label class="option-label" style="margin:0;">Habilitar botón</label>
-                                        <p style="font-size:0.72rem; color:#64748b; margin:2px 0 0;">Mostrar en cada producto.</p>
+                                        <label class="option-label">Habilitar botón</label>
+                                        <p>Mostrar en cada producto.</p>
                                     </div>
                                     <label class="catalog-toggle" for="catalog_show_action_button">
                                         <input type="checkbox" id="catalog_show_action_button" <?php echo ($catalogSettings['show_action_button'] ?? true) ? 'checked' : ''; ?>>
@@ -511,22 +524,236 @@ if ($canConfigRemito) {
                             </div>
                         </div>
 
+                        <!-- Colorimetría -->
+                        <div class="customizer-section">
+                            <h4 class="customizer-section-title"><i class="ph ph-drop"></i> Colorimetría</h4>
+                            <div style="display:flex; flex-direction:column; gap:0.6rem;">
+
+                                <!-- Fila 1: Fondo + Patrón -->
+                                <div class="config-grid" style="grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0;">
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_bg">Fondo de página</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_bg" style="margin-bottom:0; flex:1;">
+                                                <option value="#F4F4F6" <?php echo ($catalogSettings['color_bg'] ?? '#F4F4F6') === '#F4F4F6' ? 'selected' : ''; ?>>Gris claro (default)</option>
+                                                <option value="#FFFFFF" <?php echo ($catalogSettings['color_bg'] ?? '') === '#FFFFFF' ? 'selected' : ''; ?>>Blanco</option>
+                                                <option value="#1A1A1A" <?php echo ($catalogSettings['color_bg'] ?? '') === '#1A1A1A' ? 'selected' : ''; ?>>Negro</option>
+                                                <option value="#EDF2F7" <?php echo ($catalogSettings['color_bg'] ?? '') === '#EDF2F7' ? 'selected' : ''; ?>>Azul hielo</option>
+                                                <option value="#FFF9F0" <?php echo ($catalogSettings['color_bg'] ?? '') === '#FFF9F0' ? 'selected' : ''; ?>>Crema</option>
+                                                <option value="custom" <?php $cbg = $catalogSettings['color_bg'] ?? '#F4F4F6'; echo !in_array($cbg, ['#F4F4F6','#FFFFFF','#1A1A1A','#EDF2F7','#FFF9F0']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_bg_custom" value="<?php echo htmlspecialchars($catalogSettings['color_bg'] ?? '#F4F4F6'); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_pattern">Color del patrón</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_pattern" style="margin-bottom:0; flex:1;">
+                                                <option value="rgba(0,0,0,0.08)" <?php echo ($catalogSettings['color_pattern'] ?? 'rgba(0,0,0,0.08)') === 'rgba(0,0,0,0.08)' ? 'selected' : ''; ?>>Negro suave (default)</option>
+                                                <option value="rgba(0,0,0,0.2)" <?php echo ($catalogSettings['color_pattern'] ?? '') === 'rgba(0,0,0,0.2)' ? 'selected' : ''; ?>>Negro intenso</option>
+                                                <option value="rgba(255,255,255,0.3)" <?php echo ($catalogSettings['color_pattern'] ?? '') === 'rgba(255,255,255,0.3)' ? 'selected' : ''; ?>>Blanco</option>
+                                                <option value="rgba(163,190,140,0.4)" <?php echo ($catalogSettings['color_pattern'] ?? '') === 'rgba(163,190,140,0.4)' ? 'selected' : ''; ?>>Verde</option>
+                                                <option value="rgba(136,192,208,0.4)" <?php echo ($catalogSettings['color_pattern'] ?? '') === 'rgba(136,192,208,0.4)' ? 'selected' : ''; ?>>Azul</option>
+                                                <option value="rgba(235,203,139,0.4)" <?php echo ($catalogSettings['color_pattern'] ?? '') === 'rgba(235,203,139,0.4)' ? 'selected' : ''; ?>>Amarillo</option>
+                                                <option value="custom" <?php $cpat = $catalogSettings['color_pattern'] ?? 'rgba(0,0,0,0.08)'; echo !in_array($cpat, ['rgba(0,0,0,0.08)','rgba(0,0,0,0.2)','rgba(255,255,255,0.3)','rgba(163,190,140,0.4)','rgba(136,192,208,0.4)','rgba(235,203,139,0.4)']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_pattern_custom" value="<?php $cpat = $catalogSettings['color_pattern'] ?? 'rgba(0,0,0,0.08)'; echo str_starts_with($cpat, '#') ? htmlspecialchars($cpat) : '#8A8A8A'; ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fila 2: Tarjetas + Acento -->
+                                <div class="config-grid" style="grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0;">
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_card">Color tarjetas</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_card" style="margin-bottom:0; flex:1;">
+                                                <option value="#FFFFFF" <?php echo ($catalogSettings['color_card'] ?? '#FFFFFF') === '#FFFFFF' ? 'selected' : ''; ?>>Blanco (default)</option>
+                                                <option value="#F4F4F6" <?php echo ($catalogSettings['color_card'] ?? '') === '#F4F4F6' ? 'selected' : ''; ?>>Gris claro</option>
+                                                <option value="#FFF9F0" <?php echo ($catalogSettings['color_card'] ?? '') === '#FFF9F0' ? 'selected' : ''; ?>>Crema</option>
+                                                <option value="#1A1A1A" <?php echo ($catalogSettings['color_card'] ?? '') === '#1A1A1A' ? 'selected' : ''; ?>>Negro</option>
+                                                <option value="custom" <?php $ccard = $catalogSettings['color_card'] ?? '#FFFFFF'; echo !in_array($ccard, ['#FFFFFF','#F4F4F6','#FFF9F0','#1A1A1A']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_card_custom" value="<?php echo htmlspecialchars($catalogSettings['color_card'] ?? '#FFFFFF'); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_accent">Acento (pills, logo)</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_accent" style="margin-bottom:0; flex:1;">
+                                                <option value="theme" <?php echo ($catalogSettings['color_accent'] ?? 'theme') === 'theme' ? 'selected' : ''; ?>>Desde color principal</option>
+                                                <option value="#A3BE8C" <?php echo ($catalogSettings['color_accent'] ?? '') === '#A3BE8C' ? 'selected' : ''; ?>>Verde StockiFy</option>
+                                                <option value="#88C0D0" <?php echo ($catalogSettings['color_accent'] ?? '') === '#88C0D0' ? 'selected' : ''; ?>>Azul StockiFy</option>
+                                                <option value="#EBCB8B" <?php echo ($catalogSettings['color_accent'] ?? '') === '#EBCB8B' ? 'selected' : ''; ?>>Amarillo StockiFy</option>
+                                                <option value="#BF616A" <?php echo ($catalogSettings['color_accent'] ?? '') === '#BF616A' ? 'selected' : ''; ?>>Rojo StockiFy</option>
+                                                <option value="#B48EAD" <?php echo ($catalogSettings['color_accent'] ?? '') === '#B48EAD' ? 'selected' : ''; ?>>Violeta StockiFy</option>
+                                                <option value="#25D366" <?php echo ($catalogSettings['color_accent'] ?? '') === '#25D366' ? 'selected' : ''; ?>>Verde WhatsApp</option>
+                                                <option value="custom" <?php $cacc = $catalogSettings['color_accent'] ?? 'theme'; echo !in_array($cacc, ['theme','#A3BE8C','#88C0D0','#EBCB8B','#BF616A','#B48EAD','#25D366']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_accent_custom" value="<?php echo htmlspecialchars(($catalogSettings['color_accent'] ?? 'theme') === 'theme' ? '#88C0D0' : ($catalogSettings['color_accent'] ?? '#88C0D0')); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fila 3: Textos -->
+                                <div class="config-grid" style="grid-template-columns:1fr 1fr 1fr; gap:0.75rem; margin-bottom:0;">
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_label">Etiqueta cat.</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_label" style="margin-bottom:0; flex:1;">
+                                                <option value="#8A8A8A" <?php echo ($catalogSettings['color_label'] ?? '#8A8A8A') === '#8A8A8A' ? 'selected' : ''; ?>>Gris (default)</option>
+                                                <option value="#1A1A1A" <?php echo ($catalogSettings['color_label'] ?? '') === '#1A1A1A' ? 'selected' : ''; ?>>Negro</option>
+                                                <option value="#FFFFFF" <?php echo ($catalogSettings['color_label'] ?? '') === '#FFFFFF' ? 'selected' : ''; ?>>Blanco</option>
+                                                <option value="custom" <?php $clab = $catalogSettings['color_label'] ?? '#8A8A8A'; echo !in_array($clab, ['#8A8A8A','#1A1A1A','#FFFFFF']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_label_custom" value="<?php echo htmlspecialchars($catalogSettings['color_label'] ?? '#8A8A8A'); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_title">Título</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_title" style="margin-bottom:0; flex:1;">
+                                                <option value="#1A1A1A" <?php echo ($catalogSettings['color_title'] ?? '#1A1A1A') === '#1A1A1A' ? 'selected' : ''; ?>>Negro (default)</option>
+                                                <option value="#FFFFFF" <?php echo ($catalogSettings['color_title'] ?? '') === '#FFFFFF' ? 'selected' : ''; ?>>Blanco</option>
+                                                <option value="#8A8A8A" <?php echo ($catalogSettings['color_title'] ?? '') === '#8A8A8A' ? 'selected' : ''; ?>>Gris</option>
+                                                <option value="custom" <?php $ctit = $catalogSettings['color_title'] ?? '#1A1A1A'; echo !in_array($ctit, ['#1A1A1A','#FFFFFF','#8A8A8A']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_title_custom" value="<?php echo htmlspecialchars($catalogSettings['color_title'] ?? '#1A1A1A'); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_price">Precio</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_price" style="margin-bottom:0; flex:1;">
+                                                <option value="#1A1A1A" <?php echo ($catalogSettings['color_price'] ?? '#1A1A1A') === '#1A1A1A' ? 'selected' : ''; ?>>Negro (default)</option>
+                                                <option value="#FFFFFF" <?php echo ($catalogSettings['color_price'] ?? '') === '#FFFFFF' ? 'selected' : ''; ?>>Blanco</option>
+                                                <option value="#A3BE8C" <?php echo ($catalogSettings['color_price'] ?? '') === '#A3BE8C' ? 'selected' : ''; ?>>Verde</option>
+                                                <option value="#BF616A" <?php echo ($catalogSettings['color_price'] ?? '') === '#BF616A' ? 'selected' : ''; ?>>Rojo</option>
+                                                <option value="custom" <?php $cpri = $catalogSettings['color_price'] ?? '#1A1A1A'; echo !in_array($cpri, ['#1A1A1A','#FFFFFF','#A3BE8C','#BF616A']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_price_custom" value="<?php echo htmlspecialchars($catalogSettings['color_price'] ?? '#1A1A1A'); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fila 4: Encabezado + Botones contacto + Fondo etiquetas -->
+                                <div class="config-grid" style="grid-template-columns:1fr 1fr 1fr; gap:0.75rem; margin-bottom:0;">
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_header_bg">Fondo del head</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_header_bg" style="margin-bottom:0; flex:1;">
+                                                <option value="#FFFFFF" <?php echo ($catalogSettings['color_header_bg'] ?? '#FFFFFF') === '#FFFFFF' ? 'selected' : ''; ?>>Blanco (default)</option>
+                                                <option value="#F4F4F6" <?php echo ($catalogSettings['color_header_bg'] ?? '') === '#F4F4F6' ? 'selected' : ''; ?>>Gris claro</option>
+                                                <option value="#FFF9F0" <?php echo ($catalogSettings['color_header_bg'] ?? '') === '#FFF9F0' ? 'selected' : ''; ?>>Crema</option>
+                                                <option value="#1A1A1A" <?php echo ($catalogSettings['color_header_bg'] ?? '') === '#1A1A1A' ? 'selected' : ''; ?>>Negro</option>
+                                                <option value="custom" <?php $chbg = $catalogSettings['color_header_bg'] ?? '#FFFFFF'; echo !in_array($chbg, ['#FFFFFF','#F4F4F6','#FFF9F0','#1A1A1A']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_header_bg_custom" value="<?php echo htmlspecialchars($catalogSettings['color_header_bg'] ?? '#FFFFFF'); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_social_bg">Botones contacto</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_social_bg" style="margin-bottom:0; flex:1;">
+                                                <option value="#FFFFFF" <?php echo ($catalogSettings['color_social_bg'] ?? '#FFFFFF') === '#FFFFFF' ? 'selected' : ''; ?>>Blanco (default)</option>
+                                                <option value="#F4F4F6" <?php echo ($catalogSettings['color_social_bg'] ?? '') === '#F4F4F6' ? 'selected' : ''; ?>>Gris claro</option>
+                                                <option value="#FFF9F0" <?php echo ($catalogSettings['color_social_bg'] ?? '') === '#FFF9F0' ? 'selected' : ''; ?>>Crema</option>
+                                                <option value="#1A1A1A" <?php echo ($catalogSettings['color_social_bg'] ?? '') === '#1A1A1A' ? 'selected' : ''; ?>>Negro</option>
+                                                <option value="custom" <?php $csbg = $catalogSettings['color_social_bg'] ?? '#FFFFFF'; echo !in_array($csbg, ['#FFFFFF','#F4F4F6','#FFF9F0','#1A1A1A']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_social_bg_custom" value="<?php echo htmlspecialchars($catalogSettings['color_social_bg'] ?? '#FFFFFF'); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                    <div class="rustic-block">
+                                        <label class="option-label" for="catalog_color_badge_bg">Fondo etiquetas</label>
+                                        <div style="display:flex; gap:4px; align-items:center;">
+                                            <select class="config-input" id="catalog_color_badge_bg" style="margin-bottom:0; flex:1;">
+                                                <option value="#A3BE8C" <?php echo ($catalogSettings['color_badge_bg'] ?? '#A3BE8C') === '#A3BE8C' ? 'selected' : ''; ?>>Verde (default)</option>
+                                                <option value="#BF616A" <?php echo ($catalogSettings['color_badge_bg'] ?? '') === '#BF616A' ? 'selected' : ''; ?>>Rojo</option>
+                                                <option value="#88C0D0" <?php echo ($catalogSettings['color_badge_bg'] ?? '') === '#88C0D0' ? 'selected' : ''; ?>>Azul</option>
+                                                <option value="#EBCB8B" <?php echo ($catalogSettings['color_badge_bg'] ?? '') === '#EBCB8B' ? 'selected' : ''; ?>>Amarillo</option>
+                                                <option value="#B48EAD" <?php echo ($catalogSettings['color_badge_bg'] ?? '') === '#B48EAD' ? 'selected' : ''; ?>>Violeta</option>
+                                                <option value="custom" <?php $cbbg = $catalogSettings['color_badge_bg'] ?? '#A3BE8C'; echo !in_array($cbbg, ['#A3BE8C','#BF616A','#88C0D0','#EBCB8B','#B48EAD']) ? 'selected' : ''; ?>>Personalizado...</option>
+                                            </select>
+                                            <input type="color" id="catalog_color_badge_bg_custom" value="<?php echo htmlspecialchars($catalogSettings['color_badge_bg'] ?? '#A3BE8C'); ?>" class="custom-color-picker">
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Sombras -->
+                        <div class="customizer-section">
+                            <h4 class="customizer-section-title"><i class="ph ph-intersect"></i> Sombras</h4>
+                            <div class="config-grid" style="grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0;">
+                                <div class="catalog-row-block">
+                                    <div>
+                                        <label class="option-label">Filtros</label>
+                                        <p>Buscador y categorías.</p>
+                                    </div>
+                                    <label class="catalog-toggle" for="catalog_shadow_filter_section">
+                                        <input type="checkbox" id="catalog_shadow_filter_section" <?php echo ($catalogSettings['shadow_filter_section'] ?? true) ? 'checked' : ''; ?>>
+                                        <span class="catalog-toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="catalog-row-block">
+                                    <div>
+                                        <label class="option-label">Pills Cat.</label>
+                                        <p>Botones de categorías.</p>
+                                    </div>
+                                    <label class="catalog-toggle" for="catalog_shadow_category_pill">
+                                        <input type="checkbox" id="catalog_shadow_category_pill" <?php echo ($catalogSettings['shadow_category_pill'] ?? true) ? 'checked' : ''; ?>>
+                                        <span class="catalog-toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="catalog-row-block">
+                                    <div>
+                                        <label class="option-label">Productos</label>
+                                        <p>Tarjetas de productos.</p>
+                                    </div>
+                                    <label class="catalog-toggle" for="catalog_shadow_product_card">
+                                        <input type="checkbox" id="catalog_shadow_product_card" <?php echo ($catalogSettings['shadow_product_card'] ?? true) ? 'checked' : ''; ?>>
+                                        <span class="catalog-toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="catalog-row-block">
+                                    <div>
+                                        <label class="option-label">Detalle</label>
+                                        <p>Diálogo de detalles.</p>
+                                    </div>
+                                    <label class="catalog-toggle" for="catalog_shadow_modal">
+                                        <input type="checkbox" id="catalog_shadow_modal" <?php echo ($catalogSettings['shadow_modal'] ?? true) ? 'checked' : ''; ?>>
+                                        <span class="catalog-toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                     </div><!-- /customizer-controls -->
 
-                    <!-- ===== COLUMNA DERECHA: MOCKUP / PREVIEW ===== -->
+                    <!-- ===== COLUMNA DERECHA: MOCKUP / PREVIEW =====-->
                     <div class="customizer-preview">
                         <div class="customizer-preview-label">
                             <i class="ph ph-device-mobile"></i> Vista previa del catálogo
                         </div>
 
+                        <!-- Controles de zoom -->
+                        <div class="mockup-zoom-controls">
+                            <button type="button" class="mockup-zoom-btn" id="mockup-zoom-out" title="Alejar"><i class="ph ph-minus"></i></button>
+                            <span class="mockup-zoom-label" id="mockup-zoom-label">100%</span>
+                            <button type="button" class="mockup-zoom-btn" id="mockup-zoom-in" title="Acercar"><i class="ph ph-plus"></i></button>
+                        </div>
+
                         <!-- Mockup del catálogo -->
+                        <div class="mockup-zoom-wrapper">
                         <div class="catalog-mockup" id="catalog-mockup">
 
                             <!-- Nav falso del catálogo -->
                             <div class="mockup-nav" id="mockup-nav">
                                 <div class="mockup-nav-logo" id="mockup-nav-logo">
                                     <div class="mockup-logo-circle" id="mockup-logo-circle"><?php echo htmlspecialchars(!empty($inventoryName) ? mb_strtoupper(mb_substr($inventoryName, 0, 1)) : 'M'); ?></div>
-                                    <span class="mockup-business-name" id="mockup-business-name"><?php echo htmlspecialchars(!empty($inventoryName) ? $inventoryName : 'Mi Negocio'); ?></span>
+                                    <span class="mockup-business-name" id="mockup-business-name" data-original-name="<?php echo htmlspecialchars(!empty($inventoryName) ? $inventoryName : 'Mi Negocio'); ?>"><?php echo htmlspecialchars(!empty($inventoryName) ? $inventoryName : 'Mi Negocio'); ?></span>
                                 </div>
                                 <div class="mockup-nav-contacts" id="mockup-nav-contacts">
                                     <div class="mockup-contact-btn mockup-map" id="mockup-contact-map" style="display:none;"><i class="ph ph-map-pin"></i></div>
@@ -538,38 +765,48 @@ if ($canConfigRemito) {
                             <!-- Fondo con patrón -->
                             <div class="mockup-bg" id="mockup-bg">
 
-                                <!-- Buscador falso -->
-                                <div class="mockup-search">
-                                    <i class="ph ph-magnifying-glass"></i>
-                                    <span>Buscar productos...</span>
-                                </div>
-
-                                <!-- Filtro de Categorías falso -->
-                                <div class="mockup-categories">
-                                    <span class="mockup-category-pill active">Todos</span>
-                                    <span class="mockup-category-pill">Bebidas</span>
-                                    <span class="mockup-category-pill">Snacks</span>
-                                </div>
-
-                                <!-- Tarjeta de producto falsa -->
-                                <div class="mockup-product-card">
-                                    <div class="mockup-product-img">
-                                        <span class="mockup-product-badge badge-stock" id="mockup-stock-badge">Disponible</span>
-                                        <i class="ph ph-image" style="font-size:1.5rem; color:#ccc;"></i>
+                                <!-- Buscador y Filtros falsos -->
+                                <div class="mockup-filter-section">
+                                    <div class="mockup-search">
+                                        <i class="ph ph-magnifying-glass"></i>
+                                        <span>Buscar productos por nombre...</span>
                                     </div>
-                                    <div class="mockup-product-body">
-                                        <p class="mockup-category-tag">Categoría</p>
-                                        <p class="mockup-product-name">Producto de Ejemplo</p>
-                                        <p class="mockup-product-price" id="mockup-product-price">$1.500</p>
-                                        <button class="mockup-action-btn" id="mockup-action-btn">
-                                            <i class="ph ph-whatsapp-logo" id="mockup-btn-icon"></i>
-                                            <span id="mockup-btn-text">Consultar</span>
-                                        </button>
+                                    <div class="mockup-categories">
+                                        <span class="mockup-category-pill active">Todos</span>
+                                        <span class="mockup-category-pill">General</span>
+                                        <span class="mockup-category-pill">Muebles</span>
+                                    </div>
+                                </div>
+
+                                <!-- Una sola tarjeta de producto -->
+                                <div class="mockup-products-grid mockup-single">
+                                    <div class="mockup-product-card">
+                                        <div class="mockup-product-image-container">
+                                            <span class="mockup-product-badge badge-stock">Disponible</span>
+                                            <img
+                                                src="https://http2.mlstatic.com/D_Q_NP_2X_761181-MLA93322598447_092025-T.webp"
+                                                alt="Banqueta Alta Vittoria"
+                                                class="mockup-product-img-real"
+                                                loading="lazy"
+                                            >
+                                        </div>
+                                        <div class="mockup-product-details">
+                                            <span class="mockup-product-category">General</span>
+                                            <h3 class="mockup-product-title">Banqueta Alta Vittoria Premium Negro</h3>
+                                            <div class="mockup-product-footer">
+                                                <span class="mockup-product-price">$74.700</span>
+                                                <button class="mockup-action-btn">
+                                                    <i class="ph ph-whatsapp-logo mockup-btn-icon"></i>
+                                                    <span class="mockup-btn-text">Escribir</span>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                             </div><!-- /mockup-bg -->
                         </div><!-- /catalog-mockup -->
+                        </div><!-- /mockup-zoom-wrapper -->
                     </div><!-- /customizer-preview -->
 
                 </div><!-- /customizer-panel-body -->

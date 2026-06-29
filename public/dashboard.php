@@ -77,14 +77,14 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Panel de Control - StockiFy</title>
 
-    <link rel="stylesheet" href="assets/css/main.css?v=1.3">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=2.1">
-    <link rel="stylesheet" href="assets/css/notifications.css?v=2.0">
-    <link rel="stylesheet" href="assets/css/employees.css?v=1.3">
-    <link rel="stylesheet" href="assets/css/purchases.css?v=2.1">
-    <link rel="stylesheet" href="assets/css/payments.css?v=1.2">
-    <link rel="stylesheet" href="assets/css/tutorials.css?v=1.0">
-    <link rel="stylesheet" href="assets/css/mobile-sheets.css?v=1.0">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1.3">
+    <link rel="stylesheet" href="/assets/css/dashboard.css?v=2.1">
+    <link rel="stylesheet" href="/assets/css/notifications.css?v=2.0">
+    <link rel="stylesheet" href="/assets/css/employees.css?v=1.3">
+    <link rel="stylesheet" href="/assets/css/purchases.css?v=2.1">
+    <link rel="stylesheet" href="/assets/css/payments.css?v=1.2">
+    <link rel="stylesheet" href="/assets/css/tutorials.css?v=1.0">
+    <link rel="stylesheet" href="/assets/css/mobile-sheets.css?v=1.0">
 
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
@@ -93,11 +93,10 @@ try {
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
 
-    <script src="assets/js/theme.js"></script>
+    <script src="/assets/js/theme.js"></script>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="assets/js/sweetalert2.all.min.js?v=11.0"></script>
+    <script src="/assets/js/sweetalert2.all.min.js?v=11.0"></script>
     <script>
         if (typeof Swal === 'undefined') {
             console.warn("SweetAlert2 local no pudo cargarse. Cargando fallback desde CDN...");
@@ -107,8 +106,8 @@ try {
         }
     </script>
 
-    <link rel="stylesheet" href="assets/css/analytics.css">
-    <link rel="stylesheet" href="assets/css/sales.css?v=2.1">
+    <link rel="stylesheet" href="/assets/css/analytics.css">
+    <link rel="stylesheet" href="/assets/css/sales.css?v=2.1">
     <style>
         .notif-tab-btn {
             background: none !important;

@@ -660,6 +660,24 @@ function initCatalogHandlers() {
             button_color:     document.getElementById('catalog_button_color')?.value ?? 'whatsapp-green',
             theme_color:      document.getElementById('catalog_theme_color')?.value ?? 'accent-color',
             theme_pattern:    document.getElementById('catalog_theme_pattern')?.value ?? 'dots',
+            // Colorimetría
+            color_bg:      (() => { const s = document.getElementById('catalog_color_bg'); return s?.value === 'custom' ? (document.getElementById('catalog_color_bg_custom')?.value || '#F4F4F6') : (s?.value || '#F4F4F6'); })(),
+            color_pattern: (() => { const s = document.getElementById('catalog_color_pattern'); return s?.value === 'custom' ? (document.getElementById('catalog_color_pattern_custom')?.value || 'rgba(0,0,0,0.08)') : (s?.value || 'rgba(0,0,0,0.08)'); })(),
+            color_card:    (() => { const s = document.getElementById('catalog_color_card'); return s?.value === 'custom' ? (document.getElementById('catalog_color_card_custom')?.value || '#FFFFFF') : (s?.value || '#FFFFFF'); })(),
+            color_accent:  (() => { const s = document.getElementById('catalog_color_accent'); return s?.value === 'custom' ? (document.getElementById('catalog_color_accent_custom')?.value || 'theme') : (s?.value || 'theme'); })(),
+            color_label:   (() => { const s = document.getElementById('catalog_color_label'); return s?.value === 'custom' ? (document.getElementById('catalog_color_label_custom')?.value || '#8A8A8A') : (s?.value || '#8A8A8A'); })(),
+            color_title:   (() => { const s = document.getElementById('catalog_color_title'); return s?.value === 'custom' ? (document.getElementById('catalog_color_title_custom')?.value || '#1A1A1A') : (s?.value || '#1A1A1A'); })(),
+            color_price:   (() => { const s = document.getElementById('catalog_color_price'); return s?.value === 'custom' ? (document.getElementById('catalog_color_price_custom')?.value || '#1A1A1A') : (s?.value || '#1A1A1A'); })(),
+            color_header_bg: (() => { const s = document.getElementById('catalog_color_header_bg'); return s?.value === 'custom' ? (document.getElementById('catalog_color_header_bg_custom')?.value || '#FFFFFF') : (s?.value || '#FFFFFF'); })(),
+            color_social_bg: (() => { const s = document.getElementById('catalog_color_social_bg'); return s?.value === 'custom' ? (document.getElementById('catalog_color_social_bg_custom')?.value || '#FFFFFF') : (s?.value || '#FFFFFF'); })(),
+            color_badge_bg:  (() => { const s = document.getElementById('catalog_color_badge_bg'); return s?.value === 'custom' ? (document.getElementById('catalog_color_badge_bg_custom')?.value || '#A3BE8C') : (s?.value || '#A3BE8C'); })(),
+            // Sombras
+            shadow_filter_section: document.getElementById('catalog_shadow_filter_section')?.checked ?? true,
+            shadow_category_pill:  document.getElementById('catalog_shadow_category_pill')?.checked  ?? true,
+            shadow_product_card:   document.getElementById('catalog_shadow_product_card')?.checked   ?? true,
+            shadow_modal:          document.getElementById('catalog_shadow_modal')?.checked          ?? true,
+            // Tipografía
+            font_family:           document.getElementById('catalog_font_family')?.value             ?? 'Outfit',
         };
 
         try {
@@ -771,33 +789,104 @@ function initCatalogCustomizerPanel() {
         'catalog_theme_color', 'catalog_theme_pattern',
         'catalog_button_color', 'catalog_button_text', 'catalog_button_icon',
         'catalog_show_action_button', 'catalog_show_price', 'catalog_show_stock',
-        'catalog_whatsapp', 'catalog_instagram', 'catalog_address'
+        'catalog_whatsapp', 'catalog_instagram', 'catalog_address',
+        // colorimetry
+        'catalog_color_bg', 'catalog_color_bg_custom',
+        'catalog_color_pattern', 'catalog_color_pattern_custom',
+        'catalog_color_card', 'catalog_color_card_custom',
+        'catalog_color_accent', 'catalog_color_accent_custom',
+        'catalog_color_label', 'catalog_color_label_custom',
+        'catalog_color_title', 'catalog_color_title_custom',
+        'catalog_color_price', 'catalog_color_price_custom',
+        'catalog_color_header_bg', 'catalog_color_header_bg_custom',
+        'catalog_color_social_bg', 'catalog_color_social_bg_custom',
+        'catalog_color_badge_bg', 'catalog_color_badge_bg_custom',
+        // shadows
+        'catalog_shadow_filter_section', 'catalog_shadow_category_pill',
+        'catalog_shadow_product_card', 'catalog_shadow_modal',
+        // typography
+        'catalog_font_family',
     ].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('change', updateMockupPreview);
         el.addEventListener('input',  updateMockupPreview);
     });
+
+    // Zoom controls
+    const zoomIn    = document.getElementById('mockup-zoom-in');
+    const zoomOut   = document.getElementById('mockup-zoom-out');
+    const zoomLabel = document.getElementById('mockup-zoom-label');
+    const mockupEl2 = document.getElementById('catalog-mockup');
+    let currentZoom = 1.0;
+    if (mockupEl2) mockupEl2.dataset.zoom = currentZoom;
+    const ZOOM_STEP = 0.1;
+    const ZOOM_MIN  = 0.5;
+    const ZOOM_MAX  = 1.5;
+
+    function applyZoom() {
+        if (!mockupEl2) return;
+        mockupEl2.style.transform = `scale(${currentZoom})`;
+        mockupEl2.dataset.zoom = currentZoom;
+        if (zoomLabel) zoomLabel.textContent = Math.round(currentZoom * 100) + '%';
+        adjustZoomWrapper();
+    }
+
+    zoomIn?.addEventListener('click', () => {
+        currentZoom = Math.min(ZOOM_MAX, parseFloat((currentZoom + ZOOM_STEP).toFixed(1)));
+        applyZoom();
+    });
+    zoomOut?.addEventListener('click', () => {
+        currentZoom = Math.max(ZOOM_MIN, parseFloat((currentZoom - ZOOM_STEP).toFixed(1)));
+        applyZoom();
+    });
+}
+
+function adjustZoomWrapper() {
+    const mockupEl = document.getElementById('catalog-mockup');
+    if (!mockupEl) return;
+    const wrapper = mockupEl.parentElement;
+    if (!wrapper) return;
+
+    // Temporarily clear wrapper styles to let the mockup layout naturally
+    const prevW = wrapper.style.width;
+    const prevH = wrapper.style.height;
+    wrapper.style.width = '';
+    wrapper.style.height = '';
+
+    const zoom = parseFloat(mockupEl.dataset.zoom) || 1.0;
+    
+    // Measure natural (unscaled) dimensions
+    const w = mockupEl.offsetWidth;
+    const h = mockupEl.offsetHeight;
+
+    if (w > 0 && h > 0) {
+        wrapper.style.width = (w * zoom) + 'px';
+        wrapper.style.height = (h * zoom) + 'px';
+    } else {
+        wrapper.style.width = prevW;
+        wrapper.style.height = prevH;
+    }
 }
 
 const _THEME_COLOR_HEX = {
     'accent-color':  null,
-    'accent-green':  '#4ade80',
-    'accent-blue':   '#3b82f6',
-    'accent-red':    '#ef4444',
-    'accent-yellow': '#facc15',
-    'accent-violet': '#a855f7',
+    'accent-green':  '#A3BE8C',
+    'accent-blue':   '#88C0D0',
+    'accent-red':    '#BF616A',
+    'accent-yellow': '#EBCB8B',
+    'accent-violet': '#B48EAD',
 };
 
 const _BTN_BG = {
     'whatsapp-green':  '#25D366',
     'instagram-pink':  'linear-gradient(135deg,#f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)',
     'facebook-blue':   '#1877F2',
-    'accent-green':    '#4ade80',
-    'accent-red':      '#ef4444',
-    'accent-blue':     '#3b82f6',
-    'accent-yellow':   '#facc15',
-    'accent-violet':   '#a855f7',
+    'accent-green':    '#A3BE8C',
+    'accent-red':      '#BF616A',
+    'accent-blue':     '#88C0D0',
+    'accent-yellow':   '#EBCB8B',
+    'accent-violet':   '#B48EAD',
     'accent-color':    null,
     'color-black':     '#1b1b1b',
 };
@@ -831,52 +920,144 @@ function updateMockupPreview() {
     const address      = g('catalog_address')?.value.trim()   ?? '';
 
     const accentHex = _THEME_COLOR_HEX[themeColor];
-    const accentVal = accentHex ?? getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() ?? '#3b82f6';
-
-    const catTag    = document.querySelector('.mockup-category-tag');
-    const priceEl   = g('mockup-product-price');
-    const circleEl  = g('mockup-logo-circle');
-    const stockBadge = g('mockup-stock-badge');
-    const activePill = document.querySelector('.mockup-category-pill.active');
-
-    if (catTag)   catTag.style.color = '';
-    if (circleEl) circleEl.style.backgroundColor = accentVal;
-    if (activePill) activePill.style.backgroundColor = accentVal;
-
-    if (priceEl) {
-        priceEl.style.display = showPrice ? '' : 'none';
-        priceEl.style.color   = '';
+    let accentVal = accentHex;
+    if (!accentVal) {
+        accentVal = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#88C0D0';
     }
 
-    if (stockBadge) {
-        stockBadge.textContent = showStock ? 'Stock: 12 u.' : 'Disponible';
-    }
+    // Price elements (all cards)
+    const priceEls = document.querySelectorAll('.mockup-product-price');
+    priceEls.forEach(el => {
+        el.style.display = showPrice ? '' : 'none';
+    });
+
+    // Stock badges (all cards)
+    const stockBadges = document.querySelectorAll('.mockup-product-badge');
+    stockBadges.forEach(el => {
+        if (showStock) {
+            el.textContent = 'Disponible';
+            el.classList.remove('badge-out-of-stock');
+            el.classList.add('badge-stock');
+        } else {
+            el.textContent = 'Sin Stock';
+            el.classList.remove('badge-stock');
+            el.classList.add('badge-out-of-stock');
+        }
+    });
 
     const mockupBg = g('mockup-bg');
+    // Read colorimetry values
+    const resolveColor = (selectId, customId) => {
+        const sel = g(selectId);
+        if (!sel) return null;
+        if (sel.value === 'custom' || sel.value === 'theme') {
+            if (sel.value === 'theme') return null;
+            return g(customId)?.value || null;
+        }
+        return sel.value;
+    };
+
+    updateColorPickersVisibility();
+
+    const colorBg      = resolveColor('catalog_color_bg',      'catalog_color_bg_custom')      || '#F4F4F6';
+    const colorPattern = resolveColor('catalog_color_pattern', 'catalog_color_pattern_custom') || 'rgba(0,0,0,0.08)';
+    const colorCard    = resolveColor('catalog_color_card',    'catalog_color_card_custom')    || '#FFFFFF';
+    const colorAccent  = resolveColor('catalog_color_accent',  'catalog_color_accent_custom');
+    const colorLabel   = resolveColor('catalog_color_label',   'catalog_color_label_custom')   || '#8A8A8A';
+    const colorTitle   = resolveColor('catalog_color_title',   'catalog_color_title_custom')   || '#1A1A1A';
+    const colorPrice   = resolveColor('catalog_color_price',   'catalog_color_price_custom')   || '#1A1A1A';
+    const colorHeaderBg = resolveColor('catalog_color_header_bg', 'catalog_color_header_bg_custom') || '#FFFFFF';
+    const colorSocialBg = resolveColor('catalog_color_social_bg', 'catalog_color_social_bg_custom') || '#FFFFFF';
+    const colorBadgeBg  = resolveColor('catalog_color_badge_bg',  'catalog_color_badge_bg_custom')  || '#A3BE8C';
+
+    // Apply colorimetry to mockup CSS variables
+    const mockupEl = document.getElementById('catalog-mockup');
+    if (mockupEl) {
+        mockupEl.style.setProperty('--mockup-bg-color',     colorBg);
+        mockupEl.style.setProperty('--mockup-card-bg',      colorCard);
+        mockupEl.style.setProperty('--mockup-label-color',  colorLabel);
+        mockupEl.style.setProperty('--mockup-title-color',  colorTitle);
+        mockupEl.style.setProperty('--mockup-price-color',  colorPrice);
+        const finalAccent = colorAccent || accentVal;
+        mockupEl.style.setProperty('--mockup-accent-color', finalAccent);
+        // Also update the active pill directly for compatibility
+        const activePill = document.querySelector('.mockup-category-pill.active');
+        if (activePill) activePill.style.backgroundColor = finalAccent;
+    }
+
+    const mockupNav = g('mockup-nav');
+    if (mockupNav) {
+        mockupNav.style.backgroundColor = colorHeaderBg;
+    }
+
+    const mockupContactBtns = document.querySelectorAll('.mockup-contact-btn');
+    mockupContactBtns.forEach(btn => {
+        btn.style.backgroundColor = colorSocialBg;
+    });
+
+    const mockupBadges = document.querySelectorAll('.mockup-product-badge.badge-stock');
+    mockupBadges.forEach(badge => {
+        badge.style.backgroundColor = colorBadgeBg;
+    });
+
+    // Shadows
+    const shadowPill = g('catalog_shadow_category_pill')?.checked ?? true;
+    const shadowCard = g('catalog_shadow_product_card')?.checked ?? true;
+    const shadowFilter = g('catalog_shadow_filter_section')?.checked ?? true;
+
+    const filterSec = document.querySelector('.mockup-filter-section');
+    if (filterSec) {
+        filterSec.style.boxShadow = shadowFilter ? '4px 4px 0px var(--color-black)' : 'none';
+    }
+
+    const card = document.querySelector('.mockup-product-card');
+    if (card) {
+        card.style.boxShadow = shadowCard ? '4px 4px 0 var(--color-black)' : 'none';
+    }
+
+    const pills = document.querySelectorAll('.mockup-category-pill');
+    pills.forEach(p => {
+        p.style.boxShadow = shadowPill ? '1.5px 1.5px 0px var(--color-black)' : 'none';
+        p.style.transform = shadowPill ? '' : 'none';
+    });
+
+    // Font
+    const fontFamily = g('catalog_font_family')?.value ?? 'Outfit';
+    loadMockupFont(fontFamily);
+
     if (mockupBg) {
+        mockupBg.style.backgroundColor = colorBg;
         let bgImg = 'none';
-        if (themePattern === 'dots')
-            bgImg = 'radial-gradient(rgba(0,0,0,0.08) 1.5px, transparent 1.5px)';
-        else if (themePattern === 'grid')
-            bgImg = 'linear-gradient(rgba(0,0,0,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.05) 1px,transparent 1px)';
-        else if (themePattern === 'lines')
-            bgImg = 'repeating-linear-gradient(45deg,rgba(0,0,0,0.03) 0,rgba(0,0,0,0.03) 2px,transparent 2px,transparent 12px)';
+        const patternColor = colorPattern;
+        if (themePattern === 'dots') {
+            bgImg = `radial-gradient(${patternColor} 1.5px, transparent 1.5px)`;
+            mockupBg.style.backgroundSize = '24px 24px';
+        } else if (themePattern === 'grid') {
+            bgImg = `linear-gradient(${patternColor} 1px,transparent 1px),linear-gradient(90deg,${patternColor} 1px,transparent 1px)`;
+            mockupBg.style.backgroundSize = '24px 24px';
+        } else if (themePattern === 'lines') {
+            bgImg = `repeating-linear-gradient(45deg,${patternColor} 0,${patternColor} 2px,transparent 2px,transparent 12px)`;
+            mockupBg.style.backgroundSize = 'auto';
+        } else {
+            mockupBg.style.backgroundSize = 'auto';
+        }
         mockupBg.style.backgroundImage = bgImg;
     }
 
-    const actionBtn = g('mockup-action-btn');
-    if (actionBtn) {
-        actionBtn.style.display = showBtn ? '' : 'none';
+    // Action buttons (all cards)
+    const actionBtns = document.querySelectorAll('.mockup-action-btn');
+    actionBtns.forEach(btn => {
+        btn.style.display = showBtn ? '' : 'none';
         const bg  = _BTN_BG[btnColor]  ?? accentVal;
         const col = _BTN_TXT[btnColor] ?? '#fff';
-        actionBtn.style.background = bg;
-        actionBtn.style.color      = col;
+        btn.style.background = bg;
+        btn.style.color      = col;
 
-        const iconEl = g('mockup-btn-icon');
-        const textEl = g('mockup-btn-text');
+        const iconEl = btn.querySelector('.mockup-btn-icon');
+        const textEl = btn.querySelector('.mockup-btn-text');
         if (iconEl) iconEl.className = 'ph ' + btnIcon;
         if (textEl) textEl.textContent = btnText || 'Consultar';
-    }
+    });
 
     const mapEl = g('mockup-contact-map');
     const igEl  = g('mockup-contact-ig');
@@ -885,7 +1066,7 @@ function updateMockupPreview() {
     if (igEl)  igEl.style.display  = instagram ? 'flex' : 'none';
     if (waEl)  waEl.style.display  = whatsapp  ? 'flex' : 'none';
 
-    // Update mockup logo circle content
+    // Update mockup logo content
     let currentLogoSrc = null;
     if (!_sharedCatalogLogoDeleted) {
         if (_sharedCatalogLogoFile) {
@@ -897,16 +1078,91 @@ function updateMockupPreview() {
             currentLogoSrc = g('catalog_logo_url')?.value || '';
         }
     }
-    updateMockupLogo(currentLogoSrc);
+    updateMockupLogo(currentLogoSrc, accentVal);
+    adjustZoomWrapper();
 }
 
-function updateMockupLogo(src) {
-    const circle = document.getElementById('mockup-logo-circle');
-    if (!circle) return;
+function updateMockupLogo(src, accentVal) {
+    const logoContainer = document.getElementById('mockup-nav-logo');
+    if (!logoContainer) return;
+
+    const businessNameEl = document.getElementById('mockup-business-name');
+    const businessName = (businessNameEl && businessNameEl.dataset.originalName) || 
+                         (businessNameEl && businessNameEl.textContent.trim()) || 
+                         'Mi Negocio';
+
     if (src) {
-        circle.innerHTML = `<img src="${src}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        logoContainer.innerHTML = `
+            <img class="business-logo" src="${src}" alt="Logo" style="max-height:32px; max-width:150px; object-fit:contain;">
+        `;
     } else {
-        const businessName = document.getElementById('mockup-business-name')?.textContent.trim() || 'M';
-        circle.innerHTML = businessName.charAt(0).toUpperCase();
+        const initial = businessName.charAt(0).toUpperCase();
+        logoContainer.innerHTML = `
+            <div class="mockup-logo-circle" id="mockup-logo-circle" style="width:32px; height:32px; border-radius:50%; background:${accentVal || '#3b82f6'}; color:#fff; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; border:var(--border-soft); box-shadow:2px 2px 0px var(--color-black); transition:background-color 0.3s ease;">
+                ${initial}
+            </div>
+            <span class="mockup-business-name" id="mockup-business-name" style="font-size:0.8rem; font-weight:900; text-transform:uppercase; color: var(--color-black);">${businessName}</span>
+        `;
+        const newBusinessNameEl = document.getElementById('mockup-business-name');
+        if (newBusinessNameEl) {
+            newBusinessNameEl.dataset.originalName = businessName;
+        }
+    }
+}
+
+function updateColorPickersVisibility() {
+    const pairs = [
+        { selectId: 'catalog_color_bg',      pickerId: 'catalog_color_bg_custom' },
+        { selectId: 'catalog_color_pattern', pickerId: 'catalog_color_pattern_custom' },
+        { selectId: 'catalog_color_card',    pickerId: 'catalog_color_card_custom' },
+        { selectId: 'catalog_color_accent',  pickerId: 'catalog_color_accent_custom' },
+        { selectId: 'catalog_color_label',   pickerId: 'catalog_color_label_custom' },
+        { selectId: 'catalog_color_title',   pickerId: 'catalog_color_title_custom' },
+        { selectId: 'catalog_color_price',   pickerId: 'catalog_color_price_custom' },
+        { selectId: 'catalog_color_header_bg', pickerId: 'catalog_color_header_bg_custom' },
+        { selectId: 'catalog_color_social_bg', pickerId: 'catalog_color_social_bg_custom' },
+        { selectId: 'catalog_color_badge_bg',  pickerId: 'catalog_color_badge_bg_custom' }
+    ];
+
+    pairs.forEach(pair => {
+        const selectEl = document.getElementById(pair.selectId);
+        const pickerEl = document.getElementById(pair.pickerId);
+        if (selectEl && pickerEl) {
+            if (selectEl.value === 'custom') {
+                pickerEl.classList.add('show');
+            } else {
+                pickerEl.classList.remove('show');
+            }
+        }
+    });
+}
+
+function loadMockupFont(fontName) {
+    if (!fontName) return;
+    const fontId = 'dynamic-mockup-font';
+    let linkEl = document.getElementById(fontId);
+    if (!linkEl) {
+        linkEl = document.createElement('link');
+        linkEl.id = fontId;
+        linkEl.rel = 'stylesheet';
+        document.head.appendChild(linkEl);
+    }
+    const fontMap = {
+        'Outfit': 'Outfit:wght@300;400;500;600;700;800',
+        'Inter': 'Inter:wght@300;400;500;600;700;800',
+        'Lexend': 'Lexend:wght@300;400;500;600;700;800',
+        'Space Grotesk': 'Space+Grotesk:wght@400;500;600;700',
+        'Syne': 'Syne:wght@400;600;800',
+        'Poppins': 'Poppins:wght@300;400;500;600;700;800',
+        'Montserrat': 'Montserrat:wght@300;400;500;600;700;800',
+        'Playfair Display': 'Playfair+Display:ital,wght@0,400;0,700;1,400',
+        'Courier Prime': 'Courier+Prime:wght@400;700'
+    };
+    const query = fontMap[fontName] || 'Outfit:wght@300;400;500;600;700;800';
+    linkEl.href = `https://fonts.googleapis.com/css2?family=${query}&display=swap`;
+    
+    const mockupEl = document.getElementById('catalog-mockup');
+    if (mockupEl) {
+        mockupEl.style.setProperty('font-family', `'${fontName}', sans-serif`, 'important');
     }
 }
