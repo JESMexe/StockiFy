@@ -30,6 +30,7 @@ if (
 
 // Consumir token (one-time use)
 unset($_SESSION['delete_auth_token']);
+unset($_SESSION['delete_auth_password_ok']);
 
 $controller = new InventoryController();
 $controller->delete();

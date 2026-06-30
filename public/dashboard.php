@@ -1286,144 +1286,332 @@ try {
     </div>
 
     <div id="delete-confirm-modal" class="modal-overlay hidden">
-        <div class="modal-content view-container" style="max-width: 520px;">
-            <button id="close-delete-modal-btn" class="modal-close-btn">&times;</button>
+        <style>
+            #delete-confirm-modal .modal-content {
+                max-width: 550px;
+                border: 2px solid #1b1b1b;
+                border-radius: 12px;
+                box-shadow: 10px 10px 0px var(--accent-red) !important;
+                padding: 1.8rem;
+                max-height: 92vh !important;
+                overflow-y: auto;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+            }
 
-            <div class="modal-header">
-                <h2 style="color: var(--accent-red);"><i class="ph ph-warning-octagon"></i> Eliminar Inventario</h2>
-                <p>Esta acción <strong>no se puede deshacer</strong>. Se borrará permanentemente
-                    "<strong id="delete-db-name-confirm"></strong>" y todos sus datos.</p>
+            #delete-confirm-modal .modal-content::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            #delete-confirm-modal .modal-content::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            #delete-confirm-modal .modal-content::-webkit-scrollbar-thumb {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 10px;
+            }
+
+            #delete-confirm-modal .modal-content::-webkit-scrollbar-thumb:hover {
+                background: rgba(0, 0, 0, 0.4);
+            }
+
+            /* Animations for progressive sections appearance */
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(15px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .animated-section {
+                animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+
+            /* Otp inputs divided look */
+            .otp-digits-container {
+                display: flex;
+                gap: 8px;
+                justify-content: center;
+                margin: 15px 0;
+            }
+
+            .otp-digit-input {
+                width: 42px !important;
+                height: 48px !important;
+                font-size: 1.4rem !important;
+                text-align: center !important;
+                border: 2px solid #1a1a1a !important;
+                border-radius: 6px !important;
+                font-weight: 700 !important;
+                color: #1a1a1a !important;
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: 2px 2px 0px #1a1a1a !important;
+                transition: all 0.15s ease !important;
+            }
+
+            .otp-digit-input:focus {
+                border-color: var(--accent-red) !important;
+                box-shadow: 3px 3px 0px var(--accent-red) !important;
+                outline: none !important;
+            }
+
+            /* Password field input fixes */
+            .delete-password-wrapper {
+                position: relative;
+                margin-top: 5px;
+                display: flex;
+                width: 100%;
+            }
+
+            #delete-password-input {
+                width: 100% !important;
+                border: 2px solid #1a1a1a !important;
+                border-radius: 8px !important;
+                padding: 10px 44px 10px 14px !important;
+                outline: none !important;
+                background: #fff !important;
+                font-size: 1rem !important;
+                font-weight: 500 !important;
+                color: #1a1a1a !important;
+                margin: 0 !important;
+            }
+
+            #delete-password-input:focus {
+                border-color: var(--accent-red) !important;
+                box-shadow: 4px 4px 0px var(--accent-red) !important;
+            }
+
+            #toggle-delete-password {
+                position: absolute !important;
+                right: 12px !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                margin: auto !important;
+                height: 32px !important;
+                width: 32px !important;
+                background: none !important;
+                border: none !important;
+                cursor: pointer !important;
+                color: #666 !important;
+                font-size: 1.3rem !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            /* Confirm input */
+            #delete-confirm-input {
+                width: 100% !important;
+                border: 2px solid #1a1a1a !important;
+                border-radius: 8px !important;
+                padding: 10px 14px !important;
+                outline: none !important;
+                background: #fff !important;
+                font-size: 1rem !important;
+                font-weight: 500 !important;
+                color: #1a1a1a !important;
+                margin-top: 5px !important;
+                transition: all 0.2s ease;
+            }
+
+            #delete-confirm-input::placeholder {
+                color: #757575 !important;
+                font-weight: normal !important;
+            }
+
+            #delete-confirm-input:focus {
+                border-color: var(--accent-red) !important;
+                box-shadow: 4px 4px 0px var(--accent-red) !important;
+            }
+
+            /* Spin animation for icons */
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+            .spin-icon {
+                animation: spin 1s linear infinite;
+                display: inline-block;
+            }
+
+            /* Verify password button visual adjustments */
+            #delete-verify-password-btn {
+                margin-top: 12px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                border: 2px solid #1b1b1b !important;
+                border-radius: 6px !important;
+                font-weight: 700 !important;
+                background: #f6f8fa !important;
+                color: #1b1b1b !important;
+                box-shadow: none !important;
+                transition: all 0.2s ease !important;
+                padding: 10px 16px !important;
+            }
+
+            #delete-verify-password-btn:hover:not(:disabled) {
+                box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.15) !important;
+                background: #eaeef2 !important;
+            }
+
+            #delete-verify-password-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            #delete-verify-password-btn.verified {
+                color: var(--accent-green) !important;
+                border-color: var(--accent-green) !important;
+                background: #f4faf6 !important;
+                box-shadow: none !important;
+            }
+        </style>
+        <div class="modal-content view-container">
+            <button id="close-delete-modal-btn" class="modal-close-btn" style="position: absolute; top: 15px; right: 20px; font-size: 1.8rem; background: none; border: none; cursor: pointer; color: #666; font-weight: bold;">&times;</button>
+
+            <div class="modal-header" style="border-bottom: 2px solid #1b1b1b; padding-bottom: 15px; margin-bottom: 20px;">
+                <h2 style="color: var(--accent-red); font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; margin: 0;">
+                    <i class="ph ph-warning-octagon" style="font-size: 1.8rem;"></i> Eliminar Inventario
+                </h2>
             </div>
 
-            <div class="modal-body">
+            <div style="background: var(--accent-red-20); border: 2px solid var(--accent-red); border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 4px 4px 0px var(--accent-red);">
+                <p style="margin: 0; color: #1b1b1b; font-size: 0.95rem; line-height: 1.5; font-weight: 500;">
+                    <strong style="color: var(--accent-red); font-weight: 700; font-size: 1rem; display: block; margin-bottom: 5px;">ALERTA DE SEGURIDAD</strong>
+                    Esta acción es <strong>irreversible</strong> y no se puede deshacer. Se borrará permanentemente el inventario con todos sus productos, categorías, movimientos de stock, reportes e historial de ventas.
+                </p>
+            </div>
+
+            <div class="modal-body" style="padding: 0;">
 
                 <!-- ── Step 1: Nombre del inventario ── -->
                 <div id="delete-step-1">
-                    <p class="delete-step-label"><span class="delete-step-badge">1</span> Escribí el nombre exacto
-                        del
-                        inventario para continuar:</p>
+                    <p class="delete-step-label" style="font-size: 0.95rem; font-weight: 600; color: #1b1b1b; display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <span class="delete-step-badge" style="background-color: var(--accent-red); color: white; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.8rem; font-weight: 700; border: 1.5px solid #1b1b1b; box-shadow: 1px 1px 0px #1b1b1b;">1</span>
+                        Escribí el nombre exacto del inventario para continuar:
+                    </p>
+                    
+                    <div class="inventory-name-copy-container" style="display: flex; align-items: center; justify-content: space-between; background: #f6f8fa; border: 2px solid #1b1b1b; border-radius: 8px; padding: 10px 14px; margin-top: 10px; margin-bottom: 15px; box-shadow: 3px 3px 0px #1b1b1b;">
+                        <code id="delete-db-name-confirm" style="font-family: monospace; font-size: 1.1rem; font-weight: 700; color: var(--color-black); word-break: break-all;"></code>
+                        <button type="button" id="copy-delete-db-name-btn" class="btn btn-secondary" style="margin: 0; width: auto; padding: 6px 12px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; border: 2px solid #1b1b1b; border-radius: 4px; background: #ffffff; box-shadow: 2px 2px 0px #1b1b1b; cursor: pointer;">
+                            <i class="ph ph-copy"></i> <span>Copiar</span>
+                        </button>
+                    </div>
+
                     <input type="text" id="delete-confirm-input" placeholder="Nombre del Inventario" autocomplete="off">
                     <div id="delete-error-message"
-                        style="color: var(--accent-red); font-weight: 600; margin-top: 8px; min-height: 20px;">
+                        style="color: var(--accent-red); font-weight: 700; margin-top: 8px; min-height: 20px; font-size: 0.95rem;">
                     </div>
                 </div>
 
                 <!-- ── Step 2: Verificación de identidad (oculto hasta que step 1 pase) ── -->
-                <div id="delete-step-2" class="hidden">
-                    <div class="delete-step-divider"></div>
+                <div id="delete-step-2" class="hidden animated-section">
+                    <div class="delete-step-divider" style="height: 2px; background: #1b1b1b; margin: 20px 0;"></div>
 
                     <!-- Para usuarios Google: solo OTP -->
-                    <div id="delete-auth-google" class="hidden">
-                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificación de identidad — seleccioná cómo recibir el código:</p>
-                        <p id="delete-email-hint" class="delete-email-hint"></p>
+                    <div id="delete-auth-google" class="hidden animated-section">
+                        <p class="delete-step-label" style="font-size: 0.95rem; font-weight: 600; color: #1b1b1b; display: flex; align-items: center; gap: 8px;">
+                            <span class="delete-step-badge" style="background-color: var(--accent-red); color: white; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.8rem; font-weight: 700; border: 1.5px solid #1b1b1b; box-shadow: 1px 1px 0px #1b1b1b;">2</span>
+                            Verificación de identidad:
+                        </p>
+                        <p id="delete-email-hint" class="delete-email-hint" style="font-size: 0.95rem; margin: 10px 0; color: #333; font-weight: 500;"></p>
                         
-                        <!-- Botones de Selección de Canal -->
-                        <div class="delete-channel-selectors" style="display: flex; gap: 10px; margin-bottom: 15px; margin-top: 10px;">
-                            <button type="button" id="delete-channel-email-btn" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                <i class="ph ph-envelope"></i> Enviar por Email
+                        <div class="delete-otp-row" style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; margin-top: 10px; flex-wrap: wrap;">
+                            <button id="delete-send-otp-btn" class="btn btn-primary delete-send-otp-btn" style="width: auto; margin-top: 0; padding: 10px 16px; display: inline-flex; align-items: center; gap: 8px; border: 2px solid #1b1b1b; border-radius: 6px; box-shadow: 3px 3px 0px #1b1b1b;">
+                                <i class="ph ph-envelope"></i> Enviar código por correo
                             </button>
-                            <button type="button" id="delete-channel-whatsapp-btn" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                <i class="ph ph-whatsapp-logo"></i> Enviar por WhatsApp
-                            </button>
+                            <span id="delete-otp-countdown" class="delete-otp-countdown hidden" style="font-weight: 700; color: var(--accent-red); font-size: 0.95rem;"></span>
                         </div>
 
-                        <!-- Contenedor del Input de WhatsApp (oculto por defecto) -->
-                        <div id="delete-whatsapp-input-container" class="hidden" style="margin-bottom: 15px;">
-                            <label class="micro-label" style="margin-bottom: 6px; display: block;">Número de WhatsApp:</label>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="delete-whatsapp-phone" placeholder="+54 9 ..." style="flex: 1;">
-                                <button type="button" id="delete-send-otp-wa-btn" class="btn btn-primary" style="white-space: nowrap;">
-                                    <i class="ph ph-paper-plane-tilt"></i> Enviar
-                                </button>
-                            </div>
+                        <!-- Casillas divididas para código OTP -->
+                        <div id="otp-container-google" class="otp-digits-container hidden">
+                            <input type="text" class="otp-digit-input" data-index="0" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                            <input type="text" class="otp-digit-input" data-index="1" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                            <input type="text" class="otp-digit-input" data-index="2" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                            <input type="text" class="otp-digit-input" data-index="3" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                            <input type="text" class="otp-digit-input" data-index="4" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                            <input type="text" class="otp-digit-input" data-index="5" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
                         </div>
 
-                        <div class="delete-otp-row">
-                            <button id="delete-send-otp-btn" class="btn btn-secondary delete-send-otp-btn hidden">
-                                <i class="ph ph-paper-plane-tilt"></i> Enviar código
-                            </button>
-                            <span id="delete-otp-countdown" class="delete-otp-countdown hidden"></span>
-                        </div>
-                        <input type="text" id="delete-otp-input" placeholder="Código de 6 dígitos" maxlength="6"
-                            inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code" class="hidden"
-                            style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
-                        <div id="delete-otp-status" class="delete-otp-status hidden"></div>
+                        <!-- Input oculto compatible con la lógica existente -->
+                        <input type="hidden" id="delete-otp-input">
+
+                        <div id="delete-otp-status" class="delete-otp-status hidden" style="text-align: center; font-weight: 700; margin-top: 10px; font-size: 0.95rem;"></div>
                     </div>
 
                     <!-- Para usuarios con contraseña: contraseña + OTP -->
-                    <div id="delete-auth-password" class="hidden">
-                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificá tu identidad
-                            para
-                            continuar.</p>
-
+                    <div id="delete-auth-password" class="hidden animated-section">
                         <!-- Sub-step 2a: contraseña -->
                         <div id="delete-password-section">
-                            <label class="micro-label" style="margin-bottom: 6px; display: block;">Tu contraseña de
-                                acceso:</label>
-                            <div style="position: relative;">
-                                <input type="password" id="delete-password-input" placeholder="Contraseña"
-                                    autocomplete="current-password" style="padding-right: 44px;">
-                                <button type="button" id="toggle-delete-password"
-                                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#888; font-size:1.2rem; padding:0;">
+                            <p class="delete-step-label" style="font-size: 0.95rem; font-weight: 600; color: #1b1b1b; display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                                <span class="delete-step-badge" style="background-color: var(--accent-red); color: white; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.8rem; font-weight: 700; border: 1.5px solid #1b1b1b; box-shadow: 1px 1px 0px #1b1b1b;">2</span>
+                                Verificá tu identidad para continuar:
+                            </p>
+                            
+                            <label class="micro-label" style="margin-bottom: 6px; display: block; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px; color: #666; text-transform: uppercase;">Tu contraseña de acceso:</label>
+                            <div class="delete-password-wrapper">
+                                <input type="password" id="delete-password-input" placeholder="Ingresá tu contraseña de acceso" autocomplete="current-password">
+                                <button type="button" id="toggle-delete-password">
                                     <i class="ph ph-eye"></i>
                                 </button>
                             </div>
                             <div id="delete-password-error"
-                                style="color: var(--accent-red); font-weight: 600; margin-top: 6px; min-height: 18px; font-size: 0.9rem;">
+                                style="color: var(--accent-red); font-weight: 700; margin-top: 6px; min-height: 18px; font-size: 0.95rem;">
                             </div>
                             <button id="delete-verify-password-btn" class="btn btn-secondary"
-                                style="margin-top: 10px; width: 100%;" disabled>
+                                style="margin-top: 12px; width: 100%; border: 2px solid #1b1b1b; border-radius: 6px; box-shadow: 3px 3px 0px #1b1b1b; font-weight: 700;" disabled>
                                 Verificar contraseña
                             </button>
                         </div>
 
                         <!-- Sub-step 2b: OTP (se muestra tras verificar contraseña) -->
-                        <div id="delete-otp-section" class="hidden" style="margin-top: 16px;">
-                            <div class="delete-step-divider" style="margin-bottom: 16px;"></div>
-                            <p class="delete-step-label"><span class="delete-step-badge">3</span> Código de verificación — seleccioná cómo recibir el código:</p>
-                            <p id="delete-email-hint-pass" class="delete-email-hint"></p>
+                        <div id="delete-otp-section" class="hidden animated-section" style="margin-top: 16px;">
+                            <div class="delete-step-divider" style="height: 2px; background: #1b1b1b; margin: 20px 0;"></div>
+                            
+                            <p class="delete-step-label" style="font-size: 0.95rem; font-weight: 600; color: #1b1b1b; display: flex; align-items: center; gap: 8px;">
+                                <span class="delete-step-badge" style="background-color: var(--accent-red); color: white; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.8rem; font-weight: 700; border: 1.5px solid #1b1b1b; box-shadow: 1px 1px 0px #1b1b1b;">3</span>
+                                Código de verificación por correo:
+                            </p>
+                            <p id="delete-email-hint-pass" class="delete-email-hint" style="font-size: 0.95rem; margin: 10px 0; color: #333; font-weight: 500;"></p>
 
-                            <!-- Botones de Selección de Canal -->
-                            <div class="delete-channel-selectors-pass" style="display: flex; gap: 10px; margin-bottom: 15px; margin-top: 10px;">
-                                <button type="button" id="delete-channel-email-btn-pass" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                    <i class="ph ph-envelope"></i> Enviar por Email
+                            <div class="delete-otp-row" style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; margin-top: 10px; flex-wrap: wrap;">
+                                <button id="delete-send-otp-btn-pass" class="btn btn-primary delete-send-otp-btn" style="width: auto; margin-top: 0; padding: 10px 16px; display: inline-flex; align-items: center; gap: 8px; border: 2px solid #1b1b1b; border-radius: 6px; box-shadow: 3px 3px 0px #1b1b1b;">
+                                    <i class="ph ph-envelope"></i> Enviar código por correo
                                 </button>
-                                <button type="button" id="delete-channel-whatsapp-btn-pass" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                    <i class="ph ph-whatsapp-logo"></i> Enviar por WhatsApp
-                                </button>
+                                <span id="delete-otp-countdown-pass" class="delete-otp-countdown hidden" style="font-weight: 700; color: var(--accent-red); font-size: 0.95rem;"></span>
                             </div>
 
-                            <!-- Contenedor del Input de WhatsApp (oculto por defecto) -->
-                            <div id="delete-whatsapp-input-container-pass" class="hidden" style="margin-bottom: 15px;">
-                                <label class="micro-label" style="margin-bottom: 6px; display: block;">Número de WhatsApp:</label>
-                                <div style="display: flex; gap: 8px;">
-                                    <input type="text" id="delete-whatsapp-phone-pass" placeholder="+54 9 ..." style="flex: 1;">
-                                    <button type="button" id="delete-send-otp-wa-btn-pass" class="btn btn-primary" style="white-space: nowrap;">
-                                        <i class="ph ph-paper-plane-tilt"></i> Enviar
-                                    </button>
-                                </div>
+                            <!-- Casillas divididas para código OTP -->
+                            <div id="otp-container-password" class="otp-digits-container hidden">
+                                <input type="text" class="otp-digit-input" data-index="0" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                                <input type="text" class="otp-digit-input" data-index="1" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                                <input type="text" class="otp-digit-input" data-index="2" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                                <input type="text" class="otp-digit-input" data-index="3" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                                <input type="text" class="otp-digit-input" data-index="4" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
+                                <input type="text" class="otp-digit-input" data-index="5" maxlength="1" pattern="\d" inputmode="numeric" autocomplete="off">
                             </div>
 
-                            <div class="delete-otp-row">
-                                <button id="delete-send-otp-btn-pass" class="btn btn-secondary delete-send-otp-btn hidden">
-                                    <i class="ph ph-paper-plane-tilt"></i> Enviar código
-                                </button>
-                                <span id="delete-otp-countdown-pass" class="delete-otp-countdown hidden"></span>
-                            </div>
-                            <input type="text" id="delete-otp-input-pass" placeholder="Código de 6 dígitos"
-                                maxlength="6" inputmode="numeric" pattern="\d{6}" autocomplete="one-time-code"
-                                class="hidden" style="letter-spacing: 6px; font-size: 1.3rem; text-align: center;">
-                            <div id="delete-otp-status-pass" class="delete-otp-status hidden"></div>
+                            <!-- Input oculto compatible con la lógica existente -->
+                            <input type="hidden" id="delete-otp-input-pass">
+
+                            <div id="delete-otp-status-pass" class="delete-otp-status hidden" style="text-align: center; font-weight: 700; margin-top: 10px; font-size: 0.95rem;"></div>
                         </div>
                     </div>
-
                 </div>
 
             </div>
 
-            <div class="modal-footer">
-                <button id="cancel-delete-btn" class="btn btn-secondary">Cancelar</button>
-                <button id="confirm-delete-btn" class="btn btn-danger" disabled>
+            <div class="modal-footer" style="margin-top: 25px; border-top: 2px solid #1b1b1b; padding-top: 15px; display: flex; justify-content: flex-end; gap: 12px;">
+                <button id="cancel-delete-btn" class="btn btn-secondary" style="width: auto; margin: 0; padding: 10px 20px; border: 2px solid #1b1b1b; border-radius: 6px; box-shadow: 3px 3px 0px #1b1b1b; font-weight: 700;">Cancelar</button>
+                <button id="confirm-delete-btn" class="btn btn-danger" style="width: auto; margin: 0; padding: 10px 20px; border: 2px solid #1b1b1b; border-radius: 6px; box-shadow: 3px 3px 0px var(--accent-red); font-weight: 700;" disabled>
                     <i class="ph ph-trash"></i> Eliminar Permanentemente
                 </button>
             </div>

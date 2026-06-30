@@ -1169,6 +1169,83 @@ let deletePasswordVerified = false;
 let deleteOtpVerified = false;
 let otpCountdownInterval = null;
 
+function setupOtpDigits(containerId, hiddenInputId, onComplete) {
+    const container = document.getElementById(containerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    if (!container || !hiddenInput) return;
+
+    const inputs = container.querySelectorAll('.otp-digit-input');
+
+    inputs.forEach((input, index) => {
+        // Clear value on focus to make editing easier
+        input.addEventListener('focus', () => {
+            input.select();
+        });
+
+        input.addEventListener('input', (e) => {
+            const value = e.target.value.replace(/\D/g, '');
+            e.target.value = value;
+
+            if (value.length > 0) {
+                // Focus next input if not the last one
+                if (index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            }
+
+            // Collect all values
+            const otpCode = Array.from(inputs).map(inp => inp.value).join('');
+            hiddenInput.value = otpCode;
+
+            if (otpCode.length === 6) {
+                if (typeof onComplete === 'function') {
+                    onComplete(otpCode);
+                }
+            }
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace') {
+                if (input.value.length === 0) {
+                    if (index > 0) {
+                        inputs[index - 1].focus();
+                        inputs[index - 1].value = '';
+                    }
+                } else {
+                    input.value = '';
+                }
+                
+                const otpCode = Array.from(inputs).map(inp => inp.value).join('');
+                hiddenInput.value = otpCode;
+            }
+        });
+
+        // Paste support
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').trim().substring(0, 6);
+            if (!pastedData) return;
+
+            // Fill the slots
+            for (let i = 0; i < inputs.length; i++) {
+                inputs[i].value = pastedData[i] || '';
+            }
+
+            hiddenInput.value = pastedData;
+
+            // Focus the last input or next unfilled
+            const focusIndex = Math.min(pastedData.length, inputs.length - 1);
+            inputs[focusIndex].focus();
+
+            if (pastedData.length === 6) {
+                if (typeof onComplete === 'function') {
+                    onComplete(pastedData);
+                }
+            }
+        });
+    });
+}
+
 function openDeleteModal() {
     currentDbNameToDelete = document.getElementById('table-title')?.textContent || '';
     if (!currentDbNameToDelete || !deleteModal) return;
@@ -1216,30 +1293,76 @@ function _resetDeleteStep2() {
     const step2 = document.getElementById('delete-step-2');
     step2?.classList.add('hidden');
 
+    // Reset Google send button
+    const sendBtn = document.getElementById('delete-send-otp-btn');
+    if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="ph ph-envelope"></i> Enviar código por correo';
+    }
+
     // Google panel
     document.getElementById('delete-auth-google')?.classList.add('hidden');
     const otpInput = document.getElementById('delete-otp-input');
-    if (otpInput) { otpInput.value = ''; otpInput.classList.add('hidden'); }
-    document.getElementById('delete-otp-status')?.classList.add('hidden');
-    document.getElementById('delete-otp-countdown')?.classList.add('hidden');
-    document.getElementById('delete-whatsapp-input-container')?.classList.add('hidden');
-    const waPhone = document.getElementById('delete-whatsapp-phone');
-    if (waPhone) waPhone.value = '';
+    if (otpInput) otpInput.value = '';
+    const otpContainerGoogle = document.getElementById('otp-container-google');
+    if (otpContainerGoogle) {
+        otpContainerGoogle.classList.add('hidden');
+        otpContainerGoogle.querySelectorAll('.otp-digit-input').forEach(inp => inp.value = '');
+    }
+    const statusGoogle = document.getElementById('delete-otp-status');
+    if (statusGoogle) {
+        statusGoogle.textContent = '';
+        statusGoogle.className = 'delete-otp-status hidden';
+    }
+    const countdownGoogle = document.getElementById('delete-otp-countdown');
+    if (countdownGoogle) {
+        countdownGoogle.classList.add('hidden');
+    }
+
+    // Reset password send button
+    const sendBtnPass = document.getElementById('delete-send-otp-btn-pass');
+    if (sendBtnPass) {
+        sendBtnPass.disabled = false;
+        sendBtnPass.innerHTML = '<i class="ph ph-envelope"></i> Enviar código por correo';
+    }
 
     // Password panel
     document.getElementById('delete-auth-password')?.classList.add('hidden');
     const passInput = document.getElementById('delete-password-input');
-    if (passInput) passInput.value = '';
-    document.getElementById('delete-password-error').textContent = '';
-    document.getElementById('delete-verify-password-btn').disabled = true;
+    if (passInput) {
+        passInput.value = '';
+        passInput.disabled = false;
+    }
+    const passError = document.getElementById('delete-password-error');
+    if (passError) passError.textContent = '';
+    
+    const verifyBtn = document.getElementById('delete-verify-password-btn');
+    if (verifyBtn) {
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verificar contraseña';
+        verifyBtn.style.color = '';
+        verifyBtn.style.borderColor = '';
+        verifyBtn.classList.remove('verified');
+    }
+
     document.getElementById('delete-otp-section')?.classList.add('hidden');
+    
     const otpPassInput = document.getElementById('delete-otp-input-pass');
-    if (otpPassInput) { otpPassInput.value = ''; otpPassInput.classList.add('hidden'); }
-    document.getElementById('delete-otp-status-pass')?.classList.add('hidden');
-    document.getElementById('delete-otp-countdown-pass')?.classList.add('hidden');
-    document.getElementById('delete-whatsapp-input-container-pass')?.classList.add('hidden');
-    const waPhonePass = document.getElementById('delete-whatsapp-phone-pass');
-    if (waPhonePass) waPhonePass.value = '';
+    if (otpPassInput) otpPassInput.value = '';
+    const otpContainerPass = document.getElementById('otp-container-password');
+    if (otpContainerPass) {
+        otpContainerPass.classList.add('hidden');
+        otpContainerPass.querySelectorAll('.otp-digit-input').forEach(inp => inp.value = '');
+    }
+    const statusPass = document.getElementById('delete-otp-status-pass');
+    if (statusPass) {
+        statusPass.textContent = '';
+        statusPass.className = 'delete-otp-status hidden';
+    }
+    const countdownPass = document.getElementById('delete-otp-countdown-pass');
+    if (countdownPass) {
+        countdownPass.classList.add('hidden');
+    }
 
     if (otpCountdownInterval) { clearInterval(otpCountdownInterval); otpCountdownInterval = null; }
 }
@@ -1248,6 +1371,15 @@ function closeDeleteModal() {
     if (deleteModal) deleteModal.classList.add('hidden');
     document.body.style.overflow = '';
     if (otpCountdownInterval) { clearInterval(otpCountdownInterval); otpCountdownInterval = null; }
+    
+    // Reset all verification states completely
+    deletePasswordVerified = false;
+    deleteOtpVerified = false;
+    if (deleteConfirmInput) {
+        deleteConfirmInput.value = '';
+    }
+    _resetDeleteStep2();
+    _updateDeleteConfirmBtn();
 }
 
 function handleDeleteConfirmInput() {
@@ -1301,7 +1433,7 @@ async function _sendDeleteOtp(sendBtnId, countdownId, channel = 'email', phone =
 
     const orig = sendBtn.innerHTML;
     sendBtn.disabled = true;
-    sendBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Enviando...';
+    sendBtn.innerHTML = '<i class="ph ph-spinner spin-icon"></i> Enviando...';
 
     try {
         const res = await fetch('/api/auth/verify-delete-auth', {
@@ -1318,20 +1450,21 @@ async function _sendDeleteOtp(sendBtnId, countdownId, channel = 'email', phone =
             return;
         }
 
-        const channelLabel = channel === 'whatsapp' ? 'WhatsApp' : 'correo';
-        pop_ups.success(`Código enviado a tu ${channelLabel}.`, '¡Enviado!');
+        pop_ups.success('Código enviado a tu correo.', '¡Enviado!');
 
-        // Show OTP input
-        const otpInputId = sendBtnId.includes('-pass') ? 'delete-otp-input-pass' : 'delete-otp-input';
-        const otpInput = document.getElementById(otpInputId);
-        if (otpInput) {
-            otpInput.classList.remove('hidden');
-            otpInput.focus();
+        // Show OTP Container
+        const isPass = sendBtnId.includes('-pass');
+        const otpContainerId = isPass ? 'otp-container-password' : 'otp-container-google';
+        const otpContainer = document.getElementById(otpContainerId);
+        if (otpContainer) {
+            otpContainer.classList.remove('hidden');
+            otpContainer.classList.add('animated-section');
+            
+            // Clear inputs and focus the first box
+            const inputs = otpContainer.querySelectorAll('.otp-digit-input');
+            inputs.forEach(inp => inp.value = '');
+            inputs[0]?.focus();
         }
-
-        // Hide WhatsApp input container if it was shown
-        const waContainerId = sendBtnId.includes('-pass') ? 'delete-whatsapp-input-container-pass' : 'delete-whatsapp-input-container';
-        document.getElementById(waContainerId)?.classList.add('hidden');
 
         // Start 60s countdown
         if (countdown) {
@@ -1346,11 +1479,7 @@ async function _sendDeleteOtp(sendBtnId, countdownId, channel = 'email', phone =
                     otpCountdownInterval = null;
                     countdown.classList.add('hidden');
                     sendBtn.disabled = false;
-                    if (channel === 'whatsapp') {
-                        sendBtn.innerHTML = '<i class="ph ph-whatsapp-logo"></i> Reenviar por WhatsApp';
-                    } else {
-                        sendBtn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Reenviar código';
-                    }
+                    sendBtn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Reenviar código';
                 } else {
                     countdown.textContent = `Reenviar en ${secs}s`;
                 }
@@ -1390,6 +1519,7 @@ async function _verifyDeletePassword() {
             verifyBtn.textContent = '✓ Contraseña verificada';
             verifyBtn.style.color = 'var(--accent-green)';
             verifyBtn.style.borderColor = 'var(--accent-green)';
+            verifyBtn.classList.add('verified');
 
             // Show OTP section
             document.getElementById('delete-otp-section')?.classList.remove('hidden');
@@ -2115,6 +2245,30 @@ async function init() {
     }
 
     // ── 2FA delete modal listeners ─────────────────────────────────────────
+    
+    // Copy DB name
+    document.getElementById('copy-delete-db-name-btn')?.addEventListener('click', () => {
+        const textToCopy = document.getElementById('delete-db-name-confirm')?.textContent || '';
+        if (textToCopy) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = document.getElementById('copy-delete-db-name-btn');
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    const text = btn.querySelector('span');
+                    if (icon) icon.className = 'ph ph-check';
+                    if (text) text.textContent = 'Copiado';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        if (icon) icon.className = 'ph ph-copy';
+                        if (text) text.textContent = 'Copiar';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error('Error al copiar el texto: ', err);
+            });
+        }
+    });
 
     // OTP send buttons
     document.getElementById('delete-send-otp-btn')?.addEventListener('click', () =>
@@ -2122,62 +2276,14 @@ async function init() {
     document.getElementById('delete-send-otp-btn-pass')?.addEventListener('click', () =>
         _sendDeleteOtp('delete-send-otp-btn-pass', 'delete-otp-countdown-pass', 'email'));
 
-    // WhatsApp send buttons
-    document.getElementById('delete-send-otp-wa-btn')?.addEventListener('click', () => {
-        const phone = document.getElementById('delete-whatsapp-phone')?.value.trim();
-        _sendDeleteOtp('delete-send-otp-wa-btn', 'delete-otp-countdown', 'whatsapp', phone);
-    });
-    document.getElementById('delete-send-otp-wa-btn-pass')?.addEventListener('click', () => {
-        const phone = document.getElementById('delete-whatsapp-phone-pass')?.value.trim();
-        _sendDeleteOtp('delete-send-otp-wa-btn-pass', 'delete-otp-countdown-pass', 'whatsapp', phone);
+    // OTP input setup with divided boxes (Google flow)
+    setupOtpDigits('otp-container-google', 'delete-otp-input', (val) => {
+        _verifyDeleteOtp(val, 'delete-otp-status');
     });
 
-    // Channel selectors (Google)
-    document.getElementById('delete-channel-email-btn')?.addEventListener('click', () => {
-        document.getElementById('delete-whatsapp-input-container')?.classList.add('hidden');
-        _sendDeleteOtp('delete-send-otp-btn', 'delete-otp-countdown', 'email');
-    });
-    document.getElementById('delete-channel-whatsapp-btn')?.addEventListener('click', () => {
-        const waContainer = document.getElementById('delete-whatsapp-input-container');
-        const phoneInput = document.getElementById('delete-whatsapp-phone');
-        if (waContainer) {
-            waContainer.classList.remove('hidden');
-            if (phoneInput) {
-                phoneInput.value = deleteUserCell ? deleteUserCell : '+54 9 ';
-                phoneInput.focus();
-            }
-        }
-    });
-
-    // Channel selectors (Password)
-    document.getElementById('delete-channel-email-btn-pass')?.addEventListener('click', () => {
-        document.getElementById('delete-whatsapp-input-container-pass')?.classList.add('hidden');
-        _sendDeleteOtp('delete-send-otp-btn-pass', 'delete-otp-countdown-pass', 'email');
-    });
-    document.getElementById('delete-channel-whatsapp-btn-pass')?.addEventListener('click', () => {
-        const waContainer = document.getElementById('delete-whatsapp-input-container-pass');
-        const phoneInput = document.getElementById('delete-whatsapp-phone-pass');
-        if (waContainer) {
-            waContainer.classList.remove('hidden');
-            if (phoneInput) {
-                phoneInput.value = deleteUserCell ? deleteUserCell : '+54 9 ';
-                phoneInput.focus();
-            }
-        }
-    });
-
-    // OTP input auto-verify on 6 digits (Google flow)
-    document.getElementById('delete-otp-input')?.addEventListener('input', (e) => {
-        const val = e.target.value.replace(/\D/g, '');
-        e.target.value = val;
-        if (val.length === 6) _verifyDeleteOtp(val, 'delete-otp-status');
-    });
-
-    // OTP input auto-verify on 6 digits (password flow)
-    document.getElementById('delete-otp-input-pass')?.addEventListener('input', (e) => {
-        const val = e.target.value.replace(/\D/g, '');
-        e.target.value = val;
-        if (val.length === 6) _verifyDeleteOtp(val, 'delete-otp-status-pass');
+    // OTP input setup with divided boxes (password flow)
+    setupOtpDigits('otp-container-password', 'delete-otp-input-pass', (val) => {
+        _verifyDeleteOtp(val, 'delete-otp-status-pass');
     });
 
     // Password field — enable verify button when not empty

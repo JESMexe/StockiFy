@@ -147,7 +147,6 @@ switch ($action) {
             if (empty($_SESSION['delete_auth_password_ok'])) {
                 jsonResp(403, ['success' => false, 'message' => 'Debés verificar tu contraseña antes de ingresar el OTP.']);
             }
-            unset($_SESSION['delete_auth_password_ok']);
         }
 
         // OTP verificado → emitir token de sesión one-time

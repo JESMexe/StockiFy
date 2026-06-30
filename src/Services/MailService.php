@@ -51,14 +51,14 @@ class MailService
 
             switch ($actionType) {
                 case 'password_change':
-                    $mail->Subject = 'ALERTA DE SEGURIDAD: Solicitud de cambio de contraseña';
-                    $mail->Subject = 'StockiFy Seguridad: Solicitud de cambio de contrase\u00f1a';
+                    $mail->Subject = 'StockiFy Seguridad: Solicitud de cambio de contraseña';
+                    $mail->Body = $this->generateSecurityCodeEmailHtml($otpCode, $userName);
                     $mail->AltBody = "Hola {$userName}, tu código de verificación para cambiar la contraseña es: {$otpCode}. Este código es temporal. Si no solicitaste este cambio, ignorá este correo.";
                     break;
 
                 case 'delete_inventory':
                     $mail->Subject = 'ALERTA CRÍTICA: Solicitud de eliminación de inventario';
-                    $mail->Subject = 'StockiFy Seguridad: Solicitud de eliminaci\u00f3n de inventario';
+                    $mail->Body = $this->generateDeleteInventoryOtpEmailHtml($otpCode, $userName);
                     $mail->AltBody = "Hola {$userName}, tu código de verificación para ELIMINAR PERMANENTEMENTE un inventario es: {$otpCode}. Expira en 10 minutos. Si no iniciaste esta acción, cambiá tu contraseña inmediatamente.";
                     break;
 

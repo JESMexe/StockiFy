@@ -137,44 +137,17 @@
     /* Blanco forzado */
     border: 2px solid #1b1b1b;
     border-radius: 8px;
-    /* Ajusta segÃƒÆ’Ã‚Âºn tu variable si hace falta */
+    /* Ajusta según tu variable si hace falta */
     padding: 2.5rem;
     box-shadow: 10px 10px 0px var(--accent-red) !important;
     display: flex;
     flex-direction: column;
 }
 
-#delete-confirm-modal input {
-    margin-top: 1rem;
-    width: 100%;
-
-    /* Borde Rojo */
-    border: 2px solid var(--accent-red) !important;
-
-    /* Texto Rojo (Mientras escribÃƒÆ’Ã‚Â­s y despuÃƒÆ’Ã‚Â©s) */
-    color: var(--accent-red) !important;
-    font-weight: bold;
-    font-size: 1.1rem;
-}
-
 #delete-confirm-modal .modal-header {
     border-bottom: 2px solid var(--accent-red) !important;
     margin-bottom: 1.5rem;
     padding-bottom: 10px;
-}
-
-/* Ajuste Input Rojo */
-#delete-confirm-modal input {
-    margin-top: 1rem;
-    width: 100%;
-    border: 2px solid var(--accent-red) !important;
-    color: var(--accent-red);
-    font-size: 1.1rem;
-}
-
-#delete-confirm-modal input:focus {
-    outline: none !important;
-    box-shadow: 0 0 0 4px rgba(var(--accent-red), 0.1) !important;
 }
 
 /* 4. INPUT  */

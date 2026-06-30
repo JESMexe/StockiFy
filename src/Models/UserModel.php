@@ -121,7 +121,8 @@ class UserModel
                 otp_hash = NULL,
                 otp_expires_at = NULL,
                 otp_attempts = 0,
-                otp_action_type = NULL
+                otp_action_type = NULL,
+                otp_last_sent_at = NULL
             WHERE id = :id
         ");
 
