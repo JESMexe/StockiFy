@@ -42,9 +42,10 @@ switch ($action) {
             'success'     => true,
             'auth_type'   => $isGoogleUser ? 'google' : 'password',
             'email_hint'  => $maskedEmail,
+            'cell'        => $user['cell'] ?? null,
         ]);
 
-    // ─── Step 2a: Enviar OTP por correo (todos los usuarios) ────────────────
+    // ─── Step 2a: Enviar OTP por correo o WhatsApp (todos los usuarios) ─────
     case 'send_otp':
         if (!$userModel->canRequestPasswordOtp($userId, 60)) {
             jsonResp(429, [
@@ -66,21 +67,44 @@ switch ($action) {
             jsonResp(500, ['success' => false, 'message' => 'No se pudo guardar el código.']);
         }
 
-        $userFullName = trim((string)($user['full_name'] ?? $user['username'] ?? 'Usuario'));
-        $mailService  = new MailService();
-        $sent = $mailService->sendSecurityOTP(
-            (string)$user['email'],
-            $otp,
-            'delete_inventory',
-            $userFullName
-        );
+        $channel = trim((string)($input['channel'] ?? 'email'));
+        if ($channel === 'whatsapp') {
+            $phone = trim((string)($input['phone'] ?? ''));
+            if ($phone === '') {
+                $userModel->clearPasswordOtp($userId);
+                jsonResp(400, ['success' => false, 'message' => 'El número de teléfono de WhatsApp es requerido.']);
+            }
 
-        if (!$sent) {
-            $userModel->clearPasswordOtp($userId);
-            jsonResp(500, ['success' => false, 'message' => 'No se pudo enviar el correo de verificación.']);
+            require_once __DIR__ . '/../../../src/Services/WhatsappService.php';
+            $whatsappService = new \App\Services\WhatsappService();
+            $sent = $whatsappService->sendTemplateMessage($phone, 'codigo_borrar_inventario', [$otp]);
+
+            if (!$sent) {
+                $userModel->clearPasswordOtp($userId);
+                jsonResp(500, [
+                    'success' => false,
+                    'message' => 'No se pudo enviar el WhatsApp de verificación: ' . $whatsappService->lastError
+                ]);
+            }
+
+            jsonResp(200, ['success' => true, 'message' => 'Código de seguridad enviado a tu WhatsApp.']);
+        } else {
+            $userFullName = trim((string)($user['full_name'] ?? $user['username'] ?? 'Usuario'));
+            $mailService  = new MailService();
+            $sent = $mailService->sendSecurityOTP(
+                (string)$user['email'],
+                $otp,
+                'delete_inventory',
+                $userFullName
+            );
+
+            if (!$sent) {
+                $userModel->clearPasswordOtp($userId);
+                jsonResp(500, ['success' => false, 'message' => 'No se pudo enviar el correo de verificación.']);
+            }
+
+            jsonResp(200, ['success' => true, 'message' => 'Código de seguridad enviado a tu correo.']);
         }
-
-        jsonResp(200, ['success' => true, 'message' => 'Código de seguridad enviado a tu correo.']);
 
     // ─── Step 2b: Verificar contraseña (solo usuarios con email+password) ───
     case 'verify_password':

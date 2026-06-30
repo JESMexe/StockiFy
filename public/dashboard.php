@@ -1314,12 +1314,32 @@ try {
 
                     <!-- Para usuarios Google: solo OTP -->
                     <div id="delete-auth-google" class="hidden">
-                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificación de
-                            identidad
-                            — enviamos un código a tu correo.</p>
+                        <p class="delete-step-label"><span class="delete-step-badge">2</span> Verificación de identidad — seleccioná cómo recibir el código:</p>
                         <p id="delete-email-hint" class="delete-email-hint"></p>
+                        
+                        <!-- Botones de Selección de Canal -->
+                        <div class="delete-channel-selectors" style="display: flex; gap: 10px; margin-bottom: 15px; margin-top: 10px;">
+                            <button type="button" id="delete-channel-email-btn" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i class="ph ph-envelope"></i> Enviar por Email
+                            </button>
+                            <button type="button" id="delete-channel-whatsapp-btn" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i class="ph ph-whatsapp-logo"></i> Enviar por WhatsApp
+                            </button>
+                        </div>
+
+                        <!-- Contenedor del Input de WhatsApp (oculto por defecto) -->
+                        <div id="delete-whatsapp-input-container" class="hidden" style="margin-bottom: 15px;">
+                            <label class="micro-label" style="margin-bottom: 6px; display: block;">Número de WhatsApp:</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="delete-whatsapp-phone" placeholder="+54 9 ..." style="flex: 1;">
+                                <button type="button" id="delete-send-otp-wa-btn" class="btn btn-primary" style="white-space: nowrap;">
+                                    <i class="ph ph-paper-plane-tilt"></i> Enviar
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="delete-otp-row">
-                            <button id="delete-send-otp-btn" class="btn btn-secondary delete-send-otp-btn">
+                            <button id="delete-send-otp-btn" class="btn btn-secondary delete-send-otp-btn hidden">
                                 <i class="ph ph-paper-plane-tilt"></i> Enviar código
                             </button>
                             <span id="delete-otp-countdown" class="delete-otp-countdown hidden"></span>
@@ -1360,12 +1380,32 @@ try {
                         <!-- Sub-step 2b: OTP (se muestra tras verificar contraseña) -->
                         <div id="delete-otp-section" class="hidden" style="margin-top: 16px;">
                             <div class="delete-step-divider" style="margin-bottom: 16px;"></div>
-                            <p class="delete-step-label"><span class="delete-step-badge">3</span> Código de
-                                verificación
-                                al correo:</p>
+                            <p class="delete-step-label"><span class="delete-step-badge">3</span> Código de verificación — seleccioná cómo recibir el código:</p>
                             <p id="delete-email-hint-pass" class="delete-email-hint"></p>
+
+                            <!-- Botones de Selección de Canal -->
+                            <div class="delete-channel-selectors-pass" style="display: flex; gap: 10px; margin-bottom: 15px; margin-top: 10px;">
+                                <button type="button" id="delete-channel-email-btn-pass" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <i class="ph ph-envelope"></i> Enviar por Email
+                                </button>
+                                <button type="button" id="delete-channel-whatsapp-btn-pass" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <i class="ph ph-whatsapp-logo"></i> Enviar por WhatsApp
+                                </button>
+                            </div>
+
+                            <!-- Contenedor del Input de WhatsApp (oculto por defecto) -->
+                            <div id="delete-whatsapp-input-container-pass" class="hidden" style="margin-bottom: 15px;">
+                                <label class="micro-label" style="margin-bottom: 6px; display: block;">Número de WhatsApp:</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="delete-whatsapp-phone-pass" placeholder="+54 9 ..." style="flex: 1;">
+                                    <button type="button" id="delete-send-otp-wa-btn-pass" class="btn btn-primary" style="white-space: nowrap;">
+                                        <i class="ph ph-paper-plane-tilt"></i> Enviar
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="delete-otp-row">
-                                <button id="delete-send-otp-btn-pass" class="btn btn-secondary delete-send-otp-btn">
+                                <button id="delete-send-otp-btn-pass" class="btn btn-secondary delete-send-otp-btn hidden">
                                     <i class="ph ph-paper-plane-tilt"></i> Enviar código
                                 </button>
                                 <span id="delete-otp-countdown-pass" class="delete-otp-countdown hidden"></span>

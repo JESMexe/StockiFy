@@ -1164,6 +1164,7 @@ function handleCancelNewRow(event) {
 
 let deleteAuthType = null;       // 'google' | 'password'
 let deleteEmailHint = '';
+let deleteUserCell = '';
 let deletePasswordVerified = false;
 let deleteOtpVerified = false;
 let otpCountdownInterval = null;
@@ -1176,6 +1177,7 @@ function openDeleteModal() {
     deleteAuthType = null;
     deletePasswordVerified = false;
     deleteOtpVerified = false;
+    deleteUserCell = '';
 
     document.getElementById('delete-db-name-confirm').textContent = currentDbNameToDelete;
     deleteConfirmInput.value = '';
@@ -1203,6 +1205,7 @@ async function _fetchDeleteAuthType() {
         if (data.success) {
             deleteAuthType = data.auth_type;
             deleteEmailHint = data.email_hint || '';
+            deleteUserCell = data.cell || '';
         }
     } catch (e) {
         console.warn('[Delete] No se pudo determinar el tipo de auth:', e);
@@ -1219,6 +1222,9 @@ function _resetDeleteStep2() {
     if (otpInput) { otpInput.value = ''; otpInput.classList.add('hidden'); }
     document.getElementById('delete-otp-status')?.classList.add('hidden');
     document.getElementById('delete-otp-countdown')?.classList.add('hidden');
+    document.getElementById('delete-whatsapp-input-container')?.classList.add('hidden');
+    const waPhone = document.getElementById('delete-whatsapp-phone');
+    if (waPhone) waPhone.value = '';
 
     // Password panel
     document.getElementById('delete-auth-password')?.classList.add('hidden');
@@ -1231,6 +1237,9 @@ function _resetDeleteStep2() {
     if (otpPassInput) { otpPassInput.value = ''; otpPassInput.classList.add('hidden'); }
     document.getElementById('delete-otp-status-pass')?.classList.add('hidden');
     document.getElementById('delete-otp-countdown-pass')?.classList.add('hidden');
+    document.getElementById('delete-whatsapp-input-container-pass')?.classList.add('hidden');
+    const waPhonePass = document.getElementById('delete-whatsapp-phone-pass');
+    if (waPhonePass) waPhonePass.value = '';
 
     if (otpCountdownInterval) { clearInterval(otpCountdownInterval); otpCountdownInterval = null; }
 }
@@ -1285,7 +1294,7 @@ function _updateDeleteConfirmBtn() {
 }
 
 // ── OTP sender helper ──────────────────────────────────────────────────────
-async function _sendDeleteOtp(sendBtnId, countdownId) {
+async function _sendDeleteOtp(sendBtnId, countdownId, channel = 'email', phone = '') {
     const sendBtn = document.getElementById(sendBtnId);
     const countdown = document.getElementById(countdownId);
     if (!sendBtn) return;
@@ -1298,7 +1307,7 @@ async function _sendDeleteOtp(sendBtnId, countdownId) {
         const res = await fetch('/api/auth/verify-delete-auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'send_otp' })
+            body: JSON.stringify({ action: 'send_otp', channel, phone })
         });
         const data = await res.json();
 
@@ -1309,11 +1318,20 @@ async function _sendDeleteOtp(sendBtnId, countdownId) {
             return;
         }
 
-        pop_ups.success('Código enviado a tu correo.', '¡Enviado!');
+        const channelLabel = channel === 'whatsapp' ? 'WhatsApp' : 'correo';
+        pop_ups.success(`Código enviado a tu ${channelLabel}.`, '¡Enviado!');
 
         // Show OTP input
-        const otpInputId = sendBtnId === 'delete-send-otp-btn' ? 'delete-otp-input' : 'delete-otp-input-pass';
-        document.getElementById(otpInputId)?.classList.remove('hidden');
+        const otpInputId = sendBtnId.includes('-pass') ? 'delete-otp-input-pass' : 'delete-otp-input';
+        const otpInput = document.getElementById(otpInputId);
+        if (otpInput) {
+            otpInput.classList.remove('hidden');
+            otpInput.focus();
+        }
+
+        // Hide WhatsApp input container if it was shown
+        const waContainerId = sendBtnId.includes('-pass') ? 'delete-whatsapp-input-container-pass' : 'delete-whatsapp-input-container';
+        document.getElementById(waContainerId)?.classList.add('hidden');
 
         // Start 60s countdown
         if (countdown) {
@@ -1328,7 +1346,11 @@ async function _sendDeleteOtp(sendBtnId, countdownId) {
                     otpCountdownInterval = null;
                     countdown.classList.add('hidden');
                     sendBtn.disabled = false;
-                    sendBtn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Reenviar código';
+                    if (channel === 'whatsapp') {
+                        sendBtn.innerHTML = '<i class="ph ph-whatsapp-logo"></i> Reenviar por WhatsApp';
+                    } else {
+                        sendBtn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Reenviar código';
+                    }
                 } else {
                     countdown.textContent = `Reenviar en ${secs}s`;
                 }
@@ -2096,9 +2118,53 @@ async function init() {
 
     // OTP send buttons
     document.getElementById('delete-send-otp-btn')?.addEventListener('click', () =>
-        _sendDeleteOtp('delete-send-otp-btn', 'delete-otp-countdown'));
+        _sendDeleteOtp('delete-send-otp-btn', 'delete-otp-countdown', 'email'));
     document.getElementById('delete-send-otp-btn-pass')?.addEventListener('click', () =>
-        _sendDeleteOtp('delete-send-otp-btn-pass', 'delete-otp-countdown-pass'));
+        _sendDeleteOtp('delete-send-otp-btn-pass', 'delete-otp-countdown-pass', 'email'));
+
+    // WhatsApp send buttons
+    document.getElementById('delete-send-otp-wa-btn')?.addEventListener('click', () => {
+        const phone = document.getElementById('delete-whatsapp-phone')?.value.trim();
+        _sendDeleteOtp('delete-send-otp-wa-btn', 'delete-otp-countdown', 'whatsapp', phone);
+    });
+    document.getElementById('delete-send-otp-wa-btn-pass')?.addEventListener('click', () => {
+        const phone = document.getElementById('delete-whatsapp-phone-pass')?.value.trim();
+        _sendDeleteOtp('delete-send-otp-wa-btn-pass', 'delete-otp-countdown-pass', 'whatsapp', phone);
+    });
+
+    // Channel selectors (Google)
+    document.getElementById('delete-channel-email-btn')?.addEventListener('click', () => {
+        document.getElementById('delete-whatsapp-input-container')?.classList.add('hidden');
+        _sendDeleteOtp('delete-send-otp-btn', 'delete-otp-countdown', 'email');
+    });
+    document.getElementById('delete-channel-whatsapp-btn')?.addEventListener('click', () => {
+        const waContainer = document.getElementById('delete-whatsapp-input-container');
+        const phoneInput = document.getElementById('delete-whatsapp-phone');
+        if (waContainer) {
+            waContainer.classList.remove('hidden');
+            if (phoneInput) {
+                phoneInput.value = deleteUserCell ? deleteUserCell : '+54 9 ';
+                phoneInput.focus();
+            }
+        }
+    });
+
+    // Channel selectors (Password)
+    document.getElementById('delete-channel-email-btn-pass')?.addEventListener('click', () => {
+        document.getElementById('delete-whatsapp-input-container-pass')?.classList.add('hidden');
+        _sendDeleteOtp('delete-send-otp-btn-pass', 'delete-otp-countdown-pass', 'email');
+    });
+    document.getElementById('delete-channel-whatsapp-btn-pass')?.addEventListener('click', () => {
+        const waContainer = document.getElementById('delete-whatsapp-input-container-pass');
+        const phoneInput = document.getElementById('delete-whatsapp-phone-pass');
+        if (waContainer) {
+            waContainer.classList.remove('hidden');
+            if (phoneInput) {
+                phoneInput.value = deleteUserCell ? deleteUserCell : '+54 9 ';
+                phoneInput.focus();
+            }
+        }
+    });
 
     // OTP input auto-verify on 6 digits (Google flow)
     document.getElementById('delete-otp-input')?.addEventListener('input', (e) => {
