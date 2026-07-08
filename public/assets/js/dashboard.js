@@ -13,6 +13,10 @@ import { openImportModal } from './import.js';
 import { ui_helper } from "./ui-helper.js";
 import { usersModuleInstance } from './users/users.js';
 import { deliveriesModuleInstance } from './deliveries/deliveries.js';
+import { paymentsModule } from './payments/payments.js';
+
+// Registrar paymentsModule globalmente
+window.paymentsModule = paymentsModule;
 
 export let activeInventoryId = null;
 let allData = []; // Guardo todos los datos para filtrar
@@ -788,10 +792,21 @@ function filterTable() {
 }
 
 function showDashboardView(viewId) {
-    document.querySelectorAll('.dashboard-view').forEach(view => view.classList.add('hidden'));
+    document.querySelectorAll('.dashboard-view').forEach(view => {
+        view.classList.add('hidden');
+        if (view.id === 'no-section-view') {
+            view.style.display = 'none';
+        }
+    });
+
     const viewToShow = document.getElementById(viewId);
-    const transactionViews = ['sales', 'receipts', 'customers', 'providers'];
-    if (viewToShow) { viewToShow.classList.remove('hidden'); }
+    if (viewToShow) { 
+        viewToShow.classList.remove('hidden');
+        if (viewId === 'no-section-view') {
+            viewToShow.style.display = 'flex';
+        }
+    }
+    
     document.querySelectorAll('.menu-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.targetView === viewId);
     });
@@ -804,6 +819,34 @@ function showDashboardView(viewId) {
         } else {
             restoreTab.classList.add('hidden');
         }
+    }
+
+    // Inicializar dinámicamente el módulo correspondiente a la vista si existe
+    if (viewId === 'sales' && typeof salesModuleInstance !== 'undefined') {
+        salesModuleInstance.init();
+    } else if (viewId === 'receipts' && typeof purchaseModuleInstance !== 'undefined') {
+        purchaseModuleInstance.init();
+    } else if (viewId === 'customers' && typeof customerModuleInstance !== 'undefined') {
+        customerModuleInstance.init();
+    } else if (viewId === 'providers' && typeof providerModuleInstance !== 'undefined') {
+        providerModuleInstance.init();
+    } else if (viewId === 'employees' && typeof employeeModuleInstance !== 'undefined') {
+        employeeModuleInstance.init();
+    } else if (viewId === 'analysis' && typeof analyticsModuleInstance !== 'undefined') {
+        analyticsModuleInstance.init();
+        if (typeof injectCashButtonIntoAnalytics === 'function') {
+            injectCashButtonIntoAnalytics();
+        }
+    } else if (viewId === 'payments' && typeof paymentsModuleInstance !== 'undefined') {
+        paymentsModuleInstance.init();
+    } else if (viewId === 'deliveries' && typeof deliveriesModuleInstance !== 'undefined') {
+        deliveriesModuleInstance.init();
+    } else if (viewId === 'users-manage' && window.usersModuleInstance) {
+        window.usersModuleInstance.init();
+    } else if (viewId === 'notifications' && typeof loadNotifications === 'function') {
+        loadNotifications();
+    } else if (viewId === 'history-log' && window.HistoryModule) {
+        window.HistoryModule.init();
     }
 }
 
@@ -850,51 +893,6 @@ function setupMenuNavigation() {
                     window.openTutorials();
                 }
                 return;
-            }
-
-            if (targetView === 'sales' && window.SalesModule) {
-                window.SalesModule.init();
-            } else if (targetView === 'history-log' && window.HistoryModule) {
-                window.HistoryModule.init();
-            } else if (targetView === 'notifications') {
-                loadNotifications();
-            }
-
-            if (targetView === 'sales') {
-                salesModuleInstance.init();
-            }
-
-            if (targetView === 'receipts') {
-                purchaseModuleInstance.init();
-            }
-
-            if (targetView === 'customers') {
-                customerModuleInstance.init();
-            }
-
-            if (targetView === 'providers') {
-                providerModuleInstance.init();
-            }
-
-            if (targetView === 'employees') {
-                employeeModuleInstance.init();
-            }
-
-            if (targetView === 'analysis') {
-                analyticsModuleInstance.init();
-                injectCashButtonIntoAnalytics();
-            }
-
-            if (targetView === 'payments') {
-                paymentsModuleInstance.init();
-            }
-
-            if (targetView === 'deliveries') {
-                deliveriesModuleInstance.init();
-            }
-
-            if (targetView === 'users-manage' && window.usersModuleInstance) {
-                window.usersModuleInstance.init();
             }
 
             if (targetView) {
@@ -2542,8 +2540,7 @@ async function init() {
     });
 
     try {
-        console.log("[INIT] Cargando datos de tabla...");
-        await loadTableData(); // ESTA ES LA ÚNICA LLAMADA QUE DEBE QUEDAR
+        let hasViewDataPermission = true;
 
         // RBAC: aplicar restricciones de sidebar antes de habilitar la navegación.
         // Fetch directo para evitar dependencias de timing entre módulos ES.
@@ -2555,6 +2552,11 @@ async function init() {
                     window.__rbacPermissions = null; // Owner: acceso total
                 } else if (rbacData.mode === 'collaborator') {
                     window.__rbacPermissions = rbacData.permissions ?? {};
+                    
+                    if (rbacData.permissions['can_view_data'] === false) {
+                        hasViewDataPermission = false;
+                    }
+
                     // Ocultar secciones prohibidas en el sidebar
                     const SIDEBAR_MAP = {
                         'can_view_data': 'view-db',
@@ -2576,9 +2578,32 @@ async function init() {
                                 ?.closest('li')?.classList.add('hidden');
                         }
                     });
+
+                    // Ocultar tarjetas de la versión Mobile basadas en los permisos del colaborador
+                    const MOBILE_MAP = {
+                        'can_view_data':          '.action-check',
+                        'can_view_analytics':     '.action-metrics, .action-balance',
+                        'can_view_history':       '.action-history',
+                        'can_view_customers':     '.action-customers',
+                        'can_view_providers':     '.action-providers',
+                        'can_view_employees':     '.action-employees',
+                        'can_view_deliveries':    '.action-deliveries',
+                        'can_view_sales':         '.action-sale',
+                        'can_view_receipts':      '.action-purchase, .action-expense',
+                    };
+                    Object.entries(MOBILE_MAP).forEach(([permKey, selector]) => {
+                        if (rbacData.permissions[permKey] === false) {
+                            document.querySelectorAll(selector).forEach(card => {
+                                card.classList.add('hidden');
+                            });
+                        }
+                    });
+
                     // Ocultar "Colaboradores" para todos los no-owners
                     document.querySelector('[data-target-view="users-manage"]')
                         ?.closest('li')?.classList.add('hidden');
+                    document.querySelector('.action-collaborators')?.classList.add('hidden');
+
                     // Ocultar botón de invitar para Employee
                     if (rbacData.role_id === 3) {
                         document.getElementById('invite-collaborator-btn')?.classList.add('hidden');
@@ -2589,7 +2614,6 @@ async function init() {
             console.warn('[RBAC] No se pudieron cargar restricciones de rol:', e.message);
         } finally {
             // Revelar el sidebar ahora que RBAC ya aplicó las restricciones.
-            // visibility:hidden en el HTML evitaba el flash de items prohibidos.
             const sidebarNav = document.getElementById('sidebar-main-nav');
             if (sidebarNav) sidebarNav.style.visibility = '';
 
@@ -2612,6 +2636,14 @@ async function init() {
                     if (h3) h3.classList.remove('hidden');
                 }
             });
+        }
+
+        // Cargar los datos de la tabla de productos SOLO si tiene el permiso asignado
+        if (hasViewDataPermission) {
+            console.log("[INIT] Cargando datos de tabla...");
+            await loadTableData();
+        } else {
+            console.log("[INIT] Usuario sin permiso de Ver Datos. Saltando carga de tabla.");
         }
 
         setupMenuNavigation();
@@ -2641,12 +2673,17 @@ async function init() {
                     return viewId;
                 }
             }
-            return 'view-db'; // fallback
+            return null; // Retornamos null si no hay ninguna sección permitida
         }
 
         const startView = getFirstAllowedView();
-        showDashboardView(startView);
-        console.log(`[INIT] Post showDashboardView('${startView}')...`);
+        if (startView) {
+            showDashboardView(startView);
+            console.log(`[INIT] Post showDashboardView('${startView}')...`);
+        } else {
+            showDashboardView('no-section-view');
+            console.log(`[INIT] Post showDashboardView('no-section-view')...`);
+        }
 
         setTimeout(() => {
             setupFeatures().catch(error => {
@@ -6004,3 +6041,36 @@ style.innerHTML = `
 }
 `;
 document.head.appendChild(style);
+
+// Cierre de caja manual por WhatsApp
+window.notifyCashBalance = async function() {
+    const btn = document.getElementById('btn-notify-cash');
+    if (!btn) return;
+
+    // Obtener el período activo
+    const activeBtn = document.querySelector('.period-btn.active');
+    const period = activeBtn ? activeBtn.id.replace('btn-period-', '') : 'today';
+
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    btn.innerHTML = '<i class="ph ph-spinner ph-spin" style="font-size: 1.4rem;"></i> Enviando...';
+
+    try {
+        const response = await fetch(`/api/statistics/send-manual-cierre-caja.php?period=${encodeURIComponent(period)}`);
+        const data = await response.json();
+
+        if (data.success) {
+            pop_ups.success(data.message || 'Cierre de caja notificado con éxito.');
+        } else {
+            pop_ups.error(data.message || 'No se pudo enviar la notificación.');
+        }
+    } catch (error) {
+        console.error(error);
+        pop_ups.error('Error de conexión con el servidor.');
+    } finally {
+        btn.disabled = false;
+        btn.style.opacity = '';
+        btn.innerHTML = originalContent;
+    }
+};

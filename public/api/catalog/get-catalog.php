@@ -296,6 +296,9 @@ try {
         'show_exact_stock' => (bool)($catalogSettings['show_exact_stock'] ?? true),
         'show_price'       => (bool)($catalogSettings['show_price'] ?? true),
         'show_action_button' => isset($catalogSettings['show_action_button']) ? (bool)$catalogSettings['show_action_button'] : true,
+        'extra_column_1'   => htmlspecialchars($catalogSettings['extra_column_1'] ?? '', ENT_QUOTES, 'UTF-8'),
+        'extra_column_2'   => htmlspecialchars($catalogSettings['extra_column_2'] ?? '', ENT_QUOTES, 'UTF-8'),
+        'extra_column_3'   => htmlspecialchars($catalogSettings['extra_column_3'] ?? '', ENT_QUOTES, 'UTF-8'),
     ];
 
     echo json_encode([

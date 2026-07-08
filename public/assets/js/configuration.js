@@ -1,4 +1,5 @@
 import { pop_ups } from './notifications/pop-up.js?v=3.0';
+import { paymentsModule } from './payments/payments.js';
 
 // Shared logo state (accessible by both customizer panel and form submit)
 let _sharedCatalogLogoFile    = null;
@@ -24,15 +25,20 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (tab === 'catalogo') {
         const btnCatalogo = document.getElementById('btn-config-catalogo');
         btnCatalogo?.click();
+    } else if (tab === 'suscripcion' || window.location.search.includes('payment=')) {
+        const btnSub = document.getElementById('btn-config-suscripcion');
+        btnSub?.click();
     }
 });
 
 function initTabs() {
+    let paymentsInitialized = false;
     const tabs = [
-        { btn: document.getElementById('btn-config-cuenta'), container: document.getElementById('config-container-cuenta') },
-        { btn: document.getElementById('btn-config-remito'), container: document.getElementById('remito-container') },
-        { btn: document.getElementById('btn-config-catalogo'), container: document.getElementById('catalogo-container') },
-        { btn: document.getElementById('btn-config-soporte'), container: document.getElementById('soporte-container') }
+        { btn: document.getElementById('btn-config-cuenta'),       container: document.getElementById('config-container-cuenta') },
+        { btn: document.getElementById('btn-config-remito'),       container: document.getElementById('remito-container') },
+        { btn: document.getElementById('btn-config-catalogo'),     container: document.getElementById('catalogo-container') },
+        { btn: document.getElementById('btn-config-suscripcion'), container: document.getElementById('suscripcion-container') },
+        { btn: document.getElementById('btn-config-soporte'),      container: document.getElementById('soporte-container') }
     ];
 
     tabs.forEach(tab => {
@@ -44,6 +50,12 @@ function initTabs() {
             });
             tab.btn.classList.add('btn-option-selected');
             tab.container?.classList.remove('hidden');
+
+            // Inicializar el módulo de pagos la primera vez que se abre la tab
+            if (tab.btn.id === 'btn-config-suscripcion' && !paymentsInitialized) {
+                paymentsInitialized = true;
+                paymentsModule.init();
+            }
         });
     });
 }
@@ -660,6 +672,9 @@ function initCatalogHandlers() {
             button_color:     document.getElementById('catalog_button_color')?.value ?? 'whatsapp-green',
             theme_color:      document.getElementById('catalog_theme_color')?.value ?? 'accent-color',
             theme_pattern:    document.getElementById('catalog_theme_pattern')?.value ?? 'dots',
+            extra_column_1:   document.getElementById('catalog_extra_column_1')?.value ?? '',
+            extra_column_2:   document.getElementById('catalog_extra_column_2')?.value ?? '',
+            extra_column_3:   document.getElementById('catalog_extra_column_3')?.value ?? '',
             // Colorimetría
             color_bg:      (() => { const s = document.getElementById('catalog_color_bg'); return s?.value === 'custom' ? (document.getElementById('catalog_color_bg_custom')?.value || '#F4F4F6') : (s?.value || '#F4F4F6'); })(),
             color_pattern: (() => { const s = document.getElementById('catalog_color_pattern'); return s?.value === 'custom' ? (document.getElementById('catalog_color_pattern_custom')?.value || 'rgba(0,0,0,0.08)') : (s?.value || 'rgba(0,0,0,0.08)'); })(),
@@ -806,6 +821,8 @@ function initCatalogCustomizerPanel() {
         'catalog_shadow_product_card', 'catalog_shadow_modal',
         // typography
         'catalog_font_family',
+        // extra columns
+        'catalog_extra_column_1', 'catalog_extra_column_2', 'catalog_extra_column_3',
     ].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;

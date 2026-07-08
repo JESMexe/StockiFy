@@ -36,6 +36,18 @@ try {
 
     $db = Database::getInstance();
 
+    // Auto-migration: ensure work hours columns exist on inventories
+    try {
+        $stmtCheck = $db->query("SHOW COLUMNS FROM inventories LIKE 'work_hours_enabled'");
+        if (!$stmtCheck->fetch()) {
+            $db->exec("ALTER TABLE inventories ADD COLUMN work_hours_enabled TINYINT(1) NOT NULL DEFAULT 0");
+            $db->exec("ALTER TABLE inventories ADD COLUMN work_hours_start TIME DEFAULT '08:00:00'");
+            $db->exec("ALTER TABLE inventories ADD COLUMN work_hours_end TIME DEFAULT '20:00:00'");
+        }
+    } catch (Throwable $migrationError) {
+        error_log("Migration error in get-role-settings.php: " . $migrationError->getMessage());
+    }
+
     if ((int) $myRole['role_id'] === 1) {
         // === OWNER: retorna configuración de Admin (2) y Employee (3) para el panel de control ===
         $stmt = $db->prepare(
@@ -74,11 +86,25 @@ try {
             ];
         }
 
+        // Cargar configuración de horario laboral del inventario activo
+        $stmtWork = $db->prepare("SELECT work_hours_enabled, work_hours_start, work_hours_end FROM inventories WHERE id = ?");
+        $stmtWork->execute([$inventoryId]);
+        $workSettings = $stmtWork->fetch(PDO::FETCH_ASSOC) ?: [
+            'work_hours_enabled' => 0,
+            'work_hours_start' => '08:00:00',
+            'work_hours_end' => '20:00:00'
+        ];
+
         echo json_encode([
             'success' => true,
             'mode' => 'owner',
             'settings' => $settings,
-            'categories' => $categories
+            'categories' => $categories,
+            'work_hours' => [
+                'enabled' => (int) $workSettings['work_hours_enabled'],
+                'start' => substr($workSettings['work_hours_start'] ?? '08:00:00', 0, 5),
+                'end' => substr($workSettings['work_hours_end'] ?? '20:00:00', 0, 5)
+            ]
         ]);
 
     } else {

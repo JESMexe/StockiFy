@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../src/helpers/auth_helper.php';
+require_once __DIR__ . '/../src/Services/Payments/PricingService.php';
 
 use App\core\Database;
+use App\Services\Payments\PricingService;
 
 $currentUser = getCurrentUser();
 
@@ -51,6 +53,85 @@ $currentUserRbac = ($activeInventoryId && $currentUser)
     : null;
 $isOwner = $currentUserRbac && (int) $currentUserRbac['role_id'] === 1;
 
+// Verificar acceso fuera de horario laboral de colaboradores
+if ($activeInventoryId && $currentUserRbac && (int)$currentUserRbac['role_id'] !== 1) {
+    if (!isset($_SESSION['outside_hours_alert_sent_' . $activeInventoryId])) {
+        try {
+            $stmtWork = $pdo->prepare("SELECT name, work_hours_enabled, work_hours_start, work_hours_end, user_id FROM inventories WHERE id = ?");
+            $stmtWork->execute([$activeInventoryId]);
+            $invRow = $stmtWork->fetch(PDO::FETCH_ASSOC);
+
+            if ($invRow && (int)$invRow['work_hours_enabled'] === 1) {
+                date_default_timezone_set('America/Argentina/Buenos_Aires');
+                $now = new DateTime('now', new DateTimeZone('America/Argentina/Buenos_Aires'));
+                $currentTime = $now->format('H:i:s');
+
+                $start = $invRow['work_hours_start'] ?: '08:00:00';
+                $end   = $invRow['work_hours_end'] ?: '20:00:00';
+
+                $isOutside = false;
+                if ($start <= $end) {
+                    if ($currentTime < $start || $currentTime > $end) {
+                        $isOutside = true;
+                    }
+                } else {
+                    if ($currentTime > $end && $currentTime < $start) {
+                        $isOutside = true;
+                    }
+                }
+
+                if ($isOutside) {
+                    // Evitar envíos repetidos en la sesión actual
+                    $_SESSION['outside_hours_alert_sent_' . $activeInventoryId] = true;
+
+                    // Datos del propietario
+                    $ownerId = $invRow['user_id'];
+                    $stmtOwner = $pdo->prepare("SELECT full_name, username, cell FROM users WHERE id = ? LIMIT 1");
+                    $stmtOwner->execute([$ownerId]);
+                    $ownerInfo = $stmtOwner->fetch(PDO::FETCH_ASSOC);
+
+                    if ($ownerInfo && !empty($ownerInfo['cell'])) {
+                        require_once __DIR__ . '/../src/Services/WhatsappService.php';
+                        $whatsappService = new \App\Services\WhatsappService();
+
+                        $ownerName = $ownerInfo['full_name'] ?: $ownerInfo['username'] ?: 'Propietario';
+                        $collabName = $currentUser['full_name'] ?: $currentUser['username'] ?: 'Colaborador';
+                        $collabEmail = $currentUser['email'];
+                        $invName = $invRow['name'] ?: 'General';
+                        $entryHour = $now->format('H:i') . 'h';
+                        $formattedRange = substr($start, 0, 5) . 'h a ' . substr($end, 0, 5) . 'h';
+
+                        $whatsappService->sendOutsideHoursAccessAlert(
+                            $ownerInfo['cell'],
+                            $ownerName,
+                            $collabName,
+                            $collabEmail,
+                            $invName,
+                            $entryHour,
+                            $formattedRange
+                        );
+
+                        // Registrar actividad en el log de auditoría
+                        require_once __DIR__ . '/../src/helpers/ActivityLogger.php';
+                        \App\helpers\ActivityLogger::log(
+                            'Seguridad',
+                            'outside_hours_access',
+                            'security_alert',
+                            (string)$activeInventoryId,
+                            "Alerta: Colaborador ingresó fuera de horario laboral.",
+                            "Colaborador: {$collabName} ({$collabEmail}). Hora: {$entryHour}. Rango permitido: {$formattedRange}. Se notificó al dueño por WhatsApp.",
+                            (int)$activeInventoryId,
+                            (int)$currentUser['id']
+                        );
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Error al verificar horario laboral: " . $e->getMessage());
+        }
+    }
+}
+
 // El nivel de suscripción que rige las características de este inventario es el del Propietario (Owner)
 $inventorySubscriptionActive = 1; // Por defecto básico
 try {
@@ -67,6 +148,10 @@ try {
 } catch (Exception $e) {
     $inventorySubscriptionActive = (int) ($currentUser['subscription_active'] ?? 1);
 }
+
+// Resolver precio de slots dinámicamente
+$pricingService = new PricingService();
+$slotPrice = $pricingService->getSlotUnitPrice();
 ?>
 
 <!DOCTYPE html>
@@ -85,6 +170,7 @@ try {
     <link rel="stylesheet" href="/assets/css/payments.css?v=1.2">
     <link rel="stylesheet" href="/assets/css/tutorials.css?v=1.0">
     <link rel="stylesheet" href="/assets/css/mobile-sheets.css?v=1.0">
+    <link rel="stylesheet" href="/assets/css/sweetalert.css?v=1.1">
 
     <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
@@ -94,6 +180,9 @@ try {
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
 
     <script src="/assets/js/theme.js"></script>
+    <script>
+        window.STOCKIFY_SLOT_PRICE = <?php echo (float)$slotPrice; ?>;
+    </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="/assets/js/sweetalert2.all.min.js?v=11.0"></script>
@@ -250,7 +339,7 @@ try {
             </h3>
             <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
                 Sumá slots para invitar a más colaboradores de forma inmediata.
-                Cada slot adicional tiene un costo de <strong>$20.000/mes</strong>. Se registrará una deuda que deberás
+                Cada slot adicional tiene un costo de <strong>$<?php echo number_format($slotPrice, 0, ',', '.'); ?>/mes</strong>. Se registrará una deuda que deberás
                 saldar en un lapso de 48 horas.
             </p>
             <form id="add-slots-form">
@@ -265,7 +354,7 @@ try {
                     style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; font-size: 0.85rem;">
                     <span style="color: #475569; display: block;">Resumen de Deuda:</span>
                     <strong id="slots-debt-summary"
-                        style="font-size: 1.1rem; color: var(--accent-color);">$20.000</strong>
+                        style="font-size: 1.1rem; color: var(--accent-color);">$<?php echo number_format($slotPrice, 0, ',', '.'); ?></strong>
                 </div>
                 <button type="submit" class="btn btn-primary" id="add-slots-submit-btn"
                     style="width: 100%; height: 48px; background: var(--accent-color); border-color: #1b1b1b; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px; color: white;">
@@ -388,7 +477,7 @@ try {
 
 
             <main class="dashboard-main">
-                <div id="view-db" class="dashboard-view">
+                <div id="view-db" class="dashboard-view hidden">
                     <div class="table-container">
                         <div class="table-header">
                             <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
@@ -883,20 +972,22 @@ try {
 
                     <!-- Banner de advertencia de deudas pendientes -->
                     <div id="debt-warning-banner" class="hidden"
-                        style="background: #fffbeb; border: 2px solid #d97706; padding: 15px 20px; border-radius: 12px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); text-align: left;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <i class="ph-bold ph-warning-amber" style="font-size: 1.8rem; color: #d97706;"></i>
+                        style="background: #FFFDF5; border: 2px solid var(--accent-yellow, #EBCB8B); padding: 16px 20px; border-radius: 12px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 4px 4px 0px var(--accent-yellow, #EBCB8B); text-align: left; gap: 16px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 16px; flex: 1; min-width: 280px;">
+                            <div style="background: var(--accent-yellow-20, rgba(235, 203, 139, 0.2)); border: 2px solid var(--accent-yellow, #EBCB8B); width: 48px; height: 48px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 2px 2px 0px var(--accent-yellow, #EBCB8B);">
+                                <i class="ph-bold ph-warning" style="font-size: 1.5rem; color: var(--accent-yellow, #EBCB8B);"></i>
+                            </div>
                             <div>
-                                <strong style="color: #92400e; font-size: 1rem; display: block;">Pago Pendiente de
-                                    Colaboradores</strong>
-                                <span id="debt-warning-text" style="color: #b45309; font-size: 0.85rem;">Tenés una deuda
-                                    pendiente de $20.000 por slots agregados. Plazo restante: 48 horas.</span>
+                                <strong style="color: var(--color-black, #1a1a1a); font-size: 1.05rem; display: block; font-weight: 800; margin-bottom: 2px;">Pago Pendiente de Colaboradores</strong>
+                                <span id="debt-warning-text" style="color: #555; font-size: 0.88rem; font-weight: 500; line-height: 1.25;">Tenés una deuda pendiente de $<?php echo number_format($slotPrice, 0, ',', '.'); ?> por slots agregados. Plazo restante para saldar: 48 horas o tus colaboradores serán eliminados.</span>
                             </div>
                         </div>
-                        <a id="pay-debt-btn" href="#" target="_blank" class="btn btn-primary"
-                            style="margin: 0; background-color: #d97706; border-color: #b45309; color: #fff; width: auto; font-size: 0.85rem; padding: 8px 16px; font-weight: bold; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
-                            <i class="ph-bold ph-whatsapp-logo"></i> Saldar por WhatsApp
-                        </a>
+                        <button id="pay-debt-btn" type="button"
+                            onclick="window.handleDebtPayment()"
+                            class="btn btn-secondary"
+                            style="margin: 0; width: auto; font-size: 0.9rem; padding: 10px 18px; display: inline-flex; align-items: center; gap: 8px;">
+                            <img src="/assets/img/iconos/mp.png" alt="Mercado Pago" style="height: 16px; width: auto; object-fit: contain;"> Saldar Deuda
+                        </button>
                     </div>
 
                     <div id="collaborators-list-container"
@@ -929,6 +1020,45 @@ try {
                             <button id="save-permissions-btn" class="btn btn-primary"
                                 style="background: var(--accent-color); border-color: #1b1b1b;">
                                 <i class="ph ph-floppy-disk"></i> Guardar Configuración
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Horario Laboral: solo para Owner -->
+                    <div id="work-hours-panel" class="hidden"
+                        style="margin-top: 2rem; border-top: 2px dashed #e5e5e5; padding-top: 1.5rem; margin-bottom: 2rem;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h3 style="margin: 0 0 4px; display: flex; align-items: center; gap: 8px;">
+                                <i class="ph ph-clock" style="color: var(--accent-color);"></i> Horario Laboral de Colaboradores
+                            </h3>
+                            <p style="color: #666; font-size: 0.9rem; margin: 0;">
+                                Establecé el rango horario en el que tus colaboradores tienen permitido acceder al sistema. Si ingresan fuera de este horario, se te enviará una alerta automática por WhatsApp.
+                            </p>
+                        </div>
+
+                        <div style="background: #fff; border: 2px solid #1b1b1b; border-radius: 12px; padding: 20px; max-width: 500px; box-shadow: 4px 4px 0px #000;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;">
+                                <input type="checkbox" id="work-hours-enabled" style="width: 20px; height: 20px; cursor: pointer; border: 2px solid #000; border-radius: 4px;">
+                                <label for="work-hours-enabled" style="font-weight: 700; cursor: pointer; user-select: none;">Habilitar alerta de acceso fuera de horario</label>
+                            </div>
+                            
+                            <div id="work-hours-inputs" style="display: flex; gap: 15px; align-items: center;">
+                                <div style="flex: 1;">
+                                    <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px;">Hora de Inicio</label>
+                                    <input type="time" id="work-hours-start" value="08:00" style="width: 100%; padding: 8px; border: 2px solid #1b1b1b; border-radius: 6px; font-family: inherit; font-weight: 700;">
+                                </div>
+                                <div style="font-weight: 700; margin-top: 20px;">a</div>
+                                <div style="flex: 1;">
+                                    <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px;">Hora de Fin</label>
+                                    <input type="time" id="work-hours-end" value="20:00" style="width: 100%; padding: 8px; border: 2px solid #1b1b1b; border-radius: 6px; font-family: inherit; font-weight: 700;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: right; margin-top: 1.5rem; max-width: 500px;">
+                            <button id="save-work-hours-btn" class="btn btn-primary" onclick="window.usersModuleInstance.saveWorkHours()"
+                                style="background: var(--accent-color); border-color: #1b1b1b;">
+                                <i class="ph ph-floppy-disk"></i> Guardar Horario
                             </button>
                         </div>
                     </div>
@@ -988,6 +1118,12 @@ try {
                 </div>
 
                 <div id="payments" class="dashboard-view hidden">
+                </div>
+
+                <div id="no-section-view" class="dashboard-view hidden" style="text-align: center; padding: 50px 20px; background: #fff; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border: var(--border-strong); border-radius: var(--border-radius); box-shadow: 10px 10px 0px var(--color-black);">
+                    <img src="/assets/img/ImagenSinSeccion.svg" alt="Sin acceso" style="max-width: min(500px, 80vw); height: auto; margin-bottom: 20px;">
+                    <h2 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 10px; color: #1b1b1b;">Sin secciones asignadas</h2>
+                    <p style="color: #666; max-width: 400px; margin: 0; font-size: 0.95rem;">Tu usuario no tiene permisos asignados para ver ninguna sección de este inventario. Contactá al propietario para que te asigne permisos.</p>
                 </div>
 
             </main>
@@ -1124,6 +1260,8 @@ try {
                 <div class="period-selector">
                     <button id="btn-period-today" class="period-btn active"
                         onclick="window.loadBalanceData('today')">Hoy</button>
+                    <button id="btn-period-week" class="period-btn"
+                        onclick="window.loadBalanceData('week')">Semana</button>
                     <button id="btn-period-month" class="period-btn"
                         onclick="window.loadBalanceData('month')">Mes</button>
                     <button id="btn-period-year" class="period-btn"
@@ -1151,6 +1289,12 @@ try {
                             <h4 id="balance-expense">$0.00</h4>
                         </div>
                     </div>
+                </div>
+
+                <div class="balance-action-area" style="margin-top: 1.75rem; width: 100%; display: flex; justify-content: center;">
+                    <button id="btn-notify-cash" class="btn-notify-cash" onclick="window.notifyCashBalance()">
+                        <i class="ph ph-whatsapp-logo" style="font-size: 1.4rem;"></i> Notificar cierre de caja
+                    </button>
                 </div>
             </div>
         </div>
@@ -2243,7 +2387,7 @@ try {
 
             <!-- DEBT WARNING BANNER MÓVIL -->
             <div id="m-collab-debt-banner" class="m-collab-debt-banner hidden">
-                <i class="ph-bold ph-warning-amber"></i>
+                <i class="ph-bold ph-warning"></i>
                 <div>
                     <strong>Pago Pendiente</strong>
                     <span id="m-collab-debt-text">Tenés deuda pendiente por slots.</span>

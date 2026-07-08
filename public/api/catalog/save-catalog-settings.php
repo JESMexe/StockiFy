@@ -97,6 +97,20 @@ $catalogSettings = [
     'color_label'      => trim($body['color_label']   ?? '#8A8A8A'),
     'color_title'      => trim($body['color_title']   ?? '#1A1A1A'),
     'color_price'      => trim($body['color_price']   ?? '#1A1A1A'),
+    'color_header_bg'  => trim($body['color_header_bg']  ?? '#FFFFFF'),
+    'color_social_bg'  => trim($body['color_social_bg']  ?? '#FFFFFF'),
+    'color_badge_bg'   => trim($body['color_badge_bg']   ?? '#A3BE8C'),
+    // Sombras
+    'shadow_filter_section' => isset($body['shadow_filter_section']) ? (bool)$body['shadow_filter_section'] : true,
+    'shadow_category_pill'  => isset($body['shadow_category_pill'])  ? (bool)$body['shadow_category_pill']  : true,
+    'shadow_product_card'   => isset($body['shadow_product_card'])   ? (bool)$body['shadow_product_card']   : true,
+    'shadow_modal'          => isset($body['shadow_modal'])          ? (bool)$body['shadow_modal']          : true,
+    // Tipografía
+    'font_family'      => trim($body['font_family']   ?? 'Outfit'),
+    // Columnas adicionales
+    'extra_column_1'   => trim($body['extra_column_1'] ?? ''),
+    'extra_column_2'   => trim($body['extra_column_2'] ?? ''),
+    'extra_column_3'   => trim($body['extra_column_3'] ?? ''),
 ];
 
 try {

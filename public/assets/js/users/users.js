@@ -69,9 +69,30 @@ export const usersModuleInstance = {
             }
         });
 
+        // Ocultar tarjetas de la versión Mobile basadas en los permisos del colaborador
+        const mobileCardMap = {
+            'can_view_data':          '.action-check',
+            'can_view_analytics':     '.action-metrics, .action-balance',
+            'can_view_history':       '.action-history',
+            'can_view_customers':     '.action-customers',
+            'can_view_providers':     '.action-providers',
+            'can_view_employees':     '.action-employees',
+            'can_view_deliveries':    '.action-deliveries',
+            'can_view_sales':         '.action-sale',
+            'can_view_receipts':      '.action-purchase, .action-expense',
+        };
+        Object.entries(mobileCardMap).forEach(([permKey, selector]) => {
+            if (permissions[permKey] === false) {
+                document.querySelectorAll(selector).forEach(card => {
+                    card.classList.add('hidden');
+                });
+            }
+        });
+
         // El botón "Colaboradores" solo es visible para el Owner
         const colabBtn = document.querySelector('[data-target-view="users-manage"]');
         colabBtn?.closest('li')?.classList.add('hidden');
+        document.querySelector('.action-collaborators')?.classList.add('hidden');
     },
 
     /**
@@ -89,7 +110,18 @@ export const usersModuleInstance = {
 
             if (data.mode === 'owner') {
                 window.__rbacPermissions = null;
-                // El Owner ve todo, incluyendo Colaboradores — no hay nada que ocultar
+                // Mostrar y cargar panel de horario laboral
+                const workPanel = document.getElementById('work-hours-panel');
+                if (workPanel) {
+                    workPanel.classList.remove('hidden');
+                    const workHours = data.work_hours || { enabled: 0, start: '08:00', end: '20:00' };
+                    const enabledCheck = document.getElementById('work-hours-enabled');
+                    const startInput = document.getElementById('work-hours-start');
+                    const endInput = document.getElementById('work-hours-end');
+                    if (enabledCheck) enabledCheck.checked = !!workHours.enabled;
+                    if (startInput) startInput.value = workHours.start;
+                    if (endInput) endInput.value = workHours.end;
+                }
             } else if (data.mode === 'collaborator') {
                 window.__rbacPermissions = data.permissions ?? {};
                 this.applyRoleRestrictions(data.permissions);
@@ -185,9 +217,16 @@ export const usersModuleInstance = {
                         banner.classList.remove('hidden');
                     }
                     const amountSpan = document.getElementById('debt-warning-text');
+                    const payBtn = document.getElementById('pay-debt-btn');
+                    const totalDebt = res.debts.reduce((sum, d) => sum + (parseFloat(d.price_per_slot) * parseInt(d.slots_added)), 0);
+                    
                     if (amountSpan) {
-                        const totalDebt = res.debts.reduce((sum, d) => sum + (parseFloat(d.price_per_slot) * parseInt(d.slots_added)), 0);
                         amountSpan.innerText = `Tenés una deuda pendiente de $${totalDebt.toLocaleString('es-AR')} por slots agregados. Plazo restante para saldar: 48 horas o tus colaboradores serán eliminados.`;
+                    }
+                    
+                    if (payBtn && res.debts[0]) {
+                        payBtn.dataset.debtId = res.debts[0].id;
+                        payBtn.dataset.amount = totalDebt;
                     }
                 }
             } else {
@@ -196,6 +235,25 @@ export const usersModuleInstance = {
                     banner.classList.add('hidden');
                 }
             }
+            
+            // Definir función global para saldar la deuda
+            window.handleDebtPayment = function() {
+                const payBtn = document.getElementById('pay-debt-btn');
+                if (!payBtn) return;
+                const debtId = parseInt(payBtn.dataset.debtId || 0);
+                const amount = parseFloat(payBtn.dataset.amount || 0);
+                
+                if (!debtId || !amount) {
+                    pop_ups.error("No se pudo identificar la deuda pendiente.");
+                    return;
+                }
+                
+                if (window.paymentsModule) {
+                    window.paymentsModule.openSlotsCheckout(debtId, 0, amount);
+                } else {
+                    pop_ups.error("El módulo de pagos no está inicializado.");
+                }
+            };
         } catch (e) {
             console.error("Error loading pending debts:", e);
         }
@@ -499,7 +557,8 @@ export const usersModuleInstance = {
         if (slotsCountInput && slotsDebtSummary) {
             slotsCountInput.addEventListener('input', (e) => {
                 const val = parseInt(e.target.value) || 0;
-                const total = val * 20000;
+                const price = window.STOCKIFY_SLOT_PRICE || 20000;
+                const total = val * price;
                 slotsDebtSummary.innerText = '$' + total.toLocaleString('es-AR');
             });
         }
@@ -803,6 +862,41 @@ export const usersModuleInstance = {
             if (saveBtn) {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar Configuración';
+            }
+        }
+    },
+
+    async saveWorkHours() {
+        const enabled = document.getElementById('work-hours-enabled')?.checked ? 1 : 0;
+        const start = document.getElementById('work-hours-start')?.value || '08:00';
+        const end = document.getElementById('work-hours-end')?.value || '20:00';
+
+        const saveBtn = document.getElementById('save-work-hours-btn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Guardando...';
+        }
+
+        try {
+            const response = await fetch('/api/collaborators/save-work-hours.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled, start, end })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                pop_ups.success("Horario laboral guardado correctamente.");
+            } else {
+                pop_ups.error(result.message ?? "Error al guardar.");
+            }
+        } catch (e) {
+            console.error(e);
+            pop_ups.error("Error de conexión.");
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="ph ph-floppy-disk"></i> Guardar Horario';
             }
         }
     },

@@ -54,6 +54,8 @@ try {
         return $owner;
     };
 
+    $details = [];
+
     foreach ($alerts as $alert) {
         $invName = $alert['inventory_name'] ?? 'Principal';
 
@@ -70,6 +72,12 @@ try {
         }
 
         if (!$owner || (empty($owner['email']) && empty($owner['cell']))) {
+            $details[] = [
+                'product' => $alert['product_name'] ?? 'Unknown',
+                'type' => $alert['type'] ?? 'unknown',
+                'status' => 'skipped',
+                'reason' => 'No owner contact info found'
+            ];
             continue; // Sin destinatario, saltar
         }
 
@@ -77,36 +85,74 @@ try {
         $toCell   = $owner['cell'] ?? '';
         $userName = $owner['full_name'] ?? 'Socio';
 
+        $alertDetails = [
+            'product' => $alert['product_name'] ?? 'Unknown',
+            'type' => $alert['type'] ?? 'unknown',
+            'email' => ['attempted' => false, 'sent' => false, 'error' => null],
+            'whatsapp' => ['attempted' => false, 'sent' => false, 'error' => null]
+        ];
+
         if ($alert['type'] === 'low_stock') {
             if (!empty($toEmail)) {
-                $mailSvc->sendLowStockAlert($toEmail, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock']);
-                $sentCount++;
+                $alertDetails['email']['attempted'] = true;
+                $ok = $mailSvc->sendLowStockAlert($toEmail, $userName, $alert['product_name'], (float)$alert['current_stock'], (float)$alert['min_stock']);
+                if ($ok) {
+                    $alertDetails['email']['sent'] = true;
+                    $sentCount++;
+                } else {
+                    $alertDetails['email']['error'] = $mailSvc->lastError ?: 'Unknown SMTP error';
+                }
             }
             if (!empty($toCell)) {
+                $alertDetails['whatsapp']['attempted'] = true;
                 $productId = $alert['product_id'] ?? '-';
-                $waSvc->sendLowStockAlert($toCell, $userName, $alert['product_name'], $alert['current_stock'], $alert['min_stock'], $invName, $productId);
-                $sentCount++;
+                $ok = $waSvc->sendLowStockAlert($toCell, $userName, $alert['product_name'], (float)$alert['current_stock'], (float)$alert['min_stock'], $invName, $productId);
+                if ($ok) {
+                    $alertDetails['whatsapp']['sent'] = true;
+                    $sentCount++;
+                } else {
+                    $alertDetails['whatsapp']['error'] = $waSvc->lastError ?: 'Unknown WhatsApp error';
+                }
             }
         } elseif ($alert['type'] === 'out_of_stock') {
             if (!empty($toEmail)) {
-                $mailSvc->sendOutOfStockAlert($toEmail, $userName, $alert['product_name'], $invName);
-                $sentCount++;
+                $alertDetails['email']['attempted'] = true;
+                $ok = $mailSvc->sendOutOfStockAlert($toEmail, $userName, $alert['product_name'], $invName);
+                if ($ok) {
+                    $alertDetails['email']['sent'] = true;
+                    $sentCount++;
+                } else {
+                    $alertDetails['email']['error'] = $mailSvc->lastError ?: 'Unknown SMTP error';
+                }
             }
             if (!empty($toCell)) {
+                $alertDetails['whatsapp']['attempted'] = true;
                 $productId = $alert['product_id'] ?? '-';
-                $waSvc->sendOutOfStockAlert($toCell, $userName, $alert['product_name'], $invName, (string)$productId);
-                $sentCount++;
+                $ok = $waSvc->sendOutOfStockAlert($toCell, $userName, $alert['product_name'], $invName, (string)$productId);
+                if ($ok) {
+                    $alertDetails['whatsapp']['sent'] = true;
+                    $sentCount++;
+                } else {
+                    $alertDetails['whatsapp']['error'] = $waSvc->lastError ?: 'Unknown WhatsApp error';
+                }
             }
         } elseif ($alert['type'] === 'negative_profit') {
             if (!empty($toEmail)) {
-                $mailSvc->sendNegativeProfitAlert($toEmail, $userName, $alert['product_name'], $alert['sale_price'], $alert['cost_price']);
-                $sentCount++;
+                $alertDetails['email']['attempted'] = true;
+                $ok = $mailSvc->sendNegativeProfitAlert($toEmail, $userName, $alert['product_name'], (float)$alert['sale_price'], (float)$alert['cost_price']);
+                if ($ok) {
+                    $alertDetails['email']['sent'] = true;
+                    $sentCount++;
+                } else {
+                    $alertDetails['email']['error'] = $mailSvc->lastError ?: 'Unknown SMTP error';
+                }
             }
-            // WhatsApp: sin plantilla aprobada para ganancia negativa actualmente.
         }
+
+        $details[] = $alertDetails;
     }
 
-    echo json_encode(['success' => true, 'sent' => $sentCount]);
+    echo json_encode(['success' => true, 'sent' => $sentCount, 'details' => $details]);
 
 } catch (Throwable $e) {
     http_response_code(500);

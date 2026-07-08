@@ -92,9 +92,9 @@ $currentUser = getCurrentUser();
         </nav>
     </header>
     <?php
-    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0 && (int)$currentUser['trial_used'] === 0);
+    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int) $currentUser['subscription_active'] === 0 && (int) $currentUser['trial_used'] === 0);
     if ($showPromoBar):
-    ?>
+        ?>
         <div class="promo-secondary-bar">
             <div class="promo-bg-carousel">
                 <div class="carousel-track">
@@ -107,7 +107,8 @@ $currentUser = getCurrentUser();
                 </div>
                 <div class="promo-button-wrapper">
                     <?php if ($currentUser): ?>
-                        <button class="btn-promo" id="btn-start-trial" style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
+                        <button class="btn-promo" id="btn-start-trial"
+                            style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
                     <?php else: ?>
                         <a href="register" class="btn-promo">Probar Ahora</a>
                     <?php endif; ?>
@@ -120,7 +121,7 @@ $currentUser = getCurrentUser();
     <main>
         <div class="legal-content">
             <h1>Condiciones del Servicio</h1>
-            <p>Última actualización: 16 de abril de 2026</p>
+            <p>Última actualización: 7 de Julio de 2026</p>
 
             <h2>1. Aceptación de los Términos</h2>
             <p>Al acceder y utilizar StockiFy, aceptas quedar sujeto a estos Términos y Condiciones. Si no estás de
@@ -139,14 +140,28 @@ $currentUser = getCurrentUser();
                 funciones se detallan en la página principal. Los pagos no son reembolsables salvo indicación expresa
                 por parte de JESMdev.</p>
 
-            <h2>4. Limitación de Responsabilidad</h2>
+            <h2>4. Limitación de Responsabilidad y Uso de Tecnologías de IA</h2>
             <p>El servicio se proporciona "tal cual" y "según disponibilidad". No garantizamos que el servicio sea
                 ininterrumpido o libre de errores. JESMdev no se hace responsable por pérdidas económicas derivadas del
                 mal uso de la herramienta o fallos técnicos externos.</p>
+            <p><strong>Uso de Inteligencia Artificial:</strong> Los desarrolladores de StockiFy utilizan tecnologías de
+                Inteligencia Artificial (IA) para la revisión de código fuente, generación de documentación del
+                proyecto, asistencia en el diagnóstico y resolución de errores técnicos, y procesamiento analítico de
+                reportes de quejas o incidencias. Este uso tiene fines de soporte, mantenimiento y mejora del software,
+                garantizando una atención técnica eficiente.</p>
 
-            <h2>5. Propiedad Intelectual</h2>
+            <h2>5. Propiedad Intelectual y Derechos de Autor (Copyright)</h2>
             <p>El nombre StockiFy, el logotipo y el código fuente original son propiedad exclusiva de JESMdev (Joaquín
-                Sosa). Queda prohibida su reproducción total o parcial sin consentimiento.</p>
+                Ezequiel
+                Sosa Makara). Queda prohibida su reproducción total o parcial sin consentimiento.</p>
+            <p><strong>Uso de Contenidos por los Usuarios:</strong> StockiFy repudia el uso no autorizado de cualquier
+                material gráfico, logotipo o imagen protegido por derechos de autor (copyright). Los usuarios son los
+                únicos responsables de asegurar que disponen de las autorizaciones, derechos o licencias pertinentes
+                para cualquier imagen que decidan subir a la plataforma (por ejemplo, en catálogos de venta o
+                encabezados de remitos). Si consideras que algún contenido infringió tus derechos de propiedad
+                intelectual, por favor contáctanos a <a href="mailto:soporte@stockify.com.ar"
+                    style="color: var(--accent-color); font-weight: bold; text-decoration: none;">soporte@stockify.com.ar</a>
+                para proceder con su remoción inmediata.</p>
 
             <h2>6. Modificaciones</h2>
             <p>Nos reservamos el derecho de modificar estos términos en cualquier momento. El uso continuado del
@@ -166,9 +181,15 @@ $currentUser = getCurrentUser();
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div class="footer-links" style="display: flex; gap: 20px;">
-                        <a href="privacy-policy" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Política de Privacidad</a>
-                        <a href="terms-of-service" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Condiciones del Servicio</a>
-                        <a href="about-us" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">¿Quiénes Somos?</a>
+                        <a href="privacy-policy"
+                            style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Política
+                            de Privacidad</a>
+                        <a href="terms-of-service"
+                            style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Condiciones
+                            del Servicio</a>
+                        <a href="about-us"
+                            style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">¿Quiénes
+                            Somos?</a>
                     </div>
                     <p class="footer-dev" style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7);">Created by
                         <span style="color: var(--color-white); font-weight: bold">JESMdev</span>

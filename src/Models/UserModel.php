@@ -16,7 +16,7 @@ class UserModel
 
     private function checkAndHandleExpiration(?array $user): ?array
     {
-        if ($user && (int)$user['subscription_active'] > 0 && !empty($user['subscription_expires_at'])) {
+        if ($user && (int) $user['subscription_active'] > 0 && !empty($user['subscription_expires_at'])) {
             date_default_timezone_set('America/Argentina/Buenos_Aires');
             $expiresAt = strtotime($user['subscription_expires_at']);
             if ($expiresAt !== false && $expiresAt < time()) {
@@ -45,7 +45,8 @@ class UserModel
     }
 
     // --- MÉTODOS DE GOOGLE AUTH ---
-    public function findByGoogleId(string $googleId) {
+    public function findByGoogleId(string $googleId)
+    {
         $stmt = $this->db->prepare("SELECT * FROM users WHERE google_id = :gid");
         $stmt->execute([':gid' => $googleId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -56,7 +57,7 @@ class UserModel
     {
         date_default_timezone_set('America/Argentina/Buenos_Aires');
         $expiresAt = (new \DateTime('+30 days'))->format('Y-m-d H:i:s');
-        
+
         $stmt = $this->db->prepare("
             UPDATE users
             SET subscription_active = 4,
@@ -87,7 +88,7 @@ class UserModel
         $stmt = $this->db->prepare($sql);
         try {
             $stmt->execute([
-                ':username' => explode('@', $data['email'])[0] . rand(100,999), // Username temporal único
+                ':username' => explode('@', $data['email'])[0] . rand(100, 999), // Username temporal único
                 ':email' => $data['email'],
                 ':pass' => $tempPass,
                 ':name' => $data['name'],
@@ -150,7 +151,7 @@ class UserModel
             return true;
         }
 
-        $lastSentTimestamp = strtotime((string)$row['otp_last_sent_at']);
+        $lastSentTimestamp = strtotime((string) $row['otp_last_sent_at']);
         if ($lastSentTimestamp === false) {
             return true;
         }
@@ -209,7 +210,7 @@ class UserModel
             return false;
         }
 
-        $attempts = (int)($user['otp_attempts'] ?? 0);
+        $attempts = (int) ($user['otp_attempts'] ?? 0);
 
         // Máximo 5 intentos fallidos
         if ($attempts >= 5) {
@@ -218,13 +219,13 @@ class UserModel
         }
 
         // Expirado
-        if (strtotime((string)$user['otp_expires_at']) < time()) {
+        if (strtotime((string) $user['otp_expires_at']) < time()) {
             $this->clearOtpState($userId);
             return false;
         }
 
         // Verificación del hash
-        if (!password_verify($otp, (string)$user['otp_hash'])) {
+        if (!password_verify($otp, (string) $user['otp_hash'])) {
             $this->incrementOtpAttempts($userId);
             return false;
         }
@@ -251,13 +252,15 @@ class UserModel
                 VALUES (:username, :email, :pass, :name, NOW())";
         $stmt = $this->db->prepare($sql);
         try {
-            if ($stmt->execute([
-                ':username' => $data['username'],
-                ':email' => $data['email'],
-                ':pass' => password_hash($data['password'], PASSWORD_DEFAULT),
-                ':name' => $data['full_name'] ?? $data['name'] ?? null
-            ])) {
-                return (int)$this->db->lastInsertId();
+            if (
+                $stmt->execute([
+                    ':username' => $data['username'],
+                    ':email' => $data['email'],
+                    ':pass' => password_hash($data['password'], PASSWORD_DEFAULT),
+                    ':name' => $data['full_name'] ?? $data['name'] ?? null
+                ])
+            ) {
+                return (int) $this->db->lastInsertId();
             }
             return false;
         } catch (\PDOException $e) {

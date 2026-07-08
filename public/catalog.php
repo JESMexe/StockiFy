@@ -332,7 +332,7 @@ function render404() {
             
             <div class="business-contacts">
                 <?php if (!empty($address)): ?>
-                    <a href="https://maps.google.com/?q=<?= urlencode($address) ?>" target="_blank" class="contact-btn" title="Ver dirección: <?= $address ?>">
+                    <a href="https://maps.google.com/?q=<?= urlencode($address) ?>" target="_blank" class="contact-btn maps-contact" title="Ver dirección: <?= $address ?>">
                         <i class="ph ph-map-pin"></i>
                     </a>
                 <?php endif; ?>
@@ -424,6 +424,7 @@ function render404() {
                         <p class="modal-price-label">Precio</p>
                         <p class="modal-price" id="modal-price">$0</p>
                     </div>
+                    <div id="modal-extra-details" class="modal-extra-details" style="display: none;"></div>
                     <div class="modal-actions" id="modal-actions">
                         <!-- Botón WhatsApp dinámico -->
                     </div>
@@ -530,6 +531,7 @@ function render404() {
                             return;
                         }
 
+                        window.catalogBusiness = data.business || {};
                         totalPages = data.pagination.total_pages;
                         const products = data.products || [];
                         const keys = data.column_map || { name: 'name', stock: 'stock', cat: 'categoria', img: 'imagen_url' };
@@ -666,7 +668,7 @@ function render404() {
                     }
                     
                     actionBtnHtml = `
-                        <button class="btn-whatsapp-action" style="background-color: var(--${BTN_COLOR});" onclick="event.stopPropagation(); ${actionFunc}">
+                        <button class="btn-whatsapp-action" style="background: var(--${BTN_COLOR});" onclick="event.stopPropagation(); ${actionFunc}">
                             <i class="ph ${BTN_ICON}"></i> ${BTN_TEXT}
                         </button>
                     `;
@@ -742,6 +744,50 @@ function render404() {
                     document.getElementById('modal-price-container').style.display = 'none';
                 }
 
+                // Columnas extras
+                const extraDetailsContainer = document.getElementById('modal-extra-details');
+                if (extraDetailsContainer) {
+                    extraDetailsContainer.innerHTML = '';
+                    let hasAnyExtra = false;
+
+                    const extraCols = [
+                        window.catalogBusiness?.extra_column_1,
+                        window.catalogBusiness?.extra_column_2,
+                        window.catalogBusiness?.extra_column_3
+                    ];
+
+                    extraCols.forEach(colName => {
+                        if (colName && product[colName] !== undefined && product[colName] !== null && product[colName].toString().trim() !== '') {
+                            const detailItem = document.createElement('div');
+                            detailItem.className = 'extra-detail-item';
+
+                            const label = document.createElement('span');
+                            label.className = 'extra-detail-label';
+                            label.textContent = colName;
+
+                            const value = document.createElement('span');
+                            value.className = 'extra-detail-value';
+                            value.textContent = product[colName];
+
+                            detailItem.appendChild(label);
+                            detailItem.appendChild(value);
+                            extraDetailsContainer.appendChild(detailItem);
+                            hasAnyExtra = true;
+                        }
+                    });
+
+                    if (hasAnyExtra) {
+                        extraDetailsContainer.style.display = 'flex';
+                        if (showPrice) {
+                            extraDetailsContainer.style.borderTop = 'var(--border-soft)';
+                        } else {
+                            extraDetailsContainer.style.borderTop = 'none';
+                        }
+                    } else {
+                        extraDetailsContainer.style.display = 'none';
+                    }
+                }
+
                 if (window.SHOW_ACTION_BUTTON) {
                     let modalActionBtnHtml = '';
                     let actionFunc = '';
@@ -753,7 +799,7 @@ function render404() {
                     }
                     
                     modalActionBtnHtml = `
-                        <button class="btn-whatsapp-action" style="background-color: var(--${BTN_COLOR});" onclick="${actionFunc}">
+                        <button class="btn-whatsapp-action" style="background: var(--${BTN_COLOR});" onclick="${actionFunc}">
                             <i class="ph ${BTN_ICON}"></i> ${BTN_TEXT}
                         </button>
                     `;

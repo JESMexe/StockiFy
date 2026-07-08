@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\core\Database;
 use App\helpers\ActivityLogger;
+use App\Services\Payments\PricingService;
 use PDO;
 
 class CollaboratorDebtService
@@ -194,7 +195,7 @@ class CollaboratorDebtService
         $stmtUsed->execute([$ownerId, $ownerId]);
         $baseCollaboratorCount = (int)$stmtUsed->fetchColumn();
 
-        $pricePerSlot = 20000.00;
+        $pricePerSlot = (new PricingService())->getSlotUnitPrice();
         $totalAmount = $slotsCount * $pricePerSlot;
 
         // Fetch owner email
@@ -304,6 +305,87 @@ class CollaboratorDebtService
                 $this->db->rollBack();
             }
             error_log("Error renewing monthly debts: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Revisa si hay deudas de slots de colaboradores que estén a menos de 12 horas de expirar
+     * y envía una notificación de advertencia por WhatsApp.
+     */
+    public function checkAndSendDebtWarnings(): void
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT d.*, 
+                       u.cell as owner_cell,
+                       u.full_name as owner_name,
+                       u.username as owner_username,
+                       inv.name as inventory_name,
+                       TIMESTAMPDIFF(SECOND, NOW(), d.created_at + INTERVAL 48 HOUR) as seconds_left
+                FROM collaborator_slots_debts d
+                INNER JOIN users u ON d.owner_id = u.id
+                INNER JOIN inventories inv ON d.inventory_id = inv.id
+                WHERE d.status = 'pending'
+                  AND d.warning_sent = 0
+                  AND d.created_at + INTERVAL 48 HOUR <= NOW() + INTERVAL 12 HOUR
+                  AND d.created_at + INTERVAL 48 HOUR > NOW()
+            ");
+            $stmt->execute();
+            $debtsToWarn = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($debtsToWarn)) {
+                return;
+            }
+
+            $whatsappSvc = new WhatsappService();
+
+            foreach ($debtsToWarn as $debt) {
+                if (empty($debt['owner_cell'])) {
+                    continue;
+                }
+
+                $hoursLeft = (int)ceil((float)$debt['seconds_left'] / 3600.0);
+                if ($hoursLeft <= 0) {
+                    $hoursLeft = 1;
+                }
+
+                $userName = $debt['owner_name'] ?: $debt['owner_username'] ?: 'Usuario';
+                $pendingAmount = (float)$debt['total_amount'];
+                $slotsCount = (int)$debt['slots_added'];
+                $inventoryName = $debt['inventory_name'] ?: 'Principal';
+
+                $success = $whatsappSvc->sendCollaboratorSlotsExpiryAlert(
+                    $debt['owner_cell'],
+                    $userName,
+                    $pendingAmount,
+                    $slotsCount,
+                    $inventoryName,
+                    $hoursLeft
+                );
+
+                if ($success) {
+                    $stmtUpdate = $this->db->prepare("UPDATE collaborator_slots_debts SET warning_sent = 1 WHERE id = ?");
+                    $stmtUpdate->execute([$debt['id']]);
+
+                    // Registrar actividad
+                    require_once __DIR__ . '/../helpers/ActivityLogger.php';
+                    \App\helpers\ActivityLogger::log(
+                        'Colaboradores',
+                        'send_slots_warning',
+                        'collaborator_debt',
+                        (string)$debt['id'],
+                        "Se envió advertencia de vencimiento por WhatsApp a {$userName} por deudas de slots adicionales.",
+                        "Horas restantes: {$hoursLeft}h.",
+                        (int)$debt['inventory_id'],
+                        (int)$debt['owner_id'],
+                        'System'
+                    );
+                } else {
+                    error_log("Failed to send WhatsApp slots warning for debt ID {$debt['id']}: " . $whatsappSvc->lastError);
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log("Error in checkAndSendDebtWarnings: " . $e->getMessage());
         }
     }
 }

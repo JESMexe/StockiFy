@@ -20,6 +20,7 @@ try {
     date_default_timezone_set('America/Argentina/Buenos_Aires');
 
     $debtSvc = new \App\Services\CollaboratorDebtService();
+    $debtSvc->checkAndSendDebtWarnings();
     $debtSvc->processExpiredDebts();
 
     echo json_encode([

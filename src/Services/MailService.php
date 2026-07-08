@@ -12,6 +12,8 @@ require_once __DIR__ . '/../config/mail_config.php';
 
 class MailService
 {
+    public string $lastError = '';
+
     private function getMailer(): PHPMailer
     {
         $mail = new PHPMailer(true);
@@ -92,6 +94,7 @@ class MailService
 
             return $mail->send();
         } catch (Exception | \Throwable $e) {
+            $this->lastError = $e->getMessage();
             error_log("MailService::sendLowStockAlert error: " . $e->getMessage());
             return false;
         }
@@ -139,6 +142,7 @@ class MailService
 
             return $mail->send();
         } catch (Exception | \Throwable $e) {
+            $this->lastError = $e->getMessage();
             error_log("MailService::sendOutOfStockAlert error: " . $e->getMessage());
             return false;
         }
@@ -365,7 +369,37 @@ class MailService
         }
     }
 
+    public function sendCustomPlanRequest(
+        string $planName,
+        string $userName,
+        string $userEmail,
+        string $phone,
+        string $comments
+    ): bool {
+        try {
+            $mail = $this->getMailer();
+            $mail->setFrom(MAIL_FROM_SECURITY, 'StockiFy Solicitudes');
+            $mail->addAddress('joaquinezequielsm@gmail.com');
+            $mail->isHTML(true);
+            $mail->Subject = $planName;
+            
+            $body = "<h2>Nueva Solicitud: {$planName}</h2>";
+            $body .= "<p><strong>Usuario / Nombre:</strong> " . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . "</p>";
+            $body .= "<p><strong>Email:</strong> " . htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8') . "</p>";
+            $body .= "<p><strong>Teléfono:</strong> " . htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') . "</p>";
+            $body .= "<p><strong>Comentarios / Idea / Requerimientos:</strong><br>" . nl2br(htmlspecialchars($comments, ENT_QUOTES, 'UTF-8')) . "</p>";
+            
+            $mail->Body = $body;
+            $mail->AltBody = "Nueva Solicitud: {$planName}\nNombre: {$userName}\nEmail: {$userEmail}\nTeléfono: {$phone}\nComentarios: {$comments}";
+            return $mail->send();
+        } catch (\Exception $e) {
+            error_log("MailService::sendCustomPlanRequest error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     private function getBaseTemplate(string $color = '#B48EAD'): string
+
     {
         $logo = 'https://stockify.com.ar/assets/img/LogoE3.png';
         return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>StockiFy</title><link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700" rel="stylesheet"></head><body style="margin:0;padding:0;background:#f4f4f6;font-family:Outfit,Arial,sans-serif;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f4f6;padding:36px 0;"><tr><td align="center" style="padding:0 16px;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:#fff;border:2px solid ' . $color . ';border-radius:16px;overflow:hidden;"><tr><td style="padding:18px 28px;background:' . $color . ';"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td><img src="' . $logo . '" alt="StockiFy" height="42" style="display:block;border:0;"></td><td align="right"><span style="font-family:Outfit,Arial,sans-serif;font-size:11px;color:rgba(255,255,255,0.75);letter-spacing:1px;text-transform:uppercase;">Notificaci&oacute;n autom&aacute;tica</span></td></tr></table></td></tr><tr><td style="padding:32px 32px 24px;font-family:Outfit,Arial,sans-serif;">{{content}}</td></tr><tr><td style="padding:0 32px;"><div style="height:1px;background:' . $color . ';opacity:0.15;"></div></td></tr><tr><td style="padding:16px 32px 22px;background:#fafafa;"><p style="margin:0;font-family:Outfit,Arial,sans-serif;font-size:12px;color:#999;line-height:1.6;">Mensaje generado autom&aacute;ticamente por <strong style="color:' . $color . ';">StockiFy</strong>. No respond&aacute;s este correo. &mdash; <a href="mailto:soporte@stockify.com.ar" style="color:' . $color . ';text-decoration:none;font-weight:600;">soporte@stockify.com.ar</a></p></td></tr></table></td></tr></table></body></html>';

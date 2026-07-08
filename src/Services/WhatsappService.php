@@ -234,7 +234,7 @@ class WhatsappService
             'nombre_producto'   => $productName,
             'producto_id'       => $productId,
         ];
-        return $this->sendTemplateMessage($toPhoneNumber, 'producto_agotado', $params);
+        return $this->sendTemplateMessage($toPhoneNumber, 'producto_agotado', $params, 'es');
     }
 
     /**
@@ -283,5 +283,106 @@ class WhatsappService
             'balance'           => number_format($balance,        2, ',', '.'),
         ];
         return $this->sendTemplateMessage($toPhoneNumber, 'cierre_semanal', $params);
+    }
+
+    /**
+     * Alerta de Vencimiento de Slots de Colaboradores
+     *
+     * Plantilla: alerta_vencimiento_slots_colaboradores (es_AR)
+     * Variables: {{nombre_usuario}}, {{monto_pendiente}}, {{cantidad_slots}}, {{nombre_inventario}}, {{horas_restantes}}
+     */
+    public function sendCollaboratorSlotsExpiryAlert(
+        string $toPhoneNumber,
+        string $userName,
+        float  $pendingAmount,
+        int    $slotsCount,
+        string $inventoryName,
+        int    $hoursLeft
+    ): bool {
+        $params = [
+            'nombre_usuario'    => $userName,
+            'monto_pendiente'   => number_format($pendingAmount, 0, ',', '.'),
+            'cantidad_slots'    => (string) $slotsCount,
+            'nombre_inventario' => $inventoryName,
+            'horas_restantes'   => (string) $hoursLeft,
+        ];
+        return $this->sendTemplateMessage($toPhoneNumber, 'alerta_vencimiento_slots_colaboradores', $params);
+    }
+
+    /**
+     * Recordatorio de vencimiento de Suscripción (Plan)
+     *
+     * Plantilla: vencimiento_plan_aviso (es_AR)
+     * Variables: {{nombre_usuario}}, {{nombre_plan}}, {{dias_restantes}}, {{fecha_vencimiento}}, {{pago_aut_estado}}
+     */
+    public function sendSubscriptionExpiringAlert(
+        string $toPhoneNumber,
+        string $userName,
+        string $planName,
+        int    $daysLeft,
+        string $expiresAt,
+        string $autoDebitStatus
+    ): bool {
+        $params = [
+            'nombre_usuario'    => $userName,
+            'nombre_plan'       => $planName,
+            'dias_restantes'    => (string) $daysLeft,
+            'fecha_vencimiento' => $expiresAt,
+            'pago_aut_estado'   => $autoDebitStatus,
+        ];
+        return $this->sendTemplateMessage($toPhoneNumber, 'vencimiento_plan_aviso', $params);
+    }
+
+    /**
+     * Reporte Dinámico de Cierre de Caja (Semanal, Mensual o Anual)
+     *
+     * Plantilla: reporte_cierre_caja_semanal (es_AR)
+     * Variables: {{inventario_nombre}}, {{nombre_usuario}}, {{lapso_tiempo}},
+     *            {{ventas_totales}}, {{gastos_totales}}, {{balance}}
+     */
+    public function sendDynamicClosureReport(
+        string $toPhoneNumber,
+        string $userName,
+        string $timeSpan,
+        float  $totalSales,
+        float  $totalPurchases,
+        float  $balance,
+        string $inventoryName = 'General'
+    ): bool {
+        $params = [
+            'inventario_nombre' => $inventoryName,
+            'nombre_usuario'    => $userName,
+            'lapso_tiempo'      => $timeSpan,
+            'ventas_totales'    => number_format($totalSales,     2, ',', '.'),
+            'gastos_totales'    => number_format($totalPurchases, 2, ',', '.'),
+            'balance'           => number_format($balance,        2, ',', '.'),
+        ];
+        return $this->sendTemplateMessage($toPhoneNumber, 'reporte_cierre_caja_semanal', $params);
+    }
+
+    /**
+     * Alerta de acceso fuera de horario laboral
+     *
+     * Plantilla: alerta_acceso_fuera_horario (es_AR)
+     * Variables: {{nombre_owner}}, {{nombre_colaborador}}, {{email_colaborador}}, {{inventario_nombre}}, {{hora_ingreso}}, {{rango_permitido}}
+     */
+    public function sendOutsideHoursAccessAlert(
+        string $toPhoneNumber,
+        string $ownerName,
+        string $collabName,
+        string $collabEmail,
+        string $inventoryName,
+        string $entryTime,
+        string $allowedRange
+    ): bool {
+        $params = [
+            'nombre_owner'       => $ownerName,
+            'nombre_colaborador' => $collabName,
+            'email_colaborador'  => $collabEmail,
+            'inventario_nombre'  => $inventoryName,
+            'hora_ingreso'       => $entryTime,
+            'rango_permitido'    => $allowedRange,
+        ];
+        return $this->sendTemplateMessage($toPhoneNumber, 'alerta_acceso_fuera_horario', $params);
     }
 }

@@ -1,4 +1,4 @@
-﻿
+
 :root {
     --font-body: 'Satoshi', sans-serif;
 }
@@ -129,4 +129,27 @@
     margin: 0 auto !important;
     box-sizing: border-box !important;
     display: block !important;
+}
+
+/* Iconos de SweetAlert personalizados con colores de StockiFy */
+.swal2-icon.swal2-info {
+    border-color: var(--accent-color) !important;
+    color: var(--accent-color) !important;
+}
+.swal2-icon.swal2-success {
+    border-color: var(--accent-color) !important;
+    color: var(--accent-color) !important;
+}
+.swal2-icon.swal2-success [class^=swal2-success-line] {
+    background-color: var(--accent-color) !important;
+}
+.swal2-icon.swal2-success .swal2-success-ring {
+    border: .25em solid rgba(244, 63, 94, .3) !important;
+}
+.swal2-icon.swal2-error {
+    border-color: var(--accent-color) !important;
+    color: var(--accent-color) !important;
+}
+.swal2-icon.swal2-error [class^=swal2-x-mark-line] {
+    background-color: var(--accent-color) !important;
 }

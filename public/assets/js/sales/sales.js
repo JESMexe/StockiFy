@@ -1133,8 +1133,17 @@ export class SalesModule {
                         });
                         const emailData = await emailRes.json();
                         if (emailData.success) {
+                            console.log("Resultados de envío de reportes de stock:", emailData.details);
                             if (emailData.sent > 0) {
-                                pop_ups.success(`¡Reportes (${emailData.sent}) enviados al mail con éxito!`);
+                                pop_ups.success(`¡Reportes (${emailData.sent}) enviados con éxito!`);
+                            } else {
+                                const hasErrors = emailData.details && emailData.details.some(d => 
+                                    (d.email?.attempted && !d.email?.sent) || 
+                                    (d.whatsapp?.attempted && !d.whatsapp?.sent)
+                                );
+                                if (hasErrors) {
+                                    pop_ups.warning("Alertas de stock detectadas, pero no pudieron enviarse por WhatsApp o Email. Revisá la consola del navegador para ver el detalle de los errores.", "Envío Incompleto");
+                                }
                             }
                         }
                     } catch (err) {

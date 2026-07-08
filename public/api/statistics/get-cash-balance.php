@@ -26,7 +26,11 @@ try {
 
     $db->query("SET time_zone = '-03:00'");
 
-    if ($period === 'month') {
+    if ($period === 'week') {
+        $start = clone $now;
+        $start->setISODate((int)$now->format('o'), (int)$now->format('W'), 1)->setTime(0, 0, 0);
+        $end   = (clone $start)->modify('+1 week');
+    } else if ($period === 'month') {
         $start = new DateTime($now->format('Y-m-01 00:00:00'), $tz);
         $end   = (clone $start)->modify('+1 month');
     } else if ($period === 'year') {

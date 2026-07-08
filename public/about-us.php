@@ -1,15 +1,21 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../src/helpers/auth_helper.php';
+require_once __DIR__ . '/../src/Services/Payments/PricingService.php';
+
+use App\Services\Payments\PricingService;
+
 $currentUser = getCurrentUser();
 
-// Configuración de Precios (Nuevos precios - PDF Sistema de pago)
-$precio_basico = 42000;
-$precio_profesional = 95000;
-$precio_vitalicio = 3499; // USD
+// Configuración de Precios Dinámicos desde Base de Datos
+$pricing = new PricingService();
+$precio_basico = (int)$pricing->getPlanPrice(1, $currentUser ? (int)$currentUser['id'] : null);
+$precio_profesional = (int)$pricing->getPlanPrice(2, $currentUser ? (int)$currentUser['id'] : null);
+$precio_vitalicio = (int)$pricing->getPlanPrice(4, $currentUser ? (int)$currentUser['id'] : null);
 
 $original_basico = round($precio_basico * 1.15);
 $original_profesional = round($precio_profesional * 1.15);
+$original_vitalicio = round($precio_vitalicio * 1.15);
 
 $basico_formatted = '$' . number_format($precio_basico, 0, ',', '.');
 $basico_original_formatted = '$' . number_format($original_basico, 0, ',', '.');
@@ -17,7 +23,8 @@ $basico_original_formatted = '$' . number_format($original_basico, 0, ',', '.');
 $profesional_formatted = '$' . number_format($precio_profesional, 0, ',', '.');
 $profesional_original_formatted = '$' . number_format($original_profesional, 0, ',', '.');
 
-$vitalicio_formatted = 'USD ' . number_format($precio_vitalicio, 0, ',', '.');
+$vitalicio_formatted = '$' . number_format($precio_vitalicio, 0, ',', '.');
+$vitalicio_original_formatted = '$' . number_format($original_vitalicio, 0, ',', '.');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -367,41 +374,34 @@ $vitalicio_formatted = 'USD ' . number_format($precio_vitalicio, 0, ',', '.');
                                 <div style="height: 1px; background: rgba(128,128,128,0.2); margin: 0.5rem 0;"></div>
 
                                 <li style="opacity: 0.6; border-bottom: none;"><i class="ph-bold ph-lock-key"
-                                        style="color: var(--accent-red) !important;"></i> Gestión CRM (Clientes,
-                                    Empleados y
-                                    Proveedores)</li>
+                                        style="color: var(--accent-red) !important;"></i> Gestión CRM (Clientes, Empleados y Proveedores)</li>
                                 <li style="opacity: 0.6; border-bottom: none;"><i class="ph-bold ph-lock-key"
-                                        style="color: var(--accent-red) !important;"></i> Gestión RBAC (Invitar
-                                    Colaboradores y Asignarles un Rol)</li>
+                                        style="color: var(--accent-red) !important;"></i> Gestión RBAC (Invitar Colaboradores y Asignarles un Rol)</li>
                             </ul>
-                            <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20el%20Plan%20Básico%20de%20StockiFy.%20¿Cómo%20podemos%20avanzar?"
-                                target="_blank" class="btn-pricing">Consultar Plan</a>
+                                <a href="plans.php?plan=1" class="btn-pricing">Adquirir Plan</a>
                         </div>
-
-                        <div class="pricing-card-v2 card-theme-pro">
-                            <div class="pro-badge">Recomendado</div>
-                            <h3>Profesional</h3>
-                            <div class="price-container">
-                                <div class="price-original"><span class="price-strike"><?= $profesional_original_formatted ?></span> <span class="discount-badge">-15% OFF</span></div>
-                                <div class="price-val"><?= $profesional_formatted ?><span style="font-size: 1.1rem; opacity: 0.7;">/mes</span></div>
-                            </div>
-                            <ul>
-                                <li style="font-weight: 700;"><i class="ph-bold ph-plus"></i> Todo lo que contiene el Plan Básico</li>
-                                <li><i class="ph-bold ph-check"></i> 3 cupos de usuario incluidos (dueño + 2 colaboradores)</li>
-                                <li><i class="ph-bold ph-check"></i> Inventarios Ilimitados</li>
-                                <li><i class="ph-bold ph-check"></i> Gestión CRM (Clientes, Empleados y Proveedores)
-                                </li>
-                                <li><i class="ph-bold ph-check"></i> Carga Ilimitada de productos</li>
-                                <li><i class="ph-bold ph-check"></i> Acceso de terminal desde el Teléfono</li>
-                                <li><i class="ph-bold ph-check"></i> Gestión de Métodos de Pago</li>
-                                <li><i class="ph-bold ph-check"></i> Alertas de Stock Mínimo Alcanzado</li>
-                                <li><i class="ph-bold ph-check"></i> Stock Valorizado, Ticket Promedio</li>
-                                <li><i class="ph-bold ph-check"></i> Analíticas (Top Productos, Mejores Vendedores y
-                                    Clientes)</li>
-                                <li><i class="ph-bold ph-check"></i> Manejo de Comisión por Vendedor</li>
-                            </ul>
-                            <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20el%20Plan%20Profesional%20de%20StockiFy.%20¿Cómo%20podemos%20avanzar?"
-                                target="_blank" class="btn-pricing">Adquirir Plan</a>
+ 
+                         <div class="pricing-card-v2 card-theme-pro">
+                             <div class="pro-badge">Recomendado</div>
+                             <h3>Profesional</h3>
+                             <div class="price-container">
+                                 <div class="price-original"><span class="price-strike"><?= $profesional_original_formatted ?></span> <span class="discount-badge">-15% OFF</span></div>
+                                 <div class="price-val"><?= $profesional_formatted ?><span style="font-size: 1.1rem; opacity: 0.7;">/mes</span></div>
+                             </div>
+                             <ul>
+                                 <li style="font-weight: 700;"><i class="ph-bold ph-plus"></i> Todo lo que contiene el Plan Básico</li>
+                                 <li><i class="ph-bold ph-check"></i> 3 cupos de usuario incluidos (dueño + 2 colaboradores)</li>
+                                 <li><i class="ph-bold ph-check"></i> Inventarios Ilimitados</li>
+                                 <li><i class="ph-bold ph-check"></i> Gestión CRM (Clientes, Empleados y Proveedores)</li>
+                                 <li><i class="ph-bold ph-check"></i> Carga Ilimitada de productos</li>
+                                 <li><i class="ph-bold ph-check"></i> Acceso de terminal desde el Teléfono</li>
+                                 <li><i class="ph-bold ph-check"></i> Gestión de Métodos de Pago</li>
+                                 <li><i class="ph-bold ph-check"></i> Alertas de Stock Mínimo Alcanzado</li>
+                                 <li><i class="ph-bold ph-check"></i> Stock Valorizado, Ticket Promedio</li>
+                                 <li><i class="ph-bold ph-check"></i> Analíticas (Top Productos, Mejores Vendedores y Clientes)</li>
+                                 <li><i class="ph-bold ph-check"></i> Manejo de Comisión por Vendedor</li>
+                             </ul>
+                                 <a href="plans.php?plan=2" class="btn-pricing">Adquirir Plan</a>
                         </div>
 
                         <div class="pricing-card-v2 card-theme-dark">
@@ -425,8 +425,7 @@ $vitalicio_formatted = 'USD ' . number_format($precio_vitalicio, 0, ',', '.');
                                 <li style="border-bottom: none;"><i class="ph-bold ph-star"></i> Una Aplicación 100%
                                     Personalizada para tu negocio</li>
                             </ul>
-                            <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20el%20Plan%20Empresarial%20de%20StockiFy.%20Necesito%20funciones%20a%20medida%20para%20mi%20negocio.%20¿Podemos%20coordinar%20una%20reunión?"
-                                target="_blank" class="btn-pricing">Contactar Ventas</a>
+                            <a href="plans.php?plan=5" class="btn-pricing">Contactar Ventas</a>
                         </div>
 
                         <div class="pricing-card-v2 card-theme-vital">
@@ -448,8 +447,7 @@ $vitalicio_formatted = 'USD ' . number_format($precio_vitalicio, 0, ',', '.');
                                 <li><i class="ph-bold ph-check"></i> 5 cupos de usuario incluidos (dueño + 4 colab.)</li>
                                 <li><i class="ph-bold ph-check"></i> Posibilidad de tener soporte y updates de por vida</li>
                             </ul>
-                            <a href="https://wa.me/5491163642040?text=Hola%20Joaquín!%20Me%20interesa%20adquirir%20la%20Licencia%20Vitalicia%20(Edición%20Fundadores)%20de%20StockiFy.%20¿Cómo%20avanzamos?"
-                                target="_blank" class="btn-pricing">Inversión Única</a>
+                            <a href="plans.php?plan=4" class="btn-pricing">Inversión Única</a>
                         </div>
                     </div>
 

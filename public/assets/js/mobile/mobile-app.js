@@ -586,7 +586,7 @@ window.loadBalanceData = async function(period) {
             totalEl.className = '';
             totalEl.classList.add(data.balance >= 0 ? 'text-green' : 'text-red');
 
-            const labels = { today: 'Resumen de Hoy', month: 'Este Mes', year: 'Este Año' };
+            const labels = { today: 'Resumen de Hoy', week: 'Esta Semana', month: 'Este Mes', year: 'Este Año' };
             dateEl.textContent = labels[period] || 'Resumen';
         } else {
             totalEl.textContent = "Error";

@@ -102,9 +102,9 @@ $currentUser = getCurrentUser();
         </nav>
     </header>
     <?php
-    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int)$currentUser['subscription_active'] === 0 && (int)$currentUser['trial_used'] === 0);
+    $showPromoBar = !$currentUser || (isset($currentUser['subscription_active']) && (int) $currentUser['subscription_active'] === 0 && (int) $currentUser['trial_used'] === 0);
     if ($showPromoBar):
-    ?>
+        ?>
         <div class="promo-secondary-bar">
             <div class="promo-bg-carousel">
                 <div class="carousel-track">
@@ -117,7 +117,8 @@ $currentUser = getCurrentUser();
                 </div>
                 <div class="promo-button-wrapper">
                     <?php if ($currentUser): ?>
-                        <button class="btn-promo" id="btn-start-trial" style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
+                        <button class="btn-promo" id="btn-start-trial"
+                            style="cursor: pointer; border: 2px solid #1b1b1b; font-family: inherit;">Probar Ahora</button>
                     <?php else: ?>
                         <a href="register" class="btn-promo">Probar Ahora</a>
                     <?php endif; ?>
@@ -130,7 +131,7 @@ $currentUser = getCurrentUser();
     <main>
         <div class="legal-content">
             <h1>Política de Privacidad</h1>
-            <p>Última actualización: 16 de abril de 2026</p>
+            <p>Última actualización: 7 de Julio de 2026</p>
 
             <h2>1. Información que Recopilamos</h2>
             <p>En StockiFy, recopilamos información personal básica necesaria para proveer nuestros servicios de gestión
@@ -139,7 +140,10 @@ $currentUser = getCurrentUser();
                 <li>Nombre completo y dirección de correo electrónico cuando creas una cuenta.</li>
                 <li>Datos de Google Auth (si eliges este método de inicio de sesión).</li>
                 <li>Número de teléfono (si optas por notificaciones de WhatsApp).</li>
-                <li>Datos de inventario y transacciones comerciales que ingreses voluntariamente en la plataforma.</li>
+                <li>Datos de inventario, productos y transacciones comerciales que ingreses en la plataforma.
+                    <strong>Nota sobre la sección Catálogo público:</strong> Si decides activar y compartir tu enlace de
+                    catálogo, los datos de los productos seleccionados (incluyendo nombres, precios, descripciones e
+                    imágenes) serán de acceso público en internet para cualquier persona que visite dicho enlace.</li>
             </ul>
 
             <h2>2. Uso de la Información</h2>
@@ -156,11 +160,17 @@ $currentUser = getCurrentUser();
                 con algoritmos de última generación y los accesos a la base de datos están restringidos. No compartimos
                 ni vendemos tus datos a terceros.</p>
 
-            <h2>4. Tus Derechos</h2>
+            <h2>4. Procesamiento de Pagos y Datos Financieros</h2>
+            <p>Todos los pagos en nuestra plataforma se procesan de manera segura y exclusiva a través de la pasarela de
+                <strong>Mercado Pago</strong>. StockiFy <strong>no recopila, almacena ni tiene acceso</strong> a tus
+                números de tarjeta, claves, alias o credenciales financieras. Dicha información es administrada
+                directamente por Mercado Pago bajo sus propias políticas de seguridad.</p>
+
+            <h2>5. Tus Derechos</h2>
             <p>Tienes derecho a acceder, rectificar o eliminar tus datos personales en cualquier momento desde la
                 sección de ajustes de tu cuenta o contactando a nuestro soporte.</p>
 
-            <h2>5. Contacto</h2>
+            <h2>6. Contacto</h2>
             <p>Si tienes preguntas sobre esta política, puedes contactarnos en: <a href="mailto:soporte@stockify.com.ar"
                     class="legal-link-email">soporte@stockify.com.ar</a></p>
         </div>
@@ -178,9 +188,15 @@ $currentUser = getCurrentUser();
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div class="footer-links" style="display: flex; gap: 20px;">
-                        <a href="privacy-policy" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Política de Privacidad</a>
-                        <a href="terms-of-service" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Condiciones del Servicio</a>
-                        <a href="about-us" style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">¿Quiénes Somos?</a>
+                        <a href="privacy-policy"
+                            style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Política
+                            de Privacidad</a>
+                        <a href="terms-of-service"
+                            style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">Condiciones
+                            del Servicio</a>
+                        <a href="about-us"
+                            style="color: var(--color-white); text-decoration: none; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;">¿Quiénes
+                            Somos?</a>
                     </div>
                     <p class="footer-dev" style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.7);">Created by
                         <span style="color: var(--color-white); font-weight: bold">JESMdev</span>
