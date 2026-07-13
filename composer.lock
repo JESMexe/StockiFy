@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d08162ee43c9d13f30ddd462c5ae07e1",
+    "content-hash": "6938e92d36a8ac98fd42cfe9b8033e73",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -630,6 +630,45 @@
                 }
             ],
             "time": "2025-08-23T21:21:41+00:00"
+        },
+        {
+            "name": "mercadopago/dx-php",
+            "version": "3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mercadopago/sdk-php.git",
+                "reference": "47fc9fd20622af8cce0d9246c0b11d55bd64037c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mercadopago/sdk-php/zipball/47fc9fd20622af8cce0d9246c0b11d55bd64037c",
+                "reference": "47fc9fd20622af8cce0d9246c0b11d55bd64037c",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.2"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.22",
+                "phpunit/phpunit": "^10.2",
+                "squizlabs/php_codesniffer": "3.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MercadoPago\\": "src/MercadoPago"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Mercado Pago PHP SDK",
+            "homepage": "https://github.com/mercadopago/sdk-php",
+            "support": {
+                "source": "https://github.com/mercadopago/sdk-php/tree/3.0.0"
+            },
+            "time": "2023-10-02T20:30:24+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -1835,7 +1874,8 @@
     "platform": {
         "ext-json": "*",
         "ext-pdo": "*",
-        "ext-fileinfo": "*"
+        "ext-fileinfo": "*",
+        "ext-dom": "*"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"

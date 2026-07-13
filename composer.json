@@ -6,7 +6,8 @@
     "ext-json": "*",
     "ext-pdo": "*",
     "ext-fileinfo": "*",
-    "ext-dom": "*"
+    "ext-dom": "*",
+    "mercadopago/dx-php": "3.0"
   },
   "autoload": {
     "psr-4": {
