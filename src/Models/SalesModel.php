@@ -579,11 +579,17 @@ class SalesModel
                     c.full_name as customer_name,
                     c.full_name as nombre_cliente,
                     c.email as customer_email,
+                    c.phone as customer_phone,
+                    c.address as customer_address,
+                    i.remito_logo_path,
+                    i.remito_description,
+                    i.remito_url,
                     COALESCE(e.full_name, u.full_name, 'Sistema') as seller_name
                 FROM sales s
                 LEFT JOIN customers c ON s.customer_id = c.id
                 LEFT JOIN employees e ON s.seller_id = e.id
                 LEFT JOIN users u ON s.seller_id = u.id
+                LEFT JOIN inventories i ON s.inventory_id = i.id
                 WHERE s.id = :id AND s.user_id = :user
                 " . ($inventoryId ? " AND s.inventory_id = :inv" : "") . "
             ");
