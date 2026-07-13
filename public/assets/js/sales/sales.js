@@ -206,6 +206,11 @@ export class SalesModule {
                                             <label for="sale-create-delivery-check" style="font-weight: 700; cursor: pointer; color: var(--accent-color); margin: 0; font-size: 0.9rem;">Crear Envío para este pedido</label>
                                         </div>
 
+                                        <div id="sale-remito-section" class="form-section" style="margin-top: 10px; display: flex; align-items: center; gap: 8px; background: rgba(0, 150, 255, 0.1); border: 1px solid #0096ff; padding: 6px 10px; border-radius: 6px; color: #0096ff;">
+                                            <input type="checkbox" id="sale-create-remito-check" style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: #0096ff;">
+                                            <label for="sale-create-remito-check" style="font-weight: 700; cursor: pointer; color: #0096ff; margin: 0; font-size: 0.9rem;">Generar Remito rápido (sin envío)</label>
+                                        </div>
+
                                         <div class="form-section" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;">
                                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                                                 <label class="form-section-title" style="padding-bottom: 0; bottom: 0; margin-bottom: 0">Información de Pago</label>
@@ -419,6 +424,17 @@ export class SalesModule {
         document.getElementById('sale-discount-type')?.addEventListener('change', () => this.recalcSale());
         document.getElementById('confirm-sale-btn')?.addEventListener('click', () => this.submitSale());
 
+        const checkDelivery = document.getElementById('sale-create-delivery-check');
+        const checkRemito = document.getElementById('sale-create-remito-check');
+        if (checkDelivery && checkRemito) {
+            checkDelivery.addEventListener('change', () => {
+                if (checkDelivery.checked) checkRemito.checked = false;
+            });
+            checkRemito.addEventListener('change', () => {
+                if (checkRemito.checked) checkDelivery.checked = false;
+            });
+        }
+
         const btnBackHeader = document.getElementById('mobile-back-to-products');
         if (btnBackHeader) {
             btnBackHeader.addEventListener('click', (e) => {
@@ -554,6 +570,9 @@ export class SalesModule {
 
         const checkDelivery = document.getElementById('sale-create-delivery-check');
         if (checkDelivery) checkDelivery.checked = false;
+
+        const checkRemito = document.getElementById('sale-create-remito-check');
+        if (checkRemito) checkRemito.checked = false;
 
         this.updateCartUI();
         this.recalcSale();
@@ -1065,6 +1084,11 @@ export class SalesModule {
         try {
             const res = await createSale(payload);
             if (res.success) {
+                const checkDelivery = document.getElementById('sale-create-delivery-check');
+                const checkRemito = document.getElementById('sale-create-remito-check');
+                const shouldCreateDelivery = checkDelivery && checkDelivery.checked;
+                const shouldCreateRemito = checkRemito && checkRemito.checked;
+
                 if (this.isCashierMode) {
                     await this.loadHistory(this.currentSortOrder);
                     pop_ups.success("Venta Exitosa");
@@ -1075,9 +1099,12 @@ export class SalesModule {
                     pop_ups.success("Venta Exitosa");
                 }
 
+                if (shouldCreateRemito && res.sale_id) {
+                    this.printSaleRemito(res.sale_id);
+                }
+
                 // Post-Sale Delivery Modal trigger
-                const checkDelivery = document.getElementById('sale-create-delivery-check');
-                if (checkDelivery && checkDelivery.checked && res.sale_id) {
+                if (shouldCreateDelivery && res.sale_id) {
                     const custSelect = document.getElementById('sale-customer');
                     const customerName = custSelect.options[custSelect.selectedIndex]?.text || '';
                     
@@ -1255,7 +1282,18 @@ export class SalesModule {
             }
             bodyContainer.insertAdjacentHTML('beforeend', emailBtnHTML);
 
+            // REMITO BOTON
+            const remitoBtnHTML = `<button id="print-quick-remito-btn" class="btn btn-secondary" style="margin-top: 10px; width: 100%; border-color: #0096ff; color: #0096ff; background-color: #fff;"><i class="ph ph-printer" style="font-size:1.25rem; vertical-align: middle; margin-right: 6px;"></i> Imprimir Remito (Rápido)</button>`;
+            bodyContainer.insertAdjacentHTML('beforeend', remitoBtnHTML);
+
             const modal = document.getElementById('detail-sale-modal'); modal.classList.remove('hidden'); modal.style.display = 'flex';
+
+            const btnPrintRemito = document.getElementById('print-quick-remito-btn');
+            if (btnPrintRemito) {
+                btnPrintRemito.onclick = () => {
+                    this.printSaleRemito(s.id);
+                };
+            }
 
             const btnSendMail = document.getElementById('send-ticket-email-btn');
             if (btnSendMail && s.customer_email) {
@@ -1445,6 +1483,180 @@ export class SalesModule {
             }
         } catch (e) {
             pop_ups.error("Error de conexión al eliminar.");
+        }
+    }
+
+    async printSaleRemito(saleId) {
+        try {
+            const res = await getSaleDetails(saleId);
+            if (!res.success) {
+                pop_ups.error("No se pudo cargar los detalles de la venta para el remito.");
+                return;
+            }
+            const s = res.sale;
+            
+            let itemsHtml = '';
+            if (s.items && s.items.length > 0) {
+                itemsHtml = s.items.map(item => `
+                    <tr>
+                        <td>${item.product_id || '-'}</td>
+                        <td>${item.product_name || item.nombre} x${parseFloat(item.quantity || item.cantidad)}</td>
+                        <td class="text-right">$${parseFloat(item.subtotal || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                `).join('');
+            } else {
+                itemsHtml = `
+                    <tr>
+                        <td>-</td>
+                        <td>Venta del ${new Date(s.created_at).toLocaleString('es-AR')}</td>
+                        <td class="text-right">$${parseFloat(s.total || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            }
+
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html>
+                <head>
+                    <title>Remito - Venta #${s.id}</title>
+                    <style>
+                        @page { margin: 10mm; size: A4 portrait; }
+                        body { font-family: 'Arial', sans-serif; padding: 0; margin: 0; color: #000; font-size: 13px; }
+                        .remito-container { max-width: 100%; border: 1px solid #000; box-sizing: border-box; }
+                        
+                        /* Header Area */
+                        .header { display: flex; border-bottom: 1px solid #000; }
+                        .header-left { flex: 1; padding: 20px; text-align: center; }
+                        .header-middle { width: 60px; border-left: 1px solid #000; border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 10px; }
+                        .header-right { flex: 1; padding: 20px 20px 20px 30px; }
+                        
+                        .logo-img { max-width: 180px; height: auto; margin-bottom: 15px; }
+                        
+                        /* The "X" Box */
+                        .doc-letter-box { width: 40px; height: 40px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; margin-bottom: 5px; }
+                        .doc-code { font-size: 10px; font-weight: bold; }
+                        
+                        .header-title { font-size: 24px; font-weight: 900; letter-spacing: 2px; margin-bottom: 15px; text-transform: uppercase; }
+                        .header-info { font-size: 13px; margin-bottom: 5px; font-weight: bold; }
+                        
+                        .company-info { font-size: 12px; line-height: 1.4; text-align: left; }
+                        
+                        /* Customer Area */
+                        .customer-area { border-bottom: 1px solid #000; padding: 15px 20px; background: #fafafa; display: flex; flex-wrap: wrap; }
+                        .customer-row { width: 100%; display: flex; margin-bottom: 8px; }
+                        .customer-col { flex: 1; }
+                        .c-label { font-weight: bold; font-size: 12px; }
+                        
+                        /* Table */
+                        .details-table { width: 100%; border-collapse: collapse; }
+                        .details-table th { border-bottom: 1px solid #000; border-right: 1px solid #000; text-align: left; padding: 10px; font-size: 12px; background: #eee; }
+                        .details-table th:last-child { border-right: none; }
+                        .details-table td { border-right: 1px solid #000; padding: 10px; font-size: 13px; vertical-align: top; }
+                        .details-table td:last-child { border-right: none; }
+                        .table-container { min-height: 250px; }
+                        
+                        /* Footer / Signatures */
+                        .footer-area { border-top: 1px solid #000; display: flex; padding: 0; }
+                        .footer-box { flex: 1; padding: 20px; border-right: 1px solid #000; }
+                        .footer-box:last-child { border-right: none; }
+                        
+                        .signature-line { margin-top: 60px; border-top: 1px dashed #000; text-align: center; padding-top: 5px; font-weight: bold; width: 80%; margin-left: auto; margin-right: auto; }
+                        
+                        .text-center { text-align: center; }
+                        .text-right { text-align: right; }
+                    </style>
+                </head>
+                <body onload="setTimeout(function(){ window.print(); window.close(); }, 500);">
+                    <div class="remito-container">
+                        
+                        <div class="header">
+                            <div class="header-left">
+                                ${s.remito_logo_path ? `<img src="${s.remito_logo_path}" alt="Logo" class="logo-img">` : ''}
+                                <div class="company-info">
+                                    <b>Comprobante no válido como factura.</b><br><br>
+                                    ${s.remito_description ? `${s.remito_description}<br>` : ''}
+                                    ${s.remito_url ? `${s.remito_url}` : ''}
+                                </div>
+                            </div>
+                            <div class="header-middle">
+                                <div class="doc-letter-box">X</div>
+                                <div class="doc-code">COD. 00</div>
+                            </div>
+                            <div class="header-right">
+                                <div class="header-title">REMITO</div>
+                                <div class="header-info">Nº RE-${s.id.toString().padStart(6, '0')}</div>
+                                <div class="header-info">FECHA: ${new Date(s.created_at).toLocaleDateString('es-AR')}</div>
+                                <div style="margin-top:20px;" class="company-info">
+                                    <b>C.U.I.T.:</b> 00-00000000-0<br>
+                                    <b>Ingresos Brutos:</b> 00-00000000-0<br>
+                                    <b>Inicio de Actividades:</b> 01/01/2024
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="customer-area">
+                            <div class="customer-row">
+                                <div class="customer-col">
+                                    <span class="c-label">Señor(es):</span> ${s.customer_name || s.nombre_cliente || 'Consumidor Final'}
+                                </div>
+                                <div class="customer-col">
+                                    <span class="c-label">Teléfono:</span> ${s.customer_phone || '-'}
+                                </div>
+                            </div>
+                            <div class="customer-row">
+                                <div class="customer-col">
+                                    <span class="c-label">Domicilio:</span> ${s.customer_address || '-'}
+                                </div>
+                            </div>
+                            <div class="customer-row">
+                                <div class="customer-col">
+                                    <span class="c-label">Entrega / Logística:</span> Entrega propia / Retiro en local
+                                </div>
+                                <div class="customer-col">
+                                    <span class="c-label">Venta Asoc.:</span> Fecha ${new Date(s.created_at).toLocaleString('es-AR')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="details-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:15%">CÓDIGO</th>
+                                        <th style="width:65%">DESCRIPCIÓN</th>
+                                        <th style="width:20%" class="text-right">VALOR DECLARADO</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="footer-area">
+                            <div class="footer-box">
+                                <div style="font-size:11px; color:#555; text-align:center;">
+                                    Firma del Entregador:<br>
+                                    Certifica que la mercadería fue entregada en perfectas condiciones.
+                                </div>
+                                <div class="signature-line">Aclaración y Firma</div>
+                            </div>
+                            <div class="footer-box">
+                                <div style="font-size:11px; color:#555; text-align:center;">
+                                    Firma del Cliente:<br>
+                                    Conformidad de recepción de mercadería.
+                                </div>
+                                <div class="signature-line">Aclaración y Firma</div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </body>
+                </html>
+            `);
+        } catch (e) {
+            console.error("Error al imprimir remito rápido:", e);
+            pop_ups.error("Ocurrió un error al generar el remito.");
         }
     }
 
