@@ -26,14 +26,29 @@ try {
         if (isset($_SESSION['active_inventory_id'])) {
             $inventoryId = $_SESSION['active_inventory_id'];
         } else {
-            $stmt = $db->prepare("SELECT id FROM inventories WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
+            $stmt = $db->prepare("
+                SELECT inventory_id 
+                FROM inventory_collaborators 
+                WHERE user_id = ? AND status = 'active' 
+                LIMIT 1
+            ");
             $stmt->execute([$user['id']]);
-            $inv = $stmt->fetch();
-            $inventoryId = $inv['id'] ?? null;
+            $inventoryId = $stmt->fetchColumn() ?: null;
         }
     }
 
     if (!$inventoryId) throw new Exception("No se pudo determinar qué inventario editar.");
+
+    // Verificar rol / permisos
+    $role = getInventoryRole((int)$user['id'], (int)$inventoryId);
+    if (!$role) {
+        throw new Exception("Inventario no encontrado o sin permisos.");
+    }
+
+    $ownerId = getInventoryOwnerId((int)$inventoryId);
+    if (!$ownerId) {
+        throw new Exception("Propietario del inventario no encontrado.");
+    }
 
     $model = new InventoryModel();
     $success = false;
@@ -72,7 +87,7 @@ try {
         case 'add_column':
             $colName = $input['columnName'] ?? '';
             if (empty($colName)) throw new Exception("Nombre vacío.");
-            $model->addColumn($inventoryId, $user['id'], $colName);
+            $model->addColumn($inventoryId, $ownerId, $colName);
             $success = true;
             $message = "Columna añadida.";
             try {
@@ -93,7 +108,7 @@ try {
         case 'drop_column':
             $colName = $input['columnName'] ?? '';
             if (empty($colName)) throw new Exception("Nombre vacío.");
-            $model->dropColumn($inventoryId, $user['id'], $colName);
+            $model->dropColumn($inventoryId, $ownerId, $colName);
             $success = true;
             $message = "Columna eliminada.";
             try {
@@ -115,7 +130,7 @@ try {
             $old = $input['oldName'] ?? '';
             $new = $input['newName'] ?? '';
             if (empty($old) || empty($new)) throw new Exception("Nombres inválidos.");
-            $model->renameColumn($inventoryId, $user['id'], $old, $new);
+            $model->renameColumn($inventoryId, $ownerId, $old, $new);
             $success = true;
             $message = "Columna renombrada.";
             try {

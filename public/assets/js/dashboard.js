@@ -1,25 +1,26 @@
 import * as api from './api.js?v=2.0';
 import * as setup from './setupMiCuentaDropdown.js';
 import { notificationConfig, pop_ups } from './notifications/pop-up.js?v=3.0';
-import { salesModuleInstance } from './sales/sales.js?v=2.2';
+import { salesModuleInstance } from './sales/sales.js?v=2.3';
 import { purchaseModuleInstance } from './purchases/purchases.js?v=2.3';
 
 import { customerModuleInstance } from './customers/customers.js';
 import { providerModuleInstance } from './providers/providers.js';
 import { employeeModuleInstance } from './employees/employees.js';
-import { analyticsModuleInstance } from './statistics/statistics.js';
+import { analyticsModuleInstance } from './statistics/statistics.js?v=1.2';
 import { paymentsModuleInstance } from './payment/payment.js';
 import { openImportModal } from './import.js';
 import { ui_helper } from "./ui-helper.js";
 import { usersModuleInstance } from './users/users.js';
 import { deliveriesModuleInstance } from './deliveries/deliveries.js';
 import { paymentsModule } from './payments/payments.js';
+import { initCombos } from './database/combos.js?v=1.1';
 
 // Registrar paymentsModule globalmente
 window.paymentsModule = paymentsModule;
 
 export let activeInventoryId = null;
-let allData = []; // Guardo todos los datos para filtrar
+export let allData = []; // Guardo todos los datos para filtrar
 let currentTableColumns = []; // Guardo las columnas de la tabla actual
 let originalData = []; // COPIA DE SEGURIDAD PARA EL ORDEN ORIGINAL
 let editingRowId = null; // Para saber qué fila estoy editando
@@ -38,7 +39,7 @@ let columnListContainer, addColumnForm, columnListStatus;
 
 let currentSort = { column: null, state: 0 };
 
-let columnMapping = { name: null, stock: null, sale_price: null, buy_price: null };
+export let columnMapping = { name: null, stock: null, sale_price: null, buy_price: null };
 let activeFeatures = { min_stock: false, gain: false, gain_type: 'percent' };
 
 
@@ -399,7 +400,7 @@ async function renderTable(columns, data) {
                     const trimmed = value.trim();
                     const isLocalPath = trimmed.includes('assets/img/');
                     const displayLabel = isLocalPath ? 'Imagen' : (trimmed.length > 20 ? trimmed.substring(0, 15) + '...' : trimmed);
-                    cellValue = `<span title="${trimmed}" style="display: inline-flex; align-items: center; gap: 4px; cursor: help; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;"><i class="ph ph-image"></i> ${displayLabel}</span>`;
+                    cellValue = `<span title="${trimmed}" style="display: inline-flex; align-items: center; gap: 4px; cursor: help; background: var(--accent-color-20); color: var(--accent-color); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;"><i class="ph ph-image"></i> ${displayLabel}</span>`;
                 }
 
                 return `<td class="${cellClass}"${tdStyle}>${cellValue}</td>`;
@@ -5561,6 +5562,12 @@ if (document.getElementById('data-table')) {
 document.addEventListener('DOMContentLoaded', async () => {
 
     setupEventListeners();
+
+    try {
+        initCombos();
+    } catch (comboErr) {
+        console.error("Error al inicializar modulo de combos:", comboErr);
+    }
 
     const ratePromise = fetch('/api/table/get-rate')
         .then(res => res.json())

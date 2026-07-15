@@ -23,13 +23,19 @@ try {
     }
 
     if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception('Error al subir el archivo CSV o archivo no recibido.');
+        throw new Exception('Error al subir el archivo CSV/Excel o archivo no recibido.');
     }
 
     $tmpPath = $_FILES['csv_file']['tmp_name'];
+    $originalName = $_FILES['csv_file']['name'] ?? '';
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
     $controller = new ImportController();
-    $result = $controller->getCsvHeaders($tmpPath);
+    if ($extension === 'xlsx' || $extension === 'xls') {
+        $result = $controller->getExcelHeaders($tmpPath);
+    } else {
+        $result = $controller->getCsvHeaders($tmpPath);
+    }
 
     if (!$result['success']) {
         throw new Exception($result['message']);

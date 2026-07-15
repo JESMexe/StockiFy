@@ -204,67 +204,133 @@ try {
     $selectSql = implode(', ', $selectParts) ?: 'id, public_visible';
 
     // -------------------------------------------------------
-    // 4. Construir query con filtros
+    // Fetch Combos / Promos if any are visible in catalog
     // -------------------------------------------------------
-    $whereClauses = ['public_visible = 1'];
-    $params = [];
-
-    if (!empty($search)) {
-        $safeNameCol = "`" . str_replace("`", "``", $nameCol) . "`";
-        $whereClauses[] = "({$safeNameCol} LIKE ? OR `id` LIKE ?)";
-        $params[] = '%' . $search . '%';
-        $params[] = '%' . $search . '%';
+    $mappedCombos = [];
+    try {
+        require_once __DIR__ . '/../../../src/Models/ComboModel.php';
+        $comboModel = new \App\Models\ComboModel();
+        $allCombos = $comboModel->getCombosByInventory($inventoryId);
+        
+        foreach ($allCombos as $c) {
+            if ($c['is_active'] == 1 && isset($c['public_visible']) && $c['public_visible'] == 1) {
+                // Apply search filter if set
+                if (!empty($search)) {
+                    if (stripos($c['name'], $search) === false && stripos((string)$c['id'], $search) === false) {
+                        continue;
+                    }
+                }
+                
+                $mappedCombos[] = [
+                    'id' => 'combo_' . $c['id'],
+                    $nameCol => htmlspecialchars($c['name'], ENT_QUOTES, 'UTF-8'),
+                    $priceCol => (float)$c['price'],
+                    $stockCol => $c['dynamic_stock'],
+                    $catCol => 'Promociones',
+                    $imgCol => null,
+                    'is_combo' => true
+                ];
+            }
+        }
+    } catch (\Exception $comboEx) {
+        error_log("Error fetching combos for catalog: " . $comboEx->getMessage());
     }
+
+    $countC = count($mappedCombos);
+    $products = [];
+    $total = 0;
 
     // Filtro por categoría (si la columna existe en la tabla)
     $hasCatCol = in_array($catCol, $allDbColumns);
-    if (!empty($catFilter) && $hasCatCol) {
-        $safeCatCol = "`" . str_replace("`", "``", $catCol) . "`";
-        $whereClauses[] = "{$safeCatCol} = ?";
-        $params[] = $catFilter;
+
+    if ($catFilter === 'Promociones') {
+        $total = $countC;
+        $products = array_slice($mappedCombos, $offset, $limit);
+    } else {
+        // Construir WHERE para productos físicos
+        $whereClauses = ['public_visible = 1'];
+        $params = [];
+
+        if (!empty($search)) {
+            $safeNameCol = "`" . str_replace("`", "``", $nameCol) . "`";
+            $whereClauses[] = "({$safeNameCol} LIKE ? OR `id` LIKE ?)";
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+        }
+
+        if (!empty($catFilter) && $hasCatCol) {
+            $safeCatCol = "`" . str_replace("`", "``", $catCol) . "`";
+            $whereClauses[] = "{$safeCatCol} = ?";
+            $params[] = $catFilter;
+        }
+
+        $whereStr = 'WHERE ' . implode(' AND ', $whereClauses);
+
+        // Count total de productos físicos
+        $countSql = "SELECT COUNT(*) FROM {$safeTable} {$whereStr}";
+        $stmtCount = $pdo->prepare($countSql);
+        $stmtCount->execute($params);
+        $totalProducts = (int)$stmtCount->fetchColumn();
+
+        if (empty($catFilter)) {
+            // "Todos" - Combinado
+            $total = $totalProducts + $countC;
+
+            if ($offset < $countC) {
+                // El slice de combos a retornar
+                $slicedCombos = array_slice($mappedCombos, $offset, $limit);
+                $neededProducts = $limit - count($slicedCombos);
+
+                $rawProducts = [];
+                if ($neededProducts > 0) {
+                    $sql = "SELECT {$selectSql} FROM {$safeTable} {$whereStr} ORDER BY id DESC LIMIT ? OFFSET 0";
+                    $prodParams = array_merge($params, [$neededProducts]);
+                    $stmtProd = $pdo->prepare($sql);
+                    $stmtProd->execute($prodParams);
+                    $rawProducts = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
+                }
+            } else {
+                // Solo productos
+                $shiftedOffset = $offset - $countC;
+                $sql = "SELECT {$selectSql} FROM {$safeTable} {$whereStr} ORDER BY id DESC LIMIT ? OFFSET ?";
+                $prodParams = array_merge($params, [$limit, $shiftedOffset]);
+                $stmtProd = $pdo->prepare($sql);
+                $stmtProd->execute($prodParams);
+                $rawProducts = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } else {
+            // Categoría física específica
+            $total = $totalProducts;
+            $sql = "SELECT {$selectSql} FROM {$safeTable} {$whereStr} ORDER BY id DESC LIMIT ? OFFSET ?";
+            $prodParams = array_merge($params, [$limit, $offset]);
+            $stmtProd = $pdo->prepare($sql);
+            $stmtProd->execute($prodParams);
+            $rawProducts = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        // Sanitizar y mapear productos físicos
+        $showExactStock = $catalogSettings['show_exact_stock'] ?? true;
+        $phyProducts = array_map(function ($prod) use ($showExactStock, $stockCol, $blockedColumns) {
+            $clean = [];
+            foreach ($prod as $key => $value) {
+                if (in_array(strtolower($key), $blockedColumns)) continue;
+                $clean[$key] = is_string($value) ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : $value;
+            }
+
+            if (isset($clean[$stockCol]) && !$showExactStock) {
+                $stockVal = (float)($prod[$stockCol] ?? 0);
+                $clean[$stockCol . '_display'] = $stockVal > 0 ? 'Disponible' : 'Sin Stock';
+                unset($clean[$stockCol]);
+            }
+            return $clean;
+        }, $rawProducts);
+
+        if (empty($catFilter) && $offset < $countC) {
+            $products = array_merge($slicedCombos, $phyProducts);
+        } else {
+            $products = $phyProducts;
+        }
     }
-
-    $whereStr = 'WHERE ' . implode(' AND ', $whereClauses);
-
-    // Count total para paginación
-    $countSql = "SELECT COUNT(*) FROM {$safeTable} {$whereStr}";
-    $stmtCount = $pdo->prepare($countSql);
-    $stmtCount->execute($params);
-    $total = (int)$stmtCount->fetchColumn();
-
-    // Query de productos
-    $sql = "SELECT {$selectSql} FROM {$safeTable} {$whereStr} ORDER BY id DESC LIMIT ? OFFSET ?";
-    $params[] = $limit;
-    $params[] = $offset;
-
-    $stmtProd = $pdo->prepare($sql);
-    $stmtProd->execute($params);
-    $rawProducts = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
-
-    // -------------------------------------------------------
-    // 5. Sanitizar outputs para prevenir XSS
-    // -------------------------------------------------------
-    $showExactStock = $catalogSettings['show_exact_stock'] ?? true;
-
-    $products = array_map(function ($prod) use ($showExactStock, $stockCol, $blockedColumns) {
-        $clean = [];
-        foreach ($prod as $key => $value) {
-            // Doble verificación: nunca exponer columnas financieras
-            if (in_array(strtolower($key), $blockedColumns)) continue;
-
-            // Sanitizar string para XSS
-            $clean[$key] = is_string($value) ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : $value;
-        }
-
-        // Transformar stock según configuración
-        if (isset($clean[$stockCol]) && !$showExactStock) {
-            $stockVal = (float)($prod[$stockCol] ?? 0);
-            $clean[$stockCol . '_display'] = $stockVal > 0 ? 'Disponible' : 'Sin Stock';
-            unset($clean[$stockCol]);
-        }
-
-        return $clean;
-    }, $rawProducts);
 
     // -------------------------------------------------------
     // 6. Obtener categorías disponibles (para filtros del frontend)
@@ -282,6 +348,11 @@ try {
             fn($c) => htmlspecialchars($c, ENT_QUOTES, 'UTF-8'),
             $stmtCats->fetchAll(PDO::FETCH_COLUMN)
         );
+    }
+
+    // Si hay combos visibles en el catálogo, agregar "Promociones" al listado de categorías
+    if ($countC > 0) {
+        $categories[] = 'Promociones';
     }
 
     // -------------------------------------------------------

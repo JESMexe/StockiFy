@@ -1,4 +1,3 @@
-
 /* Layout General del Dashboard */
 .dashboard-container {
     display: flex;
@@ -204,6 +203,12 @@
     /* Quitamos sombra si no la necesitamos */
     background: none;
     /* Quitamos fondo si no lo necesitamos */
+    height: auto !important;
+}
+
+#view-db .table-container {
+    height: auto !important;
+    min-height: calc(100vh - 195px);
 }
 
 .main-menu h3 {
@@ -369,8 +374,8 @@
     width: 100% !important;
     overflow-x: auto !important;
     /* Scroll Horizontal OBLIGATORIO */
-    overflow-y: visible !important;
-    /* Evita que atrape el scroll del mouse (scroll-trap bug) */
+    overflow-y: hidden !important;
+    /* Evita la doble barra vertical por el scrollbar horizontal */
     position: relative;
     /* Para que el sticky header funcione */
 }
@@ -4737,6 +4742,7 @@ table thead th:last-of-type,
     gap: 8px;
     margin-bottom: 15px;
 }
+
 .deliveries-tabs .tab-btn {
     flex: 0 1 150px;
     padding: 10px 16px;
@@ -4752,14 +4758,17 @@ table thead th:last-of-type,
     box-shadow: 3px 3px 0px var(--color-black);
     text-align: center;
 }
+
 .deliveries-tabs .tab-btn:hover {
     transform: translate(-1px, -1px);
     box-shadow: 4px 4px 0px var(--color-black);
 }
+
 .deliveries-tabs .tab-btn:active {
     transform: translate(2px, 2px);
     box-shadow: 1px 1px 0px var(--color-black);
 }
+
 .deliveries-tabs .tab-btn.active {
     background-color: var(--accent-color) !important;
     color: var(--color-white) !important;
@@ -4772,35 +4781,44 @@ table thead th:last-of-type,
     .admin-desktop-view {
         display: none !important;
     }
+
     .admin-mobile-view {
         display: block !important;
     }
+
     .collaborators-desktop-view {
         display: none !important;
     }
+
     .collaborators-mobile-view {
         display: flex !important;
     }
+
     #permissions-grid {
         grid-template-columns: 1fr !important;
         gap: 1rem !important;
         padding: 12px !important;
     }
+
     .action-collaborators .icon-circle {
         background-color: var(--accent-violet-20);
         color: var(--accent-violet);
     }
 }
+
 @media (min-width: 769px) {
     .admin-desktop-view {
         display: block !important;
     }
+
     .admin-mobile-view {
         display: none !important;
     }
+
     .collaborators-desktop-view {
         display: block !important;
     }
+
     .collaborators-mobile-view {
         display: none !important;
     }
@@ -4949,13 +4967,13 @@ table thead th:last-of-type,
     flex-shrink: 0;
 }
 
-.m-collab-debt-banner > i {
+.m-collab-debt-banner>i {
     font-size: 1.5rem;
     color: #c9a660;
     flex-shrink: 0;
 }
 
-.m-collab-debt-banner > div {
+.m-collab-debt-banner>div {
     flex-grow: 1;
     min-width: 0;
 }
@@ -5076,7 +5094,7 @@ table thead th:last-of-type,
     border-radius: 14px;
     padding: 14px;
     margin-bottom: 10px;
-    box-shadow: 3px 3px 0 rgba(0,0,0,0.08);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.08);
     transition: transform 0.15s;
 }
 
@@ -5241,7 +5259,9 @@ table thead th:last-of-type,
     padding-bottom: 4px;
 }
 
-.m-perms-role-selector::-webkit-scrollbar { display: none; }
+.m-perms-role-selector::-webkit-scrollbar {
+    display: none;
+}
 
 .m-perms-role-btn {
     padding: 8px 16px;
@@ -5623,7 +5643,7 @@ table thead th:last-of-type,
     border-radius: 14px;
     overflow: hidden;
     margin-bottom: 12px;
-    box-shadow: 3px 3px 0 rgba(0,0,0,0.08);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.08);
 }
 
 .m-deliv-card-header {
@@ -5810,8 +5830,13 @@ table thead th:last-of-type,
     box-shadow: none;
 }
 
-.m-deliv-icon-btn.complete { color: var(--accent-green); }
-.m-deliv-icon-btn.delete   { color: var(--accent-red); }
+.m-deliv-icon-btn.complete {
+    color: var(--accent-green);
+}
+
+.m-deliv-icon-btn.delete {
+    color: var(--accent-red);
+}
 
 .m-deliv-delivered-label {
     display: flex;
@@ -5899,50 +5924,62 @@ table thead th:last-of-type,
     display: flex;
     align-items: center;
 }
+
 .actions-list-container {
     display: flex;
     gap: 10px;
     align-items: center;
 }
+
 #actions-dropdown-btn {
     display: none !important;
 }
+
 #manage-columns-btn .btn-text {
     display: none;
 }
+
 #open-export-modal-btn .btn-text,
 #open-import-modal-btn .btn-text,
 #add-row-btn .btn-text {
     display: inline;
 }
+
 /* ---- TABLET LANDSCAPE COMPACT MODE ---- */
 /* Targets tablets in landscape (e.g. Galaxy Tab A7 ~800px tall, Galaxy Tab S7 ~526px).
    orientation:landscape + max-width:1400px excludes desktop monitors. */
 @media screen and (orientation: landscape) and (min-width: 768px) and (max-width: 1400px) and (max-height: 900px) {
-    
+
     /* 1. Sidebar toggle logic & adjustments */
     #toggle-sidebar-btn {
         display: flex !important;
     }
+
     .dashboard-container.sidebar-collapsed .dashboard-sidebar {
         display: none !important;
     }
+
     .dashboard-container.sidebar-collapsed .main-menu {
         display: none !important;
     }
 
-    .dashboard-sidebar, .main-menu {
+    .dashboard-sidebar,
+    .main-menu {
         padding: 1rem;
     }
+
     .main-menu h3 {
         margin-top: 10px;
         margin-bottom: 5px;
         font-size: 1.1rem;
     }
+
     .main-menu li {
         margin-bottom: 0.25rem;
     }
-    .menu-btn, .menu-link {
+
+    .menu-btn,
+    .menu-link {
         padding: 8px 12px;
         font-size: 0.95rem;
     }
@@ -5951,17 +5988,30 @@ table thead th:last-of-type,
     .dashboard-main {
         padding: 0.75rem;
     }
+
     .dashboard-view:not(#view-db):not(#config-db):not(#notifications):not(#providers):not(#customers):not(#receipts):not(#sales):not(#analysis):not(#users-manage):not(#history-log):not(#deliveries):not(#employees) {
         padding: 1rem;
     }
-    #config-db, #notifications, #providers, #customers, #receipts, #sales, #analysis, #employees, #deliveries, #users-manage {
+
+    #config-db,
+    #notifications,
+    #providers,
+    #customers,
+    #receipts,
+    #sales,
+    #analysis,
+    #employees,
+    #deliveries,
+    #users-manage {
         padding: 1rem;
     }
 
     /* 3. Headers & Controls */
     .table-header {
-        padding: 0.8rem 1rem !important; /* Margen superior/inferior interior incrementado */
+        padding: 0.8rem 1rem !important;
+        /* Margen superior/inferior interior incrementado */
     }
+
     .table-header h2 {
         font-size: 1.25rem;
     }
@@ -5972,9 +6022,11 @@ table thead th:last-of-type,
         max-width: 350px !important;
         flex: 1 1 auto !important;
     }
+
     #search-column-btn span {
         display: none !important;
     }
+
     #search-column-btn i {
         margin: 0 !important;
     }
@@ -5991,9 +6043,11 @@ table thead th:last-of-type,
     #actions-dropdown-btn {
         display: flex !important;
     }
+
     .actions-dropdown-wrapper {
         position: relative;
     }
+
     .actions-list-container {
         display: none;
         position: absolute;
@@ -6010,13 +6064,16 @@ table thead th:last-of-type,
         min-width: 210px;
         margin-top: 5px;
     }
+
     .actions-list-container.show {
         display: flex !important;
     }
+
     .actions-list-container button,
     .actions-list-container .btn {
         width: 100% !important;
-        height: 48px !important; /* Preserves the original button height */
+        height: 48px !important;
+        /* Preserves the original button height */
         justify-content: flex-start !important;
         margin: 0 !important;
         box-sizing: border-box;
@@ -6024,17 +6081,220 @@ table thead th:last-of-type,
         align-items: center;
         gap: 8px;
     }
+
     #manage-columns-btn .btn-text {
         display: inline !important;
     }
 
     /* 4. Table contents */
-    #data-table th, #data-table td {
+    #data-table th,
+    #data-table td {
         padding: 8px 12px;
         font-size: 0.9rem;
     }
-    
+
     .empty-table-message {
         padding: 1.5rem 1rem !important;
     }
+}
+
+/* Botones neobrutalistas generales (sin sombra al inicio, sombra en hover, sin sombra en active) */
+.btn-neo-brutal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid var(--color-black);
+    border-radius: 6px;
+    background-color: white;
+    color: var(--color-black);
+    box-shadow: none;
+    transform: none;
+    transition: all 0.1s ease;
+    outline: none;
+}
+
+.btn-neo-brutal:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 3px 3px 0px var(--color-black);
+}
+
+.btn-neo-brutal:active {
+    transform: translate(0, 0);
+    box-shadow: none;
+}
+
+.btn-neo-brutal.btn-primary {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.btn-neo-brutal.btn-danger {
+    background-color: var(--accent-red-20);
+    color: var(--accent-red);
+}
+
+/* =========================================
+   ESTILOS DE PROMOCIONES Y COMBOS (NEOBRUTALISMO)
+   ========================================= */
+
+.inv-tab-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+    padding: 4px 4px 0 4px;
+}
+
+.inv-tab-btn {
+    background: var(--color-white);
+    color: var(--color-black);
+    border: 2px solid var(--color-black);
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px var(--color-black);
+    transform: translate(0, 0);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease, color 0.1s ease;
+}
+
+.inv-tab-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--color-black);
+}
+
+.inv-tab-btn:active,
+.inv-tab-btn.active {
+    transform: translate(4px, 4px) !important;
+    box-shadow: none !important;
+}
+
+.inv-tab-btn.active {
+    background: var(--accent-color) !important;
+    color: var(--color-white) !important;
+}
+
+/* Insignias de Promos */
+.badge-promo {
+    background-color: var(--accent-violet) !important;
+    color: var(--color-white) !important;
+    font-weight: 800;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--color-black);
+    box-shadow: 1px 1px 0px var(--color-black);
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Modal de combos - Lista de ingredientes */
+.ingredients-list-container {
+    border: 2px solid var(--color-black);
+    border-radius: 8px;
+    background: #f8fafc;
+    padding: 15px;
+    margin-top: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.ingredient-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    background: white;
+    border: 2px solid var(--color-black);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    box-shadow: 2px 2px 0px var(--color-black);
+}
+
+.ingredient-row span {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.ingredient-row input {
+    width: 70px;
+    padding: 4px;
+    border: 2px solid var(--color-black);
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.ingredient-row button {
+    background: var(--accent-red);
+    color: white;
+    border: 1.5px solid var(--color-black);
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 1px 1px 0px var(--color-black);
+}
+
+/* Alerta de Rentabilidad */
+.rentability-alert {
+    background-color: var(--accent-yellow-20);
+    border: 2px solid var(--accent-yellow);
+    color: #856404;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 3px 3px 0px var(--accent-yellow-50);
+}
+
+.rentability-alert.danger {
+    background-color: var(--accent-red-20) !important;
+    border: 2px solid var(--accent-red) !important;
+    color: #721c24 !important;
+    box-shadow: 3px 3px 0px var(--accent-red-50) !important;
+}
+
+/* Autocomplete suggestions */
+.autocomplete-suggestions {
+    border: 2px solid var(--color-black);
+    background: white;
+    max-height: 150px;
+    overflow-y: auto;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: calc(100% - 4px);
+    z-index: 1010;
+    box-shadow: 4px 4px 0px var(--color-black);
+    border-radius: 4px;
+    margin-top: 2px;
+}
+
+.suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #eee;
+}
+
+.suggestion-item:hover {
+    background-color: var(--accent-color-20);
+    color: var(--accent-color);
 }

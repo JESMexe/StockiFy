@@ -151,6 +151,64 @@ class ImportController
         ];
     }
 
+    public function getExcelHeaders($filePath): array
+    {
+        if (!file_exists($filePath)) return ['success' => false, 'message' => 'Archivo no encontrado.'];
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+            $sheet = $spreadsheet->getActiveSheet();
+
+            $highestColumn = $sheet->getHighestDataColumn();
+            $highestRow = $sheet->getHighestDataRow();
+            if ($highestRow < 1) {
+                return ['success' => false, 'message' => 'El archivo Excel está vacío.'];
+            }
+
+            $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
+            $firstLine = [];
+            for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $cellValue = $sheet->getCell([$col, 1])->getValue();
+                $firstLine[] = $cellValue !== null ? (string)$cellValue : '';
+            }
+
+            // Quitar celdas vacías al final de las cabeceras
+            while (count($firstLine) > 0 && trim(end($firstLine)) === '') {
+                array_pop($firstLine);
+            }
+
+            if (empty($firstLine)) {
+                return ['success' => false, 'message' => 'El archivo Excel no contiene cabeceras en la primera fila.'];
+            }
+
+            $cleanHeaders = [];
+            $uiHeaders = [];
+
+            foreach ($firstLine as $rawHeader) {
+                $utf8Header = $this->convertToUtf8($rawHeader);
+                $uiHeaders[] = trim($utf8Header);
+                $cleanHeaders[] = $this->sanitizeColumnName($utf8Header);
+            }
+
+            // Evitar duplicados
+            $counts = array_count_values($cleanHeaders);
+            foreach ($cleanHeaders as $key => $header) {
+                if ($counts[$header] > 1) {
+                    $cleanHeaders[$key] = $header . '_' . ($key + 1);
+                }
+            }
+
+            return [
+                'success' => true,
+                'headers' => $cleanHeaders,
+                'ui_headers' => $uiHeaders,
+                'delimiter' => 'excel'
+            ];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => 'Error al leer el archivo Excel: ' . $e->getMessage()];
+        }
+    }
+
     /**
      * ESTA ES LA FUNCIÓN QUE FALTABA Y CAUSABA EL ERROR
      */

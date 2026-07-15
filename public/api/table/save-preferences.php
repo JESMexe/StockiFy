@@ -34,10 +34,9 @@ try {
 
     $db = Database::getInstance();
     
-    // Verificar propiedad
-    $stmtCheck = $db->prepare("SELECT id FROM inventories WHERE id = ? AND user_id = ?");
-    $stmtCheck->execute([$inventoryId, $user['id']]);
-    if (!$stmtCheck->fetch()) throw new Exception("Inventario no encontrado o sin permisos.");
+    // Verificar propiedad / rol
+    $role = getInventoryRole((int)$user['id'], (int)$inventoryId);
+    if (!$role) throw new Exception("Inventario no encontrado o sin permisos.");
 
     // Obtener actual JSON
     $stmtSel = $db->prepare("SELECT columns_json FROM user_tables WHERE inventory_id = ?");

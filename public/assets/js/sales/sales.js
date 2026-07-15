@@ -206,9 +206,9 @@ export class SalesModule {
                                             <label for="sale-create-delivery-check" style="font-weight: 700; cursor: pointer; color: var(--accent-color); margin: 0; font-size: 0.9rem;">Crear Envío para este pedido</label>
                                         </div>
 
-                                        <div id="sale-remito-section" class="form-section" style="margin-top: 10px; display: flex; align-items: center; gap: 8px; background: rgba(0, 150, 255, 0.1); border: 1px solid #0096ff; padding: 6px 10px; border-radius: 6px; color: #0096ff;">
-                                            <input type="checkbox" id="sale-create-remito-check" style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: #0096ff;">
-                                            <label for="sale-create-remito-check" style="font-weight: 700; cursor: pointer; color: #0096ff; margin: 0; font-size: 0.9rem;">Generar Remito rápido (sin envío)</label>
+                                        <div id="sale-remito-section" class="form-section" style="margin-top: 10px; display: flex; align-items: center; gap: 8px; background: var(--accent-color-20); border: 1px solid var(--accent-color); padding: 6px 10px; border-radius: 6px; color: var(--accent-color);">
+                                            <input type="checkbox" id="sale-create-remito-check" style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-color);">
+                                            <label for="sale-create-remito-check" style="font-weight: 700; cursor: pointer; color: var(--accent-color); margin: 0; font-size: 0.9rem;">Generar Remito rápido (sin envío)</label>
                                         </div>
 
                                         <div class="form-section" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;">
@@ -692,7 +692,13 @@ export class SalesModule {
 
     renderProducts(list) {
         const c = document.getElementById('sale-products-list');
-        c.innerHTML = list.map(p => {
+        if (!c) return;
+
+        // Separar combos de productos normales
+        const combos = list.filter(p => p.is_combo);
+        const normalProducts = list.filter(p => !p.is_combo);
+
+        const renderItemHtml = (p) => {
             const stock = parseFloat(p.stock);
             const style = stock > 0 ? '' : 'opacity:0.6; pointer-events:none; filter:grayscale(1);';
             const badgeStock = stock > 0 ? `<span style="font-size:0.75rem; color:#666;">Stock: ${stock}</span>` : `<span style="font-size:0.75rem; color:red; font-weight:bold;">AGOTADO</span>`;
@@ -702,16 +708,46 @@ export class SalesModule {
                 displayPrice = displayPrice * this.rates.USD;
                 badgeCurrency = `<span class="usd-badge" style="background:var(--accent-color-quat-opacity); color:var(--color-black); font-size:0.7rem; padding:1px 4px; border-radius:3px; margin-left:5px;">Orig: U$S ${parseFloat(p.price).toFixed(2)}</span>`;
             }
+
+            // Insignia PROMO para combos
+            const namePrefix = p.is_combo
+                ? '' : '';
+
             return `<div class="resource-item prod-trigger" data-id="${p.id}" style="${style}">
                 <div style="flex:1; overflow:hidden; padding-right:10px;">
-                    <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                    <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${namePrefix}${p.name}</div>
                     <div style="display:flex; align-items:center;">${badgeStock}</div>
                 </div>
                 <div style="text-align:right;">
                     <div style="font-weight:700; color:var(--sale-green); font-size:1rem;">${fmtMoney(displayPrice)}</div>${badgeCurrency}
                 </div>
             </div>`;
-        }).join('');
+        };
+
+        let html = '';
+
+        // 1. Renderizar Combos/Promos primero
+        if (combos.length > 0) {
+            html += combos.map(renderItemHtml).join('');
+        }
+
+        // 2. Divisor sutil e indicativo si existen ambos tipos
+        if (combos.length > 0 && normalProducts.length > 0) {
+            html += `
+                <div style="display: flex; align-items: center; gap: 10px; margin: 15px 0; opacity: 0.35; width: 100%; pointer-events: none;">
+                    <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Productos del Inventario</span>
+                    <div style="flex-grow: 1; border-bottom: 2px dashed var(--color-black);"></div>
+                </div>
+            `;
+        }
+
+        // 3. Renderizar Productos normales
+        if (normalProducts.length > 0) {
+            html += normalProducts.map(renderItemHtml).join('');
+        }
+
+        c.innerHTML = html;
+
         c.querySelectorAll('.prod-trigger').forEach(b => {
             b.addEventListener('click', () => {
                 const p = this.resources.products.find(x => x.id == b.dataset.id);
@@ -736,7 +772,15 @@ export class SalesModule {
             let costInArs = p.cost_price != null ? parseFloat(p.cost_price) : null;
             if (costInArs != null && p.currency === 'USD') costInArs = costInArs * this.rates.USD;
             this.currentSale.items.push({
-                id: p.id, nombre: p.name, cantidad: 1, precio: priceInArs, precio_original: priceInArs, cost_price: costInArs, original_currency: p.currency, max_stock: parseFloat(p.stock)
+                id: p.id,
+                nombre: p.name,
+                cantidad: 1,
+                precio: priceInArs,
+                precio_original: priceInArs,
+                cost_price: costInArs,
+                original_currency: p.currency,
+                max_stock: parseFloat(p.stock),
+                is_combo: p.is_combo ? 1 : 0
             });
         }
         this.recalcSale();
@@ -1107,7 +1151,7 @@ export class SalesModule {
                 if (shouldCreateDelivery && res.sale_id) {
                     const custSelect = document.getElementById('sale-customer');
                     const customerName = custSelect.options[custSelect.selectedIndex]?.text || '';
-                    
+
                     let address = '';
                     let customerPhone = '';
                     let customerEmail = '';
@@ -1127,7 +1171,7 @@ export class SalesModule {
                             console.error("Error fetching customer address for delivery:", e);
                         }
                     }
-                    
+
                     if (window.showDashboardView) {
                         window.showDashboardView('deliveries');
                     }
@@ -1164,8 +1208,8 @@ export class SalesModule {
                             if (emailData.sent > 0) {
                                 pop_ups.success(`¡Reportes (${emailData.sent}) enviados con éxito!`);
                             } else {
-                                const hasErrors = emailData.details && emailData.details.some(d => 
-                                    (d.email?.attempted && !d.email?.sent) || 
+                                const hasErrors = emailData.details && emailData.details.some(d =>
+                                    (d.email?.attempted && !d.email?.sent) ||
                                     (d.whatsapp?.attempted && !d.whatsapp?.sent)
                                 );
                                 if (hasErrors) {
@@ -1283,7 +1327,7 @@ export class SalesModule {
             bodyContainer.insertAdjacentHTML('beforeend', emailBtnHTML);
 
             // REMITO BOTON
-            const remitoBtnHTML = `<button id="print-quick-remito-btn" class="btn btn-secondary" style="margin-top: 10px; width: 100%; border-color: #0096ff; color: #0096ff; background-color: #fff;"><i class="ph ph-printer" style="font-size:1.25rem; vertical-align: middle; margin-right: 6px;"></i> Imprimir Remito (Rápido)</button>`;
+            const remitoBtnHTML = `<button id="print-quick-remito-btn" class="btn btn-secondary" style="margin-top: 10px; width: 100%; border-color: var(--accent-color); color: var(--accent-color); background-color: #fff;"><i class="ph ph-printer" style="font-size:1.25rem; vertical-align: middle; margin-right: 6px;"></i> Imprimir Remito (Rápido)</button>`;
             bodyContainer.insertAdjacentHTML('beforeend', remitoBtnHTML);
 
             const modal = document.getElementById('detail-sale-modal'); modal.classList.remove('hidden'); modal.style.display = 'flex';
@@ -1494,7 +1538,7 @@ export class SalesModule {
                 return;
             }
             const s = res.sale;
-            
+
             let itemsHtml = '';
             if (s.items && s.items.length > 0) {
                 itemsHtml = s.items.map(item => `

@@ -29,8 +29,14 @@ try {
     $db = Database::getInstance();
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $stmtInv = $db->prepare("SELECT t.table_name, i.preferences FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId AND i.user_id = :uid");
-    $stmtInv->execute([':invId' => $inventoryId, ':uid' => $user['id']]);
+    // Verificar rol / permisos
+    $role = getInventoryRole((int)$user['id'], (int)$inventoryId);
+    if (!$role) {
+        throw new Exception("Inventario no encontrado o no tienes permiso.");
+    }
+
+    $stmtInv = $db->prepare("SELECT t.table_name, i.preferences FROM inventories i JOIN user_tables t ON i.id = t.inventory_id WHERE i.id = :invId");
+    $stmtInv->execute([':invId' => (int)$inventoryId]);
     $invData = $stmtInv->fetch(PDO::FETCH_ASSOC);
 
     if (!$invData) throw new Exception("Inventario no encontrado.");

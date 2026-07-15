@@ -138,8 +138,9 @@ function setupEventListeners() {
 }
 
 async function handleFileSelect(file) {
-    if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
-        pop_ups.error("Por favor selecciona un archivo CSV válido.", "Archivo Incorrecto");
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+        pop_ups.error("Por favor selecciona un archivo CSV o Excel válido.", "Archivo Incorrecto");
         return;
     }
 

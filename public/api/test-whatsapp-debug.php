@@ -110,7 +110,7 @@ try {
         'type' => 'template',
         'template' => [
             'name'     => 'producto_agotado',
-            'language' => ['code' => 'es_AR'],
+            'language' => ['code' => 'es'],
             'components' => [[
                 'type'       => 'body',
                 'parameters' => [
@@ -124,15 +124,15 @@ try {
     ];
     $results['producto_agotado'] = _callWhatsAppRaw($url, $headers, $payload3);
 
-    // ---- Test 4: invitacion_aceptada ----
+    // ---- Test 4: nuevo_colaborador ----
     // Variables: {{nombre_usuario}}, {{nombre_invitado}}, {{email_invitado}}, {{nombre_inventario}}, {{rol_invitado}}
     $payload4 = [
         'messaging_product' => 'whatsapp',
         'to'   => $cleanPhone,
         'type' => 'template',
         'template' => [
-            'name'     => 'invitacion_aceptada',
-            'language' => ['code' => 'es_AR'],
+            'name'     => 'nuevo_colaborador',
+            'language' => ['code' => 'en'],
             'components' => [[
                 'type'       => 'body',
                 'parameters' => [
@@ -145,22 +145,23 @@ try {
             ]],
         ],
     ];
-    $results['invitacion_aceptada'] = _callWhatsAppRaw($url, $headers, $payload4);
+    $results['nuevo_colaborador'] = _callWhatsAppRaw($url, $headers, $payload4);
 
-    // ---- Test 5: cierre_semanal ----
-    // Variables: {{inventario_nombre}}, {{nombre_usuario}}, {{ventas_totales}}, {{gastos_totales}}, {{balance}}
+    // ---- Test 5: reporte_cierre_caja_semanal ----
+    // Variables: {{inventario_nombre}}, {{nombre_usuario}}, {{lapso_tiempo}}, {{ventas_totales}}, {{gastos_totales}}, {{balance}}
     $payload5 = [
         'messaging_product' => 'whatsapp',
         'to'   => $cleanPhone,
         'type' => 'template',
         'template' => [
-            'name'     => 'cierre_semanal',
-            'language' => ['code' => 'es_AR'],
+            'name'     => 'reporte_cierre_caja_semanal',
+            'language' => ['code' => 'es'],
             'components' => [[
                 'type'       => 'body',
                 'parameters' => [
                     ['type' => 'text', 'parameter_name' => 'inventario_nombre', 'text' => 'Inventario Demo'],
                     ['type' => 'text', 'parameter_name' => 'nombre_usuario',    'text' => $userName],
+                    ['type' => 'text', 'parameter_name' => 'lapso_tiempo',      'text' => 'Semanal'],
                     ['type' => 'text', 'parameter_name' => 'ventas_totales',    'text' => '$250.000,00'],
                     ['type' => 'text', 'parameter_name' => 'gastos_totales',    'text' => '$90.000,00'],
                     ['type' => 'text', 'parameter_name' => 'balance',           'text' => '$160.000,00'],
@@ -168,7 +169,31 @@ try {
             ]],
         ],
     ];
-    $results['cierre_semanal'] = _callWhatsAppRaw($url, $headers, $payload5);
+    $results['reporte_cierre_caja_semanal'] = _callWhatsAppRaw($url, $headers, $payload5);
+
+    // ---- Test 6: alerta_acceso_fuera_horario ----
+    // Variables: {{nombre_owner}}, {{nombre_colaborador}}, {{email_colaborador}}, {{inventario_nombre}}, {{hora_ingreso}}, {{rango_permitido}}
+    $payload6 = [
+        'messaging_product' => 'whatsapp',
+        'to'   => $cleanPhone,
+        'type' => 'template',
+        'template' => [
+            'name'     => 'alerta_acceso_fuera_horario',
+            'language' => ['code' => 'es_AR'],
+            'components' => [[
+                'type'       => 'body',
+                'parameters' => [
+                    ['type' => 'text', 'parameter_name' => 'nombre_owner',        'text' => $userName],
+                    ['type' => 'text', 'parameter_name' => 'nombre_colaborador',  'text' => 'Colaborador Test'],
+                    ['type' => 'text', 'parameter_name' => 'email_colaborador',   'text' => 'colaborador@test.com'],
+                    ['type' => 'text', 'parameter_name' => 'inventario_nombre',   'text' => 'Inventario Demo'],
+                    ['type' => 'text', 'parameter_name' => 'hora_ingreso',        'text' => '22:30h'],
+                    ['type' => 'text', 'parameter_name' => 'rango_permitido',     'text' => '08:00h a 20:00h'],
+                ],
+            ]],
+        ],
+    ];
+    $results['alerta_acceso_fuera_horario'] = _callWhatsAppRaw($url, $headers, $payload6);
 
     echo json_encode([
         'success'      => true,

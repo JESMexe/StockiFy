@@ -25,13 +25,15 @@ class WhatsappService
      * @param string $templateName   Nombre exacto de la plantilla aprobada en Meta
      * @param array  $parameters     Asociativo (nombrado) o numérico (posicional)
      * @param string $languageCode   Código de idioma de la plantilla (default: es_AR)
+     * @param string|null $headerImageUrl URL de la imagen de cabecera si la plantilla la requiere (tipo IMAGE)
      * @return bool
      */
     public function sendTemplateMessage(
         string $toPhoneNumber,
         string $templateName,
         array $parameters = [],
-        string $languageCode = 'es_AR'
+        string $languageCode = 'es_AR',
+        ?string $headerImageUrl = null
     ): bool {
         if (empty(WHATSAPP_PHONE_NUMBER_ID) || empty(WHATSAPP_ACCESS_TOKEN)) {
             $this->lastError = 'Faltan credenciales. ID: ' . (WHATSAPP_PHONE_NUMBER_ID ?: 'VACÍO')
@@ -50,6 +52,23 @@ class WhatsappService
 
         // ── Construir componentes ──────────────────────────────────────────────
         $components = [];
+
+        // 1. Agregar cabecera si se proporciona una imagen
+        if (!empty($headerImageUrl)) {
+            $components[] = [
+                'type' => 'header',
+                'parameters' => [
+                    [
+                        'type' => 'image',
+                        'image' => [
+                            'link' => $headerImageUrl
+                        ]
+                    ]
+                ]
+            ];
+        }
+
+        // 2. Agregar cuerpo con las variables de la plantilla
         if (!empty($parameters)) {
             $bodyParams = [];
 
@@ -68,10 +87,10 @@ class WhatsappService
                 $bodyParams[] = $param;
             }
 
-            $components = [[
+            $components[] = [
                 'type'       => 'body',
                 'parameters' => $bodyParams,
-            ]];
+            ];
         }
 
         $payload = [
@@ -240,7 +259,7 @@ class WhatsappService
     /**
      * Alerta de Nuevo Colaborador Agregado / Invitación Aceptada
      *
-     * Plantilla: invitacion_aceptada (es_AR)
+     * Plantilla: nuevo_colaborador (en)
      * Variables: {{nombre_usuario}}, {{nombre_invitado}}, {{email_invitado}}, {{nombre_inventario}}, {{rol_invitado}}
      */
     public function sendNewCollaboratorAlert(
@@ -258,7 +277,7 @@ class WhatsappService
             'nombre_inventario' => $inventoryName,
             'rol_invitado'      => $collaboratorRole,
         ];
-        return $this->sendTemplateMessage($toPhoneNumber, 'invitacion_aceptada', $params);
+        return $this->sendTemplateMessage($toPhoneNumber, 'nuevo_colaborador', $params, 'en');
     }
 
     /**
@@ -336,7 +355,7 @@ class WhatsappService
     /**
      * Reporte Dinámico de Cierre de Caja (Semanal, Mensual o Anual)
      *
-     * Plantilla: reporte_cierre_caja_semanal (es_AR)
+     * Plantilla: reporte_cierre_caja_semanal (es)
      * Variables: {{inventario_nombre}}, {{nombre_usuario}}, {{lapso_tiempo}},
      *            {{ventas_totales}}, {{gastos_totales}}, {{balance}}
      */
@@ -357,7 +376,7 @@ class WhatsappService
             'gastos_totales'    => number_format($totalPurchases, 2, ',', '.'),
             'balance'           => number_format($balance,        2, ',', '.'),
         ];
-        return $this->sendTemplateMessage($toPhoneNumber, 'reporte_cierre_caja_semanal', $params);
+        return $this->sendTemplateMessage($toPhoneNumber, 'reporte_cierre_caja_semanal', $params, 'es');
     }
 
     /**
@@ -373,7 +392,8 @@ class WhatsappService
         string $collabEmail,
         string $inventoryName,
         string $entryTime,
-        string $allowedRange
+        string $allowedRange,
+        string $headerImageUrl = 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&q=80&w=600'
     ): bool {
         $params = [
             'nombre_owner'       => $ownerName,
@@ -383,6 +403,6 @@ class WhatsappService
             'hora_ingreso'       => $entryTime,
             'rango_permitido'    => $allowedRange,
         ];
-        return $this->sendTemplateMessage($toPhoneNumber, 'alerta_acceso_fuera_horario', $params);
+        return $this->sendTemplateMessage($toPhoneNumber, 'alerta_acceso_fuera_horario', $params, 'es_AR', $headerImageUrl);
     }
 }

@@ -80,13 +80,44 @@ try {
     foreach ($validCols as $c) $validColsNorm[normKey($c)] = $c;
 
     $tmpPath = $_FILES['csv_file']['tmp_name'];
-    $fh = fopen($tmpPath, 'r');
-    if (!$fh) jsonFail("No se pudo leer el archivo CSV.");
+    $originalName = $_FILES['csv_file']['name'] ?? '';
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $isExcel = ($extension === 'xlsx' || $extension === 'xls');
 
-    $csvHeaders = fgetcsv($fh, 0, $delimiter);
-    if (!$csvHeaders || !is_array($csvHeaders)) {
-        fclose($fh);
-        jsonFail("CSV inválido: no se detectaron cabeceras.");
+    if ($isExcel) {
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmpPath);
+            $sheet = $spreadsheet->getActiveSheet();
+            $highestColumn = $sheet->getHighestDataColumn();
+            $highestRow = $sheet->getHighestDataRow();
+            $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
+
+            $csvHeaders = [];
+            for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $cellValue = $sheet->getCell([$col, 1])->getValue();
+                $csvHeaders[] = $cellValue !== null ? (string)$cellValue : '';
+            }
+
+            // Quitar celdas vacías al final de las cabeceras
+            while (count($csvHeaders) > 0 && trim(end($csvHeaders)) === '') {
+                array_pop($csvHeaders);
+            }
+
+            if (empty($csvHeaders)) {
+                jsonFail("El archivo Excel no contiene cabeceras en la primera fila.");
+            }
+        } catch (\Throwable $e) {
+            jsonFail("Error al leer el archivo Excel: " . $e->getMessage());
+        }
+    } else {
+        $fh = fopen($tmpPath, 'r');
+        if (!$fh) jsonFail("No se pudo leer el archivo CSV.");
+
+        $csvHeaders = fgetcsv($fh, 0, $delimiter);
+        if (!$csvHeaders || !is_array($csvHeaders)) {
+            fclose($fh);
+            jsonFail("CSV inválido: no se detectaron cabeceras.");
+        }
     }
 
     $headerIndexExact = [];
@@ -132,7 +163,7 @@ try {
     }
 
     if (empty($finalMap)) {
-        fclose($fh);
+        if (!$isExcel) fclose($fh);
         jsonFail("No hay columnas mapeadas válidas para esta tabla.");
     }
 
@@ -141,28 +172,60 @@ try {
     $MAX_ROWS = 5000;
     $rowCount = 0;
     $rows = [];
-    while (($line = fgetcsv($fh, 0, $delimiter)) !== false) {
-        if (++$rowCount > $MAX_ROWS) {
-            fclose($fh);
-            jsonFail("El archivo supera el límite de {$MAX_ROWS} filas. Por favor, dividí el CSV en partes más pequeñas.");
-        }
 
-        $allEmpty = true;
-        foreach ($line as $v) {
-            if (trim((string)$v) !== '') { $allEmpty = false; break; }
-        }
-        if ($allEmpty) continue;
+    if ($isExcel) {
+        for ($rowNum = 2; $rowNum <= $highestRow; $rowNum++) {
+            if (++$rowCount > $MAX_ROWS) {
+                jsonFail("El archivo supera el límite de {$MAX_ROWS} filas. Por favor, dividí el archivo Excel en partes más pequeñas.");
+            }
 
-        $row = [];
-        foreach ($finalMap as $colName => $idx) {
-            $row[$colName] = isset($line[$idx]) ? trim((string)$line[$idx]) : null;
+            $line = [];
+            for ($col = 1; $col <= count($csvHeaders); $col++) {
+                $cell = $sheet->getCell([$col, $rowNum]);
+                try {
+                    $cellValue = $cell->getCalculatedValue();
+                } catch (\Throwable $e) {
+                    $cellValue = $cell->getValue();
+                }
+                $line[] = $cellValue !== null ? (string)$cellValue : '';
+            }
+
+            $allEmpty = true;
+            foreach ($line as $v) {
+                if (trim((string)$v) !== '') { $allEmpty = false; break; }
+            }
+            if ($allEmpty) continue;
+
+            $row = [];
+            foreach ($finalMap as $colName => $idx) {
+                $row[$colName] = isset($line[$idx]) ? trim((string)$line[$idx]) : null;
+            }
+            $rows[] = $row;
         }
-        $rows[] = $row;
+    } else {
+        while (($line = fgetcsv($fh, 0, $delimiter)) !== false) {
+            if (++$rowCount > $MAX_ROWS) {
+                fclose($fh);
+                jsonFail("El archivo supera el límite de {$MAX_ROWS} filas. Por favor, dividí el CSV en partes más pequeñas.");
+            }
+
+            $allEmpty = true;
+            foreach ($line as $v) {
+                if (trim((string)$v) !== '') { $allEmpty = false; break; }
+            }
+            if ($allEmpty) continue;
+
+            $row = [];
+            foreach ($finalMap as $colName => $idx) {
+                $row[$colName] = isset($line[$idx]) ? trim((string)$line[$idx]) : null;
+            }
+            $rows[] = $row;
+        }
+        fclose($fh);
     }
-    fclose($fh);
 
     if (empty($rows)) {
-        jsonFail("El CSV no contiene filas para importar.");
+        jsonFail("El archivo no contiene filas para importar.");
     }
 
     $_SESSION['import_plan'] = [

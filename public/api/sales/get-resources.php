@@ -98,6 +98,41 @@ try {
                 ];
             }
         }
+
+        // --- CARGAR E INYECTAR COMBOS COMO PRODUCTOS ---
+        try {
+            require_once $root . '/src/Models/ComboModel.php';
+            $comboModel = new \App\Models\ComboModel();
+            $combos = $comboModel->getCombosByInventory((int)$activeInventoryId);
+
+            file_put_contents(__DIR__ . '/debug.log', "SUCCESS: Combos loaded: " . count($combos) . " combos. Active Inventory: $activeInventoryId\n", FILE_APPEND);
+
+            foreach ($combos as $combo) {
+                if ((int)$combo['is_active'] !== 1) continue;
+
+                // Armar datos de búsqueda
+                $searchString = strtolower($combo['name']);
+                foreach ($combo['items'] as $ing) {
+                    $searchString .= " " . strtolower($ing['name']);
+                }
+
+                $products[] = [
+                    'id' => 'combo_' . $combo['id'], // Prefijo para evitar colisiones en la grilla del POS
+                    'name' => $combo['name'],
+                    'price' => (float)$combo['price'],
+                    'cost_price' => (float)$combo['cost_price'],
+                    'stock' => (float)$combo['dynamic_stock'],
+                    'currency' => 'ARS',
+                    'code' => null,
+                    'is_combo' => true,
+                    'search_data' => $searchString
+                ];
+            }
+        } catch (\Exception $comboErr) {
+            file_put_contents(__DIR__ . '/debug.log', "ERROR: " . $comboErr->getMessage() . "\n" . $comboErr->getTraceAsString() . "\n", FILE_APPEND);
+            // Ignorar fallos de combos para no romper el POS principal
+            error_log("Error loading combos in POS get-resources: " . $comboErr->getMessage());
+        }
     }
 
     echo json_encode([

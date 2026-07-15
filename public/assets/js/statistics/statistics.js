@@ -1,4 +1,4 @@
-﻿import { getAnalyticsDashboard } from '../api.js';
+import { getAnalyticsDashboard } from '../api.js';
 
 export class AnalyticsModule {
     constructor() {
@@ -312,20 +312,36 @@ export class AnalyticsModule {
     updateKPIs(fin, invValue) {
         const fmt = (n) => `$${parseFloat(n).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
 
-        document.getElementById('kpi-revenue').textContent = fmt(fin.revenue);
-        document.getElementById('kpi-expenses').textContent = fmt(fin.expenses);
+        const revEl = document.getElementById('kpi-revenue');
+        const revText = fmt(fin.revenue);
+        revEl.textContent = revText;
+        revEl.title = revText;
+        revEl.classList.add('ellipsis');
+
+        const expEl = document.getElementById('kpi-expenses');
+        const expText = fmt(fin.expenses);
+        expEl.textContent = expText;
+        expEl.title = expText;
+        expEl.classList.add('ellipsis');
+
         document.getElementById('kpi-sales-count').textContent = `${fin.sales_count} ventas`;
         document.getElementById('kpi-purchases-count').textContent = `${fin.purchases_count} compras`;
 
-        document.getElementById('kpi-ticket').textContent = fmt(fin.average_ticket);
+        const ticketEl = document.getElementById('kpi-ticket');
+        const ticketText = fmt(fin.average_ticket);
+        ticketEl.textContent = ticketText;
+        ticketEl.title = ticketText;
+        ticketEl.classList.add('ellipsis');
 
         const balEl = document.getElementById('kpi-balance');
-        balEl.textContent = fmt(fin.balance);
+        const balText = fmt(fin.balance);
+        balEl.textContent = balText;
+        balEl.title = balText;
         balEl.style.color = fin.balance >= 0 ? 'var(--accent-green, #28a745)' : 'var(--accent-red, #dc3545)';
+        balEl.classList.add('ellipsis');
 
         const invEl = document.getElementById('kpi-inventory');
         const invText = fmt(invValue);
-
         invEl.textContent = invText;
         invEl.title = invText;
         invEl.classList.add('ellipsis');
@@ -380,9 +396,29 @@ export class AnalyticsModule {
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 2 },
             xaxis: { categories: labels, type: 'category' },
+            yaxis: {
+                labels: {
+                    formatter: function (value) {
+                        return "$" + parseFloat(value).toLocaleString('es-AR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                    }
+                }
+            },
             colors: [colorGreen, colorRed],
             fill: { type: 'gradient', gradient: { opacityFrom: 0.5, opacityTo: 0.1 } },
-            grid: { borderColor: '#f1f1f1' }
+            grid: { borderColor: '#f1f1f1' },
+            tooltip: {
+                y: {
+                    formatter: function (value) {
+                        return "$" + parseFloat(value).toLocaleString('es-AR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                    }
+                }
+            }
         };
 
         const chartEl = document.getElementById('main-chart');

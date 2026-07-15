@@ -163,7 +163,7 @@ $slotPrice = $pricingService->getSlotUnitPrice();
     <title>Panel de Control - StockiFy</title>
 
     <link rel="stylesheet" href="/assets/css/main.css?v=1.3">
-    <link rel="stylesheet" href="/assets/css/dashboard.css?v=2.1">
+    <link rel="stylesheet" href="/assets/css/dashboard.css?v=2.2">
     <link rel="stylesheet" href="/assets/css/notifications.css?v=2.0">
     <link rel="stylesheet" href="/assets/css/employees.css?v=1.3">
     <link rel="stylesheet" href="/assets/css/purchases.css?v=2.1">
@@ -478,114 +478,222 @@ $slotPrice = $pricingService->getSlotUnitPrice();
 
             <main class="dashboard-main">
                 <div id="view-db" class="dashboard-view hidden">
+                    
+                    <!-- PESTAÑAS DE INVENTARIO (NEOBRUTALISMO) -->
+                    <div class="inv-tab-bar">
+                        <button type="button" class="inv-tab-btn active" id="tab-btn-products">
+                            <i class="ph-bold ph-table"></i> Inventario
+                        </button>
+                        <button type="button" class="inv-tab-btn" id="tab-btn-combos">
+                            <i class="ph-bold ph-tag"></i> Productos en Promo
+                        </button>
+                    </div>
+
                     <div class="table-container">
-                        <div class="table-header">
-                            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                                <h2 id="table-title"
-                                    style="margin: 0; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    Cargando...
-                                </h2>
-                                <button id="refresh-table-btn" class="btn btn-secondary"
-                                    title="Recargar y actualizar datos"
-                                    style="padding: 4px 8px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0; width: 32px; height: 32px;">
-                                    <i class="ph-bold ph-arrows-clockwise"
-                                        style="font-size: 1.3rem; line-height: 1;"></i>
-                                </button>
-                            </div>
 
-                            <div class="table-controls">
-                                <button id="send-report-btn" class="btn hidden"
-                                    title="Enviar reporte de reposición (Stock Crítico) al correo o WhatsApp">
-                                    <i class="ph ph-paper-plane-right"
-                                        style="font-size: 1.4rem; font-weight: bold;"></i>
-                                </button>
-
-                                <button id="critical-filter-btn" class="btn hidden"
-                                    title="Mostrar solo productos con stock bajo o pérdidas">
-                                    <i class="ph ph-warning-circle" style="font-size: 1.4rem; font-weight: bold;"></i>
-                                </button>
-
-                                <div class="search-wrapper">
-
-                                    <!-- Honey-pot mejorado para engañar al autocompletado de Opera/Chrome -->
-
-                                    <input type="search" id="main-table-search" name="q_stk_main"
-                                        placeholder="Buscar en la tabla..." spellcheck="false" autocomplete="off"
-                                        readonly onfocus="this.removeAttribute('readonly');"
-                                        style="border: none; outline: none; background: transparent; width: 100%; height: 100%; padding: 10px 15px;">
-
-                                    <button id="search-column-btn" class="btn btn-secondary">
-                                        <i class="ph ph-funnel"></i>
-                                        <span>Todas</span>
-                                        <i class="ph ph-caret-down"></i>
+                        <!-- SECCIÓN 1: PRODUCTOS FÍSICOS -->
+                        <div id="products-view-section">
+                            <div class="table-header">
+                                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                                    <h2 id="table-title"
+                                        style="margin: 0; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        Cargando...
+                                    </h2>
+                                    <button id="refresh-table-btn" class="btn btn-secondary"
+                                        title="Recargar y actualizar datos"
+                                        style="padding: 4px 8px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0; width: 32px; height: 32px;">
+                                        <i class="ph-bold ph-arrows-clockwise"
+                                            style="font-size: 1.3rem; line-height: 1;"></i>
                                     </button>
-
-                                    <div id="search-column-dropdown" class="search-dropdown hidden">
-                                        <button class="search-dropdown-item active" data-column="all">
-                                            <i class="ph ph-check"></i> Todas las Columnas
-                                        </button>
-                                    </div>
                                 </div>
 
-                                <div class="actions-dropdown-wrapper">
-                                    <button type="button" id="actions-dropdown-btn" class="btn btn-secondary" style="display: none; align-items: center; gap: 8px;">
-                                        <i class="ph ph-dots-three-vertical" style="font-size: 1.2rem;"></i> Acciones
+                                <div class="table-controls">
+                                    <button id="send-report-btn" class="btn hidden"
+                                        title="Enviar reporte de reposición (Stock Crítico) al correo o WhatsApp">
+                                        <i class="ph ph-paper-plane-right"
+                                            style="font-size: 1.4rem; font-weight: bold;"></i>
                                     </button>
-                                    <div class="actions-list-container">
-                                        <button id="manage-columns-btn" class="btn btn-secondary"
-                                            title="Ocultar o mostrar columnas" onclick="window.openColumnManager()">
-                                            <i class="ph ph-eye" style="font-size: 1.2rem; font-weight: bold;"></i>
-                                            <span class="btn-text">Columnas</span>
+
+                                    <button id="critical-filter-btn" class="btn hidden"
+                                        title="Mostrar solo productos con stock bajo o pérdidas">
+                                        <i class="ph ph-warning-circle" style="font-size: 1.4rem; font-weight: bold;"></i>
+                                    </button>
+
+                                    <div class="search-wrapper">
+
+                                        <!-- Honey-pot mejorado para engañar al autocompletado de Opera/Chrome -->
+
+                                        <input type="search" id="main-table-search" name="q_stk_main"
+                                            placeholder="Buscar en la tabla..." spellcheck="false" autocomplete="off"
+                                            readonly onfocus="this.removeAttribute('readonly');"
+                                            style="border: none; outline: none; background: transparent; width: 100%; height: 100%; padding: 10px 15px;">
+
+                                        <button id="search-column-btn" class="btn btn-secondary">
+                                            <i class="ph ph-funnel"></i>
+                                            <span>Todas</span>
+                                            <i class="ph ph-caret-down"></i>
                                         </button>
 
-                                        <button id="open-export-modal-btn" class="btn btn-secondary"
-                                            style="display: flex; align-items: center; gap: 8px;" title="Exportar a Excel"
-                                            onclick="window.openExportModal()">
-                                            <i class="ph ph-export"></i> Exportar
-                                        </button>
-
-                                        <button id="open-import-modal-btn" class="btn btn-secondary"
-                                            style="display: flex; align-items: center; gap: 8px;">
-                                            <i class="ph ph-download-simple"></i> Importar
-                                        </button>
-
-                                        <!-- Catálogo Dropdown -->
-                                        <div class="catalog-dropdown-wrapper" style="position: relative; display: inline-block;">
-                                            <button type="button" id="catalog-actions-btn" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px;" title="Acciones del catálogo público">
-                                                <i class="ph ph-storefront" style="font-size: 1.2rem;"></i> Catálogo
+                                        <div id="search-column-dropdown" class="search-dropdown hidden">
+                                            <button class="search-dropdown-item active" data-column="all">
+                                                <i class="ph ph-check"></i> Todas las Columnas
                                             </button>
-                                            <div id="catalog-dropdown-menu" class="hidden" style="position: absolute; top: 100%; right: 0; background: white; border: 2px solid #1b1b1b; border-radius: 4px; box-shadow: 4px 4px 0px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; display: flex; flex-direction: column; gap: 4px; padding: 8px;">
-                                                <button class="btn btn-secondary" onclick="window.bulkToggleCatalogVisibility(true)" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
-                                                    <i class="ph-fill ph-eye" style="color: var(--accent-green);"></i> Publicar Todo
-                                                </button>
-                                                <button class="btn btn-secondary" onclick="window.bulkToggleCatalogVisibility(false)" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
-                                                    <i class="ph ph-eye-slash" style="color: var(--accent-red);"></i> Ocultar Todo
-                                                </button>
-                                                <div style="height: 1px; background: #ddd; margin: 4px 0;"></div>
-                                                <button class="btn btn-secondary" onclick="window.viewMyPublicCatalog()" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
-                                                    <i class="ph ph-arrow-square-out"></i> Ver Catálogo
-                                                </button>
-                                            </div>
                                         </div>
-
-                                        <button id="add-row-btn" class="btn btn-primary" style="width: auto; margin-top: 0;">+
-                                            Añadir Fila</button>
                                     </div>
+
+                                    <div class="actions-dropdown-wrapper">
+                                        <button type="button" id="actions-dropdown-btn" class="btn btn-secondary" style="display: none; align-items: center; gap: 8px;">
+                                            <i class="ph ph-dots-three-vertical" style="font-size: 1.2rem;"></i> Acciones
+                                        </button>
+                                        <div class="actions-list-container">
+                                            <button id="manage-columns-btn" class="btn btn-secondary"
+                                                title="Ocultar o mostrar columnas" onclick="window.openColumnManager()">
+                                                <i class="ph ph-eye" style="font-size: 1.2rem; font-weight: bold;"></i>
+                                                <span class="btn-text">Columnas</span>
+                                            </button>
+
+                                            <button id="open-export-modal-btn" class="btn btn-secondary"
+                                                style="display: flex; align-items: center; gap: 8px;" title="Exportar a Excel"
+                                                onclick="window.openExportModal()">
+                                                <i class="ph ph-export"></i> Exportar
+                                            </button>
+
+                                            <button id="open-import-modal-btn" class="btn btn-secondary"
+                                                style="display: flex; align-items: center; gap: 8px;">
+                                                <i class="ph ph-download-simple"></i> Importar
+                                            </button>
+
+                                            <!-- Catálogo Dropdown -->
+                                            <div class="catalog-dropdown-wrapper" style="position: relative; display: inline-block;">
+                                                <button type="button" id="catalog-actions-btn" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px;" title="Acciones del catálogo público">
+                                                    <i class="ph ph-storefront" style="font-size: 1.2rem;"></i> Catálogo
+                                                </button>
+                                                <div id="catalog-dropdown-menu" class="hidden" style="position: absolute; top: 100%; right: 0; background: white; border: 2px solid #1b1b1b; border-radius: 4px; box-shadow: 4px 4px 0px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; display: flex; flex-direction: column; gap: 4px; padding: 8px;">
+                                                    <button class="btn btn-secondary" onclick="window.bulkToggleCatalogVisibility(true)" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
+                                                        <i class="ph-fill ph-eye" style="color: var(--accent-green);"></i> Publicar Todo
+                                                    </button>
+                                                    <button class="btn btn-secondary" onclick="window.bulkToggleCatalogVisibility(false)" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
+                                                        <i class="ph ph-eye-slash" style="color: var(--accent-red);"></i> Ocultar Todo
+                                                    </button>
+                                                    <div style="height: 1px; background: #ddd; margin: 4px 0;"></div>
+                                                    <button class="btn btn-secondary" onclick="window.viewMyPublicCatalog()" style="margin: 0; text-align: left; font-size: 0.85rem; padding: 8px 12px; border-radius: 4px; border: 1px solid #1b1b1b; display: flex; align-items: center; gap: 8px; justify-content: flex-start; width: 100%; box-shadow: none; cursor: pointer;">
+                                                        <i class="ph ph-arrow-square-out"></i> Ver Catálogo
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <button id="add-row-btn" class="btn btn-primary" style="width: auto; margin-top: 0;">+
+                                                Añadir Fila</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="table-wrapper">
+                                <table id="data-table">
+                                    <thead></thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="100%">Cargando datos...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- SECCIÓN 2: PROMOCIONES Y COMBOS -->
+                        <div id="combos-view-section" class="hidden">
+                            <div class="table-header">
+                                <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                                    <h2 style="margin: 0; line-height: 1; font-weight: 950;">Mis Combos y Promociones</h2>
+                                    <button id="refresh-combos-btn" class="btn btn-secondary"
+                                        title="Recargar y actualizar combos"
+                                        style="padding: 4px 8px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0; width: 32px; height: 32px; margin: 0;">
+                                        <i class="ph-bold ph-arrows-clockwise" style="font-size: 1.3rem; line-height: 1;"></i>
+                                    </button>
+                                </div>
+
+                                <div class="table-controls">
+                                    <div class="search-wrapper">
+                                        <input type="search" id="combos-table-search" placeholder="Buscar combos..." autocomplete="off"
+                                            style="border: none; outline: none; background: transparent; width: 100%; height: 100%; padding: 10px 15px;">
+                                    </div>
+                                    <button id="add-combo-btn" class="btn btn-primary" style="width: auto; margin-top: 0;">
+                                        + Nuevo Combo
+                                    </button>
                                 </div>
                             </div>
 
+                            <div class="table-wrapper">
+                                <table id="combos-table" class="rustic-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left; padding-left: 15px;">Nombre de la Promo</th>
+                                            <th style="text-align: center;">Precio de Venta</th>
+                                            <th style="text-align: center;">Costo total componentes</th>
+                                            <th style="text-align: left; padding-left: 15px;">Ingredientes / Productos integrantes</th>
+                                            <th style="text-align: center;">Stock Disponible (Cuello de Botella)</th>
+                                            <th style="text-align: center;">Estado</th>
+                                            <th style="text-align: center;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="combos-table-body">
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; font-style: italic; padding: 2rem;">Cargando promociones...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <div class="table-wrapper">
-                            <table id="data-table">
-                                <thead></thead>
-                                <tbody>
-                                    <tr>
-                                        <td colspan="100%">Cargando datos...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL NEOBRUTALISTA: NUEVO / EDITAR COMBO -->
+                <div id="combo-modal" class="modal-overlay hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px);">
+                    <div class="modal-content" style="background: white; border: 3px solid #1b1b1b; box-shadow: 8px 8px 0px #1b1b1b; border-radius: 12px; width: 550px; max-width: 95%; padding: 2rem; position: relative;">
+                        <button type="button" class="close-icon" id="close-combo-modal-btn" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 2rem; font-weight: bold; cursor: pointer; color: #1b1b1b; line-height: 0.5;">&times;</button>
+                        <h2 id="combo-modal-title" style="margin-top: 0; margin-bottom: 1.5rem; font-weight: 900; border-bottom: 3px solid #1b1b1b; padding-bottom: 10px; font-size: 1.8rem;">Crear Nuevo Combo</h2>
+                        
+                        <form id="combo-form">
+                            <input type="hidden" id="combo-id-input" value="">
+                            
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="combo-name-input" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem;">Nombre de la Promo:</label>
+                                <input type="text" id="combo-name-input" class="rustic-input" placeholder="Ej: Combo Fernet + 2 Cocas" required style="width: 100%; padding: 10px; border: 2.5px solid #1b1b1b; border-radius: 6px; box-sizing: border-box; font-weight: 600; outline: none;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="combo-price-input" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem;">Precio de Venta Promocional ($):</label>
+                                <input type="number" id="combo-price-input" class="rustic-input" step="0.01" min="0" placeholder="0.00" required style="width: 100%; padding: 10px; border: 2.5px solid #1b1b1b; border-radius: 6px; box-sizing: border-box; font-weight: 600; outline: none;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 15px; position: relative;">
+                                <label for="combo-search-products" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem;">Buscar y agregar producto integrante:</label>
+                                <div style="position: relative; display: flex; gap: 8px;">
+                                    <input type="text" id="combo-search-products" class="rustic-input" placeholder="Escribe el nombre o SKU del producto..." style="width: 100%; padding: 10px; border: 2.5px solid #1b1b1b; border-radius: 6px; box-sizing: border-box; font-weight: 600; outline: none;">
+                                    <div id="combo-suggestions" class="autocomplete-suggestions hidden"></div>
+                                </div>
+                            </div>
+
+                            <!-- ALERTA DE RENTABILIDAD -->
+                            <div id="combo-rentability-alert" class="rentability-alert hidden">
+                                <i class="ph-fill ph-warning-circle" style="font-size: 1.3rem;"></i>
+                                <span id="combo-rentability-text">Advertencia: El precio de venta propuesto está por debajo del costo acumulado de los componentes.</span>
+                            </div>
+                            
+                            <div style="margin-top: 15px; margin-bottom: 25px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem;">Componentes del Combo y sus Cantidades:</label>
+                                <div class="ingredients-list-container" id="combo-ingredients-list">
+                                    <div style="color: #666; font-style: italic; text-align: center; padding: 15px;">Ningún producto componente agregado. Usa el buscador de arriba.</div>
+                                </div>
+                                <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 2px solid #eee; padding-top: 15px;">
+                                    <button type="button" class="btn-neo-brutal" id="cancel-combo-btn" style="margin: 0; padding: 10px 20px; font-size: 0.9rem;">Cancelar</button>
+                                    <button type="submit" class="btn-neo-brutal btn-primary" id="save-combo-btn" style="margin: 0; padding: 10px 20px; font-size: 0.9rem; font-weight: bold;">Crear Combo</button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -1369,18 +1477,18 @@ $slotPrice = $pricingService->getSlotUnitPrice();
             <div class="modal-header">
                 <h2>Importar Datos</h2>
                 <div class="import-tabs">
-                    <button class="import-tab active" data-tab="csv">Archivo CSV</button>
+                    <button class="import-tab active" data-tab="csv">Archivo CSV / Excel</button>
                     <button class="import-tab" data-tab="tiendanube">TiendaNube</button>
                 </div>
             </div>
 
             <div class="modal-body">
                 <div id="import-section-csv">
-                    <p>Selecciona o arrastra tu archivo CSV.</p>
+                    <p>Selecciona o arrastra tu archivo CSV o Excel.</p>
                     <div id="import-step-1">
                         <div id="import-drop-zone" class="drop-zone">
-                            <p>Arrastra tu archivo CSV acá o hacé clic para seleccionar</p>
-                            <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                            <p>Arrastra tu archivo CSV o Excel acá o hacé clic para seleccionar</p>
+                            <input type="file" id="csv-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
                         </div>
                         <div id="import-status" style="margin-top: 1rem;"></div>
                     </div>
@@ -1393,7 +1501,7 @@ $slotPrice = $pricingService->getSlotUnitPrice();
                                     <strong>Sobre-escribir datos actuales</strong>
                                     <span class="import-overwrite-badge">Borra y reemplaza</span>
                                 </div>
-                                <p>Si está activado, se elimina lo existente y queda solo lo importado del CSV.</p>
+                                <p>Si está activado, se elimina lo existente y queda solo lo importado del archivo.</p>
                             </div>
                         </label>
                     </div>
@@ -2509,10 +2617,10 @@ $slotPrice = $pricingService->getSlotUnitPrice();
 
     <script type="module" src="assets/js/users/users.js?v=1.2"></script>
 
-    <script type="module" src="assets/js/import.js?v=1.3"></script>
+    <script type="module" src="assets/js/import.js?v=1.4"></script>
     <script type="module" src="assets/js/export-excel.js?v=1.3"></script>
-    <script type="module" src="assets/js/dashboard.js?v=2.7"></script>
-    <script type="module" src="assets/js/sales/sales.js?v=2.2"></script>
+    <script type="module" src="assets/js/dashboard.js?v=2.10"></script>
+    <script type="module" src="assets/js/sales/sales.js?v=2.3"></script>
     <script type="module" src="assets/js/purchases/purchases.js?v=2.3"></script>
     <script type="module" src="assets/js/history/history.js?v=1.3"></script>
     <script type="module" src="assets/js/payment/payment.js?v=1.2"></script>

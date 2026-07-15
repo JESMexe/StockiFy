@@ -137,45 +137,112 @@ class SalesModel
 
                 $stmtDet = $this->db->prepare("
                     INSERT INTO sale_details 
-                    (sale_id, product_id, product_name, quantity, unit_price, subtotal) 
-                    VALUES (:sid, :pid, :name, :qty, :price, :sub)
+                    (sale_id, product_id, product_name, quantity, unit_price, subtotal, is_combo) 
+                    VALUES (:sid, :pid, :name, :qty, :price, :sub, :is_combo)
                 ");
 
                 foreach ($data['items'] as $item) {
                     $productId = !empty($item['id']) ? $item['id'] : null;
+                    
+                    // Limpiar prefijo 'combo_' si viene del cliente
+                    $cleanProductId = $productId;
+                    $isCombo = 0;
+                    if (is_string($productId) && strpos($productId, 'combo_') === 0) {
+                        $cleanProductId = (int)substr($productId, 6);
+                        $isCombo = 1;
+                    } elseif (!empty($item['is_combo'])) {
+                        $cleanProductId = (int)$productId;
+                        $isCombo = 1;
+                    }
 
                     $stmtDet->execute([
                         ':sid' => $saleId,
-                        ':pid' => $productId,
+                        ':pid' => $cleanProductId,
                         ':name' => $item['nombre'] ?? $item['nombre_producto'] ?? 'Item',
                         ':qty' => $item['cantidad'],
                         ':price' => $item['precio'] ?? $item['precio_unitario'],
-                        ':sub' => ($item['precio'] ?? $item['precio_unitario']) * $item['cantidad']
+                        ':sub' => ($item['precio'] ?? $item['precio_unitario']) * $item['cantidad'],
+                        ':is_combo' => $isCombo
                     ]);
 
                     // Decrementar Stock
-                    if ($productId) {
+                    if ($cleanProductId) {
                         $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? null;
-                        $inventoryModel->decreaseStock($ownerId, $productId, $item['cantidad'], $inventoryId, $prodName, $outAlerts);
+                        
+                        if ($isCombo) {
+                            // Es un combo. Obtenemos sus componentes.
+                            $stmtItems = $this->db->prepare("SELECT product_id, quantity FROM combo_items WHERE combo_id = ?");
+                            $stmtItems->execute([$cleanProductId]);
+                            $components = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
 
-                        // ALERTA DE GANANCIA NEGATIVA
-                        if ($tableName && $safeCostCol) {
-                            $stmtCost = $this->db->prepare("SELECT $safeCostCol as cost FROM $tableName WHERE id = :id");
-                            $stmtCost->execute([':id' => $productId]);
-                            $costRow = $stmtCost->fetch(PDO::FETCH_ASSOC);
+                            $totalComboCost = 0.00;
 
-                            if ($costRow && isset($costRow['cost'])) {
-                                $cost = (float) $costRow['cost'];
-                                $salePrice = (float) ($item['precio'] ?? $item['precio_unitario']);
+                            foreach ($components as $comp) {
+                                $compProductId = $comp['product_id'];
+                                $reqQty = (float)$comp['quantity'] * (float)$item['cantidad'];
 
-                                if ($salePrice > 0 && $salePrice < $cost && $cost > 0) {
-                                    $prodName = $item['nombre'] ?? $item['nombre_producto'] ?? 'Producto';
-                                    $outAlerts[] = [
-                                        'type' => 'negative_profit',
-                                        'product_name' => $prodName,
-                                        'sale_price' => $salePrice,
-                                        'cost_price' => $cost
-                                    ];
+                                // Bloquear la fila en la tabla física para evitar concurrencia
+                                if ($tableName) {
+                                    $stmtLock = $this->db->prepare("SELECT id FROM $tableName WHERE id = :id FOR UPDATE");
+                                    $stmtLock->execute([':id' => $compProductId]);
+                                }
+
+                                // Obtener nombre y costo del componente
+                                $compName = null;
+                                if ($tableName && $safeCostCol) {
+                                    $nameCol = $prefs['mapping']['name'] ?? 'name';
+                                    $safeNameCol = "`" . str_replace("`", "``", $nameCol) . "`";
+                                    
+                                    $stmtBefore = $this->db->prepare("SELECT $safeCostCol as cost, $safeNameCol as name FROM $tableName WHERE id = :id");
+                                    $stmtBefore->execute([':id' => $compProductId]);
+                                    $prodInfo = $stmtBefore->fetch(PDO::FETCH_ASSOC);
+                                    if ($prodInfo) {
+                                        $compName = $prodInfo['name'] ?? 'Componente #' . $compProductId;
+                                        $totalComboCost += ((float)($prodInfo['cost'] ?? 0)) * (float)$comp['quantity'];
+                                    }
+                                }
+
+                                // Decrementar stock del componente
+                                $inventoryModel->decreaseStock($ownerId, $compProductId, $reqQty, $inventoryId, $compName, $outAlerts);
+                            }
+
+                            // Alerta de ganancia negativa para el combo completo
+                            $salePrice = (float)($item['precio'] ?? $item['precio_unitario']);
+                            if ($salePrice > 0 && $totalComboCost > 0 && $salePrice < $totalComboCost) {
+                                $outAlerts[] = [
+                                    'type' => 'negative_profit',
+                                    'product_name' => $prodName . ' (Combo)',
+                                    'sale_price' => $salePrice,
+                                    'cost_price' => $totalComboCost
+                                ];
+                            }
+                        } else {
+                            // Producto regular. Bloquear fila para concurrencia.
+                            if ($tableName) {
+                                $stmtLock = $this->db->prepare("SELECT id FROM $tableName WHERE id = :id FOR UPDATE");
+                                $stmtLock->execute([':id' => $cleanProductId]);
+                            }
+
+                            $inventoryModel->decreaseStock($ownerId, $cleanProductId, $item['cantidad'], $inventoryId, $prodName, $outAlerts);
+
+                            // ALERTA DE GANANCIA NEGATIVA
+                            if ($tableName && $safeCostCol) {
+                                $stmtCost = $this->db->prepare("SELECT $safeCostCol as cost FROM $tableName WHERE id = :id");
+                                $stmtCost->execute([':id' => $cleanProductId]);
+                                $costRow = $stmtCost->fetch(PDO::FETCH_ASSOC);
+
+                                if ($costRow && isset($costRow['cost'])) {
+                                    $cost = (float) $costRow['cost'];
+                                    $salePrice = (float) ($item['precio'] ?? $item['precio_unitario']);
+
+                                    if ($salePrice > 0 && $salePrice < $cost && $cost > 0) {
+                                        $outAlerts[] = [
+                                            'type' => 'negative_profit',
+                                            'product_name' => $prodName,
+                                            'sale_price' => $salePrice,
+                                            'cost_price' => $cost
+                                        ];
+                                    }
                                 }
                             }
                         }
@@ -349,7 +416,7 @@ class SalesModel
     {
         try {
             $this->db->beginTransaction();
-            $stmtGetItems = $this->db->prepare("SELECT product_id as item_id, quantity FROM sale_details WHERE sale_id = :id");
+            $stmtGetItems = $this->db->prepare("SELECT product_id as item_id, quantity, is_combo FROM sale_details WHERE sale_id = :id");
             $stmtGetItems->execute([':id' => $id]);
             $items = $stmtGetItems->fetchAll(PDO::FETCH_ASSOC);
 
@@ -404,7 +471,20 @@ class SalesModel
                     
                     $stmtRestore = $this->db->prepare("UPDATE $table SET $stockCol = $stockCol + :qty WHERE id = :pid");
                     foreach ($items as $item) {
-                        $stmtRestore->execute([':qty' => $item['quantity'], ':pid' => $item['item_id']]);
+                        if (!empty($item['is_combo'])) {
+                            // Es un combo, hay que devolver stock a cada componente
+                            $stmtComp = $this->db->prepare("SELECT product_id, quantity FROM combo_items WHERE combo_id = ?");
+                            $stmtComp->execute([$item['item_id']]);
+                            $components = $stmtComp->fetchAll(PDO::FETCH_ASSOC);
+
+                            foreach ($components as $comp) {
+                                $restoreQty = (float)$comp['quantity'] * (float)$item['quantity'];
+                                $stmtRestore->execute([':qty' => $restoreQty, ':pid' => $comp['product_id']]);
+                            }
+                        } else {
+                            // Producto regular
+                            $stmtRestore->execute([':qty' => $item['quantity'], ':pid' => $item['item_id']]);
+                        }
                     }
                 }
             } catch (Exception $e) { /* Si falla contexto, borramos igual la venta */

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () =>{
+document.addEventListener('DOMContentLoaded', () => {
     const passButton = document.getElementById('btn-password');
     const passFakeInput = document.getElementById('contraseña-fake');
     const passTrueInput = document.getElementById('contraseña');
@@ -10,11 +10,10 @@ document.addEventListener('DOMContentLoaded', () =>{
             passTrueInput.className = 'input-locked';
             buttonImage.setAttribute('src', "./assets/img/password-visible.png");
         }
-        else
-        {
+        else {
             passTrueInput.className += ' hidden';
             passFakeInput.className = 'input-locked';
             buttonImage.setAttribute('src', "./assets/img/password-hidden.png");
         }
     })
-} )
+})

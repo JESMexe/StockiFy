@@ -24,14 +24,17 @@ try {
     $exchangeConfig = null;
 
     if ($user && $activeInventoryId) {
-        $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT preferences FROM inventories WHERE id = ? AND user_id = ?");
-        $stmt->execute([$activeInventoryId, $user['id']]);
-        $inv = $stmt->fetch(PDO::FETCH_ASSOC);
+        $role = getInventoryRole((int)$user['id'], (int)$activeInventoryId);
+        if ($role) {
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT preferences FROM inventories WHERE id = ?");
+            $stmt->execute([(int)$activeInventoryId]);
+            $inv = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($inv) {
-            $prefs = json_decode($inv['preferences'] ?? '{}', true);
-            $exchangeConfig = $prefs['exchange_config'] ?? null;
+            if ($inv) {
+                $prefs = json_decode($inv['preferences'] ?? '{}', true);
+                $exchangeConfig = $prefs['exchange_config'] ?? null;
+            }
         }
     }
 
